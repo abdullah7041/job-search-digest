@@ -1,0 +1,10 @@
+# Python bytecode — never commit
+__pycache__/
+*.py[cod]
+
+# Local env / secrets — secrets live in GitHub Actions secrets, never in the repo
+.env
+*.env
+
+# NOTE: seen.json is NOT ignored. The Action commits it back after each run as
+# the job's only state. Ignoring it would break the dedupe across runs.

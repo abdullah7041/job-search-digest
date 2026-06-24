@@ -1,0 +1,39 @@
+name: job-digest
+
+on:
+  schedule:
+    - cron: "0 4 * * *"   # 04:00 UTC = 07:00 AST (UTC+3)
+  workflow_dispatch: {}    # manual "Run workflow" button for testing
+
+permissions:
+  contents: write          # needed to commit seen.json back to the repo
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run digest
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python digest.py
+
+      - name: Persist seen.json
+        run: |
+          if [[ -n "$(git status --porcelain seen.json)" ]]; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add seen.json
+            git commit -m "update seen.json [skip ci]"
+            git push
+          else
+            echo "no state change"
+          fi
