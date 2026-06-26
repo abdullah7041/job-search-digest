@@ -393,11 +393,23 @@ def main():
         uniq[j["url"] or j["id"]] = j
     all_jobs = list(uniq.values())
 
-    fresh = [j for j in all_jobs if matches_filters(j) and j["id"] not in seen]
-    log(f"{len(all_jobs)} fetched, {len(fresh)} new and matching")
+    matched = [j for j in all_jobs if matches_filters(j)]
+    fresh = [j for j in matched if j["id"] not in seen]
+    log(f"{len(all_jobs)} fetched, {len(matched)} match filter, {len(fresh)} new")
+
+    today = datetime.date.today().isoformat()
 
     if not fresh:
-        log("No new matching jobs. Done.")
+        # Heartbeat: a green workflow run with no new roles used to exit silently,
+        # which is indistinguishable from a broken job. Always post a one-liner so a
+        # quiet day is confirmed working, not a failure. matched-but-seen is shown so
+        # you know the pipeline reached real jobs and just had nothing new to add.
+        post_discord(webhook, [
+            f"**Job digest — {today}** · no new roles today. "
+            f"Scanned {len(all_jobs)} postings across {len(COMPANIES)} companies, "
+            f"{len(matched)} matched your filters (already sent), 0 new."
+        ])
+        log("No new matching jobs. Heartbeat sent.")
         return
 
     ranking = gemini_rank(fresh, gemini_key) if gemini_key else None
@@ -414,7 +426,6 @@ def main():
     fresh.sort(key=lambda x: x["score"], reverse=True)
     fresh = fresh[:MAX_JOBS_IN_DIGEST]
 
-    today = datetime.date.today().isoformat()
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     by_company = {}
     for j in fresh:
