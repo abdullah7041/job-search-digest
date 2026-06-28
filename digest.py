@@ -56,10 +56,22 @@ COMPANIES = [
 ]
 
 # Saudi only. A job's location must contain one of these (case-insensitive).
+# Arabic terms included because JSearch returns Saudi city names in Arabic
+# (الرياض = Riyadh, جدة = Jeddah, الخبر = Khobar, etc.); the country name is
+# expanded from the ISO code so "saudi" still matches even when the city is Arabic.
 LOCATION_INCLUDE = [
     "saudi", "ksa", "riyadh", "jeddah", "dammam", "khobar",
     "dhahran", "mecca", "makkah", "medina", "madinah",
+    "السعودية", "الرياض", "جدة", "الدمام", "الخبر", "مكة", "المدينة",
 ]
+
+# Expand ISO-3166 alpha-2 codes (JSearch returns these as job_country) to English
+# names so the English LOCATION_INCLUDE entries match. Gulf + Egypt cover the region
+# these boards post in; an unknown code falls through to its raw value.
+COUNTRY_CODE_TO_NAME = {
+    "SA": "Saudi Arabia", "AE": "United Arab Emirates", "BH": "Bahrain",
+    "KW": "Kuwait", "QA": "Qatar", "OM": "Oman", "EG": "Egypt",
+}
 
 # Title must match at least one of these to count as relevant.
 TITLE_INCLUDE = [
@@ -83,9 +95,9 @@ SKILL_KEYWORDS = [
     "founding", "applied ai", "architect", "solutions",
 ]
 
-# JSearch (RapidAPI / Google for Jobs aggregator).
+# JSearch (RapidAPI / Google for Jobs aggregator), endpoint /search-v2.
 # 3 queries/day = ~93 requests/month -> safely inside the free tier (200/month).
-# Field names verified live against the real API response.
+# Endpoint + response shape + field names verified live 28 Jun 2026.
 AGGREGATOR_QUERIES = [
     "software engineer Saudi Arabia",
     "data engineer Riyadh",
@@ -128,15 +140,19 @@ def _post(url, body):
 
 
 def fetch_greenhouse(c):
-    host = "boards-api.eu.greenhouse.io" if c.get("region") == "eu" else "boards-api.greenhouse.io"
-    url = f"https://{host}/v1/boards/{c['token']}/jobs?content=false"
+    # The Greenhouse job-board API is a SINGLE global host. There is no
+    # boards-api.eu.greenhouse.io — that name doesn't resolve (confirmed live,
+    # NXDOMAIN). The ".eu." prefix only exists on the front-end board URL
+    # (job-boards.eu.greenhouse.io), never the API. EU-hosted boards like Tamara
+    # are served from the same global API host, so "region" is ignored here.
+    url = f"https://boards-api.greenhouse.io/v1/boards/{c['token']}/jobs?content=false"
     try:
         r = _get(url)
     except requests.RequestException as e:
         log(f"WARN {c['name']}: request failed: {e}")
         return []
     if r.status_code != 200:
-        log(f"WARN {c['name']}: greenhouse HTTP {r.status_code} (token '{c['token']}', {c.get('region')}). Skipping.")
+        log(f"WARN {c['name']}: greenhouse HTTP {r.status_code} (token '{c['token']}'). Skipping.")
         return []
     try:
         data = r.json()
@@ -281,9 +297,15 @@ def fetch_jsearch(api_key):
     Returns jobs in the same shape as ATS fetchers so the shared filter/rank path works.
     Skipped entirely (returns []) if api_key is absent or subscription inactive.
 
-    FIELD NAMES (job_id, job_title, employer_name, job_apply_link, job_city, job_state,
-    job_country, job_posted_at_datetime_utc) are from JSearch docs — not yet verified
-    against a live response. Verify once RAPIDAPI_KEY is subscribed to JSearch.
+    Endpoint /search-v2 (verified live 28 Jun 2026). The old /search path now 404s at the
+    RapidAPI gateway ("Endpoint '/search' does not exist"). v2 nests results under
+    data.jobs (a list) instead of returning data as a list directly, and paginates by a
+    data.cursor token — we only take page one for breadth, so no cursor handling needed.
+
+    Field names verified live: job_id, job_title, employer_name, job_apply_link,
+    job_city, job_state, job_country, job_posted_at_datetime_utc. NOTE: job_city/job_state
+    come back in Arabic for Saudi roles and job_country is the ISO code "SA", so we expand
+    the code to "Saudi Arabia" below — otherwise the English LOCATION_INCLUDE never matches.
     """
     if not api_key:
         return []
@@ -297,8 +319,8 @@ def fetch_jsearch(api_key):
 
     for query in AGGREGATOR_QUERIES:
         url = (
-            f"https://{JSEARCH_HOST}/search"
-            f"?query={requests.utils.quote(query)}&page=1&num_pages=1&date_posted=month"
+            f"https://{JSEARCH_HOST}/search-v2"
+            f"?query={requests.utils.quote(query)}&country=sa&date_posted=month"
         )
         try:
             r = requests.get(url, headers=headers, timeout=30)
@@ -314,7 +336,10 @@ def fetch_jsearch(api_key):
             log(f"WARN JSearch [{query!r}]: non-JSON response")
             continue
 
-        jobs = data.get("data") or []
+        # v2 shape: {"status":..,"data":{"jobs":[...],"cursor":..}}. Be defensive in case
+        # a future response hands back a bare list again.
+        payload = data.get("data") or {}
+        jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
         added = 0
         for j in jobs:
             jid = str(j.get("job_id") or "")
@@ -322,10 +347,12 @@ def fetch_jsearch(api_key):
                 continue
             seen_ids.add(jid)
 
-            # Build a location string that our LOCATION_INCLUDE list can match.
+            # Build a location string that LOCATION_INCLUDE can match. City/state may be
+            # Arabic; expand the ISO country code to an English name so "saudi" matches.
             city    = (j.get("job_city")    or "").strip()
             state   = (j.get("job_state")   or "").strip()
             country = (j.get("job_country") or "").strip()
+            country = COUNTRY_CODE_TO_NAME.get(country.upper(), country)
             location = ", ".join(p for p in (city, state, country) if p)
 
             out.append({
