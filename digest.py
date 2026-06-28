@@ -3,7 +3,8 @@
 Daily job-search digest -> Discord.
 
 Pattern (same as the AI-news digest):
-  gather  -> company ATS APIs (Greenhouse, Ashby, Workable, Lever) for curated KSA/GCC firms
+  gather  -> JSearch (RapidAPI, Google for Jobs aggregator) for breadth
+             + company ATS APIs (Greenhouse, Ashby, Workable, Lever) for depth
   filter  -> Saudi-only, senior+, title relevant, not seen before
   rank    -> one cheap Gemini call for score + one-line "why it fits"
              (deterministic keyword fallback if Gemini is missing or fails)
@@ -12,6 +13,7 @@ Runs on GitHub Actions cron. No laptop needed.
 
 Secrets (GitHub repo -> Settings -> Secrets and variables -> Actions):
   DISCORD_WEBHOOK_URL   required
+  RAPIDAPI_KEY          required for JSearch. Without it JSearch is skipped (ATS-only run).
   GEMINI_API_KEY        optional. Without it, scoring is keyword-only.
 
 State:
@@ -81,6 +83,16 @@ SKILL_KEYWORDS = [
     "founding", "applied ai", "architect", "solutions",
 ]
 
+# JSearch (RapidAPI / Google for Jobs aggregator).
+# 3 queries/day = ~93 requests/month -> safely inside the free tier (200/month).
+# Field names verified live against the real API response.
+AGGREGATOR_QUERIES = [
+    "software engineer Saudi Arabia",
+    "data engineer Riyadh",
+    "machine learning engineer Saudi Arabia",
+]
+JSEARCH_HOST = "jsearch.p.rapidapi.com"
+
 # Salary floor (SAR / month). SOFT signal only. Boards almost never list salary,
 # so this NEVER rejects a posting. Benchmark 24 Jun 2026: senior eng Riyadh
 # ~25k-35k SAR/mo, AI/ML 28k-35k.
@@ -97,8 +109,8 @@ USER_AGENT = "job-digest/1.0 (personal job search)"
 
 
 def log(msg):
-    ts = datetime.datetime.utcnow().isoformat(timespec="seconds")
-    print(f"[{ts}Z] {msg}", flush=True)
+    ts = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    print(f"[{ts}] {msg}", flush=True)
 
 
 def _get(url):
@@ -263,6 +275,75 @@ def fetch_lever(c):
     return out
 
 
+def fetch_jsearch(api_key):
+    """
+    Query JSearch (RapidAPI Google-for-Jobs aggregator) for each AGGREGATOR_QUERIES entry.
+    Returns jobs in the same shape as ATS fetchers so the shared filter/rank path works.
+    Skipped entirely (returns []) if api_key is absent or subscription inactive.
+
+    FIELD NAMES (job_id, job_title, employer_name, job_apply_link, job_city, job_state,
+    job_country, job_posted_at_datetime_utc) are from JSearch docs — not yet verified
+    against a live response. Verify once RAPIDAPI_KEY is subscribed to JSearch.
+    """
+    if not api_key:
+        return []
+
+    headers = {
+        "X-RapidAPI-Key": api_key,
+        "X-RapidAPI-Host": JSEARCH_HOST,
+    }
+    out = []
+    seen_ids = set()  # dedupe within JSearch results across queries
+
+    for query in AGGREGATOR_QUERIES:
+        url = (
+            f"https://{JSEARCH_HOST}/search"
+            f"?query={requests.utils.quote(query)}&page=1&num_pages=1&date_posted=month"
+        )
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+        except requests.RequestException as e:
+            log(f"WARN JSearch [{query!r}]: request failed: {e}")
+            continue
+        if r.status_code != 200:
+            log(f"WARN JSearch [{query!r}]: HTTP {r.status_code}: {r.text[:120]}")
+            continue
+        try:
+            data = r.json()
+        except ValueError:
+            log(f"WARN JSearch [{query!r}]: non-JSON response")
+            continue
+
+        jobs = data.get("data") or []
+        added = 0
+        for j in jobs:
+            jid = str(j.get("job_id") or "")
+            if not jid or jid in seen_ids:
+                continue
+            seen_ids.add(jid)
+
+            # Build a location string that our LOCATION_INCLUDE list can match.
+            city    = (j.get("job_city")    or "").strip()
+            state   = (j.get("job_state")   or "").strip()
+            country = (j.get("job_country") or "").strip()
+            location = ", ".join(p for p in (city, state, country) if p)
+
+            out.append({
+                "company": (j.get("employer_name") or "Unknown").strip(),
+                "id":      "jsearch_" + jid,   # prefix avoids id collision with ATS ids
+                "title":   (j.get("job_title") or "").strip(),
+                "location": location,
+                "url":     j.get("job_apply_link") or j.get("job_google_link") or "",
+                "first_published": (j.get("job_posted_at_datetime_utc") or "")[:10],
+            })
+            added += 1
+        log(f"JSearch [{query!r}]: {len(jobs)} returned, {added} unique")
+        time.sleep(0.5)  # be polite between queries
+
+    log(f"JSearch total: {len(out)} unique jobs across {len(AGGREGATOR_QUERIES)} queries")
+    return out
+
+
 FETCHERS = {
     "greenhouse": fetch_greenhouse,
     "ashby": fetch_ashby,
@@ -381,8 +462,14 @@ def main():
     gemini_key = os.environ.get("GEMINI_API_KEY")  # optional
 
     seen = load_seen()
+    rapidapi_key = os.environ.get("RAPIDAPI_KEY")
 
     all_jobs = []
+
+    # Breadth: JSearch aggregator (LinkedIn/Indeed/Glassdoor/company sites via Google for Jobs)
+    all_jobs.extend(fetch_jsearch(rapidapi_key))
+
+    # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever)
     for c in COMPANIES:
         all_jobs.extend(fetch_company(c))
         time.sleep(0.5)
