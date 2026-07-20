@@ -490,10 +490,20 @@ def verify_link(url):
     # gone. Live postings don't redirect, or keep their id. No redirect -> skip this.
     final = (r.url or "").lower()
     job_tail = url.rstrip("/").rsplit("/", 1)[-1].lower()
-    if r.history and ("error=true" in final or (job_tail and job_tail not in final)):
+    # Greenhouse (?error=true) and Workable (?not_found=true) both bounce a pulled
+    # posting off the job page, dropping its id from the final URL.
+    if r.history and ("error=true" in final or "not_found=true" in final
+                      or (job_tail and job_tail not in final)):
         log(f"DROP redirected off posting -> {r.url}: {url}")
         return False
     body = (r.text or "").lower()
+    # Ashby doesn't redirect a pulled posting — it serves a 200 board shell with no
+    # posting data. A real Ashby posting embeds a JobPosting JSON-LD schema; the
+    # empty shell doesn't. Scoped to the host so this positive-proof gate never
+    # touches other ATSs' pages (which legitimately lack that schema).
+    if "ashbyhq.com" in final and "jobposting" not in body:
+        log(f"DROP ashby posting gone (no JobPosting schema): {url}")
+        return False
     for m in CLOSED_MARKERS:
         if m in body:
             log(f"DROP closed posting ({m!r}): {url}")
