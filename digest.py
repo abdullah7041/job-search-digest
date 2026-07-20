@@ -446,6 +446,61 @@ def gemini_rank(jobs, api_key):
         return None
 
 
+# Substrings that a closed/expired posting page shows. Checked case-insensitively
+# against the fetched body so a link that 200s but says "no longer accepting" is
+# still treated as dead. Kept broad on purpose: better to re-check a live job than
+# to deliver a dead one.
+CLOSED_MARKERS = [
+    "this job is no longer",
+    "no longer accepting applications",
+    "position is no longer available",
+    "job is no longer available",
+    "this position has been filled",
+    "posting is not available",
+    "job posting not found",
+    "no longer open",
+    "position has been closed",
+]
+
+
+def verify_link(url):
+    """
+    Confirm a posting URL still resolves to an OPEN posting before it's delivered.
+    Returns True if the link 200s and the body shows no closed-posting marker.
+
+    Fail-soft on the network: a request error returns True (keep the job). The
+    fetch that produced this URL succeeded moments ago, so a transient error here
+    is far more likely than the posting vanishing in that window — dropping on a
+    blip would hide a real, live role. Only a definite negative (non-200, or a
+    closed marker in the body) drops the job.
+    """
+    if not url:
+        return False
+    try:
+        r = _get(url)
+    except requests.RequestException as e:
+        log(f"WARN verify {url}: request error ({e}); keeping job")
+        return True
+    if r.status_code != 200:
+        log(f"DROP dead link HTTP {r.status_code}: {url}")
+        return False
+    # Several ATSs (Greenhouse confirmed) DON'T 404 a pulled posting — they 302 it
+    # off the job page back to the board root or an ?error=true page, still 200. So
+    # a redirect that drops the job's own id from the final URL means the posting is
+    # gone. Live postings don't redirect, or keep their id. No redirect -> skip this.
+    final = (r.url or "").lower()
+    job_tail = url.rstrip("/").rsplit("/", 1)[-1].lower()
+    if r.history and ("error=true" in final or (job_tail and job_tail not in final)):
+        log(f"DROP redirected off posting -> {r.url}: {url}")
+        return False
+    body = (r.text or "").lower()
+    for m in CLOSED_MARKERS:
+        if m in body:
+            log(f"DROP closed posting ({m!r}): {url}")
+            return False
+    return True
+
+
 def load_seen():
     if not os.path.exists(STATE_FILE):
         return {}
@@ -510,6 +565,15 @@ def main():
     matched = [j for j in all_jobs if matches_filters(j)]
     fresh = [j for j in matched if j["id"] not in seen]
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, {len(fresh)} new")
+
+    # Verify links before delivery so a dead or closed posting never reaches the
+    # digest. Only the new jobs are checked (one GET each), which keeps the request
+    # count bounded to the handful being delivered rather than every match.
+    verified = [j for j in fresh if verify_link(j["url"])]
+    dropped = len(fresh) - len(verified)
+    if dropped:
+        log(f"{dropped} of {len(fresh)} new jobs dropped as dead/closed on verification")
+    fresh = verified
 
     today = datetime.date.today().isoformat()
 
