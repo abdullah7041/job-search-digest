@@ -36,6 +36,7 @@ import requests
 #   "ashby"                           -> api.ashbyhq.com/posting-api
 #   "workable"                        -> apply.workable.com/api/v3 (POST, paginated)
 #   "lever"                           -> api.lever.co/v0/postings
+#   "pinpoint"                        -> <token>.pinpointhq.com/postings.json
 #
 # VERIFIED LIVE (24 Jun 2026), fetched from the real APIs during the build:
 #   HALA    greenhouse/us  hala       -> AI Engineer, Automation Eng, SRE, Backend (Riyadh)
@@ -53,6 +54,18 @@ COMPANIES = [
     {"name": "Tamara", "source": "greenhouse", "token": "tamara",   "region": "eu"},
     {"name": "Lean",   "source": "ashby",      "token": "LeanTech"},
     {"name": "Foodics", "source": "workable",  "token": "foodics"},  # verified live 24 Jun 2026, 32 roles
+    {"name": "Salla",  "source": "workable",   "token": "salla"},    # verified live 23 Jul 2026, 25 roles
+    {"name": "Tabby",  "source": "pinpoint",   "token": "tabby"},    # verified live 23 Jul 2026, 63 roles / 26 KSA
+    # Dormant: real Workable accounts, 0 open roles as of 23 Jul 2026. Kept on the
+    # Careem/Foodics precedent — one cheap fail-soft call a day, and a senior role
+    # surfaces automatically when one lands.
+    {"name": "Mozn",     "source": "workable", "token": "mozn"},
+    {"name": "Unifonic", "source": "workable", "token": "unifonic"},
+    {"name": "Jahez",    "source": "workable", "token": "jahez"},
+    {"name": "Zid",      "source": "workable", "token": "zid"},
+    {"name": "Nana",     "source": "workable", "token": "nana"},
+    {"name": "Rasan",    "source": "workable", "token": "rasan"},
+    {"name": "Sary",     "source": "workable", "token": "sary"},
 ]
 
 # Saudi only. A job's location must contain one of these (case-insensitive).
@@ -371,11 +384,67 @@ def fetch_jsearch(api_key):
     return out
 
 
+def fetch_pinpoint(c):
+    # Pinpoint job-board API: GET, no key, no pagination — one flat "data" array
+    # (63 postings returned in a single response for Tabby). Verified live 23 Jul 2026.
+    #
+    # Pinpoint publishes NO create/publish date (the only date field is deadline_at,
+    # which is null), so first_published stays "". That costs nothing: the field is
+    # written by every fetcher and read by none, and freshness comes from seen.json
+    # membership, not from any date.
+    url = f"https://{c['token']}.pinpointhq.com/postings.json"
+    try:
+        r = _get(url)
+    except requests.RequestException as e:
+        log(f"WARN {c['name']}: request failed: {e}")
+        return []
+    if r.status_code != 200:
+        log(f"WARN {c['name']}: pinpoint HTTP {r.status_code} (token '{c['token']}'). Skipping.")
+        return []
+    try:
+        data = r.json()
+    except ValueError:
+        log(f"WARN {c['name']}: non-JSON response. Skipping.")
+        return []
+    out = []
+    for j in data.get("data", []):
+        loc = j.get("location") or {}
+        # Combine city + country like fetch_workable does, so LOCATION_INCLUDE can match
+        # either. Tabby's country reads "KSA", already covered by LOCATION_INCLUDE.
+        location = ", ".join(p for p in (loc.get("city"), loc.get("name")) if p)
+        out.append({
+            "company": c["name"],
+            "id": str(j.get("id")),
+            "title": (j.get("title") or "").strip(),
+            "location": location,
+            "url": j.get("url") or "",
+            "first_published": "",
+            # First source to publish structured pay. Soft signal only — never filters.
+            "salary": pinpoint_salary(j),
+        })
+    log(f"{c['name']}: {len(out)} jobs (pinpoint)")
+    return out
+
+
+def pinpoint_salary(j):
+    """'6000-7500 SAR/month' when Pinpoint publishes a visible range, else ''."""
+    if not j.get("compensation_visible"):
+        return ""
+    lo, hi = j.get("compensation_minimum"), j.get("compensation_maximum")
+    cur = j.get("compensation_currency") or ""
+    freq = j.get("compensation_frequency") or ""
+    if lo is None and hi is None:
+        return ""
+    nums = "-".join(f"{v:,.0f}" for v in (lo, hi) if v is not None)
+    return f"{nums} {cur}/{freq}".strip().rstrip("/")
+
+
 FETCHERS = {
     "greenhouse": fetch_greenhouse,
     "ashby": fetch_ashby,
     "workable": fetch_workable,
     "lever": fetch_lever,
+    "pinpoint": fetch_pinpoint,
 }
 
 
@@ -621,8 +690,10 @@ def main():
     for comp, jobs in by_company.items():
         lines.append(f"\n__**{comp}**__")
         for j in jobs:
+            # Only Pinpoint publishes structured pay today; everything else omits it.
+            pay = f" · {j['salary']}" if j.get("salary") else ""
             lines.append(
-                f"- **{j['title']}** — {j['location']} · fit {j['score']}\n"
+                f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
                 f"  {j['why']}\n  <{j['url']}>"
             )
 
@@ -635,22 +706,133 @@ def main():
 
 
 # ----------------------------- CANDIDATES -----------------------------------
-# KSA/GCC tech firms to add once their ATS + token are confirmed in Claude Code.
-# Workable and Lever readers now exist, so any of these four ATS types is one line.
-# To confirm one, open its careers page and read where "Apply" sends you:
+# Run `python digest.py --discover <name>...` first — it probes every ATS below
+# and prints a ready-to-paste COMPANIES line. Fall back to reading a careers page
+# only when the token differs from the company name (Lean is "LeanTech"):
 #   jobs.ashbyhq.com/<token>        -> source "ashby"
 #   boards[.eu].greenhouse.io/<tk>  -> source "greenhouse" (set region)
 #   apply.workable.com/<token>      -> source "workable"
 #   jobs.lever.co/<token>           -> source "lever"
+#   <token>.pinpointhq.com          -> source "pinpoint"
 #
-#   Foodics   -> DONE (workable/foodics, in COMPANIES above, verified 24 Jun 2026)
-#   Tabby     -> ATS unconfirmed (not Greenhouse US/EU)
-#   Salla     -> ATS unconfirmed (not Greenhouse)
-#   Mozn      -> ATS unconfirmed (KSA AI; try Ashby/Lever)
-#   Unifonic  -> ATS unconfirmed
-#   Rasan / Sary / Nana / Jahez / Zid -> ATS unconfirmed
+# All of the original candidate list is now RESOLVED (23 Jul 2026):
+#   Foodics, Salla                  -> DONE, workable, live roles
+#   Tabby                           -> DONE, pinpoint (careers.tabby.ai redirects there)
+#   Mozn / Unifonic / Jahez / Zid /
+#   Nana / Rasan / Sary             -> DONE, workable accounts confirmed real but
+#                                      dormant (0 open roles). Already in COMPANIES.
+#
+# RULED OUT — big employers, no free public JSON API. Reaching them means scraping
+# HTML, which this project deliberately refuses (see README). Don't re-litigate:
+#   stc     -> SuccessFactors (sapsf.com)
+#   NEOM    -> own-host SPA, no public feed found
+#   Aramco  -> not Greenhouse. The "greenhouse" string on its careers page is
+#              "greenhouse gas" — it's an oil company. Easy false positive.
+#   SmartRecruiters as a discovery route is useless: its API answers
+#   200 {"totalFound":0} for ANY string, so it confirms companies that don't exist.
+#   13 KSA employer ids were probed, all empty.
+# ----------------------------------------------------------------------------
+
+
+# ------------------------------ DISCOVERY -----------------------------------
+# `python digest.py --discover salla tabby mozn` probes a company name as a token
+# against every token-based ATS and prints what's confirmed live.
+#
+# Each probe hits the SAME endpoint its fetcher uses. That matters: Workable's v1
+# widget undercounts against the v3 endpoint fetch_workable reads, so probing the
+# convenient endpoint gives an answer about an API the engine never calls.
+CONTROL_TOKEN = "zzznotarealcompany999"
+
+
+def _probe_greenhouse(t):
+    r = _get(f"https://boards-api.greenhouse.io/v1/boards/{t}/jobs?content=false")
+    return (r.status_code == 200, len(r.json().get("jobs", [])) if r.status_code == 200 else 0)
+
+
+def _probe_ashby(t):
+    r = _get(f"https://api.ashbyhq.com/posting-api/job-board/{t}?includeCompensation=true")
+    return (r.status_code == 200, len(r.json().get("jobs", [])) if r.status_code == 200 else 0)
+
+
+def _probe_lever(t):
+    r = _get(f"https://api.lever.co/v0/postings/{t}?mode=json")
+    return (r.status_code == 200, len(r.json()) if r.status_code == 200 else 0)
+
+
+def _probe_workable(t):
+    r = _post(f"https://apply.workable.com/api/v3/accounts/{t}/jobs", {})
+    return (r.status_code == 200, r.json().get("total", 0) if r.status_code == 200 else 0)
+
+
+def _probe_pinpoint(t):
+    r = _get(f"https://{t}.pinpointhq.com/postings.json")
+    return (r.status_code == 200, len(r.json().get("data", [])) if r.status_code == 200 else 0)
+
+
+PROBES = {
+    "greenhouse": _probe_greenhouse,
+    "ashby": _probe_ashby,
+    "lever": _probe_lever,
+    "workable": _probe_workable,
+    "pinpoint": _probe_pinpoint,
+}
+
+
+def _probe(source, token):
+    """(found, count) for one ATS. Any error is a miss — a probe never raises."""
+    try:
+        return PROBES[source](token)
+    except (requests.RequestException, ValueError, AttributeError, TypeError):
+        return (False, 0)
+
+
+def discover(names):
+    """
+    Probe each name against every ATS and report confirmed hits.
+
+    A probe is only trustworthy if the same probe MISSES a known-bad token. Some
+    job APIs answer 200 for any string they're handed — SmartRecruiters returns
+    200 {"totalFound":0} for literal nonsense — so an unguarded prober invents
+    companies with total confidence. Any ATS whose control probe "succeeds" is
+    reported UNRELIABLE and its per-name results are suppressed, not shown.
+    """
+    log(f"Control probe with bogus token '{CONTROL_TOKEN}'...")
+    reliable = {}
+    for source in PROBES:
+        found, _ = _probe(source, CONTROL_TOKEN)
+        reliable[source] = not found
+        if found:
+            log(f"  UNRELIABLE {source}: answers for a nonsense token; results suppressed")
+    usable = [s for s in PROBES if reliable[s]]
+    log(f"Usable probes: {', '.join(usable) or 'NONE'}")
+
+    for name in names:
+        token = name.strip().lower()
+        if not token:
+            continue
+        hits = []
+        for source in usable:
+            found, count = _probe(source, token)
+            if found:
+                hits.append((source, count))
+            time.sleep(0.2)  # be polite across ATSs
+        print(f"\n{name}:")
+        if not hits:
+            print(f"  no ATS found for token '{token}'")
+            # A miss is not proof of absence: this guesses the name as the token, so
+            # any company whose token differs (Lean is "LeanTech") is invisible here.
+            print("  Not proof it has no ATS - the token may just differ from the name.")
+            print("  Open the careers page, follow Apply, and read the final host.")
+            continue
+        for source, count in hits:
+            state = f"{count} open roles" if count else "account exists, 0 open roles"
+            print(f'  {source}: {state}')
+            print(f'    {{"name": "{name}", "source": "{source}", "token": "{token}"}},')
 # ----------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--discover":
+        discover(sys.argv[2:])
+    else:
+        main()

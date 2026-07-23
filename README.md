@@ -10,7 +10,7 @@ You asked whether LinkedIn is still the best source. It isn't, for an automated 
 
 LinkedIn Jobs and Indeed have no free API. Scraping them breaks their terms, the HTML changes often, and they block datacenter IPs like GitHub Actions runners fast. That path is fragile and you'd spend your time fixing scrapers.
 
-The reliable source is each company's own hiring system. The companies you care about post through free, public, JSON APIs: Greenhouse, Ashby, Workable, and Lever. No keys, no scraping, allowed by design. You point the script at a list of companies and pull their open roles directly. The engine now reads all four — Greenhouse, Ashby, Workable, and Lever (all four verified live against the real APIs).
+The reliable source is each company's own hiring system. The companies you care about post through free, public, JSON APIs: Greenhouse, Ashby, Workable, Lever, and Pinpoint. No keys, no scraping, allowed by design. You point the script at a list of companies and pull their open roles directly. The engine reads all five, every one verified live against the real API.
 
 There's no single board that covers Saudi tech, so the list is built company by company. That's the real work here, and why expanding it means confirming each firm's system, not guessing.
 
@@ -25,24 +25,42 @@ I fetched all four from the real APIs during the build:
 
 All four return the fields the matcher needs: title, location, apply URL, publish date.
 
-## Candidates to add
+## Coverage (23 Jul 2026)
 
-These are strong KSA/GCC tech firms I couldn't fully wire from the sandbox. The Lever and Workable APIs kept timing out here, so I won't ship a fetcher I haven't seen return data. Confirm each in Claude Code, where the network is open, then add a line to `COMPANIES`.
+The old candidate list is fully resolved. 14 companies now feed the pipeline: **216 postings fetched, 24 matched** — up from 127 and 10.
 
-- **Foodics** — **DONE.** Wired on Workable (`apply.workable.com/foodics`), verified live (32 roles, pagination confirmed). It's in `COMPANIES`. Note: its current Saudi postings are interns/sales, so the strict filter shows nothing from it yet — it stays in like Careem, surfacing a senior role when one lands.
-- **Tabby** — not on Greenhouse (US or EU, both checked and empty). ATS still unknown. Open tabby.com/careers, follow the Apply link, tell me the host.
-- **Salla, Mozn, Unifonic, Rasan, Sary, Nana, Jahez, Zid** — ATS unconfirmed. Mozn (KSA AI) is worth checking on Ashby and Lever first.
+- **Salla** — Workable, 27 roles. The strongest single addition: 13 matches, including the highest-scoring roles in the whole digest (Senior AI Backend Engineer, Senior SRE/MLOps, Senior Data Scientist, all Saudi).
+- **Tabby** — Pinpoint. `careers.tabby.ai` redirects to `tabby.pinpointhq.com`; that's why Greenhouse came up empty. 62 roles, 26 in Saudi.
+- **Mozn, Unifonic, Jahez, Zid, Nana, Rasan, Sary** — real Workable accounts, but 0 open roles today. Kept in `COMPANIES` on the Careem precedent: one cheap fail-soft call a day, and a senior role surfaces the moment one lands.
 
-I checked and ruled out Greenhouse for all of these, so don't add them as Greenhouse tokens. The `CANDIDATES` comment block at the bottom of `digest.py` lists the same set with the URL pattern for finding each token.
+### Ruled out — don't re-litigate
+
+Big Saudi employers mostly can't be reached without scraping, which this project refuses:
+
+- **stc** runs SuccessFactors (`sapsf.com`) — no free public JSON API.
+- **NEOM** serves its own SPA with no public feed found.
+- **Aramco** is not on Greenhouse. The "greenhouse" string on its careers page is *greenhouse gas* — it's an oil company. Easy false positive.
+- **SmartRecruiters** is useless for discovery: its API answers `200 {"totalFound":0}` for *any* string, so it happily confirms companies that don't exist. 13 KSA employer ids were probed, all empty. No verified company means no fetcher.
+
+Reaching these would need the JSearch aggregator (`RAPIDAPI_KEY`), which is deliberately left off.
 
 ## Adding a company
 
-Open its careers page and read where Apply sends you:
+Run the discovery probe first:
+
+```
+python digest.py --discover salla tabby mozn
+```
+
+It probes all five ATS APIs and prints a ready-to-paste `COMPANIES` line with the live job count. It guards itself with a known-bad control token first — if an ATS answers for nonsense, its results are reported `UNRELIABLE` rather than believed. That guard is the whole point; without it SmartRecruiters-style APIs invent companies.
+
+A miss isn't proof of absence — the probe guesses the company name as the token, so anything whose token differs (Lean is `LeanTech`) stays invisible. In that case, open the careers page and read where Apply sends you:
 
 - `boards.greenhouse.io/<token>` or `job-boards.eu.greenhouse.io/<token>` — Greenhouse. Add `{"source":"greenhouse","token":"<token>","region":"us"|"eu"}`.
 - `jobs.ashbyhq.com/<token>` — Ashby. Add `{"source":"ashby","token":"<token>"}`.
 - `apply.workable.com/<token>` — Workable. Add `{"source":"workable","token":"<token>"}`.
 - `jobs.lever.co/<token>` — Lever. Add `{"source":"lever","token":"<token>"}`.
+- `<token>.pinpointhq.com` — Pinpoint. Add `{"source":"pinpoint","token":"<token>"}`.
 
 Every fetch is fail-soft: a wrong token or a down API logs a WARN and is skipped, so a bad entry never breaks the run.
 
@@ -56,6 +74,8 @@ The job is matching, not relevance ranking, so the filter is strict before anyth
 4. **Not seen before.** `seen.json` holds every id already sent, so you only get new postings.
 
 Salary is a soft signal, not a filter. These boards almost never publish a number, so a hard salary floor would reject nearly everything. The benchmark for your floor: senior engineer in Riyadh runs SAR 25,000 to 35,000 per month in 2026, AI/ML 28,000 to 35,000. The config records SAR 25,000/month for reference and never rejects a posting for missing salary.
+
+Pinpoint is the one source that does publish structured pay (`compensation_minimum/maximum`, currency, frequency), so Tabby roles can show a real `SAR/month` range in the digest line. It stays a display signal — nothing is ever rejected on it.
 
 One caveat the filter can't catch: some Gulf roles are nationality-gated (for example Tamara's "Builders Program - Emirati National" lines). The title doesn't always say so. You'll spot these when you read the digest.
 
@@ -71,7 +91,7 @@ Discord webhook. The digest is grouped by company, sorted by fit score, and spli
 
 ## Files
 
-- `digest.py` — the whole engine. Config block and company list at the top, Greenhouse and Ashby fetchers, candidates list at the bottom. One file, no framework.
+- `digest.py` — the whole engine. Config block and company list at the top, the five ATS fetchers in the middle, candidates list and `--discover` mode at the bottom. One file, no framework.
 - `.github/workflows/digest.yml` — the cron. `0 4 * * *` is 07:00 AST. Includes a manual run button and the step that commits `seen.json` back.
 - `requirements.txt` — just `requests`.
 - `seen.json` — created on first run. Don't commit it by hand; the workflow does.
@@ -93,4 +113,4 @@ Discord webhook. The digest is grouped by company, sorted by fit score, and spli
 
 ## What's deliberately simple
 
-No database. State is one JSON file committed back by the Action. No scraper, no browser automation, no queue. Two ATS readers because the companies genuinely split across them, not for their own sake. Add Lever or Workable readers only when a company you want forces it.
+No database. State is one JSON file committed back by the Action. No scraper, no browser automation, no queue. Five ATS readers because the companies genuinely split across them, not for their own sake — each one was added only after a company you actually want forced it, and only after the live API was seen returning data.
