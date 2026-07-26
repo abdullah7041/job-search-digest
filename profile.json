@@ -5,5 +5,9 @@
     "api", "cloud", "aws", "gcp", "data", "saas", "platform", "devops",
     "founding", "applied ai", "architect", "solutions"
   ],
-  "target_titles": []
+  "target_titles": [
+    "Senior AI/ML Engineer", "Senior Software Engineer", "Senior Backend Engineer",
+    "Senior Data Engineer", "Solutions Engineer", "Senior Product Manager",
+    "Technical Product Manager", "Head of Product"
+  ]
 }
