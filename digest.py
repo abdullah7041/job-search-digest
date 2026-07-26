@@ -20,6 +20,14 @@ State:
   seen.json holds job ids already sent. The workflow commits it back after each
   run, so every posting is delivered once and a missed day is caught next run.
   First run has an empty seen.json, so the first digest can be large (capped).
+  stats.json holds one row per run (fetched/matched/new/avg fit score) so a
+  silently-stale profile shows up as a trend instead of looking healthy.
+
+Profile:
+  profile.json holds the candidate blurb, skill keywords, and target titles fed
+  to Gemini and the keyword fallback. Refresh it with PROFILE_REFRESH_PROMPT.md
+  (manually, or via the monthly nudge) as your background/skills/target roles
+  change. Missing or corrupt profile.json falls back to DEFAULT_PROFILE below.
 """
 
 import os
@@ -101,12 +109,26 @@ TITLE_EXCLUDE = [
     "associate", "entry", "fresh", "co-op", "apprentice", "student",
 ]
 
-# Skill keywords from Abdullah's profile -> keyword match scoring.
-SKILL_KEYWORDS = [
-    "ai", "ml", "machine learning", "llm", "automation", "python", "backend",
-    "api", "cloud", "aws", "gcp", "data", "saas", "platform", "devops",
-    "founding", "applied ai", "architect", "solutions",
-]
+# Candidate profile (blurb, skill keywords, target titles) drives both the
+# Gemini prompt and the keyword-fallback scoring. It lives in profile.json so
+# it can be refreshed (manually or via the monthly nudge) without touching
+# this file. DEFAULT_PROFILE is the fail-soft fallback if that file is
+# missing or corrupt -- it holds the exact values this project shipped with.
+PROFILE_FILE = "profile.json"
+DEFAULT_PROFILE = {
+    "blurb": (
+        "Candidate: solo founder and senior engineer in Saudi Arabia. Strong in AI, "
+        "automation, LLM apps, Python, backend, and cloud SaaS. Wants senior or above "
+        "AI/ML, software, product, or data roles based in Saudi Arabia. Values simple, "
+        "reliable, high-ownership work."
+    ),
+    "skill_keywords": [
+        "ai", "ml", "machine learning", "llm", "automation", "python", "backend",
+        "api", "cloud", "aws", "gcp", "data", "saas", "platform", "devops",
+        "founding", "applied ai", "architect", "solutions",
+    ],
+    "target_titles": [],
+}
 
 # JSearch (RapidAPI / Google for Jobs aggregator), endpoint /search-v2.
 # 3 queries/day = ~93 requests/month -> safely inside the free tier (200/month).
@@ -130,12 +152,41 @@ MAX_JOBS_IN_DIGEST = 25
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
 USER_AGENT = "job-digest/1.0 (personal job search)"
+
+# Drift monitoring: stats.json tracks one row per run (fetched/matched/new/avg
+# fit score) so a silently-stale profile shows up instead of looking healthy.
+STATS_FILE = "stats.json"
+STATS_TTL_DAYS = 120
+DRIFT_WINDOW_DAYS = 7          # trailing window compared against the prior one
+DRIFT_MIN_SCORED_RUNS = 14     # need two full windows before trusting a comparison
+DRIFT_SCORE_DROP_THRESHOLD = 15  # point drop (7d avg vs prior 7d avg) that triggers a warning
 # ----------------------------------------------------------------------------
 
 
 def log(msg):
     ts = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     print(f"[{ts}] {msg}", flush=True)
+
+
+def load_profile():
+    """Read profile.json; fall back to DEFAULT_PROFILE on any problem so a
+    missing or half-edited file never breaks a run."""
+    if not os.path.exists(PROFILE_FILE):
+        log(f"WARN {PROFILE_FILE} not found, using default profile")
+        return DEFAULT_PROFILE
+    try:
+        with open(PROFILE_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except ValueError:
+        log(f"WARN {PROFILE_FILE} is corrupt, using default profile")
+        return DEFAULT_PROFILE
+    if not data.get("blurb") or not data.get("skill_keywords"):
+        log(f"WARN {PROFILE_FILE} missing 'blurb' or 'skill_keywords', using default profile")
+        return DEFAULT_PROFILE
+    return data
+
+
+PROFILE = load_profile()
 
 
 def _get(url):
@@ -470,18 +521,16 @@ def matches_filters(job):
 
 def keyword_score(job):
     title = job["title"].lower()
-    hits = sum(1 for k in SKILL_KEYWORDS if k in title)
+    hits = sum(1 for k in PROFILE["skill_keywords"] if k in title)
     return min(100, 40 + hits * 15)  # 40 base for passing filters, +15 per skill hit
 
 
 def gemini_rank(jobs, api_key):
     """One call. Returns {id: {score, why}} or None on any failure (caller falls back)."""
-    profile = (
-        "Candidate: solo founder and senior engineer in Saudi Arabia. Strong in AI, "
-        "automation, LLM apps, Python, backend, and cloud SaaS. Wants senior or above "
-        "AI/ML, software, product, or data roles based in Saudi Arabia. Values simple, "
-        "reliable, high-ownership work."
-    )
+    profile = PROFILE["blurb"]
+    targets = PROFILE.get("target_titles")
+    if targets:
+        profile += " Currently targeting: " + ", ".join(targets) + "."
     listing = [
         {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"]}
         for j in jobs
@@ -598,6 +647,54 @@ def save_seen(seen):
         json.dump(pruned, f, indent=0, sort_keys=True)
 
 
+def load_stats():
+    if not os.path.exists(STATS_FILE):
+        return []
+    try:
+        with open(STATS_FILE) as f:
+            data = json.load(f)
+    except ValueError:
+        log("WARN stats.json is corrupt, starting fresh")
+        return []
+    return data if isinstance(data, list) else []
+
+
+def save_stats(stats, today, fetched, matched, new, avg_score):
+    """Append today's run stats and prune rows older than STATS_TTL_DAYS.
+    avg_score is None on a no-new-jobs day (nothing was scored)."""
+    stats.append({
+        "date": today, "fetched": fetched, "matched": matched,
+        "new": new, "avg_score": avg_score,
+    })
+    cutoff = (datetime.date.today() - datetime.timedelta(days=STATS_TTL_DAYS)).isoformat()
+    pruned = [s for s in stats if s["date"] >= cutoff]
+    with open(STATS_FILE, "w") as f:
+        json.dump(pruned, f, indent=0, sort_keys=True)
+
+
+def check_drift(stats):
+    """Compare the trailing DRIFT_WINDOW_DAYS avg fit score against the prior
+    window of the same size, using history recorded BEFORE today's run. Returns
+    a warning string, or None if there isn't enough history yet or fit hasn't
+    dropped past the threshold. Fail-soft: never raises, never blocks delivery."""
+    scored = sorted(
+        (s for s in stats if s.get("avg_score") is not None),
+        key=lambda s: s["date"],
+    )
+    if len(scored) < DRIFT_MIN_SCORED_RUNS:
+        return None
+    recent = scored[-DRIFT_WINDOW_DAYS:]
+    prior = scored[-2 * DRIFT_WINDOW_DAYS:-DRIFT_WINDOW_DAYS]
+    recent_avg = sum(s["avg_score"] for s in recent) / len(recent)
+    prior_avg = sum(s["avg_score"] for s in prior) / len(prior)
+    if prior_avg - recent_avg >= DRIFT_SCORE_DROP_THRESHOLD:
+        return (
+            f"Fit trending down ({DRIFT_WINDOW_DAYS}d avg {recent_avg:.0f} vs "
+            f"prior {prior_avg:.0f}) — profile may be stale. Check profile.json."
+        )
+    return None
+
+
 def post_discord(webhook, lines):
     chunks, cur = [], ""
     for ln in lines:
@@ -623,6 +720,8 @@ def main():
     gemini_key = os.environ.get("GEMINI_API_KEY")  # optional
 
     seen = load_seen()
+    stats = load_stats()
+    drift_warning = check_drift(stats)  # uses history only; today's row isn't recorded yet
     rapidapi_key = os.environ.get("RAPIDAPI_KEY")
 
     all_jobs = []
@@ -661,11 +760,15 @@ def main():
         # which is indistinguishable from a broken job. Always post a one-liner so a
         # quiet day is confirmed working, not a failure. matched-but-seen is shown so
         # you know the pipeline reached real jobs and just had nothing new to add.
-        post_discord(webhook, [
+        lines = [
             f"**Job digest — {today}** · no new roles today. "
             f"Scanned {len(all_jobs)} postings across {len(COMPANIES)} companies, "
             f"{len(matched)} matched your filters (already sent), 0 new."
-        ])
+        ]
+        if drift_warning:
+            lines.append(f"⚠️ {drift_warning}")
+        post_discord(webhook, lines)
+        save_stats(stats, today, len(all_jobs), len(matched), 0, None)
         log("No new matching jobs. Heartbeat sent.")
         return
 
@@ -680,10 +783,17 @@ def main():
             j["score"] = keyword_score(j)
             j["why"] = "matches your target titles and skills"
 
+    # Captured before the MAX_JOBS_IN_DIGEST cut below, so a stale profile shows
+    # up in the drift trend even on days the real drop is buried past the top 25.
+    new_count = len(fresh)
+    avg_score = round(sum(j["score"] for j in fresh) / new_count, 1)
+
     fresh.sort(key=lambda x: x["score"], reverse=True)
     fresh = fresh[:MAX_JOBS_IN_DIGEST]
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
+    if drift_warning:
+        lines.append(f"⚠️ {drift_warning}")
     by_company = {}
     for j in fresh:
         by_company.setdefault(j["company"], []).append(j)
@@ -702,6 +812,7 @@ def main():
     for j in fresh:
         seen[j["id"]] = today
     save_seen(seen)
+    save_stats(stats, today, len(all_jobs), len(matched), new_count, avg_score)
     log(f"Posted {len(fresh)} jobs. seen.json now holds {len(seen)} ids.")
 
 
