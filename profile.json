@@ -1,5 +1,5 @@
 {
-  "blurb": "Candidate: solo founder and senior engineer in Saudi Arabia. Strong in AI, automation, LLM apps, Python, backend, and cloud SaaS. Wants senior or above AI/ML, software, product, or data roles based in Saudi Arabia. Values simple, reliable, high-ownership work.",
+  "blurb": "Candidate: solo founder and senior engineer in Saudi Arabia. Strong in AI, automation, LLM apps, Python, backend, and cloud SaaS. Wants SENIOR-LEVEL INDIVIDUAL CONTRIBUTOR roles (AI/ML, software, product, or data) based in Saudi Arabia. NOT seeking lead, staff, principal, head-of, director, or people-management roles, and not roles based outside Saudi Arabia even with relocation. Values simple, reliable, high-ownership work.",
   "skill_keywords": [
     "ai", "ml", "machine learning", "llm", "automation", "python", "backend",
     "api", "cloud", "aws", "gcp", "data", "saas", "platform", "devops",
@@ -8,6 +8,6 @@
   "target_titles": [
     "Senior AI/ML Engineer", "Senior Software Engineer", "Senior Backend Engineer",
     "Senior Data Engineer", "Solutions Engineer", "Senior Product Manager",
-    "Technical Product Manager", "Head of Product"
+    "Technical Product Manager"
   ]
 }

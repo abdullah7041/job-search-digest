@@ -31,7 +31,9 @@ Profile:
 """
 
 import os
+import re
 import sys
+import html
 import json
 import time
 import datetime
@@ -103,10 +105,15 @@ TITLE_INCLUDE = [
     "product manager", "technical product", "head of engineering", "solutions engineer",
 ]
 
-# Seniority filter: drop anything junior. senior+ only.
+# Seniority filter: drop anything junior AND anything above senior IC.
+# The 2026-07-31 digest scored Lead/Staff/Team-Leader roles 85-98 because this
+# list only bounded seniority from below and profile.json said "senior or
+# above". Target is senior individual contributor; leadership tracks are out.
 TITLE_EXCLUDE = [
     "junior", "intern", "internship", "graduate", "trainee", "tamheer",
     "associate", "entry", "fresh", "co-op", "apprentice", "student",
+    "lead ", " lead", "leader", "staff", "principal", "head of", "director",
+    "chief", "vice president", " vp", "vp ", "engineering manager",
 ]
 
 # Candidate profile (blurb, skill keywords, target titles) drives both the
@@ -149,6 +156,20 @@ SALARY_FLOOR_SAR_MONTH = 25000
 GEMINI_MODEL = "gemini-3.1-flash-lite"
 
 MAX_JOBS_IN_DIGEST = 25
+
+# Per-job resume tailoring. Every delivered job (up to TAILOR_MAX per run, to
+# bound cost and runtime) gets the master resume rewritten against its actual
+# JD text: reordered and re-emphasized, truth-constrained to resume.md, with an
+# honest fit/gaps section. Output lands in tailored/<date>/<company>-<slug>.md,
+# committed back by the workflow, and each digest line links straight to it.
+# Needs GEMINI_API_KEY and resume.md; missing either skips tailoring and the
+# digest still delivers (fail-soft, same policy as ranking).
+RESUME_FILE = "resume.md"
+TAILOR_DIR = "tailored"
+TAILOR_MAX = 10
+JD_MAX_CHARS = 6000    # JD text handed to the tailor prompt
+JD_RANK_CHARS = 900    # JD excerpt per job inside the one ranking call
+
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
 USER_AGENT = "job-digest/1.0 (personal job search)"
@@ -203,6 +224,17 @@ def _post(url, body):
     )
 
 
+def strip_html(s):
+    """Escaped or raw HTML -> readable plain text for LLM prompts. Greenhouse
+    double-escapes its content field (&lt;p&gt;), so unescape twice-safe first,
+    then drop tags and collapse whitespace."""
+    s = html.unescape(html.unescape(s or ""))
+    s = re.sub(r"<(br|/p|/li|/h[1-6])[^>]*>", "\n", s, flags=re.I)
+    s = re.sub(r"<[^>]+>", " ", s)
+    s = re.sub(r"[ \t]+", " ", s)
+    return re.sub(r"\s*\n\s*", "\n", s).strip()
+
+
 def fetch_greenhouse(c):
     # The Greenhouse job-board API is a SINGLE global host. There is no
     # boards-api.eu.greenhouse.io — that name doesn't resolve (confirmed live,
@@ -232,6 +264,8 @@ def fetch_greenhouse(c):
             "location": ((j.get("location") or {}).get("name") or "").strip(),
             "url": j.get("absolute_url") or "",
             "first_published": j.get("first_published") or j.get("updated_at") or "",
+            "source": "greenhouse", "token": c["token"],
+            "description": "",  # fetched on demand for delivered jobs only
         })
     log(f"{c['name']}: {len(out)} jobs (greenhouse)")
     return out
@@ -263,6 +297,9 @@ def fetch_ashby(c):
             "location": (j.get("location") or "").strip(),  # ashby location is a plain string
             "url": j.get("jobUrl") or j.get("applyUrl") or "",
             "first_published": j.get("publishedAt") or "",
+            "source": "ashby", "token": c["token"],
+            # descriptionPlain ships in the board payload (verified live 31 Jul 2026)
+            "description": (j.get("descriptionPlain") or strip_html(j.get("descriptionHtml") or "")).strip(),
         })
     log(f"{c['name']}: {len(out)} jobs (ashby)")
     return out
@@ -303,6 +340,8 @@ def fetch_workable(c):
                 "location": location,
                 "url": f"https://apply.workable.com/{c['token']}/j/{shortcode}/" if shortcode else "",
                 "first_published": j.get("published") or "",
+                "source": "workable", "token": c["token"], "shortcode": shortcode,
+                "description": "",  # fetched on demand via the v1 widget API
             })
         cursor = data.get("nextPage")
         if not cursor:
@@ -350,6 +389,8 @@ def fetch_lever(c):
             "location": (cats.get("location") or "").strip(),
             "url": j.get("hostedUrl") or j.get("applyUrl") or "",
             "first_published": published,
+            "source": "lever", "token": c["token"],
+            "description": (j.get("descriptionPlain") or strip_html(j.get("description") or "")).strip(),
         })
     log(f"{c['name']}: {len(out)} jobs (lever)")
     return out
@@ -426,6 +467,8 @@ def fetch_jsearch(api_key):
                 "location": location,
                 "url":     j.get("job_apply_link") or j.get("job_google_link") or "",
                 "first_published": (j.get("job_posted_at_datetime_utc") or "")[:10],
+                "source": "jsearch", "token": "",
+                "description": (j.get("job_description") or "").strip(),
             })
             added += 1
         log(f"JSearch [{query!r}]: {len(jobs)} returned, {added} unique")
@@ -472,6 +515,10 @@ def fetch_pinpoint(c):
             "first_published": "",
             # First source to publish structured pay. Soft signal only — never filters.
             "salary": pinpoint_salary(j),
+            "source": "pinpoint", "token": c["token"],
+            # Pinpoint splits the JD across three fields (verified live 31 Jul 2026)
+            "description": "\n".join(strip_html(j.get(f) or "") for f in (
+                "description", "key_responsibilities", "skills_knowledge_expertise")).strip(),
         })
     log(f"{c['name']}: {len(out)} jobs (pinpoint)")
     return out
@@ -507,10 +554,27 @@ def fetch_company(c):
     return fn(c)
 
 
+def location_conflict(title):
+    """True when the TITLE says the job is really somewhere else, whatever the
+    location metadata claims. The 2026-07-31 digest delivered Agoda's 'Staff
+    Data Engineer (Bangkok based, relocation provided)' as Riyadh because
+    JSearch's metadata said الرياض and matches_filters never read the title.
+    A title that mentions being 'based' somewhere is trusted only if that
+    somewhere is Saudi; any relocation offer means the job is not local."""
+    t = title.lower()
+    if "relocat" in t:
+        return True
+    if "based" in t and not any(k in t for k in LOCATION_INCLUDE):
+        return True
+    return False
+
+
 def matches_filters(job):
     title = job["title"].lower()
     loc = job["location"].lower()
     if not any(k in loc for k in LOCATION_INCLUDE):
+        return False
+    if location_conflict(job["title"]):
         return False
     if any(k in title for k in TITLE_EXCLUDE):
         return False
@@ -526,19 +590,36 @@ def keyword_score(job):
 
 
 def gemini_rank(jobs, api_key):
-    """One call. Returns {id: {score, why}} or None on any failure (caller falls back)."""
+    """One call. Returns {id: {score, why}} or None on any failure (caller falls back).
+
+    The 2026-07-31 digest handed Lead/Staff roles 92-98 because the old prompt
+    had no rubric: it asked for a 0-100 with no anchor, so everything AI-flavored
+    scored 90+. The rubric below pins the bands, makes seniority-above-target a
+    hard penalty, and feeds a JD excerpt so scores reflect actual requirements
+    instead of title vibes."""
     profile = PROFILE["blurb"]
     targets = PROFILE.get("target_titles")
     if targets:
         profile += " Currently targeting: " + ", ".join(targets) + "."
     listing = [
-        {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"]}
+        {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"],
+         "jd_excerpt": (j.get("description") or "")[:JD_RANK_CHARS]}
         for j in jobs
     ]
     prompt = (
-        f"{profile}\n\nScore each job 0-100 for fit to this candidate and give a one-line "
-        f"reason of at most 15 words. Return ONLY a JSON array of objects "
-        f'{{"id","score","why"}}.\nJobs:\n{json.dumps(listing, ensure_ascii=False)}'
+        f"{profile}\n\n"
+        "Score each job 0-100 for fit to this candidate. Anchor every score to this rubric:\n"
+        "- 90-100: senior-level INDIVIDUAL CONTRIBUTOR role in a core area (AI/LLM apps, "
+        "software/backend, full-stack, data) in Saudi Arabia, and the JD's hard requirements "
+        "are clearly covered by the profile. Reserve 95+ for near-perfect matches.\n"
+        "- 70-89: senior IC role in a core area with one or two real gaps against the JD.\n"
+        "- 40-69: adjacent function, seniority mismatch, or several gaps.\n"
+        "- 0-39: leadership/staff/principal/management track, wrong location (including a title "
+        "that says based elsewhere or offers relocation), or wrong function.\n"
+        "Never score above 85 when jd_excerpt is empty: a title alone cannot prove fit.\n"
+        "Give a one-line reason of at most 15 words naming the deciding factor. "
+        'Return ONLY a JSON array of objects {"id","score","why"}.\n'
+        f"Jobs:\n{json.dumps(listing, ensure_ascii=False)}"
     )
     endpoint = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
@@ -562,6 +643,120 @@ def gemini_rank(jobs, api_key):
     except Exception as e:
         log(f"WARN Gemini failed: {e}")
         return None
+
+
+_workable_details_cache = {}
+
+
+def get_description(job):
+    """Best-effort JD text for one DELIVERED job, capped at JD_MAX_CHARS.
+
+    Ashby, Lever, Pinpoint and JSearch ship the JD inside the board payload the
+    fetcher already read, so those cost nothing. Greenhouse needs one GET per
+    job (boards-api .../jobs/<id>, 'content' field); Workable needs one GET per
+    company via the v1 widget API (?details=true), cached across jobs in the
+    same run. Only delivered jobs reach here, so the extra requests stay
+    bounded by the digest cap. Any failure returns whatever we have: tailoring
+    degrades to title-only, the run never breaks."""
+    if job.get("description"):
+        return job["description"][:JD_MAX_CHARS]
+    src, token = job.get("source"), job.get("token")
+    try:
+        if src == "greenhouse":
+            r = _get(f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs/{job['id']}?questions=false")
+            if r.status_code == 200:
+                job["description"] = strip_html(r.json().get("content") or "")
+            else:
+                log(f"WARN JD fetch: greenhouse HTTP {r.status_code} for {job['title']}")
+        elif src == "workable":
+            if token not in _workable_details_cache:
+                r = _get(f"https://apply.workable.com/api/v1/widget/accounts/{token}?details=true")
+                jobs = r.json().get("jobs", []) if r.status_code == 200 else []
+                _workable_details_cache[token] = {
+                    w.get("shortcode"): strip_html(w.get("description") or "") for w in jobs
+                }
+            job["description"] = _workable_details_cache.get(token, {}).get(job.get("shortcode"), "")
+    except (requests.RequestException, ValueError) as e:
+        log(f"WARN JD fetch failed for {job['company']} — {job['title']}: {e}")
+    return (job.get("description") or "")[:JD_MAX_CHARS]
+
+
+def load_resume():
+    """resume.md is the tailoring source of truth. Missing or unreadable file
+    logs a WARN and disables tailoring for the run; the digest still delivers."""
+    if not os.path.exists(RESUME_FILE):
+        log(f"WARN {RESUME_FILE} not found; tailoring skipped this run")
+        return ""
+    try:
+        with open(RESUME_FILE, encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError as e:
+        log(f"WARN could not read {RESUME_FILE}: {e}")
+        return ""
+
+
+def slugify(s, maxlen=60):
+    s = re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")
+    return s[:maxlen].rstrip("-") or "job"
+
+
+def tailor_resume(job, jd_text, resume_md, api_key):
+    """One Gemini call -> tailored resume markdown, or None on failure.
+
+    Truth-constrained by prompt: only facts from resume.md, no invention; JD
+    demands the resume can't support come back as explicit gaps, not padding."""
+    prompt = (
+        "You are tailoring a real resume to one specific job description.\n"
+        "HARD RULES:\n"
+        "- Use ONLY facts present in the master resume below. Never invent, inflate, or add "
+        "employers, titles, dates, tools, metrics, or skills.\n"
+        "- Reorder, reword, and re-emphasize honestly: lead with the experience this JD cares "
+        "about most, and mirror the JD's terminology only where the resume's facts genuinely "
+        "support it.\n"
+        "- Keep the same sections as the master, tightened to stay one page.\n"
+        "- End with a section titled '## Fit notes (remove before sending)': 3 bullets on the "
+        "strongest matches, then 'Gaps:' listing every JD requirement the master resume cannot "
+        "support. If a gap is fundamental (seniority, degree, years of experience), say so "
+        "plainly. Never soften a gap into a claim.\n"
+        "Return ONLY the tailored resume as markdown, no preamble.\n\n"
+        f"MASTER RESUME:\n{resume_md}\n\n"
+        f"JOB: {job['title']} at {job['company']} ({job['location']})\n"
+        f"JOB DESCRIPTION:\n"
+        f"{jd_text or '(JD text unavailable — tailor on the title only and say so in Fit notes)'}"
+    )
+    endpoint = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{GEMINI_MODEL}:generateContent?key={api_key}"
+    )
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.3},
+    }
+    try:
+        r = requests.post(endpoint, json=body, timeout=90)
+        if r.status_code != 200:
+            log(f"WARN tailor Gemini HTTP {r.status_code}: {r.text[:200]}")
+            return None
+        text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        text = text.strip()
+        # Models sometimes wrap the whole answer in a markdown fence; unwrap it.
+        if text.startswith("```"):
+            text = re.sub(r"^```[a-z]*\n?", "", text)
+            text = re.sub(r"\n?```$", "", text).strip()
+        return text or None
+    except Exception as e:
+        log(f"WARN tailor Gemini failed: {e}")
+        return None
+
+
+def tailored_url(relpath):
+    """Repo web link when running in Actions (GITHUB_REPOSITORY is set there),
+    plain relative path on a local run."""
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if repo:
+        server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+        return f"{server}/{repo}/blob/main/{relpath}"
+    return relpath
 
 
 # Substrings that a closed/expired posting page shows. Checked case-insensitively
@@ -791,6 +986,35 @@ def main():
     fresh.sort(key=lambda x: x["score"], reverse=True)
     fresh = fresh[:MAX_JOBS_IN_DIGEST]
 
+    # Tailor the master resume to each delivered job (top TAILOR_MAX by score).
+    # Needs the same Gemini key as ranking plus resume.md; missing either just
+    # skips this stage. Files land in tailored/<date>/ and are committed back
+    # by the workflow, so each digest line can link its own resume.
+    tailored = {}  # job id -> repo-relative path
+    resume_md = load_resume() if gemini_key else ""
+    if gemini_key and not resume_md:
+        pass  # load_resume already logged why
+    elif resume_md:
+        day_dir = os.path.join(TAILOR_DIR, today)
+        os.makedirs(day_dir, exist_ok=True)
+        for j in fresh[:TAILOR_MAX]:
+            jd = get_description(j)
+            md = tailor_resume(j, jd, resume_md, gemini_key)
+            if not md:
+                log(f"WARN tailoring failed for {j['company']} — {j['title']}; job still delivered")
+                continue
+            fname = f"{slugify(j['company'])}--{slugify(j['title'])}.md"
+            path = os.path.join(day_dir, fname)
+            header = (
+                f"<!-- Tailored for: {j['title']} @ {j['company']} · {j['location']} · "
+                f"fit {j['score']}\n     {j['url']}\n     generated {today} -->\n\n"
+            )
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(header + md + "\n")
+            tailored[j["id"]] = f"{TAILOR_DIR}/{today}/{fname}"
+            time.sleep(1)  # be polite between Gemini calls
+        log(f"Tailored {len(tailored)} of {min(len(fresh), TAILOR_MAX)} resumes into {TAILOR_DIR}/{today}/")
+
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     if drift_warning:
         lines.append(f"⚠️ {drift_warning}")
@@ -802,9 +1026,12 @@ def main():
         for j in jobs:
             # Only Pinpoint publishes structured pay today; everything else omits it.
             pay = f" · {j['salary']}" if j.get("salary") else ""
+            resume_line = ""
+            if j["id"] in tailored:
+                resume_line = f"\n  📄 tailored resume: <{tailored_url(tailored[j['id']])}>"
             lines.append(
                 f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
-                f"  {j['why']}\n  <{j['url']}>"
+                f"  {j['why']}\n  <{j['url']}>{resume_line}"
             )
 
     post_discord(webhook, lines)

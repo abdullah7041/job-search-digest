@@ -69,7 +69,8 @@ Every fetch is fail-soft: a wrong token or a down API logs a WARN and is skipped
 The job is matching, not relevance ranking, so the filter is strict before anything gets scored.
 
 1. **Location** must be Saudi (Riyadh, Jeddah, Dammam, and so on). Everything else is dropped, including the Dubai and India roles these companies post.
-2. **Seniority** drops junior, intern, graduate, trainee, tamheer, associate, entry.
+2. **Seniority** drops junior, intern, graduate, trainee, tamheer, associate, entry — and, since 31 Jul 2026, everything above senior IC too: lead, staff, principal, head-of, director, engineering manager, team leader. The 2026-07-31 digest scored Lead/Staff roles 85–98 because seniority was only bounded from below.
+2b. **Title-vs-location conflict** drops a job whose title says it's really elsewhere ("Bangkok based", "relocation provided") even when the board's location metadata claims Saudi. Same digest delivered Agoda's Bangkok role as Riyadh because only the metadata was checked.
 3. **Title** must hit one of your target areas: engineer, software, AI/ML, data, DevOps/SRE, platform, automation, architect, product manager, solutions engineer.
 4. **Not seen before.** `seen.json` holds every id already sent, so you only get new postings.
 
@@ -81,7 +82,13 @@ One caveat the filter can't catch: some Gulf roles are nationality-gated (for ex
 
 ## How it ranks
 
-One Gemini call scores the survivors 0 to 100 and writes a one-line "why it fits," using a short profile of you. If `GEMINI_API_KEY` is missing or the call fails, it falls back to deterministic keyword scoring so a model outage never kills the run. Same fallback design as the news digest.
+One Gemini call scores the survivors 0 to 100 and writes a one-line "why it fits," using a short profile of you. Since 31 Jul 2026 the prompt carries an explicit rubric (90+ only for senior-IC core-area roles whose JD requirements the profile covers; leadership/staff/wrong-location scores 0–39; never above 85 without JD text) and each job includes a JD excerpt, so scores reflect actual requirements rather than title vibes. If `GEMINI_API_KEY` is missing or the call fails, it falls back to deterministic keyword scoring so a model outage never kills the run. Same fallback design as the news digest.
+
+## Tailored resumes
+
+Every delivered job (top 10 by score per run) gets `resume.md` — the master resume — rewritten against that job's actual JD text: reordered and re-emphasized, truth-constrained to the master (the prompt forbids inventing anything), ending with a fit-notes section that lists real gaps instead of papering over them. JD text comes free from Ashby/Lever/Pinpoint/JSearch payloads; Greenhouse costs one GET per delivered job and Workable one cached GET per company. Output lands in `tailored/<date>/<company>--<title>.md`, the workflow commits it back, and each digest line links its file directly. Missing `resume.md` or `GEMINI_API_KEY` skips tailoring; the digest still delivers.
+
+Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth the tailoring quotes from.
 
 Confirm the exact Gemini model id against current Google AI docs when you build. The config has `gemini-3.1-flash-lite` as you specified, but model strings change and I won't assume it's current.
 
@@ -91,8 +98,11 @@ Discord webhook. The digest is grouped by company, sorted by fit score, and spli
 
 ## Files
 
-- `digest.py` — the whole engine. Config block and company list at the top, the five ATS fetchers in the middle, candidates list and `--discover` mode at the bottom. One file, no framework.
-- `.github/workflows/digest.yml` — the cron. `0 4 * * *` is 07:00 AST. Includes a manual run button and the step that commits `seen.json` back.
+- `digest.py` — the whole engine. Config block and company list at the top, the five ATS fetchers in the middle, ranking + tailoring after them, candidates list and `--discover` mode at the bottom. One file, no framework.
+- `resume.md` — the master resume the tailoring stage rewrites. Update it whenever the Cowork master changes.
+- `tailored/` — one folder per digest date, one tailored resume per delivered job. Committed back by the workflow.
+- `test_digest.py` — offline tests (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths. `python test_digest.py`.
+- `.github/workflows/digest.yml` — the cron. `0 4 * * *` is 07:00 AST. Includes a manual run button and the step that commits `seen.json`, `stats.json`, and `tailored/` back.
 - `requirements.txt` — just `requests`.
 - `seen.json` — created on first run. Don't commit it by hand; the workflow does.
 
