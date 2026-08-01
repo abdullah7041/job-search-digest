@@ -1,46 +1,54 @@
 # ABDULLAH BIN AHMED
-**AI Product Engineer | Founder — Watheq**
+**AI Product Engineer**
 Riyadh, Saudi Arabia · (+966) 54-839-2374 · Abdullahahmed.7041@gmail.com
 linkedin.com/in/3binahmed · github.com/abdullah7041 · abdullahfile.vercel.app
 
 ## SUMMARY
-AI Product Engineer and founder of Watheq, an Arabic-first AI resume and job-matching SaaS built for the Saudi market (Vision 2030). 5+ years across software engineering and data analytics. Ships production LLM systems end to end: 28,000+ lines of TypeScript in production, an LLM evaluation harness, and three always-on automation pipelines running at zero infrastructure cost.
+AI Product Engineer who ships production LLM systems end to end: prompt engineering, LLM evaluation pipelines, output validation, and AI observability. Founder of Watheq, an Arabic-first AI SaaS for the Saudi market, built solo in 28,000+ lines of TypeScript. 5+ years across software engineering and data analytics. Python and TypeScript.
 
 ## EXPERIENCE
 
-### Founder & AI Product Engineer — Watheq (وثِق) | Remote | Aug 2025 – Present
-Arabic-first AI resume and job-matching SaaS: upload resume, match against a job ad, rewrite, download. Live in production; public launch pending Saudi Business Center trust badge and payment prerequisites.
+### Founder & AI Product Engineer — Watheq | Riyadh, Saudi Arabia | Aug 2025 – Present
+Arabic-first AI resume and job-matching SaaS, live in production.
 
 - Built and deployed the full platform solo: React 19, TypeScript (28,000+ lines), Supabase (PostgreSQL) with role-based access control, Netlify serverless CI/CD.
-- Built an LLM evaluation harness that judge-scores prompt, temperature, and model variants, so rewrite-quality changes ship on measured results instead of guesses.
-- Designed anti-hallucination output contracts: evidence-anchored scoring caps, STAR + metric bullet enforcement, and a "(verify)" convention for inferred numbers.
-- Implemented credit-based monetization with guest rate limits, Moyasar payment gateway with 3DS, and Sentry monitoring with real-time Telegram alerts.
-- Handles Arabic resumes and Hijri dates natively; parsing hardened for local-market edge cases.
+- Built an LLM evaluation pipeline that judge-scores prompt, temperature, and model variants, so quality changes ship on measured results instead of guesses.
+- Designed anti-hallucination output contracts: evidence-anchored scoring caps, enforced bullet structure, and a "(verify)" convention for inferred metrics.
+- Engineered prompt frameworks and agentic AI workflows across matching, rewriting, and parsing via OpenRouter model APIs.
+- Instrumented production monitoring with Sentry and real-time Telegram alerting.
+- Implemented credit-based monetization with guest rate limiting, plus Moyasar payment gateway with 3DS compliance logic.
+- Built Arabic resume parsing with native Hijri date handling, hardened against local-market edge cases.
 
-### Automation Systems — Personal production infrastructure | 2026 | github.com/abdullah7041
-Three always-on pipelines on GitHub Actions crons, Python, 0 SAR/month infrastructure cost:
-
-- **Job-search digest** — pulls 5 ATS APIs (Greenhouse, Ashby, Workable, Lever, Pinpoint) plus an aggregator across 14 Saudi companies (~216 postings/run); LLM fit-scoring with deterministic fallback, dead-link verification, and score-drift monitoring; delivers to Discord.
-- **TASI stock recommender** — RSI and support/resistance signals, index-regime gating, position sizing; runs through the Sun–Thu trading session; alerts to Discord.
-- **AI news digest** — keyword-ranked RSS pipeline to Telegram, daily.
-
-### Data Analyst / Senior Sales Specialist — Alghalia | Al-Ahsa | Mar 2020 – Present
+### Data Analyst / Senior Sales Specialist — Alghalia | Al-Ahsa, Saudi Arabia | Mar 2020 – Present
 - Cut inventory waste 60% year-over-year through quantitative analysis of product expiration cycles.
 - Built interactive Power BI dashboards used as the single source of truth for inventory and sales performance.
-- Automated data validation and cleaning in Power Query (M), removing recurring manual data entry; digitized paper records into SQL schemas for historical tracking.
+- Automated data validation and cleaning in Power Query (M), removing recurring manual data entry.
+- Digitized unstructured paper records into SQL schemas to establish historical tracking.
 
-### Pipefitting Technician — CB&I | Dammam | Jun 2018 – Jun 2019
-- Industrial pipefitting and field quality/safety inspections under international audit standards.
+### Pipefitting Technician — CB&I | Dammam, Saudi Arabia | Jun 2018 – Jun 2019
+- Executed industrial pipefitting and field quality/safety inspections under international audit standards.
+
+## PROJECTS
+Production automation systems on GitHub Actions, Python, 0 SAR/month infrastructure. Source: github.com/abdullah7041
+
+- **Job-search digest** — integrated 5 ATS APIs (Greenhouse, Ashby, Workable, Lever, Pinpoint) plus an aggregator across 14 companies (~216 postings/run); LLM fit-scoring with deterministic fallback, dead-link verification, and score-drift monitoring; delivers to Discord daily.
+- **TASI stock recommender** — computes RSI and support/resistance signals with index-regime gating and position sizing; runs through the Sun–Thu trading session.
+- **AI news digest** — ranks RSS sources by keyword relevance and delivers the top items to Telegram daily.
 
 ## SKILLS
-- **AI & LLM:** LLM app engineering, evaluation harnesses, prompt engineering, agentic workflows, OpenRouter / Gemini / Claude APIs, n8n
-- **Frontend:** React 19, TypeScript, Tailwind CSS, Vite, Zustand
-- **Backend & Infra:** Supabase (PostgreSQL), Netlify serverless, REST APIs, GitHub Actions CI/CD, Sentry, Git
-- **Data:** SQL, Power BI, Power Query (M), Python
+- **AI & LLM:** LLM application engineering, evaluation pipelines, prompt engineering, agentic workflows, output validation and guardrails, RAG concepts, OpenRouter / Gemini / Claude APIs, n8n
+- **Languages:** Python, TypeScript, SQL
+- **Backend & Cloud:** Supabase (PostgreSQL), REST APIs, Netlify serverless functions, GitHub Actions CI/CD, Sentry, Git
+- **Frontend:** React 19, Tailwind CSS, Vite, Zustand
+- **Data & Analytics:** Power BI, Power Query (M), data modeling, root cause analysis
 
 ## EDUCATION & CERTIFICATIONS
-- Diploma, Pipefitting Technology — Saudi Petroleum Services Polytechnic (SPSP), GPA 4.6/5 (2018)
-- Claude 101 — Anthropic Academy (2026) · AI Fluency — Anthropic · Google Data Analytics — Coursera · McKinsey Forward Program · Intro to Management Consulting — Emory University & PwC
+- Diploma, Pipefitting Technology — Saudi Petroleum Services Polytechnic (SPSP), GPA 4.6/5, 2018
+- Claude 101 — Anthropic Academy, 2026
+- AI Fluency and Prompt Engineering Frameworks — Anthropic
+- Google Data Analytics Professional Certificate — Coursera
+- Leadership and Business Management — McKinsey Forward Program
+- Introduction to Management Consulting — Emory University and PwC
 
 ## LANGUAGES
 Arabic (native) · English (professional)
