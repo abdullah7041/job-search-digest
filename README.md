@@ -84,9 +84,11 @@ One caveat the filter can't catch: some Gulf roles are nationality-gated (for ex
 
 One Gemini call scores the survivors 0 to 100 and writes a one-line "why it fits," using a short profile of you. Since 31 Jul 2026 the prompt carries an explicit rubric (90+ only for senior-IC core-area roles whose JD requirements the profile covers; leadership/staff/wrong-location scores 0–39; never above 85 without JD text) and each job includes a JD excerpt, so scores reflect actual requirements rather than title vibes. If `GEMINI_API_KEY` is missing or the call fails, it falls back to deterministic keyword scoring so a model outage never kills the run. Same fallback design as the news digest.
 
+The digest makes that confidence visible instead of hiding borderline roles. **Strong matches** have a validated Gemini score of at least 80 and JD text; only these receive automatic tailored resumes. **Worth reviewing** passed every hard eligibility filter but have a lower or invalid score, no JD text, or another fit uncertainty. This favors finding viable roles without presenting every result as equally ready to apply for.
+
 ## Tailored resumes
 
-Every delivered job (top 10 by score per run) gets `resume.md` — the master resume — rewritten against that job's actual JD text: reordered and re-emphasized, truth-constrained to the master (the prompt forbids inventing anything), ending with a fit-notes section that lists real gaps instead of papering over them. JD text comes free from Ashby/Lever/Pinpoint/JSearch payloads; Greenhouse costs one GET per delivered job and Workable one cached GET per company. Output lands in `tailored/<date>/<company>--<title>.md`, the workflow commits it back, and each digest line links its file directly. Missing `resume.md` or `GEMINI_API_KEY` skips tailoring; the digest still delivers.
+Only Strong matches (up to `TAILOR_MAX` per run) get `resume.md` — the master resume — rewritten against that job's actual JD text: reordered and re-emphasized, truth-constrained to the master (the prompt forbids inventing anything), ending with a fit-notes section that lists real gaps instead of papering over them. JD text comes free from Ashby/Lever/Pinpoint/JSearch payloads; Greenhouse costs one GET per delivered job and Workable one cached GET per company. Output lands in `tailored/<date>/<company>--<title>.md`, the workflow commits it back, and each digest line links its file directly. Missing `resume.md` or `GEMINI_API_KEY` skips tailoring; the digest still delivers.
 
 Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth the tailoring quotes from.
 
@@ -99,7 +101,11 @@ Note `gemini-3.1-flash-lite-preview` is shut down; the stable id above is not. R
 
 ## Delivery
 
-Discord webhook. The digest is grouped by company, sorted by fit score, and split into sub-2000-character messages so it never hits Discord's limit. A failed POST exits non-zero so a broken run is loud, not silent.
+Discord webhook. The digest is grouped by company within Strong matches and Worth reviewing, sorted by fit score, and split into sub-2000-character messages so it never hits Discord's limit. A failed POST exits non-zero so a broken run is loud, not silent.
+
+Link verification is evidence, not a source of false negatives. A link marked *inconclusive* means GitHub Actions received a block, rate limit, authentication gate, or network failure; the role remains in the digest because it may open from your browser. Only a definite closure (for example a not-found response or a closed-posting page) is dropped.
+
+Use [the weekly review template](docs/weekly-job-review-template.md) for a two-minute review of saved, applied, noisy, and inaccessible roles. That feedback is deliberately manual: it tells you when to tune the score threshold, profile wording, or filters without allowing the workflow to change selection rules silently.
 
 ## Files
 
@@ -108,6 +114,7 @@ Discord webhook. The digest is grouped by company, sorted by fit score, and spli
 - `tailored/` — one folder per digest date, one tailored resume per delivered job. Committed back by the workflow.
 - `test_digest.py` — offline tests (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths. `python test_digest.py`.
 - `.github/workflows/digest.yml` — the cron. `0 4 * * *` is 07:00 AST. Includes a manual run button and the step that commits `seen.json`, `stats.json`, and `tailored/` back.
+- `docs/weekly-job-review-template.md` — copy this once a week to record which Strong and Review roles were useful, then use the notes to calibrate the workflow deliberately.
 - `requirements.txt` — just `requests`.
 - `seen.json` — created on first run. Don't commit it by hand; the workflow does.
 
@@ -120,6 +127,7 @@ Discord webhook. The digest is grouped by company, sorted by fit score, and spli
 
 ## Test before you trust it (in Claude Code)
 
+- Run `python test_digest.py`. The scheduled workflow runs this offline regression suite before it calls live APIs or Discord.
 - Run `python digest.py` locally with the two env vars set. Confirm a message lands in Discord.
 - Read the fetch log. Each company prints its job count or a WARN. Confirm HALA, Tamara, Careem, and Lean all return jobs.
 - Check the first digest by hand: are the roles actually Saudi, actually senior, actually relevant? Tune `TITLE_INCLUDE` / `TITLE_EXCLUDE` if not.
