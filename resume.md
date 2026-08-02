@@ -4,7 +4,7 @@ Riyadh, Saudi Arabia · (+966) 54-839-2374 · Abdullahahmed.7041@gmail.com
 linkedin.com/in/3binahmed · github.com/abdullah7041 · abdullahfile.vercel.app
 
 ## SUMMARY
-AI Product Engineer who ships production LLM systems end to end: prompt engineering, LLM evaluation pipelines, output validation, and AI observability. Founder of Watheq, an Arabic-first AI SaaS for the Saudi market, built solo in 28,000+ lines of TypeScript. 5+ years across software engineering and data analytics. Python and TypeScript.
+AI Product Engineer who ships production LLM systems end to end: prompt engineering, LLM evaluation pipelines, output validation, and AI observability. Founder of Watheq, an Arabic-first AI SaaS for the Saudi market, built solo in 28,000+ lines of TypeScript. Python and TypeScript, with 5+ years across software engineering and data analytics.
 
 ## EXPERIENCE
 
@@ -20,14 +20,14 @@ Arabic-first AI resume and job-matching SaaS, live in production.
 - Built Arabic resume parsing with native Hijri date handling, hardened against local-market edge cases.
 
 ### Data Analyst / Senior Sales Specialist — Alghalia | Al-Ahsa, Saudi Arabia | Mar 2020 – Present
-- Cut inventory waste 60% year-over-year through quantitative analysis of product expiration cycles.
-- Segmented 100+ customer accounts to identify the top 10 by revenue and map complementary products for targeted cross-selling.
-- Delivered weekly sales performance reporting across three channels — walk-in transactions, delivery app orders, and direct sales — automating the data preparation in Power Query (M).
-- Produced competitor intelligence decks in PowerPoint tracking new product launches, category trends, and price movements to inform pricing and assortment decisions.
-- Built interactive Power BI dashboards used as the single source of truth for inventory and sales performance.
+- Cut expired-unit waste 60% year-over-year through quantitative analysis of product expiration cycles.
+- Segmented 100+ customer accounts to identify the top 10 by revenue and mapped complementary products into a cross-sell list; sales adopted it and repeat order frequency increased.
+- Delivered weekly performance reporting for 4+ years across overall sales, walk-in transactions, and delivery app orders.
+- Produced competitor intelligence decks tracking new product launches, category trends, and pricing movements to inform pricing and assortment decisions.
+- Built and maintain interactive Power BI dashboards used as the single source of truth for inventory and sales performance.
 
 ### Pipefitting Technician — CB&I | Dammam, Saudi Arabia | Jun 2018 – Jun 2019
-- Executed industrial pipefitting and field quality/safety inspections under international audit standards.
+Industrial pipefitting and field quality/safety inspection under international audit standards.
 
 ## PROJECTS
 Production automation systems on GitHub Actions, Python, 0 SAR/month infrastructure. Source: github.com/abdullah7041
@@ -41,7 +41,7 @@ Production automation systems on GitHub Actions, Python, 0 SAR/month infrastruct
 - **Languages:** Python, TypeScript, SQL
 - **Backend & Cloud:** Supabase (PostgreSQL), REST APIs, Netlify serverless functions, GitHub Actions CI/CD, Sentry, Git
 - **Frontend:** React 19, Tailwind CSS, Vite, Zustand
-- **Data & Analytics:** Power BI, Power Query (M), data modeling, root cause analysis
+- **Data & Analytics:** Power BI, advanced Excel, data modeling, customer segmentation, competitor and pricing analysis
 
 ## EDUCATION & CERTIFICATIONS
 - Diploma, Pipefitting Technology — Saudi Petroleum Services Polytechnic (SPSP), GPA 4.6/5, 2018
