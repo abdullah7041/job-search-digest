@@ -140,7 +140,7 @@ class TestLinkEvidence(unittest.TestCase):
         return response
 
     def test_forbidden_and_rate_limited_links_are_unknown(self):
-        for status in (403, 429):
+        for status in (401, 403, 429):
             with mock.patch.object(digest, "_get", return_value=self._response(status)):
                 self.assertEqual(
                     digest.verify_link("https://example.com/job/123"), digest.LINK_UNKNOWN
@@ -242,7 +242,7 @@ class TestTierClassification(unittest.TestCase):
         self.assertFalse(next(job for job in jobs if job["id"] == "malformed")["ranking_verified"])
 
 
-def run_main(monkey_env, gemini_ranking, tailor_result):
+def run_main(monkey_env, gemini_ranking, tailor_result, link_statuses=None):
     """Run digest.main() fully mocked; return (discord_posts, workdir)."""
     posts = []
 
@@ -260,11 +260,13 @@ def run_main(monkey_env, gemini_ranking, tailor_result):
             shutil.copy(src, work)
     old_cwd = os.getcwd()
     os.chdir(work)
+    if link_statuses is None:
+        link_statuses = [digest.LINK_OPEN] * len(REAL_JOBS)
     try:
         with mock.patch.dict(os.environ, monkey_env, clear=False), \
              mock.patch.object(digest, "fetch_jsearch", return_value=[dict(j) for j in REAL_JOBS]), \
              mock.patch.object(digest, "COMPANIES", []), \
-             mock.patch.object(digest, "verify_link", return_value=True), \
+             mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "gemini_rank", return_value=gemini_ranking), \
              mock.patch.object(digest, "tailor_resume", return_value=tailor_result), \
              mock.patch.object(digest.requests, "post", side_effect=fake_post), \
@@ -290,17 +292,57 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("Senior Data Architect", body)
         for gone in ("Lead AI Engineer", "Staff level", "Team Leader", "Bangkok"):
             self.assertNotIn(gone, body)
-        # Each delivered job links its tailored resume on github
-        self.assertEqual(body.count("tailored resume:"), 2)
+        self.assertIn("**Strong matches**", body)
+        self.assertIn("**Worth reviewing**", body)
+        # Only strong matches receive tailored resumes on github.
+        self.assertEqual(body.count("tailored resume:"), 1)
         self.assertIn("https://github.com/abdullah7041/job-search-digest/blob/main/tailored/", body)
         # Files really exist
         day = [d for d in os.listdir(os.path.join(work, "tailored"))][0]
         files = os.listdir(os.path.join(work, "tailored", day))
-        self.assertEqual(len(files), 2)
+        self.assertEqual(len(files), 1)
         # State written
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
         self.assertEqual(set(seen), {"jsearch_b", "jsearch_e"})
+
+    def test_unknown_link_is_reviewable_and_only_strong_is_tailored(self):
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+        posts, work = run_main(
+            self.ENV,
+            ranking,
+            "# Tailored resume\ncontent",
+            link_statuses=[digest.LINK_UNKNOWN, digest.LINK_OPEN],
+        )
+        body = "\n".join(posts)
+        self.assertIn("link check inconclusive", body)
+        self.assertEqual(body.count("tailored resume:"), 1)
+        with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+            stats = json.load(handle)
+        self.assertEqual(stats[-1]["link_unknown"], 1)
+        self.assertEqual(stats[-1]["strong"], 1)
+        self.assertEqual(stats[-1]["review"], 1)
+
+    def test_closed_link_is_not_delivered_or_seen(self):
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+        posts, work = run_main(
+            self.ENV,
+            ranking,
+            "# Tailored resume\ncontent",
+            link_statuses=[digest.LINK_CLOSED, digest.LINK_OPEN],
+        )
+        body = "\n".join(posts)
+        self.assertNotIn("Senior Software Engineer (AI Systems)", body)
+        self.assertIn("Senior Data Architect", body)
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            seen = json.load(handle)
+        self.assertEqual(set(seen), {"jsearch_e"})
 
     def test_gemini_down_keyword_fallback_still_delivers(self):
         posts, work = run_main(self.ENV, None, None)

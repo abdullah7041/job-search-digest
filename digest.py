@@ -854,7 +854,7 @@ def verify_link(url):
     except requests.RequestException as e:
         log(f"WARN verify {url}: request error ({e}); status unknown")
         return LINK_UNKNOWN
-    if r.status_code in (403, 408, 429) or r.status_code >= 500:
+    if r.status_code not in (200, 404, 410):
         log(f"WARN verify {url}: HTTP {r.status_code}; status unknown")
         return LINK_UNKNOWN
     if r.status_code != 200:
@@ -917,13 +917,15 @@ def load_stats():
     return data if isinstance(data, list) else []
 
 
-def save_stats(stats, today, fetched, matched, new, avg_score):
+def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
     """Append today's run stats and prune rows older than STATS_TTL_DAYS.
     avg_score is None on a no-new-jobs day (nothing was scored)."""
-    stats.append({
+    row = {
         "date": today, "fetched": fetched, "matched": matched,
         "new": new, "avg_score": avg_score,
-    })
+    }
+    row.update(metrics)
+    stats.append(row)
     cutoff = (datetime.date.today() - datetime.timedelta(days=STATS_TTL_DAYS)).isoformat()
     pruned = [s for s in stats if s["date"] >= cutoff]
     with open(STATS_FILE, "w") as f:
@@ -1002,14 +1004,15 @@ def main():
     fresh = [j for j in matched if j["id"] not in seen]
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, {len(fresh)} new")
 
-    # Verify links before delivery so a dead or closed posting never reaches the
-    # digest. Only the new jobs are checked (one GET each), which keeps the request
-    # count bounded to the handful being delivered rather than every match.
-    verified = [j for j in fresh if verify_link(j["url"])]
-    dropped = len(fresh) - len(verified)
-    if dropped:
-        log(f"{dropped} of {len(fresh)} new jobs dropped as dead/closed on verification")
-    fresh = verified
+    # Verification is evidence, not a boolean gate: a third-party site may block
+    # this runner while still serving a job seeker. Only confirmed closure drops.
+    for j in fresh:
+        j["link_status"] = verify_link(j["url"])
+    closed = [j for j in fresh if j["link_status"] == LINK_CLOSED]
+    fresh = [j for j in fresh if j["link_status"] != LINK_CLOSED]
+    unknown_count = sum(j["link_status"] == LINK_UNKNOWN for j in fresh)
+    if closed:
+        log(f"{len(closed)} of {len(closed) + len(fresh)} new jobs confirmed closed")
 
     today = datetime.date.today().isoformat()
 
@@ -1026,28 +1029,36 @@ def main():
         if drift_warning:
             lines.append(f"⚠️ {drift_warning}")
         post_discord(webhook, lines)
-        save_stats(stats, today, len(all_jobs), len(matched), 0, None)
+        save_stats(
+            stats, today, len(all_jobs), len(matched), 0, None,
+            link_closed=len(closed), link_unknown=unknown_count,
+            strong=0, review=0, tailored=0, tailor_failed=0,
+        )
         log("No new matching jobs. Heartbeat sent.")
         return
 
+    enrich_descriptions(fresh)
     ranking = gemini_rank(fresh, gemini_key) if gemini_key else None
     if gemini_key and ranking is None:
         log("Gemini unavailable, using keyword scoring for this run")
-    for j in fresh:
-        if ranking and j["id"] in ranking:
-            j["score"] = ranking[j["id"]]["score"]
-            j["why"] = ranking[j["id"]]["why"]
-        else:
-            j["score"] = keyword_score(j)
-            j["why"] = "matches your target titles and skills"
+    apply_ranking(fresh, ranking)
 
     # Captured before the MAX_JOBS_IN_DIGEST cut below, so a stale profile shows
     # up in the drift trend even on days the real drop is buried past the top 25.
     new_count = len(fresh)
     avg_score = round(sum(j["score"] for j in fresh) / new_count, 1)
 
-    fresh.sort(key=lambda x: x["score"], reverse=True)
-    fresh = fresh[:MAX_JOBS_IN_DIGEST]
+    strong, review = split_tiers(fresh)
+    strong.sort(key=lambda x: x["score"], reverse=True)
+    review.sort(key=lambda x: x["score"], reverse=True)
+    strong = strong[:MAX_JOBS_IN_DIGEST]
+    review = review[:MAX_JOBS_IN_DIGEST - len(strong)]
+    for j in strong:
+        j["tier"] = "Strong matches"
+    for j in review:
+        j["tier"] = "Worth reviewing"
+    delivered = strong + review
+    fresh = delivered
 
     # Tailor the master resume to each delivered job (top TAILOR_MAX by score).
     # Needs the same Gemini key as ranking plus resume.md; missing either just
@@ -1060,9 +1071,8 @@ def main():
     elif resume_md:
         day_dir = os.path.join(TAILOR_DIR, today)
         os.makedirs(day_dir, exist_ok=True)
-        for j in fresh[:TAILOR_MAX]:
-            jd = get_description(j)
-            md = tailor_resume(j, jd, resume_md, gemini_key)
+        for j in strong[:TAILOR_MAX]:
+            md = tailor_resume(j, j["description"], resume_md, gemini_key)
             if not md:
                 log(f"WARN tailoring failed for {j['company']} — {j['title']}; job still delivered")
                 continue
@@ -1076,15 +1086,19 @@ def main():
                 f.write(header + md + "\n")
             tailored[j["id"]] = f"{TAILOR_DIR}/{today}/{fname}"
             time.sleep(1)  # be polite between Gemini calls
-        log(f"Tailored {len(tailored)} of {min(len(fresh), TAILOR_MAX)} resumes into {TAILOR_DIR}/{today}/")
+        log(f"Tailored {len(tailored)} of {min(len(strong), TAILOR_MAX)} resumes into {TAILOR_DIR}/{today}/")
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     if drift_warning:
         lines.append(f"⚠️ {drift_warning}")
     by_company = {}
     for j in fresh:
-        by_company.setdefault(j["company"], []).append(j)
-    for comp, jobs in by_company.items():
+        by_company.setdefault((j["tier"], j["company"]), []).append(j)
+    last_tier = None
+    for (tier, comp), jobs in by_company.items():
+        if tier != last_tier:
+            lines.append(f"\n**{tier}**")
+            last_tier = tier
         lines.append(f"\n__**{comp}**__")
         for j in jobs:
             # Only Pinpoint publishes structured pay today; everything else omits it.
@@ -1092,6 +1106,13 @@ def main():
             resume_line = ""
             if j["id"] in tailored:
                 resume_line = f"\n  📄 tailored resume: <{tailored_url(tailored[j['id']])}>"
+            flags = []
+            if j.get("link_status") == LINK_UNKNOWN:
+                flags.append("link check inconclusive")
+            if not j.get("description"):
+                flags.append("title-only assessment")
+            if flags:
+                resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
                 f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
                 f"  {j['why']}\n  <{j['url']}>{resume_line}"
@@ -1102,8 +1123,13 @@ def main():
     for j in fresh:
         seen[j["id"]] = today
     save_seen(seen)
-    save_stats(stats, today, len(all_jobs), len(matched), new_count, avg_score)
-    log(f"Posted {len(fresh)} jobs. seen.json now holds {len(seen)} ids.")
+    save_stats(
+        stats, today, len(all_jobs), len(matched), new_count, avg_score,
+        link_closed=len(closed), link_unknown=unknown_count,
+        strong=len(strong), review=len(review), tailored=len(tailored),
+        tailor_failed=max(0, min(len(strong), TAILOR_MAX) - len(tailored)),
+    )
+    log(f"Posted {len(delivered)} jobs. seen.json now holds {len(seen)} ids.")
 
 
 # ----------------------------- CANDIDATES -----------------------------------
