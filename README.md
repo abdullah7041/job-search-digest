@@ -90,7 +90,12 @@ Every delivered job (top 10 by score per run) gets `resume.md` — the master re
 
 Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth the tailoring quotes from.
 
-Confirm the exact Gemini model id against current Google AI docs when you build. The config has `gemini-3.1-flash-lite` as you specified, but model strings change and I won't assume it's current.
+Two models, on purpose. Both ids checked against [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) on 2 Aug 2026 and listed **stable**:
+
+- `RANK_MODEL = gemini-3.1-flash-lite` — scoring is classification over at most 25 short records in a single call. Flash-Lite is built for that and is the cheapest option.
+- `TAILOR_MODEL = gemini-3.6-flash` — rewriting a whole resume is long-form generation under hard truth constraints. Google's own guidance puts Flash-Lite at classification, extraction and basic summarization, and Flash at longer reasoning chains and sustained coherence. On the tailoring prompt Flash-Lite drops sections, loosens the no-invention rule, and writes thin Fit notes. It runs at most `TAILOR_MAX` times a day, so the extra cost is bounded.
+
+Note `gemini-3.1-flash-lite-preview` is shut down; the stable id above is not. Re-check both when a run starts returning HTTP 404 from the model endpoint.
 
 ## Delivery
 

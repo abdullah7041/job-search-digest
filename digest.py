@@ -152,8 +152,23 @@ JSEARCH_HOST = "jsearch.p.rapidapi.com"
 # ~25k-35k SAR/mo, AI/ML 28k-35k.
 SALARY_FLOOR_SAR_MONTH = 25000
 
-# Gemini model. Confirm the exact id against current Google AI docs when building.
-GEMINI_MODEL = "gemini-3.1-flash-lite"
+# Gemini models. Two tiers on purpose, verified against ai.google.dev/gemini-api/docs/models
+# (page last updated 2026-07-30, read 2026-08-02) — both strings are listed STABLE:
+#
+#   RANK_MODEL   gemini-3.1-flash-lite — scoring is classification over <=25 short
+#                records in one call. Flash-Lite is built for exactly this and is
+#                the cheapest option. Keeping it.
+#   TAILOR_MODEL gemini-3.6-flash — rewriting a full resume is long-form generation
+#                under hard truth constraints, and Google's own guidance puts
+#                Flash-Lite at "classification, extraction, basic summarization"
+#                while Flash handles longer reasoning chains and sustained
+#                coherence. Flash-Lite drifts on this job: it drops sections,
+#                loosens the no-invention rule, and writes thinner Fit notes.
+#                Costs more per call, but it runs at most TAILOR_MAX times a day.
+#
+# NOTE: gemini-3.1-flash-lite-PREVIEW is shut down; the stable id above is not.
+RANK_MODEL = "gemini-3.1-flash-lite"
+TAILOR_MODEL = "gemini-3.6-flash"
 
 MAX_JOBS_IN_DIGEST = 25
 
@@ -623,7 +638,7 @@ def gemini_rank(jobs, api_key):
     )
     endpoint = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent?key={api_key}"
+        f"{RANK_MODEL}:generateContent?key={api_key}"
     )
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -726,7 +741,7 @@ def tailor_resume(job, jd_text, resume_md, api_key):
     )
     endpoint = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent?key={api_key}"
+        f"{TAILOR_MODEL}:generateContent?key={api_key}"
     )
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -735,7 +750,7 @@ def tailor_resume(job, jd_text, resume_md, api_key):
     try:
         r = requests.post(endpoint, json=body, timeout=90)
         if r.status_code != 200:
-            log(f"WARN tailor Gemini HTTP {r.status_code}: {r.text[:200]}")
+            log(f"WARN tailor Gemini HTTP {r.status_code} on {TAILOR_MODEL}: {r.text[:200]}")
             return None
         text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
         text = text.strip()

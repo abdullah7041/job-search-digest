@@ -21,9 +21,10 @@ Arabic-first AI resume and job-matching SaaS, live in production.
 
 ### Data Analyst / Senior Sales Specialist — Alghalia | Al-Ahsa, Saudi Arabia | Mar 2020 – Present
 - Cut inventory waste 60% year-over-year through quantitative analysis of product expiration cycles.
+- Segmented 100+ customer accounts to identify the top 10 by revenue and map complementary products for targeted cross-selling.
+- Delivered weekly sales performance reporting across three channels — walk-in transactions, delivery app orders, and direct sales — automating the data preparation in Power Query (M).
+- Produced competitor intelligence decks in PowerPoint tracking new product launches, category trends, and price movements to inform pricing and assortment decisions.
 - Built interactive Power BI dashboards used as the single source of truth for inventory and sales performance.
-- Automated data validation and cleaning in Power Query (M), removing recurring manual data entry.
-- Digitized unstructured paper records into SQL schemas to establish historical tracking.
 
 ### Pipefitting Technician — CB&I | Dammam, Saudi Arabia | Jun 2018 – Jun 2019
 - Executed industrial pipefitting and field quality/safety inspections under international audit standards.
