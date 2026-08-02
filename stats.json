@@ -40,5 +40,12 @@
 "fetched": 239,
 "matched": 27,
 "new": 2
+},
+{
+"avg_score": 70.7,
+"date": "2026-08-02",
+"fetched": 238,
+"matched": 33,
+"new": 7
 }
 ]
