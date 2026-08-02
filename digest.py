@@ -196,6 +196,12 @@ STATS_TTL_DAYS = 120
 DRIFT_WINDOW_DAYS = 7          # trailing window compared against the prior one
 DRIFT_MIN_SCORED_RUNS = 14     # need two full windows before trusting a comparison
 DRIFT_SCORE_DROP_THRESHOLD = 15  # point drop (7d avg vs prior 7d avg) that triggers a warning
+
+# Link verification is evidence, not a binary gate. Third-party job sites can
+# block or rate-limit GitHub Actions while still serving the applicant's browser.
+LINK_OPEN = "open"
+LINK_CLOSED = "closed"
+LINK_UNKNOWN = "unknown"
 # ----------------------------------------------------------------------------
 
 
@@ -794,7 +800,7 @@ CLOSED_MARKERS = [
 def verify_link(url):
     """
     Confirm a posting URL still resolves to an OPEN posting before it's delivered.
-    Returns True if the link 200s and the body shows no closed-posting marker.
+    Returns LINK_OPEN, LINK_CLOSED, or LINK_UNKNOWN.
 
     Fail-soft on the network: a request error returns True (keep the job). The
     fetch that produced this URL succeeded moments ago, so a transient error here
@@ -803,15 +809,18 @@ def verify_link(url):
     closed marker in the body) drops the job.
     """
     if not url:
-        return False
+        return LINK_CLOSED
     try:
         r = _get(url)
     except requests.RequestException as e:
-        log(f"WARN verify {url}: request error ({e}); keeping job")
-        return True
+        log(f"WARN verify {url}: request error ({e}); status unknown")
+        return LINK_UNKNOWN
+    if r.status_code in (403, 408, 429) or r.status_code >= 500:
+        log(f"WARN verify {url}: HTTP {r.status_code}; status unknown")
+        return LINK_UNKNOWN
     if r.status_code != 200:
         log(f"DROP dead link HTTP {r.status_code}: {url}")
-        return False
+        return LINK_CLOSED
     # Several ATSs (Greenhouse confirmed) DON'T 404 a pulled posting — they 302 it
     # off the job page back to the board root or an ?error=true page, still 200. So
     # a redirect that drops the job's own id from the final URL means the posting is
@@ -823,7 +832,7 @@ def verify_link(url):
     if r.history and ("error=true" in final or "not_found=true" in final
                       or (job_tail and job_tail not in final)):
         log(f"DROP redirected off posting -> {r.url}: {url}")
-        return False
+        return LINK_CLOSED
     body = (r.text or "").lower()
     # Ashby doesn't redirect a pulled posting — it serves a 200 board shell with no
     # posting data. A real Ashby posting embeds a JobPosting JSON-LD schema; the
@@ -831,12 +840,12 @@ def verify_link(url):
     # touches other ATSs' pages (which legitimately lack that schema).
     if "ashbyhq.com" in final and "jobposting" not in body:
         log(f"DROP ashby posting gone (no JobPosting schema): {url}")
-        return False
+        return LINK_CLOSED
     for m in CLOSED_MARKERS:
         if m in body:
             log(f"DROP closed posting ({m!r}): {url}")
-            return False
-    return True
+            return LINK_CLOSED
+    return LINK_OPEN
 
 
 def load_seen():

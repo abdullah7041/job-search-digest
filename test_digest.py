@@ -130,6 +130,50 @@ class TestHelpers(unittest.TestCase):
                 "https://github.com/abdullah7041/job-search-digest/blob/main/tailored/x.md")
 
 
+class TestLinkEvidence(unittest.TestCase):
+    def _response(self, status, *, url="https://example.com/job/123", text="", history=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.url = url
+        response.text = text
+        response.history = history if history is not None else []
+        return response
+
+    def test_forbidden_and_rate_limited_links_are_unknown(self):
+        for status in (403, 429):
+            with mock.patch.object(digest, "_get", return_value=self._response(status)):
+                self.assertEqual(
+                    digest.verify_link("https://example.com/job/123"), digest.LINK_UNKNOWN
+                )
+
+    def test_request_error_is_unknown(self):
+        with mock.patch.object(digest, "_get", side_effect=digest.requests.Timeout("slow")):
+            self.assertEqual(
+                digest.verify_link("https://example.com/job/123"), digest.LINK_UNKNOWN
+            )
+
+    def test_definite_not_found_and_closed_marker_are_closed(self):
+        with mock.patch.object(digest, "_get", return_value=self._response(404)):
+            self.assertEqual(
+                digest.verify_link("https://example.com/job/123"), digest.LINK_CLOSED
+            )
+        with mock.patch.object(
+            digest,
+            "_get",
+            return_value=self._response(200, text="This position has been filled"),
+        ):
+            self.assertEqual(
+                digest.verify_link("https://example.com/job/123"), digest.LINK_CLOSED
+            )
+
+    def test_live_page_is_open_and_missing_url_is_closed(self):
+        with mock.patch.object(digest, "_get", return_value=self._response(200, text="Apply now")):
+            self.assertEqual(
+                digest.verify_link("https://example.com/job/123"), digest.LINK_OPEN
+            )
+        self.assertEqual(digest.verify_link(""), digest.LINK_CLOSED)
+
+
 class TestGetDescription(unittest.TestCase):
     def _resp(self, payload):
         r = mock.Mock()
@@ -227,7 +271,8 @@ class TestEndToEnd(unittest.TestCase):
         files = os.listdir(os.path.join(work, "tailored", day))
         self.assertEqual(len(files), 2)
         # State written
-        seen = json.load(open(os.path.join(work, "seen.json")))
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            seen = json.load(handle)
         self.assertEqual(set(seen), {"jsearch_b", "jsearch_e"})
 
     def test_gemini_down_keyword_fallback_still_delivers(self):
