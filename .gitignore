@@ -1,6 +1,7 @@
 # Python bytecode — never commit
 __pycache__/
 *.py[cod]
+.worktrees/
 
 # Local env / secrets — secrets live in GitHub Actions secrets, never in the repo
 .env
