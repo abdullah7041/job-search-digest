@@ -215,6 +215,33 @@ class TestGetDescription(unittest.TestCase):
             self.assertEqual(digest.get_description(job), "")
 
 
+class TestTierClassification(unittest.TestCase):
+    def test_enrichment_populates_each_surviving_job(self):
+        jobs = [dict(REAL_JOBS[1], description=""), dict(REAL_JOBS[4], description="")]
+        with mock.patch.object(digest, "get_description", side_effect=["LLM Python", "SQL cloud"]):
+            digest.enrich_descriptions(jobs)
+        self.assertEqual([job["description"] for job in jobs], ["LLM Python", "SQL cloud"])
+
+    def test_only_validated_high_score_with_jd_is_strong(self):
+        jobs = [
+            {"id": "strong", "title": "Senior Software Engineer", "description": "Python LLM"},
+            {"id": "low", "title": "Senior Data Engineer", "description": "SQL"},
+            {"id": "no-jd", "title": "Senior Backend Engineer", "description": ""},
+            {"id": "malformed", "title": "Senior AI Engineer", "description": "Python"},
+        ]
+        ranking = {
+            "strong": {"score": 80, "why": "Requirements fit"},
+            "low": {"score": 79, "why": "Adjacent data work"},
+            "no-jd": {"score": 95, "why": "Title looks strong"},
+            "malformed": {"score": "not-a-number", "why": "bad"},
+        }
+        digest.apply_ranking(jobs, ranking)
+        strong, review = digest.split_tiers(jobs)
+        self.assertEqual([job["id"] for job in strong], ["strong"])
+        self.assertEqual({job["id"] for job in review}, {"low", "no-jd", "malformed"})
+        self.assertFalse(next(job for job in jobs if job["id"] == "malformed")["ranking_verified"])
+
+
 def run_main(monkey_env, gemini_ranking, tailor_result):
     """Run digest.main() fully mocked; return (discord_posts, workdir)."""
     posts = []

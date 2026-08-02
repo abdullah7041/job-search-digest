@@ -171,6 +171,7 @@ RANK_MODEL = "gemini-3.1-flash-lite"
 TAILOR_MODEL = "gemini-3.6-flash"
 
 MAX_JOBS_IN_DIGEST = 25
+STRONG_MATCH_MIN_SCORE = 80
 
 # Per-job resume tailoring. Every delivered job (up to TAILOR_MAX per run, to
 # bound cost and runtime) gets the master resume rewritten against its actual
@@ -700,6 +701,44 @@ def get_description(job):
     except (requests.RequestException, ValueError) as e:
         log(f"WARN JD fetch failed for {job['company']} — {job['title']}: {e}")
     return (job.get("description") or "")[:JD_MAX_CHARS]
+
+
+def enrich_descriptions(jobs):
+    """Populate bounded JD text for jobs that survived the hard filters."""
+    for job in jobs:
+        job["description"] = get_description(job)
+
+
+def apply_ranking(jobs, ranking):
+    """Attach validated model scores or deterministic fallbacks to every job."""
+    for job in jobs:
+        result = ranking.get(job["id"]) if isinstance(ranking, dict) else None
+        try:
+            score = int(result["score"])
+            why = str(result["why"]).strip()[:140]
+            valid = 0 <= score <= 100 and bool(why)
+        except (KeyError, TypeError, ValueError):
+            valid = False
+        if valid:
+            job.update(score=score, why=why, ranking_verified=True)
+        else:
+            job.update(
+                score=keyword_score(job),
+                why="matches your target titles and skills",
+                ranking_verified=False,
+            )
+
+
+def split_tiers(jobs):
+    """Separate high-confidence JD-backed model matches from review candidates."""
+    strong = [
+        job for job in jobs
+        if job["ranking_verified"]
+        and job["score"] >= STRONG_MATCH_MIN_SCORE
+        and bool(job.get("description"))
+    ]
+    review = [job for job in jobs if job not in strong]
+    return strong, review
 
 
 def load_resume():
