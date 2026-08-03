@@ -47,5 +47,18 @@
 "fetched": 238,
 "matched": 33,
 "new": 7
+},
+{
+"avg_score": 74.2,
+"date": "2026-08-03",
+"fetched": 234,
+"link_closed": 0,
+"link_unknown": 8,
+"matched": 25,
+"new": 12,
+"review": 6,
+"strong": 6,
+"tailor_failed": 2,
+"tailored": 4
 }
 ]
