@@ -40,6 +40,9 @@ import datetime
 
 import requests
 
+from discord_delivery import post_interactive_cards
+from job_archive import make_snapshot, write_snapshots
+
 # ------------------------------- CONFIG -------------------------------------
 # Each company names its ATS in "source":
 #   "greenhouse" + region "us"/"eu"   -> boards-api[.eu].greenhouse.io
@@ -173,13 +176,9 @@ TAILOR_MODEL = "gemini-3.6-flash"
 MAX_JOBS_IN_DIGEST = 25
 STRONG_MATCH_MIN_SCORE = 80
 
-# Per-job resume tailoring. Every delivered job (up to TAILOR_MAX per run, to
-# bound cost and runtime) gets the master resume rewritten against its actual
-# JD text: reordered and re-emphasized, truth-constrained to resume.md, with an
-# honest fit/gaps section. Output lands in tailored/<date>/<company>-<slug>.md,
-# committed back by the workflow, and each digest line links straight to it.
-# Needs GEMINI_API_KEY and resume.md; missing either skips tailoring and the
-# digest still delivers (fail-soft, same policy as ranking).
+# Per-job resume tailoring is now an explicit Discord interaction.  The daily
+# run archives JD evidence and posts jobs only; it never spends tailoring
+# credits or writes private resumes into the repository.
 RESUME_FILE = "resume.md"
 TAILOR_DIR = "tailored"
 TAILOR_MAX = 10
@@ -974,9 +973,14 @@ def post_discord(webhook, lines):
 
 def main():
     webhook = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook:
-        log("FATAL: DISCORD_WEBHOOK_URL not set")
+    worker_url = os.environ.get("INTERACTIVE_WORKER_URL")
+    worker_secret = os.environ.get("WORKER_CALLBACK_SECRET")
+    if not webhook and not worker_url:
+        log("FATAL: DISCORD_WEBHOOK_URL or INTERACTIVE_WORKER_URL must be set")
         sys.exit(1)
+    if worker_url and not worker_secret:
+        log("WARN INTERACTIVE_WORKER_URL set without WORKER_CALLBACK_SECRET; using plain webhook")
+        worker_url = ""
     gemini_key = os.environ.get("GEMINI_API_KEY")  # optional
 
     seen = load_seen()
@@ -1028,7 +1032,15 @@ def main():
         ]
         if drift_warning:
             lines.append(f"⚠️ {drift_warning}")
-        post_discord(webhook, lines)
+        if worker_url:
+            post_interactive_cards(
+                worker_url,
+                worker_secret,
+                [],
+                heartbeat={"key": f"heartbeat:{today}", "content": "\n".join(lines)},
+            )
+        else:
+            post_discord(webhook, lines)
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
@@ -1060,33 +1072,10 @@ def main():
     delivered = strong + review
     fresh = delivered
 
-    # Tailor the master resume to each delivered job (top TAILOR_MAX by score).
-    # Needs the same Gemini key as ranking plus resume.md; missing either just
-    # skips this stage. Files land in tailored/<date>/ and are committed back
-    # by the workflow, so each digest line can link its own resume.
-    tailored = {}  # job id -> repo-relative path
-    resume_md = load_resume() if gemini_key else ""
-    if gemini_key and not resume_md:
-        pass  # load_resume already logged why
-    elif resume_md:
-        day_dir = os.path.join(TAILOR_DIR, today)
-        os.makedirs(day_dir, exist_ok=True)
-        for j in strong[:TAILOR_MAX]:
-            md = tailor_resume(j, j["description"], resume_md, gemini_key)
-            if not md:
-                log(f"WARN tailoring failed for {j['company']} — {j['title']}; job still delivered")
-                continue
-            fname = f"{slugify(j['company'])}--{slugify(j['title'])}.md"
-            path = os.path.join(day_dir, fname)
-            header = (
-                f"<!-- Tailored for: {j['title']} @ {j['company']} · {j['location']} · "
-                f"fit {j['score']}\n     {j['url']}\n     generated {today} -->\n\n"
-            )
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(header + md + "\n")
-            tailored[j["id"]] = f"{TAILOR_DIR}/{today}/{fname}"
-            time.sleep(1)  # be polite between Gemini calls
-        log(f"Tailored {len(tailored)} of {min(len(strong), TAILOR_MAX)} resumes into {TAILOR_DIR}/{today}/")
+    # Persist full job/JD evidence before delivery. A later button click can
+    # therefore tailor the actual captured posting rather than its title.
+    snapshots = [make_snapshot(job, f"{today}T00:00:00Z") for job in fresh]
+    write_snapshots(fresh, today)
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     if drift_warning:
@@ -1104,8 +1093,6 @@ def main():
             # Only Pinpoint publishes structured pay today; everything else omits it.
             pay = f" · {j['salary']}" if j.get("salary") else ""
             resume_line = ""
-            if j["id"] in tailored:
-                resume_line = f"\n  📄 tailored resume: <{tailored_url(tailored[j['id']])}>"
             flags = []
             if j.get("link_status") == LINK_UNKNOWN:
                 flags.append("link check inconclusive")
@@ -1118,18 +1105,40 @@ def main():
                 f"  {j['why']}\n  <{j['url']}>{resume_line}"
             )
 
-    post_discord(webhook, lines)
+    interactive_delivery_claimed = False
+    delivered_ids = set()
+    if worker_url:
+        try:
+            delivery = post_interactive_cards(worker_url, worker_secret, snapshots)
+            accepted_keys = set(delivery.get("posted", []) + delivery.get("existing", []))
+            uncertain_keys = set(delivery.get("in_progress", []) + delivery.get("retryable", []))
+            failed = delivery.get("failed", [])
+            interactive_delivery_claimed = bool(accepted_keys or uncertain_keys or failed)
+            delivered_ids = {snapshot["source_id"] for snapshot in snapshots if snapshot["job_key"] in accepted_keys}
+            log(
+                f"Interactive delivery accepted {len(accepted_keys)} of {len(snapshots)} cards "
+                f"({len(failed)} failed)"
+            )
+        except Exception as error:
+            log(f"WARN interactive Discord delivery failed: {error}; falling back to webhook")
+    if not interactive_delivery_claimed:
+        if not webhook:
+            log("FATAL interactive delivery failed and DISCORD_WEBHOOK_URL is not set")
+            sys.exit(1)
+        post_discord(webhook, lines)
+        if not worker_url:
+            delivered_ids = {job["id"] for job in fresh}
 
     for j in fresh:
-        seen[j["id"]] = today
+        if j["id"] in delivered_ids:
+            seen[j["id"]] = today
     save_seen(seen)
     save_stats(
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
-        strong=len(strong), review=len(review), tailored=len(tailored),
-        tailor_failed=max(0, min(len(strong), TAILOR_MAX) - len(tailored)),
+        strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
     )
-    log(f"Posted {len(delivered)} jobs. seen.json now holds {len(seen)} ids.")
+    log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")
 
 
 # ----------------------------- CANDIDATES -----------------------------------

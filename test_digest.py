@@ -8,8 +8,8 @@ Covers:
   - location_conflict (the Bangkok-as-Riyadh bug)
   - the seniority ceiling (the Lead/Staff-scored-98 bug)
   - strip_html / slugify helpers
-  - main() end-to-end with mocks: tailored files written, digest lines carry
-    resume links, seen.json updated
+  - main() end-to-end with mocks: full job snapshots written, no unsolicited
+    tailored resumes, seen.json updated
   - fail-soft paths: Gemini down -> keyword scores, no key -> no tailoring,
     tailor failure -> job still delivered
 """
@@ -17,6 +17,7 @@ Covers:
 import os
 import sys
 import json
+import datetime
 import shutil
 import tempfile
 import unittest
@@ -282,7 +283,79 @@ class TestEndToEnd(unittest.TestCase):
            "GEMINI_API_KEY": "test-key",
            "GITHUB_REPOSITORY": "abdullah7041/job-search-digest"}
 
-    def test_full_run_with_tailoring(self):
+    def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
+        work = tempfile.mkdtemp(prefix="digest_quiet_")
+        old_cwd = os.getcwd()
+        os.chdir(work)
+        try:
+            with mock.patch.dict(os.environ, {
+                     "INTERACTIVE_WORKER_URL": "https://worker.test",
+                     "WORKER_CALLBACK_SECRET": "secret",
+                 }, clear=True), \
+                 mock.patch.object(digest, "fetch_jsearch", return_value=[]), \
+                 mock.patch.object(digest, "COMPANIES", []), \
+                 mock.patch.object(digest, "post_interactive_cards", return_value={"posted": ["heartbeat"], "existing": [], "failed": []}) as post_worker, \
+                 mock.patch.object(digest, "post_discord") as post_webhook:
+                digest.main()
+        finally:
+            os.chdir(old_cwd)
+            shutil.rmtree(work)
+
+        post_worker.assert_called_once()
+        self.assertIn("no new roles today", post_worker.call_args.kwargs["heartbeat"]["content"])
+        self.assertTrue(post_worker.call_args.kwargs["heartbeat"]["key"].startswith("heartbeat:"))
+        post_webhook.assert_not_called()
+
+    def test_retryable_interactive_delivery_does_not_fall_back_or_mark_jobs_seen(self):
+        env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+
+        def retryable(_url, _secret, snapshots, **_kwargs):
+            return {
+                "posted": [],
+                "existing": [],
+                "in_progress": [snapshots[0]["job_key"]],
+                "retryable": [snapshots[1]["job_key"]],
+                "failed": [],
+            }
+
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=retryable):
+            posts, work = run_main(env, ranking, None)
+
+        self.assertEqual(posts, [])
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), {})
+
+    def test_failed_interactive_delivery_does_not_fall_back_or_mark_jobs_seen(self):
+        env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+
+        def failed(_url, _secret, snapshots, **_kwargs):
+            return {
+                "posted": [],
+                "existing": [],
+                "in_progress": [],
+                "retryable": [],
+                "failed": [
+                    {"job_key": snapshot["job_key"], "error": "Discord card post failed: 503"}
+                    for snapshot in snapshots
+                ],
+            }
+
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=failed):
+            posts, work = run_main(env, ranking, None)
+
+        self.assertEqual(posts, [])
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), {})
+
+    def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
                    "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
         posts, work = run_main(self.ENV, ranking, "# Tailored resume\ncontent")
@@ -294,13 +367,16 @@ class TestEndToEnd(unittest.TestCase):
             self.assertNotIn(gone, body)
         self.assertIn("**Strong matches**", body)
         self.assertIn("**Worth reviewing**", body)
-        # Only strong matches receive tailored resumes on github.
-        self.assertEqual(body.count("tailored resume:"), 1)
-        self.assertIn("https://github.com/abdullah7041/job-search-digest/blob/main/tailored/", body)
-        # Files really exist
-        day = [d for d in os.listdir(os.path.join(work, "tailored"))][0]
-        files = os.listdir(os.path.join(work, "tailored", day))
-        self.assertEqual(len(files), 1)
+        # Tailoring is explicit through a Discord button; daily delivery is
+        # never allowed to spend credits or leave a resume in the repository.
+        self.assertNotIn("tailored resume:", body)
+        self.assertFalse(os.path.exists(os.path.join(work, "tailored")))
+        # Every posted job keeps its full JD in a durable daily archive.
+        archive_date = datetime.date.today().isoformat()
+        with open(os.path.join(work, "jobs", f"{archive_date}.json"), encoding="utf-8") as handle:
+            archive = json.load(handle)
+        self.assertEqual({item["source_id"] for item in archive["jobs"]}, {"jsearch_b", "jsearch_e"})
+        self.assertTrue(all(item["jd"]["text"] for item in archive["jobs"]))
         # State written
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
@@ -319,7 +395,7 @@ class TestEndToEnd(unittest.TestCase):
         )
         body = "\n".join(posts)
         self.assertIn("link check inconclusive", body)
-        self.assertEqual(body.count("tailored resume:"), 1)
+        self.assertNotIn("tailored resume:", body)
         with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
             stats = json.load(handle)
         self.assertEqual(stats[-1]["link_unknown"], 1)

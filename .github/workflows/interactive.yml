@@ -1,0 +1,37 @@
+name: Interactive job task
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: Worker task identifier
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: interactive-${{ inputs.task_id }}
+  cancel-in-progress: false
+
+jobs:
+  run-task:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Retrieve, validate, and report task
+        env:
+          INTERACTIVE_WORKER_URL: ${{ secrets.INTERACTIVE_WORKER_URL }}
+          WORKER_CALLBACK_SECRET: ${{ secrets.WORKER_CALLBACK_SECRET }}
+          TASK_ID: ${{ inputs.task_id }}
+        run: python interactive_runner.py

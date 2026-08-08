@@ -1,0 +1,13 @@
+{
+  "name": "job-search-digest-discord",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-03",
+  "vars": {
+    "DISCORD_APPLICATION_ID": "1535041396904558592",
+    "DISCORD_GUILD_ID": "1502683160931205273",
+    "DISCORD_CHANNEL_ID": "1519386645730824374",
+    "DISCORD_USER_ID": "1502670718536777891",
+    "DISCORD_PUBLIC_KEY_BASE64": "wGkuPohSY1lDZfTVWOwlQTHuLUloQM1fopzqM4PLnOM="
+  },
+  "d1_databases": [{ "binding": "DB", "database_name": "job-search-digest", "database_id": "9088533b-eb3b-4170-981d-41d4a73df3cf" }]
+}
