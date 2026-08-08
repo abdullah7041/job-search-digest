@@ -187,6 +187,194 @@
         "sha256": "e16dc39094c6a13a2a188aee0c08071b039d71eea35b23ff5b88e881545d96a4",
         "completeness_failures": []
       }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_QnV6X25rbVNkOGVrVERjSUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVWxVWmtsRVkwMXNUWE5rYld0TVIxOXRUbVZJVkhkTVUyczRPVzAxZG01VWVISjRURE5QVG1SaVpHeHdSR2xJTjJsbGJFcEpZVFJrTTFsWVVrMXRaRmRMV0U5TVprazRVbUl3U2xWd2FHMTRSSE4yV1RCSVJIWkxkREJQYTFaWWQxVlFOakkxZDJac2VWZHVaRWRSYVZoNldVRnpZVmxXUTBzeVFYRndiaTFWV0VNd016Y1NGMWMzY0ROaGNYcHFSRGg1VUhkUVFWQnpUMjVOY1VFNEdpSkJSSE55T1daVWNtUkhUemxvVUhscFYyRkZPR04xY1Y5SmMzQXRRWGQ1WTFCUg",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_QnV6X25rbVNkOGVrVERjSUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVWxVWmtsRVkwMXNUWE5rYld0TVIxOXRUbVZJVkhkTVUyczRPVzAxZG01VWVISjRURE5QVG1SaVpHeHdSR2xJTjJsbGJFcEpZVFJrTTFsWVVrMXRaRmRMV0U5TVprazRVbUl3U2xWd2FHMTRSSE4yV1RCSVJIWkxkREJQYTFaWWQxVlFOakkxZDJac2VWZHVaRWRSYVZoNldVRnpZVmxXUTBzeVFYRndiaTFWV0VNd016Y1NGMWMzY0ROaGNYcHFSRGg1VUhkUVFWQnpUMjVOY1VFNEdpSkJSSE55T1daVWNtUkhUemxvVUhscFYyRkZPR04xY1Y5SmMzQXRRWGQ1WTFCUg",
+      "title": "Senior AI/ML Engineer: Deploy Production Models",
+      "company": "Jobs for Humanity",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/senior-ai-ml-engineer-deploy-production-models--riyadh--eea0b293c62f5d02e18e45f530928f9c6",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 95,
+      "why": "Perfect match for senior AI/ML IC role in Saudi Arabia with relevant tech stack.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "Kanz in Riyadh is seeking an experienced AI/ML engineer to design, build, and deploy scalable ML solutions that deliver measurable business value for products and services in Saudi Arabia.\n\nYou will deliver production-ready models, automate pipelines, and monitor performance, leveraging Python, PyTorch or TensorFlow, and strong MLOps practices in a collaborative cross-functional environment.",
+        "sha256": "b5f5d9ba0c12d63d92391a510fc109c04660284a97688ef0982c49e1d7693250",
+        "completeness_failures": [
+          "too_short"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_eV9qSUROeklaLXFJczQxNkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMnR2V2tOSGMxRkZNRkl6UkdkeE0wOU1WMmRLUm01aU0xWjRWVUZsTTNkM1YwNTZTMDFmVTNGdGRHUkhkbEpPVWtodE56Sm5OQzExTTIxbVlrcHllRGsyTFRGZmIyMWtSa3REWVdnd04zTlplWHAwU2t4aWF6UnliMkZYWHpneWJGZFpjVnBKYkRVemRVZEhPVGs0VWpWMFdIUmxaVEZYUzFka1Z6UnBOalZJUlc1RmVrY1NGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daU1pUWjBSakJMTkdWNVRFbE9aR3BMTTAxdVltdGxPVWRJY2pKbg",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_eV9qSUROeklaLXFJczQxNkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMnR2V2tOSGMxRkZNRkl6UkdkeE0wOU1WMmRLUm01aU0xWjRWVUZsTTNkM1YwNTZTMDFmVTNGdGRHUkhkbEpPVWtodE56Sm5OQzExTTIxbVlrcHllRGsyTFRGZmIyMWtSa3REWVdnd04zTlplWHAwU2t4aWF6UnliMkZYWHpneWJGZFpjVnBKYkRVemRVZEhPVGs0VWpWMFdIUmxaVEZYUzFka1Z6UnBOalZJUlc1RmVrY1NGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daU1pUWjBSakJMTkdWNVRFbE9aR3BMTTAxdVltdGxPVWRJY2pKbg",
+      "title": "NodeJS - Backend Engineer",
+      "company": "Colada",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/nodejs-backend-engineer-at-colada-4444570229",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 85,
+      "why": "Strong match for backend/NodeJS skills in Saudi Arabia at a senior individual contributor level.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "DescriptionColada, a leading company in the Food & Beverage industry based in Riyadh, Saudi Arabia,\nis seeking a NodeJS - Backend Engineer.\n\nIn this role, you will develop and maintain scalable server-side applications, ensuring high performance and responsiveness.\n\nYou will collaborate with cross-functional teams to design robust APIs and contribute to the overall architecture of our backend systems, playing a key part in delivering innovative solutions that meet our business needs.\nRequirements• Proven experience with NodeJS and backend development\n\n• Strong understanding of RESTful API design\n\n• Experience with databases such as MongoDB\n\n• Familiarity with version control systems like Git\n\n• Good problem-solving skills and attention to detail\n\nRoles And Responsibilities• Design, develop, and maintain backend services and APIs in Typescript and ExpressJS\n\n• Collaborate with frontend developers and other team members to define and implement features\n\n• Optimize applications for maximum speed and scalability using MongoDB\n\n• Ensure high scalability of the application using Docker, Docker-Compose, AWS\n\nBenefits• Market Range salary and ESOPs\n\n• Flexible remote working environment\n\n• Opportunities for professional growth and development\n\n• Collaborative and innovative team culture\n\nSkills• Proficiency in NodeJS and JavaScript\n• Experience with RESTful API development\n• Knowledge of database management\n• Strong problem-solving and analytical skills\n• Excellent communication and teamwork abilities",
+        "sha256": "23950b380445d851de5dd17ab8a44716d97eaa1f2869cfb2668a7067b708777f",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_NlRPdXdPSEgwU1JTYk95MEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBUR2QyVjNWVk5rTjFjRGQyZFY5bk1DMTNPRUppZDFCbFdIbzRXVE5XUzFvNE1EVlBjMVJZV1doUVozWTVWREJMZUV0R1pXNVBNSEJwUVhGcldtdHZTVUYyWmpGQlkyMWpOVmhFUkRsS2NITnRlbFpRTVcxeWVFTkJRVVk0WlZBdFNsSlhYME55UlRkUU1EQktRbTFDWXpOek1sY3hUMFJuY1d0WVlUbHZkbTFuTWtwdU5FY1NGMWMzY0ROaGNYcHFSRGg1VUhkUVFWQnpUMjVOY1VFNEdpSkJSSE55T1daVVlUQlVSVVJ3ZERNemJVMWlaMVpyVjNRMlFrWmpUM05hVEdoUg",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_NlRPdXdPSEgwU1JTYk95MEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBUR2QyVjNWVk5rTjFjRGQyZFY5bk1DMTNPRUppZDFCbFdIbzRXVE5XUzFvNE1EVlBjMVJZV1doUVozWTVWREJMZUV0R1pXNVBNSEJwUVhGcldtdHZTVUYyWmpGQlkyMWpOVmhFUkRsS2NITnRlbFpRTVcxeWVFTkJRVVk0WlZBdFNsSlhYME55UlRkUU1EQktRbTFDWXpOek1sY3hUMFJuY1d0WVlUbHZkbTFuTWtwdU5FY1NGMWMzY0ROaGNYcHFSRGg1VUhkUVFWQnpUMjVOY1VFNEdpSkJSSE55T1daVVlUQlVSVVJ3ZERNemJVMWlaMVpyVjNRMlFrWmpUM05hVEdoUg",
+      "title": "Machine Learning Engineeir",
+      "company": "Company",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.naukrigulf.com/machine-learning-engineeir-jobs-in-riyadh-saudi-arabia-in-company-3-to-5-years-n-cd-351589-jid-210726001333",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 85,
+      "why": "Direct match for AI/ML engineering skills and location requirements.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "Design, build, test, and deploy machine learning models using Pytorch, Scikit-learn, and NumpyCollaborate with cross-functional teams to identify business problems and develop machine learning solutionsWork with large datasets to train and validate machine learning modelsOptimize and fine-tune model performance to achieve desired outcomesStay up-to-date with industry trends and advancements in machine learning Strong proficiency in Pytorch, Scikit-learn, and NumpyExperience with machine learning frameworks and librariesExcellent programming skills in PythonStrong understanding of machine learning principles, including supervised and unsupervised learningExperience working with large datasets and data preprocessing techniquesStrong problem-solving skills and attention to detail",
+        "sha256": "bfbbc4578986199d48bc78c20d86e051509087568b11214619038fd3d270ff65",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_anphb3FqbUZiNFA5NVVmWUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbXB4Tlc5dmNITnRXalJCYURobVgybG9kVVJCVEd0UVdsaEpjMG95WWpoNFFqSk5lbmg1V0RSNWRIZGxlR2xwY0RGeFZqUnRkQzB0ZWxadmFVMXpOMDlLWjJKbVVXbG9UWFk1VkZac1FWWnBTM3BXWjJ4WlYzWkZWVEE0TlY5RmNrdEVOelZXVUc5b1IyMWhjbll0Y0ZSMlowRlJjRlpOUVhaQ2REaHRTVFpwUkdSNWRqSVNGMWMzY0ROaGNYcHFSRGg1VUhkUVFWQnpUMjVOY1VFNEdpSkJSSE55T1daUk1XNDNkamswTVUxTmNtWm9VVFowV21kc1JqQjVObXc1YjFSbg",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_anphb3FqbUZiNFA5NVVmWUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbXB4Tlc5dmNITnRXalJCYURobVgybG9kVVJCVEd0UVdsaEpjMG95WWpoNFFqSk5lbmg1V0RSNWRIZGxlR2xwY0RGeFZqUnRkQzB0ZWxadmFVMXpOMDlLWjJKbVVXbG9UWFk1VkZac1FWWnBTM3BXWjJ4WlYzWkZWVEE0TlY5RmNrdEVOelZXVUc5b1IyMWhjbll0Y0ZSMlowRlJjRlpOUVhaQ2REaHRTVFpwUkdSNWRqSVNGMWMzY0ROaGNYcHFSRGg1VUhkUVFWQnpUMjVOY1VFNEdpSkJSSE55T1daUk1XNDNkamswTVUxTmNtWm9VVFowV21kc1JqQjVObXc1YjFSbg",
+      "title": "Full Stack Machine Learning Engineer (Datacentre AI Engineering) - Riyadh, KSA",
+      "company": "Qualcomm",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/full-stack-machine-learning-engineer-datacentre-ai-engineering-riyadh-ksa-at-qualcomm-4400765479",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 80,
+      "why": "Strong technical fit for ML/Engineering in Saudi Arabia, though title is slightly broad.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Company:\n\nQualcomm Middle East Information Technology Company LLC\n\nJob Area:\n\nEngineering Group, Engineering Group > Software Engineering\n\nGeneral Summary:\n\nAbout Us\n\nQualcomm is enabling a world where everyone and everything can be intelligently connected. You interact with products and technologies made possible by Qualcomm every day, including 5G-enabled smartphones that double as pro-level cameras and gaming devices, smarter vehicles and cities, and the technology behind the smart, connected factories that manufactured your latest purchase. Qualcomm 5G and AI innovations are the power behind the connected intelligent edge. You’ll find our technologies behind and inside the innovations that deliver significant value across multiple industries and to billions of people every day.\n\nQualcomm is growing its presence in Riyadh and is hiring Data Centre Engineers to support our expanding infrastructure across the region.\n\nAs Saudi Arabia accelerates its digital transformation under Vision 2030, Qualcomm is investing in world‑class computing and data centre capabilities to power AI, cloud, and advanced connectivity at scale. This is a unique opportunity to work in a fast‑growing technology hub, supporting critical environments and helping shape the future of data centre operations in the Kingdom and beyond.\n\nAbout The Role\n\nWe are seeking a Full-Stack Machine Learning Engineer to join our team, bridging AI solutions development with AI platform engineering for Qualcomm’s AI Inference Suite and rack-scale data center deployments. This role involves designing, delivering, and supporting end-to-end AI services, agentic workflows, and fine-tuning pipelines, while enabling lifecycle automation, orchestration, and observability for large-scale data center environments.\n\nYou will bring a strong combination of full-stack engineering expertise, machine learning proficiency, and infrastructure knowledge to build robust, scalable AI systems.\n\nKey Responsibilities Will Include:\n\n• API Development & Optimization: Build and optimize API serving layers for AI inference workloads, ensuring model and hardware efficiency.\n• Agentic Workflows & RAG Pipelines: Develop intelligent agents and retrieval-augmented generation workflows using frameworks such as LangChain and crew.ai.\n• Model Lifecycle Management: Implement production-grade bring-your-own-model and fine-tuning flows, including dataset ingestion, orchestration, evaluation, and deployment.\n• LLM Runtime Integration: Work with various LLM runtimes (e.g., vLLM, Dynamo, llm-d) and leverage inference optimization techniques.\n• SDK & Tooling Contributions: Contribute to AI Inference Suite SDKs (Python/TypeScript/Java/Rust), CLI tools, and reference applications.\n• Cluster Management: Design and maintain AI cluster management software for provisioning, orchestration, and monitoring.\n• Telemetry & Observability: Integrate out-of-band management via Redfish/IPMI and in-band telemetry using Prometheus/OpenTelemetry.\n• Infrastructure-as-Code: Develop workflows using MAAS, Terraform, and Ansible for bare-metal and containerized deployments.\n• Kubernetes Orchestration: Enable Kubernetes/Helm-based orchestration for inference clusters and multi-tenancy.\n• Monitoring & Dashboards: Build dashboards for rack health, inventory, and SLA compliance.\n• Continuous Innovation: Stay current with GenAI trends, rack-scale AI orchestration, and data center best practices.\n\nMinimum Qualifications\n\n• Bachelor’s degree in Computer Science, Engineering, or related field.\n• 5+ years of software engineering experience; 3+ years in ML or HPC environments.\n• Strong programming skills in Python, Rust/Go, and TypeScript, with solid software development fundamentals.\n• Deep understanding of data structures and algorithms in distributed systems and high-performance computing contexts.\n• Hands-on experience with Kubernetes, Helm, Prometheus/OpenTelemetry, and Ansible/Terraform.\n• Practical experience with LLM runtimes, agent frameworks, and rack-scale orchestration.\n\nPreferred Qualifications\n\n• Master’s degree in Computer Science, Machine Learning, or related field.\n• Experience building inference and fine-tuning pipelines, as well as agentic workflows.\n• Knowledge of data centre resource lifecycle management, out-of-band protocols (Redfish/IPMI), and MAAS/OpenStack.\n• Exposure to scale-up data centre networking technologies (RoCE/RDMA/NVLink).\n• Contributions to inference and GenAI model performance optimization.\n\nWhat's On Offer\n\nApart from working with great people, we offer the below:\n\n• Salary including housing & transport allowance\n• Stock (RSU's) and performance related bonus\n• 16 weeks fully paid Maternity Leave\n• 6 weeks fully paid Paternity Leave\n• Employee stock purchase scheme\n• Child Education Allowance\n• Relocation and immigration support (if needed)\n• Life and Medical Insurance\n• Live+ Well Reimbursement for health and recreational membership fees\n\nMinimum Qualifications:\n\n• Bachelor's degree in Engineering, Information Systems, Computer Science, or related field and 2+ years of Software Engineering or related work experience.\n\nOR\n\nMaster's degree in Engineering, Information Systems, Computer Science, or related field and 1+ year of Software Engineering or related work experience.\n\nOR\n\nPhD in Engineering, Information Systems, Computer Science, or related field.\n\n• 2+ years of academic or work experience with Programming Language such as C, C++, Java, Python, etc.\n• References to a particular number of years experience are for indicative purposes only. Applications from candidates with equivalent experience will be considered, provided that the candidate can demonstrate an ability to fulfill the principal duties of the role and possesses the required competencies.\n\nQualcomm is an equal opportunity employer. If you are an individual with a disability and need an accommodation during the application/hiring process, rest assured that Qualcomm is committed to providing an accessibl",
+        "sha256": "a483a249d67db66d3a52d344eae4ff550dd84760de80b1aad36bb636884d9e4c",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_bWJFdnl3QzVkNFBvdXh3N0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURXRxZDNscmJrZHJiVzF5VHpaMFZuY3dOR0ZYY2prNFMwMUZORWw1VFdFM1ZuTlhZVzV3UTJ4bWVESjZNRXR4Wm05Q2JIbHJVVGREY2t4MGVFTnpRMVpHVUhrelRIUTJaa3RZWjA5TmNXNWFOSGt4TVRobldXdDBPVGxVTjFReVF6VkZXRUUzVFRGQ1h6QTJSMmxPYkMxcVYzbzVkMFpxWlhRd1IwTnZiVXh2ZGxnMFVrMFNGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daVVVFVjFjVUYyWkV0TU5FMVhRVFZzTWtGcWVsY3lWbUpEZGxkbg",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_bWJFdnl3QzVkNFBvdXh3N0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURXRxZDNscmJrZHJiVzF5VHpaMFZuY3dOR0ZYY2prNFMwMUZORWw1VFdFM1ZuTlhZVzV3UTJ4bWVESjZNRXR4Wm05Q2JIbHJVVGREY2t4MGVFTnpRMVpHVUhrelRIUTJaa3RZWjA5TmNXNWFOSGt4TVRobldXdDBPVGxVTjFReVF6VkZXRUUzVFRGQ1h6QTJSMmxPYkMxcVYzbzVkMFpxWlhRd1IwTnZiVXh2ZGxnMFVrMFNGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daVVVFVjFjVUYyWkV0TU5FMVhRVFZzTWtGcWVsY3lWbUpEZGxkbg",
+      "title": "Senior Software Engineer (Frontend/UI-UX)",
+      "company": "JAL International Co. Ltd.",
+      "location": "الظهران, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-frontend-ui-ux-at-jal-international-co-ltd-4442004936",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 75,
+      "why": "Senior IC role in Saudi Arabia, though focused on frontend rather than core AI/backend.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "About the Role\n\nAs a Senior Software Engineer with a Frontend/UI-UX specialty, you will define interaction architecture and deliver high-assurance, mission-critical digital platforms. Operating in an Agile environment, you'll solve complex usability challenges related to real-time data synchronization, cryptographic state visualization, and secure content handling. This role blends expert proficiency in design tooling (Figma) with robust front-end engineering (Vue.js, TypeScript), combining UX ownership with production-level UI implementation.\n\nResponsibilities\n• Architect user flows for applications requiring real-time state updates and low-latency user feedback\n• Design unobtrusive visual indicators for data integrity, encryption status, and content protection layers\n• Independently develop pixel-perfect, responsive components using Vue.js and TypeScript\n• Implement complex client-side logic for dynamic content rendering and secure data presentation\n• Ensure seamless integration with RESTful APIs and real-time WebSockets for live telemetry data\n• Maintain and expand the internal Design System (icons, typography, atomic components) across web, mobile, and desktop\n• Create high-fidelity interactive prototypes in Figma to validate complex workflows and state transitions\n• Transform abstract security concepts (identity verification, data classification, regulatory compliance) into clear, human-readable interface elements\n• Champion inclusive design, ensuring all interfaces strictly adhere to WCAG 2.1 AA standards\n\nRequirements\n• Bachelor's or Master's degree in Computer Science, Design, Human-Computer Interaction (HCI), or a related field\n• 5+ years of professional experience in UI/UX design and front-end engineering\n• Proven ability to architect, build, and deploy complex, stateful web applications (real-time dashboards, high-density data-processing interfaces)\n• Clear track record of translating UX requirements into production-ready code within structured Agile/Scrum workflows\n• Strong proficiency in HTML5, CSS3, and TypeScript, including secure integration of RESTful APIs and WebSockets\n• Mandatory professional experience with the Vue.js ecosystem (Pinia, Vue Router)\n• Expert proficiency in Figma (Auto Layout, Components, Prototyping)\n• Comprehensive understanding of WCAG 2.1 AA guidelines and ARIA roles\n• Proven ability to articulate and defend complex design decisions to engineering and product stakeholders in fluent English\n\nDesirable Certifications\n• Google UX Design Professional Certificate\n• Certified Professional in Accessibility Core Competencies (CPACC)\n• UX Certification from Nielsen Norman Group (NN/g)",
+        "sha256": "67e9f393324f01c9097b4158adf081912cae9802a5022893e7f8bb0b121e1faf",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_ZWF4QVlJeGUzakI3RV9FcEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbEJNYXpreVRqZFViR0p1U2xCb1ZWZzFhVk53U1hjdE9EQnhSbnB4YVUxWFNrZDJNMVpDYzI0elZFbHVTVGxXVmpkVFNUQTViWE13ZHpsaWVtZzJWV1JPWWxwWWNFSjNNR2hOUjFabmVrMDVVRFZJWDNKeWJWODRMVU4wTTFGTlVVdHhRVWhqYlhWUU5UZFdVVUpQWjBsNFVXRlFUV1EyYW05alpUTnZkMVJLYzFaSU5IY1NGMVZNY0ROaGRrTnhTamxUYnpRdFJWQnlTMlptTmxGM0dpSkJSSE55T1daVVJEUmhlbFpWVGxNelRrZDBla1Y1YzA1bFN6aG9UV1JRUkdSMw",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_ZWF4QVlJeGUzakI3RV9FcEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbEJNYXpreVRqZFViR0p1U2xCb1ZWZzFhVk53U1hjdE9EQnhSbnB4YVUxWFNrZDJNMVpDYzI0elZFbHVTVGxXVmpkVFNUQTViWE13ZHpsaWVtZzJWV1JPWWxwWWNFSjNNR2hOUjFabmVrMDVVRFZJWDNKeWJWODRMVU4wTTFGTlVVdHhRVWhqYlhWUU5UZFdVVUpQWjBsNFVXRlFUV1EyYW05alpUTnZkMVJLYzFaSU5IY1NGMVZNY0ROaGRrTnhTamxUYnpRdFJWQnlTMlptTmxGM0dpSkJSSE55T1daVVJEUmhlbFpWVGxNelRrZDBla1Y1YzA1bFN6aG9UV1JRUkdSMw",
+      "title": "Data Architect / Data Engineer (AI Hub)",
+      "company": "Ernst & Young Advisory Services Sdn Bhd",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/data-architect-data-engineer-ai-hub-riyadh--riyadh--e9a7fc4d86eb0aacbfa888dd99dabe41c",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 75,
+      "why": "Relevant data engineering role in Saudi Arabia, though heavily focused on consulting/advisory.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "captured",
+        "text": "Location: Riyadh\n\nOther locations: Primary Location Only\n\nDate: 30 Jul 2026\n\nRequisition ID: 1708683\n\nWe are theAI Hubdelivering advisory services focused on data architecture and data-driven transformation.\nWe workclosely with client and internal stakeholders, including cybersecurity and data protectionteams, data analysts, and data scientists to ensure use cases have a solid foundation and deliverables meet expectations.\n\nWe support organizations in designing and delivering next-generation data platforms to accelerate analytics, decision-making, and innovation.Our work typically includes assessing architecture maturity, defining target-state data platform blueprints, and building pragmatic roadmaps that cover governance, protection, migration, and cloud enablement.We deliver in a consulting environment that requires strong stakeholder management, delivery discipline, compliance with regulatory requirements, and coordination across service lines when integrated delivery is needed.\n\nSound interesting? Well this is just the beginning. Because whenever you join, however long you stay, the exceptional EY experience lasts a lifetime.\nThe opportunity\n\nThis role sits within ourAI Huband focuses on data architecture advisory. You will help clients design and deliver modern data platforms that enable data-driven transformation.\nYou will assess current-state architecture,identifygaps and strategic goals, and define a clear improvement roadmap across topics such as data governance, data protection, data migration, and cloud journey.\nYour key responsibilities\n\nYou will manage up to two projects in parallel, working closely with senior business leaders (Directors and Partners) to ensure delivery quality, manage risk, and meet client expectations on outcomes and timelines.\nIn this fast-moving space, you are also expected to contribute to business development byidentifyingopportunities and helping grow our work in the market.\nSkills and attributes for success\n\nDefine and evolve end-to-end data architecture blueprints and target-state roadmaps aligned to business goals\n\nDesign modern data platforms (data lake, data warehouse,lakehousepatterns) and guide technology choices across cloud and big data ecosystems\n\nBuild and govern scalable ingestion and integration approaches (batch and streaming), including event-driven architecture awareness\n\nStrongproficiencyin SQL and working knowledge of NoSQL concepts and patterns\n\nExperience working with Hive in big data environments\n\nHands-on familiarity with ETL/ELT design and delivery, including Informatica-based implementations\n\nEstablish and apply data management frameworks, including metadata management and end-to-end data lineage from source to consumption\n\nApply data governance and data protection principles, partnering with cybersecurity and data protection teams to embed privacy and security into platform design\n\nIdentify, assess, and manage data risks (data quality, access controls, retention, regulatory/compliance considerations) with a cautious, risk-aware approach\n\nAwareness of modern architecture approaches such as data fabric and data mesh, and when federated models make sense\n\nLead delivery across project lifecycle phases (requirements definition, business re-engineering, application mapping), supervising teams and managing competing priorities\n\nEnsuretimelydelivery and alignment with regulatory requirements whilemonitoringengagement performance against budget\n\nContribute to business development byidentifyingopportunities, shaping client conversations, and supporting growth in the market\n\nCommunicate effectively with technical and non-technical stakeholders and work across service lines to deliver integrated outcomes\n\nWillingness to travel on short notice whenrequired\nTo qualify for the role you must have\n\nBachelor’s degree and approximately7+ years of related work experience\n\nData Architecture certifications arerequiredand are a key differentiation factor in candidateselection\n\nDemonstrated work experience ofat least 5+ years in a global consulting firm handling a team of at least 4 people\n\nHands-on experience on big data and platforms such as Cloudera, Informatica, Databricks, and on cloud platforms such as Azure or AWS\n\nDemonstrated ability to manage and supervise teams through all phases of the project lifecycle, including requirements definition, business re-engineering, and application mapping\n\nIndustryexpertisein one or two domains: Government, Healthcare, Financial Services, Retail, Telecom\n\nFlexibility and willingness to travel on short notice, as necessary\nIdeally you’ll also have\n\nTrack recordwith a leading consulting firm\n\nProficiencyin Arabic\n\nAWS certification relevant to data platforms (for example, AWS listed as a commonly requested certification for senior data architect profiles)\n\nCDMP (Certified Data Management Professional)\n\nCISSP (security certification, useful for data security and risk-heavy programs)\nWhat we look for\n\nWe are interested in entrepreneurs who have the confidence to develop and promote a brand new strategic vision both internally and externally. You will be business savvy with a passion for innovation as well as the motivation to create your own EY journey.\nWhat we offer\n\nWe offer a competitive compensation package where you’ll be rewarded based on performance and recognized for the value you bring to our business. Plus, we offer:\n• Continuous learning:You’ll develop the mindset and skills to navigate whatever comes next.\n• Success as defined by you:We’ll provide the tools and flexibility, so you can make a meaningful impact, your way.\n• Transformative leadership:We’ll give you the insights, coaching and confidence to be the leader the world needs.\n• Diverse and inclusive culture:You’ll be embraced for who you are and empowered to use your voice to help others find theirs.\n\nThe exceptional EY experience. It’s yours to build.\n\nEY | Building a better working world\n\nEY exists to build a better working world, helping",
+        "sha256": "4ec716505758a552bd753c9ab3bb3dc3a3827bda5055caf3d173d64db1b22f47",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_ZnNLenQwUGU3SF85N0Rjb0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBUSGR5WXpZeFJqTlBiWEYwTkhodWVXOTVXazh0TlcwM1FqVnZkMDlVTTI0MFVHdFRWMjA1ZFRaTU1sVXdaRFptZVVnM1pXeE9NV2wzYUVGak16UTFiSFo1ZGxWU1dqaE5WSGt5VDNGNll6TkdTbGRVVkdzNUxYbHNZazlJY0RCclFVcGtTVkF4UjNSdGJubE5UMVZwV25sbWMwWjNUMGRZUTNKcU1HTkVlWEZRVTJ4RGMzY1NGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daU1RUaHhURzQ0U0hkV01IYzFOVEZmV205VFVHVlVVRTB5UmxSMw",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_ZnNLenQwUGU3SF85N0Rjb0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBUSGR5WXpZeFJqTlBiWEYwTkhodWVXOTVXazh0TlcwM1FqVnZkMDlVTTI0MFVHdFRWMjA1ZFRaTU1sVXdaRFptZVVnM1pXeE9NV2wzYUVGak16UTFiSFo1ZGxWU1dqaE5WSGt5VDNGNll6TkdTbGRVVkdzNUxYbHNZazlJY0RCclFVcGtTVkF4UjNSdGJubE5UMVZwV25sbWMwWjNUMGRZUTNKcU1HTkVlWEZRVTJ4RGMzY1NGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daU1RUaHhURzQ0U0hkV01IYzFOVEZmV205VFVHVlVVRTB5UmxSMw",
+      "title": "Software Engineer (KHOBAR)",
+      "company": "Join Solutions",
+      "location": "الخبر, Saudi Arabia",
+      "url": "https://bebee.com/sa/jobs/software-engineer-khobar-join-solutions-khobar--ss-sa-1i2a1c2",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 70,
+      "why": "Generalist software role in Saudi Arabia, but lacks specific AI/ML or senior-level focus.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "We are looking for a Software Engineer to be responsible for applying the principles of engineering to software development. Their role includes analyzing and modifying existing software as well as designing, constructing, and testing end-user applications that meet user needs — all through software programming languages.\n\nResponsibilities\n\n• Analyze user requirements\n• Write and test code, refining and rewriting it as necessary, and communicate with any programmers involved in the project\n• Research, design and write new software programs (e.g. business applications or computer games) and computer operating systems\n• Evaluate the software and systems that make computers and hardware work\n• Develop existing programs by analyzing and identifying areas for modification\n• Integrate existing software products and get incompatible platforms to work together\n• Create technical specifications\n• Write systems to control the scheduling of jobs or to control the access allowed to users or remote systems\n\nWrite operational documentation with technical authors\n• Maintain systems by monitoring and correcting software defects\n• Work closely with other staff, such as project managers, graphic artists, UX designers, other developers, systems analysts, and sales and marketing professionals\n• Consult clients and colleagues concerning the maintenance and performance of software systems, with a view to writing or modifying current operating systems\n• Investigate new technologies\n• Continually update technical knowledge and skills by attending in-house and external courses, reading manuals, and accessing new applications.\n\nQualifications\n• Bachelor's degree in computer science.\n• Must have (UI5) development skills\n• Must have at least 2 years of experience.\n• Must be Saudi National.\n• Must be based in Khobar, Saudi Arabia.",
+        "sha256": "5cacf8041789137ab0e57eecd6b38f6fab437d0ec844f66571ac384ecf9dc9bf",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_UmxHZURCdXZ6VDN5VFRGZ0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMDFJVVdGa2VHWjNlRlI1TnpGSVVrVTJkVmhZTUhCd1ZXYzNPRkp3VTBsbWRUVndaME5aYWxZek5sSTJaVUZOY1RWYVVWTlBTVEJITVcwNFNuaGtkV0ZSVUV0UVh6bHZVVll5V2pRemEyOVVSa3hmVVdONGVuRmFkWGQ1WkU5SldubHhWbkpyV1RGUFEzbFdNV1l5WVdGeFVtZDZla0ZaY3pCdVdYSkZSbWhJZUhSb2NsSVNGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daVFpuQnZSa1Z6ZUhOTFprOW9URXAyU1U4d1NtcFVTVmxrTm1sMw",
+      "captured_at": "2026-08-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_UmxHZURCdXZ6VDN5VFRGZ0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMDFJVVdGa2VHWjNlRlI1TnpGSVVrVTJkVmhZTUhCd1ZXYzNPRkp3VTBsbWRUVndaME5aYWxZek5sSTJaVUZOY1RWYVVWTlBTVEJITVcwNFNuaGtkV0ZSVUV0UVh6bHZVVll5V2pRemEyOVVSa3hmVVdONGVuRmFkWGQ1WkU5SldubHhWbkpyV1RGUFEzbFdNV1l5WVdGeFVtZDZla0ZaY3pCdVdYSkZSbWhJZUhSb2NsSVNGMU5pY0ROaGNGTk9VRWxUWkd0UVNWQnFabGRuYjBGWkdpSkJSSE55T1daVFpuQnZSa1Z6ZUhOTFprOW9URXAyU1U4d1NtcFVTVmxrTm1sMw",
+      "title": "Software Engineer II - QuantumBlack, AI by McKinsey",
+      "company": "QuantumBlack, AI by McKinsey",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-ii-quantumblack-ai-by-mckinsey-at-quantumblack-ai-by-mckinsey-4359286300",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 50,
+      "why": "Consulting firm role; lacks specific technical depth in JD and emphasizes leadership development.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Who You'll Work With\n\nDriving lasting impact and building long-term capabilities with our clients is not easy work. You are the kind of person who thrives in a high performance/high reward culture - doing hard things, picking yourself up when you stumble, and having the resilience to try another way forward.\n\nIn return for your drive, determination, and curiosity, we'll provide the resources, mentorship, and opportunities you need to become a stronger leader faster than you ever thought possible. Your colleagues—at all levels—will invest deeply in your development, just as much as they invest in delivering exceptional results for clients. Every day, you'll receive apprenticeship, coaching, and exposure that will accelerate your growth in ways you won’t find anywhere else.\n\nWhen you join us, you will have:\n\n• Continuous learning: Our learning and apprenticeship culture, backed by structured programs, is all about helping you grow while creating an environment where feedback is clear, actionable, and focused on your development. The real magic happens when you take the input from others to heart and embrace the fast-paced learning experience, owning your journey.\n• A voice that matters: From day one, we value your ideas and contributions. You’ll make a tangible impact by offering innovative ideas and practical solutions, all while upholding our unwavering commitment to ethics and integrity. We not only encourage diverse perspectives, but they are critical in driving us toward the best possible outcomes.\n• Global community: With colleagues across 65+ countries and over 100 different nationalities, our firm’s diversity fuels creativity and helps us come up with the best solutions for our clients. Plus, you’ll have the opportunity to learn from exceptional colleagues with diverse backgrounds and experiences.\n• World-class benefits: On top of a competitive salary (based on your location, experience, and skills), we provide a comprehensive benefits package to enable holistic well-being for you and your family.\n\nYour Impact\n\nAs a Software Engineer with Tech & AI at McKinsey, you will work with clients across a wide range of sectors and industries, advising them on how to best leverage technology.\n\nYou will drive architectural design, make key technology decisions, and employ agile methodologies to build and deliver the next generation of products for our clients at scale.\n\nYou will also lead project workstreams, helping clients build their technical capabilities and foster a culture centered around engineering best practices, user-centricity, and Agile values.\n\nAs a core member of the team, you will take on responsibilities that include driving architectural design and making strategic technology decisions to shape next-generation products for various internal teams, ensuring that we remain at the forefront of technological innovation.\n\nAdditionally, you will be hands-on and co-creating solutions alongside our clients and their leadership, enabling you to grow into a recognized technology leader.\n\nYou will be part of the McKinsey Digital team in Riyadh, Saudi Arabia. This group brings together the best of McKinsey’s digital capabilities to help our clients use digital technology to transform their businesses.\n\nMcKinsey Digital is our tech delivery people unit. A global team of software, data and cloud engineers, passionate designers, technology architects, product owners, and leading technologists.\n\nYou will join a multidisciplinary community of developers, Agile coaches, designers, business strategists and experts. Together, we will design and create industry shaping products and tools for our clients.\n\nWhile we advocate for using the right tech for the right task, we often leverage the following technologies: JavaScript, TypeScript, React.js, Angular.js, Next.js, Vue.js, Python, Java, C#, NodeJS, SQL, MongoDB, AWS, Azure, GCP, and more!\n\nOur office culture is casual and social, with an emphasis on education and innovation. You will have the freedom to try new ideas and experiment in your role and will be guaranteed significant dedicated time to tinker, create, continuously learn and share cool new stuff. We also have a strong emphasis in our teams on mentoring others enabling them to grow and learn.\n\nChanging the world requires us to sit with our clients at times, so some travel is expected in this role.\n\nYour Qualifications and Skills\n\n• Undergraduate or master’s degree; or equivalent experience\n• 5+ years of experience in software development, with significant full-stack web application development experience strongly preferred\n• Demonstrated knowledge and hands-on experience across the full application stack with some of the following languages/frameworks: JavaScript, TypeScript, React, Angular, Vue, jQuery, Java, Sprint, C#, .NET, Node.js, SQL, MySQL, SQL Server, MongoDB, cloud-native databases, AWS, Azure, GCP, Jenkins, Docker, Circle CI, Travis\n• Experience leading in Agile teams, including coaching and modeling Agile mindsets as part of sprint ceremonies, work definition and building developer capabilities\n• Experience working collaboratively with technical and non-technical team members and stakeholders including modeling and coaching others to use engineering best practices such as design patterns, customer-centric design, test-driven development, code refactoring, code review, and OWASP Top 10 security awareness",
+        "sha256": "d3fe00ac893fbc5b925f846fe40485d472676c8bfdb6982a64366ad9ef246bf2",
+        "completeness_failures": []
+      }
     }
   ]
 }
