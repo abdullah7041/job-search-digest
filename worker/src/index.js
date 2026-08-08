@@ -13,9 +13,9 @@ export function authorizeInteraction(payload, env) {
 
 export function buttonTask(payload) {
   const customId = payload.data?.custom_id || "";
-  const match = /^tailor:([^:]+):(.+)$/.exec(customId);
-  if (!match || !match[1] || !match[2]) throw new Error("Invalid tailoring button.");
-  return { kind: "tailor", jobKey: `${match[1]}:${match[2]}`, userId: interactionUserId(payload) };
+  const match = /^tailor:([0-9a-f]{32})$/i.exec(customId);
+  if (!match || !match[1]) throw new Error("Invalid tailoring button.");
+  return { kind: "tailor", jobRef: match[1].toLowerCase(), userId: interactionUserId(payload) };
 }
 
 export function taskExpiryMilliseconds(kind) {
@@ -33,6 +33,10 @@ export function taskAccessStatus(task, now = new Date()) {
 async function sha256Hex(value) {
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value)));
   return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function buttonReferenceForJobKey(jobKey) {
+  return (await sha256Hex(jobKey)).slice(0, 32);
 }
 
 function jdIsComplete(value) {
@@ -267,7 +271,11 @@ async function handleInteraction(request, env) {
       const snapshot = await env.DB.prepare(
         "SELECT job_key, snapshot_json FROM job_snapshots WHERE message_id = ?"
       ).bind(payload.message?.id || "").first();
-      task.input = await tailoringInputFromSnapshotRow(snapshot, task.jobKey);
+      task.input = await tailoringInputFromSnapshotRow(snapshot, snapshot?.job_key);
+      if (await buttonReferenceForJobKey(task.jobKey || snapshot.job_key) !== task.jobRef) {
+        throw new Error("The tailoring button does not match this job snapshot.");
+      }
+      task.jobKey = snapshot.job_key;
     }
     else if (payload.data?.name === "resume") task = { kind: "resume", userId: allowed.userId, input: { attachment: attachmentFrom(payload) } };
     else if (payload.data?.name === "tailor-jd") task = { kind: "tailor-jd", userId: allowed.userId, input: { attachment: attachmentFrom(payload) } };

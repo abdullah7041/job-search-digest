@@ -60,7 +60,8 @@ class TestJobArchive(unittest.TestCase):
         self.assertEqual(payload["embeds"][0]["title"], "Senior Machine Learning Engineer")
         button = payload["components"][0]["components"][0]
         self.assertEqual(button["label"], "Tailor CV")
-        self.assertEqual(button["custom_id"], "tailor:greenhouse:provider-42")
+        self.assertEqual(button["custom_id"], "tailor:f765d605515d048a68135fcbf73b66f2")
+        self.assertLessEqual(len(button["custom_id"]), 100)
         self.assertFalse(button["disabled"])
 
     def test_card_keeps_tailor_button_for_missing_jd_to_start_recovery(self):

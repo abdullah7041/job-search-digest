@@ -89,7 +89,7 @@ def job_card_payload(snapshot: dict) -> dict:
                 "type": 2,
                 "style": 1,
                 "label": "Tailor CV",
-                "custom_id": f"tailor:{snapshot['job_key']}",
+                "custom_id": f"tailor:{hashlib.sha256(snapshot['job_key'].encode('utf-8')).hexdigest()[:32]}",
                 "disabled": False,
             }],
         }],

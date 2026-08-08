@@ -6,6 +6,7 @@ import worker, {
   authorizeInteraction,
   buttonTask,
   callbackTaskStatus,
+  buttonReferenceForJobKey,
   claimInternalNonce,
   claimTaskResult,
   postCard,
@@ -30,8 +31,14 @@ test("rejects an interaction outside the configured private channel", () => {
 });
 
 test("creates a tailoring task from an opaque card button", () => {
-  const result = buttonTask({ data: { custom_id: "tailor:greenhouse:provider-42" }, member: { user: { id: "user-1" } } });
-  assert.deepEqual(result, { kind: "tailor", jobKey: "greenhouse:provider-42", userId: "user-1" });
+  const result = buttonTask({ data: { custom_id: "tailor:f765d605515d048a68135fcbf73b66f2" }, member: { user: { id: "user-1" } } });
+  assert.deepEqual(result, { kind: "tailor", jobRef: "f765d605515d048a68135fcbf73b66f2", userId: "user-1" });
+});
+
+test("derives a Discord-safe opaque button reference from a job key", async () => {
+  const reference = await buttonReferenceForJobKey("greenhouse:provider-42");
+  assert.equal(reference, "f765d605515d048a68135fcbf73b66f2");
+  assert.equal(reference.length, 32);
 });
 
 test("rejects malformed card button identifiers", () => {
