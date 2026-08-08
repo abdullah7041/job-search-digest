@@ -7,6 +7,7 @@
     "DISCORD_GUILD_ID": "1502683160931205273",
     "DISCORD_CHANNEL_ID": "1519386645730824374",
     "DISCORD_USER_ID": "1502670718536777891",
+    "GITHUB_REPOSITORY": "abdullah7041/job-search-digest",
     "DISCORD_PUBLIC_KEY_BASE64": "wGkuPohSY1lDZfTVWOwlQTHuLUloQM1fopzqM4PLnOM="
   },
   "d1_databases": [{ "binding": "DB", "database_name": "job-search-digest", "database_id": "9088533b-eb3b-4170-981d-41d4a73df3cf" }]
