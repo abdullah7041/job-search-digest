@@ -917,16 +917,22 @@ def load_stats():
 
 
 def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
-    """Append today's run stats and prune rows older than STATS_TTL_DAYS.
-    avg_score is None on a no-new-jobs day (nothing was scored)."""
+    """Record today's run and prune rows older than STATS_TTL_DAYS.
+    avg_score is None on a no-new-jobs day (nothing was scored).
+
+    One row per DATE, not per run. The workflow has a manual dispatch button,
+    and 2026-08-08 was re-run four times, so appending gave a single day three
+    of the seven slots in check_drift's trailing window. A re-run now replaces
+    that day's row."""
     row = {
         "date": today, "fetched": fetched, "matched": matched,
         "new": new, "avg_score": avg_score,
     }
     row.update(metrics)
-    stats.append(row)
     cutoff = (datetime.date.today() - datetime.timedelta(days=STATS_TTL_DAYS)).isoformat()
-    pruned = [s for s in stats if s["date"] >= cutoff]
+    pruned = [s for s in stats if s["date"] >= cutoff and s["date"] != today]
+    pruned.append(row)
+    pruned.sort(key=lambda s: s["date"])
     with open(STATS_FILE, "w") as f:
         json.dump(pruned, f, indent=0, sort_keys=True)
 
@@ -935,11 +941,16 @@ def check_drift(stats):
     """Compare the trailing DRIFT_WINDOW_DAYS avg fit score against the prior
     window of the same size, using history recorded BEFORE today's run. Returns
     a warning string, or None if there isn't enough history yet or fit hasn't
-    dropped past the threshold. Fail-soft: never raises, never blocks delivery."""
-    scored = sorted(
-        (s for s in stats if s.get("avg_score") is not None),
-        key=lambda s: s["date"],
-    )
+    dropped past the threshold. Fail-soft: never raises, never blocks delivery.
+
+    Collapses any duplicate dates already on disk (written before save_stats
+    enforced one row per date) so an old, heavily re-run day cannot fill the
+    window on its own."""
+    by_date = {}
+    for s in stats:
+        if s.get("avg_score") is not None:
+            by_date[s["date"]] = s
+    scored = sorted(by_date.values(), key=lambda s: s["date"])
     if len(scored) < DRIFT_MIN_SCORED_RUNS:
         return None
     recent = scored[-DRIFT_WINDOW_DAYS:]
