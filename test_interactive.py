@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline contract tests for the interactive tailoring pipeline."""
 
+import datetime
 import hashlib
 import hmac
 import base64
@@ -11,7 +12,7 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from job_archive import make_snapshot, job_card_payload, write_snapshots
+from job_archive import make_snapshot, job_card_payload, prune_snapshots, write_snapshots
 from resume_source import validate_tailored_resume
 from resume_ingest import prepare_resume_preview
 from discord_delivery import interactive_cards_payload
@@ -117,6 +118,38 @@ class TestJobArchive(unittest.TestCase):
         payload = interactive_cards_payload([], heartbeat=heartbeat)
 
         self.assertEqual(payload["heartbeat"], heartbeat)
+
+    def test_prune_removes_archives_older_than_the_ttl_and_keeps_the_rest(self):
+        with tempfile.TemporaryDirectory() as root:
+            # Written directly rather than via write_snapshots: write_snapshots
+            # prunes against wall-clock today on every call, so backfilling an
+            # old date through it would delete the 2026-01-01 fixture before
+            # this test's own pinned-clock prune ever runs.
+            for date in ("2026-01-01", "2026-08-01", "2026-08-09"):
+                with open(os.path.join(root, f"{date}.json"), "w", encoding="utf-8") as handle:
+                    json.dump({"schema_version": 1, "date": date, "jobs": []}, handle)
+            removed = prune_snapshots(root, ttl_days=120, today=datetime.date(2026, 8, 9))
+
+            remaining = sorted(os.listdir(root))
+
+        self.assertEqual([os.path.basename(path) for path in removed], ["2026-01-01.json"])
+        self.assertEqual(remaining, ["2026-08-01.json", "2026-08-09.json"])
+
+    def test_prune_ignores_files_it_does_not_recognise(self):
+        with tempfile.TemporaryDirectory() as root:
+            write_snapshots([JOB], "2026-01-01", root)
+            with open(os.path.join(root, "notes.json"), "w", encoding="utf-8") as handle:
+                handle.write("{}")
+            prune_snapshots(root, ttl_days=120, today=datetime.date(2026, 8, 9))
+
+            remaining = sorted(os.listdir(root))
+
+        self.assertEqual(remaining, ["notes.json"])
+
+    def test_writing_todays_archive_never_prunes_it(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = write_snapshots([JOB], "2026-08-09", root)
+            self.assertTrue(os.path.exists(path))
 
 
 class TestTailoringEvidenceGate(unittest.TestCase):
