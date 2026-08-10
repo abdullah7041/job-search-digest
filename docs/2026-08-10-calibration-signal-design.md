@@ -65,9 +65,11 @@ not a continuous dial: moving it from 80 to 84 changes nothing, 80 to 85 drops
 which side of a coarse 5-point boundary the clicks fall on — it cannot
 discriminate within a bucket, and a quarter of the sample lives in one bucket.
 
-**2026-08-07's zero-strong day.** `jobs/2026-08-07.json` does not exist —
-plan 003's 120-day archive prune hasn't reached it, this is simply before the
-archive existed. `stats.json` has the aggregate row: `avg_score: 55.0, strong:
+**2026-08-07's zero-strong day.** `jobs/2026-08-07.json` does not exist in
+this repository — confirmed by checking the file directly, not inferred.
+Why it's absent (never written, or written and later removed) isn't
+established from what's on disk today. `stats.json` has the aggregate row:
+`avg_score: 55.0, strong:
 0, review: 12, matched: 26`. The per-job breakdown (which 12 jobs, what scores)
 is not recoverable from this row alone, and it's not established whether
 `avg_score` averages over the 26 matched or the 12 delivered — so this design
@@ -98,14 +100,17 @@ to turn it.**
 several days (`tailored: 4` on 08-03, `tailor_failed: 8` on 08-05,
 `tailor_failed: 10` on 08-06). These are **not** Discord button clicks. In the
 current `digest.py`, both call sites that write a stats row hardcode
-`tailored=0, tailor_failed=0` (`digest.py:1047`, `digest.py:1139`) — there is
-no code path left that increments them. The nonzero historical values are
-residue from the old automatic tailor-on-delivery path that plan 007 ("Remove
-the dead auto-tailoring code from `digest.py`") targets for deletion. So: the
-repository currently holds **no record of a single Discord button click,
-anywhere**. There is nothing to backfill. Whatever this design proposes has to
-be built forward from zero, and the sample-size estimate in Step 4 has to
-start from that.
+`tailored=0, tailor_failed=0` (`digest.py:1047`, `digest.py:1139`), and no
+other code path in the current file increments those columns — a full grep for
+`tailored`/`tailor_failed` turns up only those two hardcoded writes plus
+unrelated matches (`TAILOR_DIR`, `tailored_url`, docstring text). So the
+nonzero historical values were written by an earlier version of `digest.py`
+that no longer exists in this tree; whether that was the auto-tailoring path
+plan 007 flags as dead code, or some other prior behavior, is not established
+by this grep. What is established: the repository currently holds **no record
+of a single Discord button click, anywhere**. There is nothing to backfill.
+Whatever this design proposes has to be built forward from zero, and the
+sample-size estimate in Step 4 has to start from that.
 
 ## Design: the click record
 
@@ -160,43 +165,52 @@ no new auth is invented either way:
   That endpoint is already called once per digest run and is already
   authenticated and nonce-protected; returning a small
   `{clicked_last_7d: [...]}` payload alongside its existing response adds zero
-  routes.
+  routes. The one constraint this option carries: `/internal/digest`'s handler
+  posts the run's cards to Discord *during* that same request
+  (`worker/src/index.js:299-312`), so a response body it returns arrives after
+  the message is already sent — this data is necessarily one run stale, never
+  usable for that run's own message.
 
-Given the project's stated bias against complexity, **the second option is
-the better default** — it costs one extra field on an existing response
-instead of a new endpoint, new auth wiring, and a new test file. A dedicated
-route only earns its keep if something other than the daily digest ever needs
-to read clicks on its own schedule, which nothing in this design requires.
+Given the project's stated bias against complexity, **the fold-in is the
+better default**, with its staleness accepted rather than engineered around —
+see §5, which scopes the reported line to the weekly review template rather
+than the daily digest message, so the one-run lag never matters. A dedicated
+route only earns its keep if something needs same-run, fresher-than-one-day
+click data, which nothing in this design requires.
 
 ### 4. Retention
 
-Plan 004 sets `TASK_RETENTION_DAYS = 7` for `tasks` rows, because a `tasks`
-row holds an encrypted Discord interaction token — a credential with no
-reason to be kept past its 24-hour usefulness window. `click_events` holds
-neither a credential nor user content, so it is not bound by that constraint.
-The relevant precedent is the other retention window plan 004 sets:
+Plan 004 (status: DONE, reviewed and approved on its own branch, not yet
+merged to `main` — confirmed by grepping this tree's `worker/src/index.js` for
+`TASK_RETENTION_DAYS`, which finds nothing) proposes
+`TASK_RETENTION_DAYS = 7` for `tasks` rows, because a `tasks` row holds an
+encrypted Discord interaction token — a credential with no reason to be kept
+past its 24-hour usefulness window. `click_events` holds neither a credential
+nor user content, so it is not bound by that constraint. The relevant
+precedent is the other retention window the same plan sets:
 `DELIVERY_RETENTION_DAYS = 120`, chosen to match `ARCHIVE_TTL_DAYS` in
-`job_archive.py` (plan 003) and `STATE_TTL_DAYS` in `digest.py` — all three
-already agreed to stay aligned at 120 days (`plans/README.md`'s dependency
-notes say so explicitly).
+`job_archive.py` (plan 003, same not-yet-merged status) and `STATE_TTL_DAYS`
+in `digest.py` — all three are already agreed, in `plans/README.md`'s
+dependency notes, to stay aligned at 120 days once both land.
 
 **Recommendation: 120 days**, for the same reason `deliveries` and
-`job_snapshots` use it — the join partner. A click record can only ever be
-interpreted against the `jobs/*.json` snapshot of the job it points at.
-`jobs/*.json` is pruned at 120 days (plan 003); a click row surviving longer
-than its join partner is a row that can never be interpreted again. Keeping
-`click_events` at 120 days costs nothing (it's a two-field row, "two orders of
-magnitude smaller per day" than `jobs/*.json`, per the plan's own note) and
-keeps the retention story for every D1 table legible as one rule: **keep
-non-credential rows as long as their join partner survives; keep credential
-rows only as long as they're useful.**
+`job_snapshots` are designed to use it — the join partner. A click record can
+only ever be interpreted against the `jobs/*.json` snapshot of the job it
+points at. `jobs/*.json` will be pruned at 120 days once plan 003 merges; a
+click row surviving longer than its join partner is a row that can never be
+interpreted again. Keeping `click_events` at 120 days costs nothing (it's a
+two-field row, "two orders of magnitude smaller per day" than `jobs/*.json`,
+per the plan's own note) and keeps the retention story for every D1 table
+legible as one rule: **keep non-credential rows as long as their join partner
+survives; keep credential rows only as long as they're useful.**
 
 ### 5. What is reported, and when
 
 Not a dashboard — the project has no service beyond the daily Action and this
 design should not be the thing that adds one. Smallest surface: one line
-appended to the digest's own Discord message, or to the weekly review
-template's "Calibration decision" section, e.g.:
+appended to the weekly review template's "Calibration decision" section
+(not the daily digest message — see the staleness note in §3, which this
+scoping sidesteps entirely), e.g.:
 
 > Clicked 3 of 12 delivered in the last 7 days. Median clicked score 84,
 > median unclicked 72.
@@ -205,7 +219,8 @@ Computed from `click_events` joined to the score already known to the digest
 run for jobs delivered in the last 7 days (using `jobs/*.json`, not
 `stats.json`, per the per-day-denominator note above until plan 005 lands).
 No new scheduled job — this is computed inline during the digest run, which
-already runs daily.
+already runs daily, and simply carried into the weekly artifact rather than
+the daily one.
 
 ## The honest objections
 
