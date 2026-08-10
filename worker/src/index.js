@@ -75,6 +75,16 @@ function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
+function background(ctx, promise) {
+  // Tests and any runtime without an execution context fall back to awaiting
+  // inline; production Workers always provide ctx.waitUntil.
+  if (typeof ctx?.waitUntil === "function") {
+    ctx.waitUntil(promise);
+    return promise;
+  }
+  return promise;
+}
+
 function base64(bytes) {
   return btoa(String.fromCharCode(...bytes));
 }
@@ -181,8 +191,27 @@ async function dispatchWorkflow(env, taskId) {
     headers: { "authorization": `Bearer ${env.GITHUB_TOKEN}`, "accept": "application/vnd.github+json", "content-type": "application/json", "user-agent": "job-search-digest-worker" },
     body: JSON.stringify({ ref: "main", inputs: { task_id: taskId } }),
   });
-  if (!response.ok) throw new Error(`GitHub workflow dispatch failed: ${response.status}`);
+  if (!response.ok) {
+    await env.DB.prepare(
+      "UPDATE tasks SET status = 'failed', delivery_error = ? WHERE id = ? AND status = 'received'"
+    ).bind(`GitHub workflow dispatch failed: ${response.status}`, taskId).run();
+    throw new Error(`GitHub workflow dispatch failed: ${response.status}`);
+  }
   await env.DB.prepare("UPDATE tasks SET status = 'dispatched' WHERE id = ? AND status = 'received'").bind(taskId).run();
+}
+
+async function reportDispatchFailure(env, interactionToken, message) {
+  const endpoint = `https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${interactionToken}/messages/@original`;
+  try {
+    await fetch(endpoint, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: message, flags: 64 }),
+    });
+  } catch {
+    // The user's interaction may already have expired. Nothing further to do:
+    // the task row still records the failure for inspection.
+  }
 }
 
 function attachmentFrom(payload) {
@@ -257,7 +286,7 @@ async function deliverResult(env, task, result) {
   if (!response.ok) throw new Error(`Discord result delivery failed: ${response.status}`);
 }
 
-async function handleInteraction(request, env) {
+async function handleInteraction(request, env, ctx) {
   const raw = await request.text();
   if (!(await discordSignatureIsValid(request, raw, env))) return new Response("invalid signature", { status: 401 });
   const payload = JSON.parse(raw);
@@ -281,7 +310,13 @@ async function handleInteraction(request, env) {
     else if (payload.data?.name === "tailor-jd") task = { kind: "tailor-jd", userId: allowed.userId, input: { attachment: attachmentFrom(payload) } };
     else return json({ type: 4, data: { content: "Unsupported command.", flags: 64 } });
     const taskId = await createTask(env, task, payload.token);
-    await dispatchWorkflow(env, taskId);
+    // Discord discards the interaction if it is not acknowledged within 3
+    // seconds. The GitHub dispatch is an external round-trip, so it runs after
+    // the acknowledgement; a failure is reported back through the same message.
+    const dispatch = dispatchWorkflow(env, taskId).catch((error) =>
+      reportDispatchFailure(env, payload.token, `Could not start that task: ${error.message}`)
+    );
+    background(ctx, dispatch);
     return json({ type: 5, data: { content: task.kind === "resume" ? "Reading your CV privately…" : "Preparing your tailored CV privately…", flags: 64 } });
   } catch (error) {
     return json({ type: 4, data: { content: `Could not start that task: ${error.message}`, flags: 64 } });
@@ -289,9 +324,9 @@ async function handleInteraction(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.pathname === "/interactions" && request.method === "POST") return handleInteraction(request, env);
+    if (url.pathname === "/interactions" && request.method === "POST") return handleInteraction(request, env, ctx);
     if (!url.pathname.startsWith("/internal/")) return new Response("not found", { status: 404 });
     const raw = await request.text();
     if (!(await internalRequestIsValid(request, raw, env))) return new Response("unauthorized", { status: 401 });
