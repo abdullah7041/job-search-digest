@@ -1,3 +1,6 @@
+-- Rows are pruned by pruneExpiredState() in src/index.js, 7 days past
+-- expires_at. interaction_token is an encrypted, short-lived Discord token;
+-- it must not be retained beyond debugging usefulness.
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   kind TEXT NOT NULL,
@@ -33,7 +36,8 @@ CREATE TABLE IF NOT EXISTS internal_nonces (
 
 -- Snapshot rows are append-only and keyed by the exact Discord message whose
 -- button resolves them. This prevents a later digest from changing an older
--- card's job description.
+-- card's job description. Pruned by pruneExpiredState() after 120 days, which
+-- matches STATE_TTL_DAYS in digest.py and ARCHIVE_TTL_DAYS in job_archive.py.
 CREATE TABLE IF NOT EXISTS job_snapshots (
   message_id TEXT PRIMARY KEY,
   job_key TEXT NOT NULL,

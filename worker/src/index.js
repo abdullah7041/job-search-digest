@@ -147,6 +147,34 @@ export async function claimInternalNonce(db, nonce) {
   return claim.meta?.changes === 1;
 }
 
+// Retention windows. Tasks hold an encrypted Discord interaction token that is
+// useful for at most 24 hours, so they are kept only briefly past expiry for
+// debugging. Snapshot and delivery rows are kept as long as seen.json keeps a
+// job id (ARCHIVE_TTL_DAYS / STATE_TTL_DAYS = 120 days), because a button on a
+// card older than that resolves to a job the pipeline has already forgotten.
+const TASK_RETENTION_DAYS = 7;
+const DELIVERY_RETENTION_DAYS = 120;
+
+export async function pruneExpiredState(db) {
+  const removed = {};
+  const sweeps = [
+    ["tasks", `DELETE FROM tasks WHERE datetime(expires_at) < datetime('now', '-${TASK_RETENTION_DAYS} days')`],
+    ["job_snapshots", `DELETE FROM job_snapshots WHERE datetime(captured_at) < datetime('now', '-${DELIVERY_RETENTION_DAYS} days')`],
+    ["deliveries", `DELETE FROM deliveries WHERE datetime(posted_at) < datetime('now', '-${DELIVERY_RETENTION_DAYS} days')`],
+    ["delivery_claims", `DELETE FROM delivery_claims WHERE state = 'posted' AND datetime(claimed_at) < datetime('now', '-${DELIVERY_RETENTION_DAYS} days')`],
+  ];
+  for (const [table, sql] of sweeps) {
+    try {
+      const result = await db.prepare(sql).bind().run();
+      removed[table] = result.meta?.changes ?? 0;
+    } catch (error) {
+      // A sweep failure must never cost the caller its digest delivery.
+      removed[table] = `error: ${error.message}`;
+    }
+  }
+  return removed;
+}
+
 export async function claimTaskResult(db, taskId) {
   const leaseUntil = Math.floor(Date.now() / 1000) + 2 * 60;
   const claim = await db.prepare(
@@ -297,6 +325,7 @@ export default {
     if (!(await internalRequestIsValid(request, raw, env))) return new Response("unauthorized", { status: 401 });
     if (!(await claimInternalNonce(env.DB, request.headers.get("X-Job-Digest-Nonce")))) return new Response("replayed request", { status: 409 });
     if (url.pathname === "/internal/digest" && request.method === "POST") {
+      const pruned = await pruneExpiredState(env.DB);
       const digest = JSON.parse(raw);
       const cards = digest.cards || [];
       if (digest.heartbeat) {
@@ -305,7 +334,7 @@ export default {
           payload: { content: digest.heartbeat.content, allowed_mentions: { parse: [] } },
         });
       }
-      const summary = { posted: [], existing: [], in_progress: [], retryable: [], failed: [] };
+      const summary = { posted: [], existing: [], in_progress: [], retryable: [], failed: [], pruned };
       for (const card of cards) {
         try {
           const outcome = await postCard(env, card);
