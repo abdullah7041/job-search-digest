@@ -84,24 +84,25 @@ One caveat the filter can't catch: some Gulf roles are nationality-gated (for ex
 
 One Gemini call scores the survivors 0 to 100 and writes a one-line "why it fits," using a short profile of you. Since 31 Jul 2026 the prompt carries an explicit rubric (90+ only for senior-IC core-area roles whose JD requirements the profile covers; leadership/staff/wrong-location scores 0–39; never above 85 without JD text) and each job includes a JD excerpt, so scores reflect actual requirements rather than title vibes. If `GEMINI_API_KEY` is missing or the call fails, it falls back to deterministic keyword scoring so a model outage never kills the run. Same fallback design as the news digest.
 
-The digest makes that confidence visible instead of hiding borderline roles. **Strong matches** have a validated Gemini score of at least 80 and JD text; only these receive automatic tailored resumes. **Worth reviewing** passed every hard eligibility filter but have a lower or invalid score, no JD text, or another fit uncertainty. This favors finding viable roles without presenting every result as equally ready to apply for.
+The digest makes that confidence visible instead of hiding borderline roles. **Strong matches** have a validated Gemini score of at least 80 and JD text. **Worth reviewing** passed every hard eligibility filter but have a lower or invalid score, no JD text, or another fit uncertainty. This favors finding viable roles without presenting every result as equally ready to apply for. Every delivered job, either tier, still gets its own Tailor CV button (see below); a card without captured JD text says so in its footer and the button reports back what's missing instead of guessing.
 
-## Tailored resumes
+`RANK_MODEL = gemini-3.1-flash-lite` does the scoring — classification over at most 25 short records in a single call, which is what Flash-Lite is built for and the cheapest option available. The id was checked against [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) on 2 Aug 2026 and listed **stable**; `gemini-3.1-flash-lite-preview` is shut down. Re-check when a run starts returning HTTP 404 from the model endpoint.
 
-Only Strong matches (up to `TAILOR_MAX` per run) get `resume.md` — the master resume — rewritten against that job's actual JD text: reordered and re-emphasized, truth-constrained to the master (the prompt forbids inventing anything), ending with a fit-notes section that lists real gaps instead of papering over them. JD text comes free from Ashby/Lever/Pinpoint/JSearch payloads; Greenhouse costs one GET per delivered job and Workable one cached GET per company. Output lands in `tailored/<date>/<company>--<title>.md`, the workflow commits it back, and each digest line links its file directly. Missing `resume.md` or `GEMINI_API_KEY` skips tailoring; the digest still delivers.
+## Tailoring, on demand
+
+Every card in the digest — Strong or Worth reviewing — carries a "Tailor CV" button. Its `custom_id` is `tailor:<first 32 hex chars of sha256(job_key)>`; the job key itself never appears in the id. Clicking it sends a signed Ed25519 interaction to the Cloudflare Worker, which checks the interaction's guild, channel, and user against its own configured ids before doing anything else — only the one person this deployment is scoped to can trigger a tailor.
+
+If that check passes, the Worker looks up the immutable snapshot captured for that exact Discord message at delivery time and re-verifies the job description text against the SHA-256 recorded in the snapshot. Only if it still matches does the Worker write a task row to D1 (with the interaction token encrypted) and trigger the `interactive.yml` workflow with the task id. `interactive_runner.py` fetches that task over HMAC-authenticated HTTP, re-checks the JD hash and completeness a second time, and builds a conservative two-page PDF from `resume.md`: source lines whose wording overlaps the JD's vocabulary, plus a "gaps to verify" list of JD terms the resume doesn't support. Nothing is invented — it selects and quotes, it doesn't rewrite. The Worker attaches the PDF to the original interaction as an ephemeral reply (`flags: 64`), visible only to the requester. No channel message is posted, and nothing tailored is ever committed to the repository — that's a stated constraint of the design, not an oversight.
 
 Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth the tailoring quotes from.
 
-Two models, on purpose. Both ids checked against [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) on 2 Aug 2026 and listed **stable**:
-
-- `RANK_MODEL = gemini-3.1-flash-lite` — scoring is classification over at most 25 short records in a single call. Flash-Lite is built for that and is the cheapest option.
-- `TAILOR_MODEL = gemini-3.6-flash` — rewriting a whole resume is long-form generation under hard truth constraints. Google's own guidance puts Flash-Lite at classification, extraction and basic summarization, and Flash at longer reasoning chains and sustained coherence. On the tailoring prompt Flash-Lite drops sections, loosens the no-invention rule, and writes thin Fit notes. It runs at most `TAILOR_MAX` times a day, so the extra cost is bounded.
-
-Note `gemini-3.1-flash-lite-preview` is shut down; the stable id above is not. Re-check both when a run starts returning HTTP 404 from the model endpoint.
-
 ## Delivery
 
-Discord webhook. The digest is grouped by company within Strong matches and Worth reviewing, sorted by fit score, and split into sub-2000-character messages so it never hits Discord's limit. A failed POST exits non-zero so a broken run is loud, not silent.
+The primary path is application-owned: the daily run builds one immutable snapshot per delivered job and POSTs them all to the Cloudflare Worker's `/internal/digest` route (HMAC-signed, single-use nonce). The Worker posts one Discord embed per job as the application itself — not a webhook — each with its own Tailor CV button.
+
+Posting is idempotent. A `delivery_claims` row per job key, held under a lease, means a retried run never double-posts the same job. Only jobs the Worker confirms as `posted` or `existing` are recorded in `seen.json`, so a job that never actually made it to Discord is retried the next day instead of silently disappearing.
+
+If the Worker is unreachable, the run falls back to the plain Discord webhook and posts the old-style text digest: grouped by company within Strong matches and Worth reviewing, sorted by fit score, split into sub-2000-character messages so it never hits Discord's limit.
 
 Link verification is evidence, not a source of false negatives. A link marked *inconclusive* means GitHub Actions received a block, rate limit, authentication gate, or network failure; the role remains in the digest because it may open from your browser. Only a definite closure (for example a not-found response or a closed-posting page) is dropped.
 
@@ -109,26 +110,69 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 
 ## Files
 
-- `digest.py` — the whole engine. Config block and company list at the top, the five ATS fetchers in the middle, ranking + tailoring after them, candidates list and `--discover` mode at the bottom. One file, no framework.
-- `resume.md` — the master resume the tailoring stage rewrites. Update it whenever the Cowork master changes.
-- `tailored/` — one folder per digest date, one tailored resume per delivered job. Committed back by the workflow.
-- `test_digest.py` — offline tests (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths. `python test_digest.py`.
-- `.github/workflows/digest.yml` — the cron. `0 4 * * *` is 07:00 AST. Includes a manual run button and the step that commits `seen.json`, `stats.json`, and `tailored/` back.
+**Daily pipeline**
+
+- `digest.py` — the whole engine. Config block and company list at the top, the five ATS fetchers, filters, and ranking in the middle, delivery and the candidates/`--discover` mode at the bottom. One file, no framework.
+- `resume.md` — the master resume the on-demand tailoring quotes from. Update it whenever the Cowork master changes.
+- `profile.json` — your job-fit profile (blurb, skill keywords, target titles) sent to Gemini for scoring and used by the keyword fallback. Refreshed by hand or via `PROFILE_REFRESH_PROMPT.md`.
+- `requirements.txt` — `requests` for every HTTP call, `pypdf` and `reportlab` for building the tailored PDF.
+- `discord_delivery.py` — signs and POSTs the daily batch of job cards to the Worker's `/internal/digest` route.
+- `job_archive.py` — builds job snapshots (including the JD SHA-256), the Discord card/button payload, and writes `jobs/<date>.json`.
+- `interactive_runner.py` — runs one on-demand tailoring task: re-verifies the JD hash, builds the two-page PDF, reports the result back to the Worker.
+- `resume_source.py` — evidence helpers shared by resume ingestion and tailoring: splits `resume.md` into quotable source blocks and checks a tailored draft's claims against them.
+- `resume_ingest.py` — normalizes resume text submitted through the Worker's `/resume` command before it becomes `resume.md`.
+- `test_digest.py` — offline tests for the daily pipeline (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths.
+- `test_interactive.py` — offline contract tests for the snapshot/tailoring/Worker-callback pipeline.
+- `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, and `jobs/` back.
+- `jobs/` — one `<date>.json` per digest date: full evidence (title, company, location, URL, score, tier, link status, complete JD text and its SHA-256) for every delivered job. Committed back by the workflow; same-day re-runs append, never rewrite.
+- `seen.json` — job ids already delivered. Created on first run; only the workflow commits it.
+- `stats.json` — the per-run trend (fetched/matched/new/avg-score) the drift warning reads.
+
+**On-demand tailoring (Cloudflare Worker)**
+
+- `worker/src/index.js` — the Worker: verifies Discord interactions, claims delivery of daily cards idempotently, creates and serves tailoring tasks, relays the PDF back as an ephemeral reply.
+- `worker/schema.sql` — the D1 schema: `tasks`, `deliveries`, `delivery_claims`, `internal_nonces`, `job_snapshots`.
+- `worker/wrangler.jsonc` — Worker config: non-secret `vars` (Discord application/guild/channel/user ids, the GitHub repository, the Discord public key) and the D1 binding. No secret values live here.
+- `worker/test/interaction.test.js` — the Worker's Node test suite (`node --test`): signature verification, channel/user gating, snapshot hash checks, idempotent delivery claims, nonce handling.
+- `worker/package.json` — Worker has no runtime dependencies; `npm test` runs `node --test`.
+- `.github/workflows/interactive.yml` — triggered by the Worker (`workflow_dispatch` with a `task_id` input) to run `interactive_runner.py` for one tailoring task.
+
+**Historical / reference**
+
+- `tailored/` — tailored resumes from the old, now-removed auto-tailoring pipeline. Historical output, not produced by anything on `main` anymore.
+- `JOBS.md` — a dated snapshot of verified job listings from 2026-07-23. Not a living document; don't expect it to track current postings.
+- `PROFILE_REFRESH_PROMPT.md` — the monthly prompt used to review and update `profile.json` by hand.
 - `docs/weekly-job-review-template.md` — copy this once a week to record which Strong and Review roles were useful, then use the notes to calibrate the workflow deliberately.
-- `requirements.txt` — just `requests`.
-- `seen.json` — created on first run. Don't commit it by hand; the workflow does.
+- `docs/superpowers/` — design specs and plans from when features were built. Records of a decision at a point in time, not maintained docs — don't edit them to match today's code.
+- `docs/2026-07-31-ai-agent-plan.md` — a proposal for a future Claude Code review agent. Not implemented: there is no `.github/workflows/agent.yml`.
 
 ## Setup
 
+Two halves: the repository that runs the daily job, and the Cloudflare Worker that owns Discord delivery and on-demand tailoring.
+
+**Repository**
+
 1. New private GitHub repo. Drop these files in (keep the `.github/workflows/` path).
-2. Discord: Server Settings, Integrations, Webhooks, New Webhook, pick the channel, Copy Webhook URL.
-3. Repo Settings, Secrets and variables, Actions. Add `DISCORD_WEBHOOK_URL`. Add `GEMINI_API_KEY` if you want LLM scoring.
-4. Actions tab, run the workflow manually once. Read the log.
+2. Repo Settings, Secrets and variables, Actions. Add, per `.github/workflows/digest.yml`:
+   - `DISCORD_WEBHOOK_URL` — the fallback delivery path, used whenever the Worker can't be reached.
+   - `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — the Worker's address and the shared HMAC secret. Without these the run always falls back to the plain webhook and never posts a Tailor CV button.
+   - `RAPIDAPI_KEY` — optional. Without it the digest runs against the five ATS APIs only, no JSearch.
+   - `GEMINI_API_KEY` — optional. Without it ranking falls back to deterministic keyword scoring.
+   `.github/workflows/interactive.yml` reuses `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — same secrets, same names.
+3. Actions tab, run the `job-digest` workflow manually once. Read the log.
+
+**Cloudflare Worker**
+
+1. Create a Discord application; point its interactions endpoint URL at the deployed Worker.
+2. Create a D1 database and load it from `worker/schema.sql`.
+3. Fill in the non-secret `vars` in `worker/wrangler.jsonc`: the Discord application, guild, channel and user ids, the GitHub repository, and the Discord public key (public by design, safe to commit).
+4. Set the Worker's secret values with `wrangler secret put` — these are not committed anywhere: `DISCORD_BOT_TOKEN`, `GITHUB_TOKEN`, `CALLBACK_HMAC_SECRET`, `TASK_ENCRYPTION_KEY`.
 
 ## Test before you trust it (in Claude Code)
 
-- Run `python test_digest.py`. The scheduled workflow runs this offline regression suite before it calls live APIs or Discord.
-- Run `python digest.py` locally with the two env vars set. Confirm a message lands in Discord.
+- Run `python -m unittest test_digest.py test_interactive.py`. CI runs this offline regression suite before it calls any live API.
+- Run `cd worker && node --test`. CI runs this too, right after the Python suite, before `digest.py` ever runs.
+- Run `python digest.py` locally with `DISCORD_WEBHOOK_URL` set (and `INTERACTIVE_WORKER_URL` / `WORKER_CALLBACK_SECRET` if you want to exercise the Worker path). Confirm a digest lands in Discord.
 - Read the fetch log. Each company prints its job count or a WARN. Confirm HALA, Tamara, Careem, and Lean all return jobs.
 - Check the first digest by hand: are the roles actually Saudi, actually senior, actually relevant? Tune `TITLE_INCLUDE` / `TITLE_EXCLUDE` if not.
 - Kill the Gemini key for one run and confirm the keyword fallback still posts.
@@ -136,4 +180,6 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 
 ## What's deliberately simple
 
-No database. State is one JSON file committed back by the Action. No scraper, no browser automation, no queue. Five ATS readers because the companies genuinely split across them, not for their own sake — each one was added only after a company you actually want forced it, and only after the live API was seen returning data.
+No scraper, no browser automation, no queue, no framework. `digest.py` is one file for the whole daily pipeline. Five ATS readers because the companies genuinely split across them, not for their own sake — each one was added only after a company you actually want forced it, and only after the live API was seen returning data.
+
+There is a database now — D1, five tables — but it's deliberately small: coordination state for the interaction flow (which delivery claimed which job, which task is waiting on which Discord token, a short-lived nonce table). The daily job's own state is still exactly what it always was: JSON files (`seen.json`, `stats.json`, `jobs/`) committed back by the Action. Nothing about the daily pipeline needed a database; the button flow did, because a Discord interaction has to be looked up minutes or days after the run that created it.
