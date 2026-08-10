@@ -1106,6 +1106,7 @@ def main():
             )
 
     interactive_delivery_claimed = False
+    delivery_failed = False
     delivered_ids = set()
     if worker_url:
         try:
@@ -1119,6 +1120,15 @@ def main():
                 f"Interactive delivery accepted {len(accepted_keys)} of {len(snapshots)} cards "
                 f"({len(failed)} failed)"
             )
+            # Nothing reached Discord and at least one card definitively failed.
+            # Falling back to the webhook would risk double-posting the jobs the
+            # Worker may still hold, so the run stays single-channel and instead
+            # fails loudly: seen.json is untouched, so tomorrow retries them.
+            if not accepted_keys and not uncertain_keys and failed:
+                delivery_failed = True
+                log(f"ERROR no job card reached Discord; {len(failed)} of {len(snapshots)} cards failed")
+                for item in failed[:5]:
+                    log(f"  failed card {item.get('job_key')}: {item.get('error')}")
         except Exception as error:
             log(f"WARN interactive Discord delivery failed: {error}; falling back to webhook")
     if not interactive_delivery_claimed:
@@ -1137,8 +1147,12 @@ def main():
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
         strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
+        delivered=len(delivered_ids),
     )
     log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")
+    if delivery_failed:
+        log("FATAL digest produced jobs but none were delivered; failing the run so it is visible")
+        sys.exit(1)
 
 
 # ----------------------------- CANDIDATES -----------------------------------

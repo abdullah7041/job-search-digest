@@ -329,7 +329,7 @@ class TestEndToEnd(unittest.TestCase):
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle), {})
 
-    def test_failed_interactive_delivery_does_not_fall_back_or_mark_jobs_seen(self):
+    def test_failed_interactive_delivery_fails_loudly_without_falling_back(self):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
@@ -348,12 +348,42 @@ class TestEndToEnd(unittest.TestCase):
                 ],
             }
 
-        with mock.patch.object(digest, "post_interactive_cards", side_effect=failed):
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=failed), \
+             mock.patch.object(digest, "post_discord") as post_webhook, \
+             mock.patch.object(digest, "save_seen") as save_seen:
+            with self.assertRaises(SystemExit) as raised:
+                run_main(env, ranking, None)
+
+        # The run fails loudly...
+        self.assertEqual(raised.exception.code, 1)
+        # ...without double-posting through the webhook...
+        post_webhook.assert_not_called()
+        # ...and without marking anything seen, so tomorrow retries these jobs.
+        save_seen.assert_called_once()
+        self.assertEqual(save_seen.call_args[0][0], {})
+
+    def test_partial_interactive_delivery_succeeds_and_marks_only_posted_jobs_seen(self):
+        env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+
+        def partial(_url, _secret, snapshots, **_kwargs):
+            return {
+                "posted": [snapshots[0]["job_key"]],
+                "existing": [],
+                "in_progress": [],
+                "retryable": [],
+                "failed": [{"job_key": snapshots[1]["job_key"], "error": "Discord card post failed: 503"}],
+            }
+
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=partial):
             posts, work = run_main(env, ranking, None)
 
         self.assertEqual(posts, [])
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
-            self.assertEqual(json.load(handle), {})
+            self.assertEqual(len(json.load(handle)), 1)
 
     def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
