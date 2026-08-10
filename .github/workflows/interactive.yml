@@ -33,5 +33,6 @@ jobs:
         env:
           INTERACTIVE_WORKER_URL: ${{ secrets.INTERACTIVE_WORKER_URL }}
           WORKER_CALLBACK_SECRET: ${{ secrets.WORKER_CALLBACK_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TASK_ID: ${{ inputs.task_id }}
         run: python interactive_runner.py

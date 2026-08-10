@@ -263,5 +263,26 @@ class TestInteractiveRunner(unittest.TestCase):
         self.assertEqual(received["result"]["status"], "completed")
 
 
+class TestInteractiveWorkflowWiring(unittest.TestCase):
+    """The runner's tailoring silently degrades to an untailored resume when
+    GEMINI_API_KEY is absent, so the workflow must supply it."""
+
+    WORKFLOW = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), ".github", "workflows", "interactive.yml"
+    )
+
+    def _workflow_text(self):
+        with open(self.WORKFLOW, encoding="utf-8") as handle:
+            return handle.read()
+
+    def test_workflow_passes_the_gemini_key_to_the_runner(self):
+        self.assertIn("GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}", self._workflow_text())
+
+    def test_workflow_still_passes_the_worker_callback_configuration(self):
+        text = self._workflow_text()
+        for name in ("INTERACTIVE_WORKER_URL", "WORKER_CALLBACK_SECRET", "TASK_ID"):
+            self.assertIn(f"{name}:", text)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
