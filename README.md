@@ -120,7 +120,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `job_archive.py` — builds job snapshots (including the JD SHA-256), the Discord card/button payload, and writes `jobs/<date>.json`.
 - `interactive_runner.py` — runs one on-demand tailoring task: re-verifies the JD hash, builds the two-page PDF, reports the result back to the Worker.
 - `resume_source.py` — evidence helpers shared by resume ingestion and tailoring: splits `resume.md` into quotable source blocks and checks a tailored draft's claims against them.
-- `resume_ingest.py` — normalizes resume text submitted through the Worker's `/resume` command before it becomes `resume.md`.
+- `resume_ingest.py` — normalizes raw resume text (from a `/resume` upload) into the form `resume.md` needs, with a preview step before anything is accepted as the new master.
 - `test_digest.py` — offline tests for the daily pipeline (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths.
 - `test_interactive.py` — offline contract tests for the snapshot/tailoring/Worker-callback pipeline.
 - `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, and `jobs/` back.
@@ -154,7 +154,7 @@ Two halves: the repository that runs the daily job, and the Cloudflare Worker th
 
 1. New private GitHub repo. Drop these files in (keep the `.github/workflows/` path).
 2. Repo Settings, Secrets and variables, Actions. Add, per `.github/workflows/digest.yml`:
-   - `DISCORD_WEBHOOK_URL` — the fallback delivery path, used whenever the Worker can't be reached.
+   - `DISCORD_WEBHOOK_URL` — the fallback delivery path, used whenever the Worker can't be reached. Not optional: if interactive delivery fails and this isn't set, the run logs FATAL and exits non-zero instead of silently dropping the digest.
    - `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — the Worker's address and the shared HMAC secret. Without these the run always falls back to the plain webhook and never posts a Tailor CV button.
    - `RAPIDAPI_KEY` — optional. Without it the digest runs against the five ATS APIs only, no JSearch.
    - `GEMINI_API_KEY` — optional. Without it ranking falls back to deterministic keyword scoring.
