@@ -44,3 +44,21 @@ CREATE TABLE IF NOT EXISTS job_snapshots (
   snapshot_json TEXT NOT NULL,
   captured_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS confirmed_resumes (
+  user_id TEXT PRIMARY KEY,
+  markdown TEXT NOT NULL,
+  source_sha256 TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS resume_previews (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  markdown TEXT NOT NULL,
+  source_sha256 TEXT NOT NULL,
+  base_version INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status = 'pending')
+);

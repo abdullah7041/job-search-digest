@@ -18,6 +18,18 @@ export function buttonTask(payload) {
   return { kind: "tailor", jobRef: match[1].toLowerCase(), userId: interactionUserId(payload) };
 }
 
+export function resumeComponentAction(payload) {
+  const customId = payload.data?.custom_id || "";
+  const match = /^resume-(ok|cancel):([0-9a-f-]{1,36}):([0-9a-f]{32})$/i.exec(customId);
+  if (!match) throw new Error("Invalid resume confirmation button.");
+  return {
+    action: match[1] === "ok" ? "confirm" : "cancel",
+    previewId: match[2],
+    digestPrefix: match[3].toLowerCase(),
+    userId: interactionUserId(payload),
+  };
+}
+
 export function taskExpiryMilliseconds(kind) {
   return kind === "resume" ? 24 * 60 * 60 * 1000 : 14 * 60 * 1000;
 }
@@ -172,6 +184,7 @@ export async function pruneExpiredState(db) {
     ["job_snapshots", `DELETE FROM job_snapshots WHERE datetime(captured_at) < datetime('now', '-${DELIVERY_RETENTION_DAYS} days')`],
     ["deliveries", `DELETE FROM deliveries WHERE datetime(posted_at) < datetime('now', '-${DELIVERY_RETENTION_DAYS} days')`],
     ["delivery_claims", `DELETE FROM delivery_claims WHERE state = 'posted' AND datetime(claimed_at) < datetime('now', '-${DELIVERY_RETENTION_DAYS} days')`],
+    ["resume_previews", "DELETE FROM resume_previews WHERE datetime(expires_at) <= datetime('now')"],
   ];
   for (const [table, sql] of sweeps) {
     try {
@@ -183,6 +196,41 @@ export async function pruneExpiredState(db) {
     }
   }
   return removed;
+}
+
+export async function confirmResumePreview(db, userId, previewId, digestPrefix) {
+  const confirm = db.prepare(
+    "INSERT INTO confirmed_resumes (user_id, markdown, source_sha256, version, updated_at) " +
+    "SELECT user_id, markdown, source_sha256, base_version + 1, datetime('now') FROM resume_previews " +
+    "WHERE id = ? AND user_id = ? AND status = 'pending' AND substr(source_sha256, 1, 32) = ? " +
+    "AND base_version = COALESCE((SELECT version FROM confirmed_resumes WHERE user_id = ?), 0) " +
+    "ON CONFLICT(user_id) DO UPDATE SET markdown = excluded.markdown, source_sha256 = excluded.source_sha256, " +
+    "version = excluded.version, updated_at = excluded.updated_at WHERE confirmed_resumes.version = excluded.version - 1"
+  ).bind(previewId, userId, digestPrefix, userId);
+  const [result] = await db.batch([confirm]);
+  if (result.meta?.changes !== 1) return { ok: false, reason: "stale" };
+  await db.prepare(
+    "DELETE FROM resume_previews WHERE id = ? AND user_id = ? AND status = 'pending' AND substr(source_sha256, 1, 32) = ?"
+  ).bind(previewId, userId, digestPrefix).run();
+  return { ok: true };
+}
+
+export async function currentConfirmedResume(db, userId) {
+  return db.prepare(
+    "SELECT markdown, source_sha256, version FROM confirmed_resumes WHERE user_id = ?"
+  ).bind(userId).first();
+}
+
+export async function createResumePreview(db, userId, markdown, sourceSha256) {
+  const current = await currentConfirmedResume(db, userId);
+  const baseVersion = current?.version || 0;
+  const id = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + taskExpiryMilliseconds("resume")).toISOString();
+  await db.prepare(
+    "INSERT INTO resume_previews (id, user_id, markdown, source_sha256, base_version, expires_at, status) " +
+    "VALUES (?, ?, ?, ?, ?, ?, 'pending')"
+  ).bind(id, userId, markdown, sourceSha256, baseVersion, expiresAt).run();
+  return { id, digestPrefix: sourceSha256.slice(0, 32), baseVersion };
 }
 
 export async function claimTaskResult(db, taskId) {

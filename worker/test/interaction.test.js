@@ -12,6 +12,10 @@ import worker, {
   postCard,
   pruneExpiredState,
   releaseTaskResult,
+  resumeComponentAction,
+  confirmResumePreview,
+  createResumePreview,
+  currentConfirmedResume,
   tailoringInputFromSnapshotRow,
   taskAccessStatus,
   taskExpiryMilliseconds,
@@ -44,6 +48,82 @@ test("derives a Discord-safe opaque button reference from a job key", async () =
 
 test("rejects malformed card button identifiers", () => {
   assert.throws(() => buttonTask({ data: { custom_id: "tailor:" }, member: { user: { id: "user-1" } } }), /invalid/i);
+});
+
+test("parses a digest-bound resume confirmation before tailoring button routing", () => {
+  assert.deepEqual(
+    resumeComponentAction({
+      data: { custom_id: "resume-ok:abcdef12-3456-7890-abcd-ef1234567890:0123456789abcdef0123456789abcdef" },
+      member: { user: { id: "user-1" } },
+    }),
+    {
+      action: "confirm",
+      previewId: "abcdef12-3456-7890-abcd-ef1234567890",
+      digestPrefix: "0123456789abcdef0123456789abcdef",
+      userId: "user-1",
+    },
+  );
+  assert.throws(
+    () => resumeComponentAction({ data: { custom_id: "resume-ok:abcdef12-3456-7890-abcd-ef1234567890:bad" }, member: { user: { id: "user-1" } } }),
+    /invalid resume/i,
+  );
+});
+
+test("does not delete a preview when its atomic confirmation loses a version race", async () => {
+  const statements = [];
+  const db = {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return { sql, args, async run() { return { meta: { changes: 0 } }; } };
+        },
+      };
+    },
+    async batch(batch) {
+      statements.push(...batch);
+      return [{ meta: { changes: 0 } }];
+    },
+  };
+
+  const result = await confirmResumePreview(db, "user-1", "preview-123", "0123456789abcdef0123456789abcdef");
+
+  assert.deepEqual(result, { ok: false, reason: "stale" });
+  assert.equal(statements.length, 1);
+  assert.match(statements[0].sql, /INSERT INTO confirmed_resumes/);
+});
+
+test("stores a pending preview against the current confirmed-resume version", async () => {
+  const writes = [];
+  const db = {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              return sql.startsWith("SELECT markdown")
+                ? { markdown: "# Existing", source_sha256: "old", version: 4 }
+                : null;
+            },
+            async run() {
+              writes.push({ sql, args });
+              return { meta: { changes: 1 } };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  const current = await currentConfirmedResume(db, "user-1");
+  const preview = await createResumePreview(db, "user-1", "# Updated", "f".repeat(64));
+
+  assert.deepEqual(current, { markdown: "# Existing", source_sha256: "old", version: 4 });
+  assert.equal(preview.baseVersion, 4);
+  assert.equal(preview.digestPrefix, "f".repeat(32));
+  assert.match(preview.id, /^[0-9a-f-]{36}$/i);
+  assert.equal(writes.length, 1);
+  assert.match(writes[0].sql, /INSERT INTO resume_previews/);
+  assert.equal(writes[0].args[4], 4);
 });
 
 test("expires a tailoring interaction before Discord's token window", () => {
@@ -462,15 +542,16 @@ test("prunes expired tasks and aged delivery state on the daily digest tick", as
 
   const removed = await pruneExpiredState(db);
 
-  assert.equal(executed.length, 4);
+  assert.equal(executed.length, 5);
   assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM tasks")));
   assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM job_snapshots")));
   assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM deliveries")));
   assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM delivery_claims")));
+  assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM resume_previews")));
   // Live coordination state is never swept.
   const claims = executed.find((sql) => sql.startsWith("DELETE FROM delivery_claims"));
   assert.match(claims, /state = 'posted'/);
-  assert.deepEqual(removed, { tasks: 2, job_snapshots: 2, deliveries: 2, delivery_claims: 2 });
+  assert.deepEqual(removed, { tasks: 2, job_snapshots: 2, deliveries: 2, delivery_claims: 2, resume_previews: 2 });
 });
 
 test("a failing retention sweep never breaks the digest delivery path", async () => {
