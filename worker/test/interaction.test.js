@@ -10,6 +10,7 @@ import worker, {
   claimInternalNonce,
   claimTaskResult,
   postCard,
+  pruneExpiredState,
   releaseTaskResult,
   tailoringInputFromSnapshotRow,
   taskAccessStatus,
@@ -326,4 +327,56 @@ test("prunes expired HMAC nonces while atomically claiming a new nonce", async (
   assert.equal(nonces.has("active"), true);
   assert.equal(nonces.has("new-nonce-123456"), true);
   assert.equal(await claimInternalNonce(db, "active"), false);
+});
+
+test("prunes expired tasks and aged delivery state on the daily digest tick", async () => {
+  const executed = [];
+  const db = {
+    prepare(sql) {
+      return {
+        bind() {
+          return {
+            async run() {
+              executed.push(sql);
+              return { meta: { changes: 2 } };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  const removed = await pruneExpiredState(db);
+
+  assert.equal(executed.length, 4);
+  assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM tasks")));
+  assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM job_snapshots")));
+  assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM deliveries")));
+  assert.ok(executed.some((sql) => sql.startsWith("DELETE FROM delivery_claims")));
+  // Live coordination state is never swept.
+  const claims = executed.find((sql) => sql.startsWith("DELETE FROM delivery_claims"));
+  assert.match(claims, /state = 'posted'/);
+  assert.deepEqual(removed, { tasks: 2, job_snapshots: 2, deliveries: 2, delivery_claims: 2 });
+});
+
+test("a failing retention sweep never breaks the digest delivery path", async () => {
+  const db = {
+    prepare(sql) {
+      return {
+        bind() {
+          return {
+            async run() {
+              if (sql.startsWith("DELETE FROM tasks")) throw new Error("d1 unavailable");
+              return { meta: { changes: 0 } };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  const removed = await pruneExpiredState(db);
+
+  assert.match(String(removed.tasks), /^error: /);
+  assert.equal(removed.deliveries, 0);
 });
