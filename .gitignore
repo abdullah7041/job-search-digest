@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 .worktrees/
 
+# Agent scratch: disposable git worktrees and machine-local tool settings.
+# plans/ is NOT ignored — it is the audit record and is meant to be committed.
+.claude/
+
 # Local env / secrets — secrets live in GitHub Actions secrets, never in the repo
 .env
 *.env
