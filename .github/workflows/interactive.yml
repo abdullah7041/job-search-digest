@@ -17,21 +17,33 @@ concurrency:
 
 jobs:
   run-task:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
           cache: pip
-
-      - run: pip install -r requirements.txt
-
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --require-hashes -r requirements.txt
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: python -m unittest test_digest.py test_interactive.py test_workflow_guard.py
+      - working-directory: worker
+        run: npm test
       - name: Retrieve, validate, and report task
         env:
           INTERACTIVE_WORKER_URL: ${{ secrets.INTERACTIVE_WORKER_URL }}
           WORKER_CALLBACK_SECRET: ${{ secrets.WORKER_CALLBACK_SECRET }}
           TASK_ID: ${{ inputs.task_id }}
         run: python interactive_runner.py
+      - name: Send redacted failure alert
+        if: ${{ failure() }}
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python workflow_guard.py notify --webhook "$DISCORD_WEBHOOK_URL" --workflow "Interactive job task" --stage "run-task" --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" --timestamp "$(date --iso-8601=seconds)"

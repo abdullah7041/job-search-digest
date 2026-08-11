@@ -118,6 +118,19 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `requirements.txt` — just `requests`.
 - `seen.json` — created on first run. Don't commit it by hand; the workflow does.
 
+## CI/CD hardening
+
+The repository has four explicit GitHub Actions workflows:
+
+- **CI** runs on pull requests, code pushes to `main`, and manual dispatch. It has no production secrets and checks the Python suite, Worker suite, and workflow syntax. State-only digest commits are ignored.
+- **job-digest** still targets 07:00 Riyadh (`04:00 UTC`), but GitHub cron is a daily window rather than an exact-time scheduler. It runs preflight tests, executes with read-only access, uploads seven-day generated-state evidence, then uses a separate write-only persistence job to commit only `seen.json`, `stats.json`, and dated `jobs/` snapshots.
+- **Interactive job task** runs the same preflight tests before processing the opaque Worker task identifier. Its Worker callback remains the authority for task completion and retry state.
+- **Digest freshness watchdog** runs at 11:00 Riyadh and alerts the private Discord webhook if the latest completed digest is not successful for the Riyadh day or `stats.json` lacks that day. It is best-effort and shares GitHub cron's scheduling limits.
+
+All third-party Actions are pinned to immutable commits. Python runtime dependencies are edited in `requirements.in`; regenerate the hash-locked `requirements.txt` with `pip-compile --generate-hashes requirements.in` and install it with `python -m pip install --require-hashes -r requirements.txt`. Dependabot opens weekly update PRs for both pip packages and Action pins.
+
+Failure alerts contain only the workflow, stage, timestamp, and GitHub run URL. They do not include logs, resumes, job data, or secrets. If delivery has succeeded but state persistence fails, do **not** rerun the digest: download the retained state artifact from the failed run, validate/apply it with `workflow_guard.py`, and make a normal scoped commit. Roll back an automation defect by reverting its code/workflow commit; never force-push or delete state history.
+
 ## Setup
 
 1. New private GitHub repo. Drop these files in (keep the `.github/workflows/` path).

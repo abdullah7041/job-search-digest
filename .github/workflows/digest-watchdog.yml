@@ -1,0 +1,40 @@
+name: Digest freshness watchdog
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # 11:00 Riyadh; best-effort because GitHub cron can be delayed.
+  workflow_dispatch: {}
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: digest-freshness-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Check digest run and state freshness
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          gh run list --workflow job-digest --status completed --limit 1 --json conclusion,completedAt > latest-run.json
+          if [[ "$(jq length latest-run.json)" -eq 0 ]]; then
+            printf '{}' > latest-run.json
+          else
+            jq '.[0]' latest-run.json > latest-run-item.json
+            mv latest-run-item.json latest-run.json
+          fi
+          if python workflow_guard.py freshness --stats stats.json --run-json latest-run.json; then
+            exit 0
+          fi
+          python workflow_guard.py notify --webhook "$DISCORD_WEBHOOK_URL" --workflow "Digest freshness watchdog" --stage "freshness-check" --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" --timestamp "$(date --iso-8601=seconds)"
+          exit 1
