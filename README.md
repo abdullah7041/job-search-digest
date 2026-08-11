@@ -92,6 +92,14 @@ Only Strong matches (up to `TAILOR_MAX` per run) get `resume.md` — the master 
 
 Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth the tailoring quotes from.
 
+### Tailor CV, on demand
+
+Pressing **Tailor CV** on a Discord card runs the same idea against one job, and returns a PDF instead of markdown. `resume_render.parse_resume` splits the master into sections, entries and bullets, giving every bullet a stable ref. `resume_tailor` sends those refs with the JD and gets back the refs to keep, in order, each with its rewritten wording. Nothing without a ref can enter the document.
+
+`resume_source.validate_tailored_resume` then checks each rewrite against the exact bullet it cites: every number must survive verbatim, and every proper noun must already exist in the master or the job title, so an invented framework or cloud platform is rejected rather than sent. A rejected draft is returned to the model once with the specific failures; if it fails again, the untouched master resume is delivered with the reason stated in the message. The PDF is single column, standard fonts, no tables, forced to one page by shrinking type first and dropping the least relevant bullets second.
+
+Gaps and fit notes travel in the Discord message, never in the PDF — the attachment is always safe to forward as-is.
+
 Two models, on purpose. Both ids checked against [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) on 2 Aug 2026 and listed **stable**:
 
 - `RANK_MODEL = gemini-3.1-flash-lite` — scoring is classification over at most 25 short records in a single call. Flash-Lite is built for that and is the cheapest option.

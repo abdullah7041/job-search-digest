@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Run one HMAC-authenticated interactive task from the Discord Worker.
 
-This first workflow slice validates the immutable full-JD handoff. PDF
-generation remains a later stage, so the callback says exactly what completed.
+The task verifies the immutable full-JD handoff, tailors the confirmed master
+resume against that job description, and returns a one-page PDF. Gap analysis
+travels in the message rather than the document, so nothing that is meant for
+the candidate can be sent to an employer by accident.
 """
 
 from __future__ import annotations
@@ -12,52 +14,71 @@ import hashlib
 import hmac
 import json
 import os
-import re
 import sys
 import time
 import uuid
-from io import BytesIO
 from urllib.parse import quote
 from urllib.parse import urlsplit
 
 import requests
 
 from job_archive import jd_completeness_failures
-from resume_source import source_blocks
+from resume_render import parse_resume, render_pdf, source_refs
 
 
 SIGNATURE_HEADER = "X-Job-Digest-Signature"
+MESSAGE_LIMIT = 1900
 
 
-def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, str, str]:
-    """Create a conservative, source-only two-page PDF for one captured JD."""
+def _master_document(resume_path: str = "resume.md") -> tuple[dict, str]:
     if not os.path.exists(resume_path):
         raise ValueError("No confirmed master resume is available. Use /resume first.")
-    resume = open(resume_path, encoding="utf-8").read().strip()
+    with open(resume_path, encoding="utf-8") as handle:
+        resume = handle.read().strip()
     if not resume:
         raise ValueError("The confirmed master resume is empty.")
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    return parse_resume(resume), resume
 
-    jd_words = {word.lower() for word in re.findall(r"[A-Za-z]{3,}", snapshot["jd"]["text"])}
-    evidence = source_blocks(resume)
-    selected = [line for line in evidence.values() if jd_words.intersection(re.findall(r"[A-Za-z]{3,}", line.lower()))]
-    selected = selected[:18] or list(evidence.values())[:18]
-    title = snapshot.get("title", "Target Role")
-    company = snapshot.get("company", "Employer")
-    story = [Paragraph("<b>Tailored Resume — %s</b>" % title, getSampleStyleSheet()["Title"]),
-             Paragraph("Target: %s. Evidence-preserving version generated from the confirmed master resume." % company, getSampleStyleSheet()["BodyText"]), Spacer(1, 8)]
-    style = getSampleStyleSheet()["BodyText"]
-    for line in selected:
-        story.append(Paragraph("• " + line.replace("&", "&amp;"), style))
-    gaps = [word for word in sorted(jd_words) if not any(word in line.lower() for line in evidence.values())][:8]
-    story.append(Spacer(1, 8)); story.append(Paragraph("<b>Gaps to verify:</b> " + (", ".join(gaps) if gaps else "No clear unsupported keyword gaps identified."), style))
-    output = BytesIO(); SimpleDocTemplate(output, pagesize=A4, topMargin=36, bottomMargin=36).build(story)
-    from pypdf import PdfReader
-    if len(PdfReader(BytesIO(output.getvalue())).pages) > 2:
-        raise ValueError("Tailored resume exceeded the two-page limit.")
-    return base64.b64encode(output.getvalue()).decode("ascii"), "tailored-resume.pdf", "; ".join(gaps)
+
+def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, list[str], list[str], str]:
+    """Tailor the master resume to one captured JD and render it to one page.
+
+    Returns the PDF, the gaps, the fit notes, and a note explaining any
+    degradation. A model or evidence failure never costs the user a document:
+    it costs them the tailoring, and it says so plainly.
+    """
+    document, resume = _master_document(resume_path)
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return base64.b64encode(render_pdf(document)).decode("ascii"), [], [], \
+            "GEMINI_API_KEY is not configured, so this is the untailored master resume."
+
+    from resume_tailor import tailor
+
+    try:
+        tailored, gaps, fit_notes = tailor(document, snapshot, api_key,
+                                           source_refs(document), resume)
+    except (ValueError, KeyError, TypeError, requests.RequestException) as error:
+        fresh, _ = _master_document(resume_path)
+        return base64.b64encode(render_pdf(fresh)).decode("ascii"), [], [], \
+            f"Tailoring did not pass its own checks, so this is the untailored master resume. Reason: {str(error)[:300]}"
+    return base64.b64encode(render_pdf(tailored)).decode("ascii"), gaps, fit_notes, ""
+
+
+def _message(title: str, company: str, gaps: list[str], fit_notes: list[str], note: str) -> str:
+    """Everything the candidate needs to read, and nothing an employer sees."""
+    lines = [f"Tailored one-page CV for **{title}** at **{company}**, built from your confirmed master resume."]
+    if note:
+        lines.append(f"\n:warning: {note}")
+    if fit_notes:
+        lines.append("\n**Why you fit**")
+        lines.extend(f"- {note}" for note in fit_notes)
+    if gaps:
+        lines.append("\n**Gaps to expect in the interview**")
+        lines.extend(f"- {gap}" for gap in gaps)
+    if gaps or fit_notes:
+        lines.append("\nThese notes are not in the PDF. The attachment is ready to send.")
+    return "\n".join(lines)[:MESSAGE_LIMIT]
 
 
 def _encoded_result(value: dict) -> bytes:
@@ -89,18 +110,16 @@ def run_task(task: dict) -> dict:
 
     title = snapshot.get("title") or "the selected role"
     company = snapshot.get("company") or "the employer"
-    pdf_base64, filename, gaps = _tailored_pdf(snapshot)
+    pdf_base64, gaps, fit_notes, note = _tailored_pdf(snapshot)
     return {
         "status": "completed",
-        "content": (
-            f"Verified the full job description for **{title}** at **{company}**. "
-            "The private tailoring workflow is connected; PDF generation is the next implementation slice."
-        ),
+        "content": _message(title, company, gaps, fit_notes, note),
         "job_key": snapshot["job_key"],
         "jd_sha256": actual_digest,
         "pdf_base64": pdf_base64,
-        "filename": filename,
-        "gaps": gaps,
+        "filename": "tailored-resume.pdf",
+        "gaps": "; ".join(gaps),
+        "tailored": not note,
     }
 
 

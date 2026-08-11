@@ -10,9 +10,14 @@ import tempfile
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
+from unittest import mock
 
+import interactive_runner
+import resume_tailor
 from job_archive import make_snapshot, job_card_payload, write_snapshots
-from resume_source import validate_tailored_resume
+from resume_render import parse_resume, render_pdf, source_refs
+from resume_source import validate_tailored_resume, vocabulary
 from resume_ingest import prepare_resume_preview
 from discord_delivery import interactive_cards_payload
 from interactive_runner import process_task, run_task
@@ -261,6 +266,240 @@ class TestInteractiveRunner(unittest.TestCase):
         self.assertEqual(received["post_path"], f"/internal/tasks/{task_id}/result")
         self.assertTrue(received["post_signed"])
         self.assertEqual(received["result"]["status"], "completed")
+
+
+MASTER = """# ADA LOVELACE
+**AI Product Engineer**
+Riyadh, Saudi Arabia · ada@example.test
+
+## SUMMARY
+AI Product Engineer shipping production LLM systems, with 5+ years across engineering.
+
+## EXPERIENCE
+
+### Founder & AI Product Engineer — Watheq | Riyadh, Saudi Arabia | Aug 2025 – Present
+Arabic-first AI SaaS, live in production.
+
+- Built an LLM evaluation pipeline that judge-scores prompt and model variants.
+- Instrumented production monitoring with Sentry and real-time Telegram alerting.
+- Implemented credit-based monetization with guest rate limiting.
+
+### Data Analyst — Alghalia | Al-Ahsa, Saudi Arabia | Mar 2020 – Present
+- Cut expired-unit waste 60% year-over-year through quantitative analysis.
+- Delivered weekly performance reporting for 4+ years.
+
+## SKILLS
+- **Languages:** Python, TypeScript, SQL
+"""
+
+
+def _plan(**overrides):
+    plan = {
+        "headline": "AI Product Engineer / Machine Learning Engineer",
+        "summary": "AI Product Engineer shipping production LLM systems, with 5+ years across engineering.",
+        "bullets": [
+            {"ref": "b1", "text": "Built an LLM evaluation pipeline that judge-scores prompt and model variants."},
+            {"ref": "b2", "text": "Instrumented production monitoring with Sentry and real-time Telegram alerting."},
+            {"ref": "b4", "text": "Cut expired-unit waste 60% year-over-year through quantitative analysis."},
+            {"ref": "b5", "text": "Delivered weekly performance reporting for 4+ years."},
+        ],
+        "gaps": [
+            "The resume does not evidence PyTorch or TensorFlow, both named in the job description.",
+            "No experience with AWS, GCP or Azure is shown anywhere in the resume.",
+        ],
+        "fit_notes": ["Direct production LLM evaluation experience."],
+    }
+    plan.update(overrides)
+    return plan
+
+
+class TestResumeStructure(unittest.TestCase):
+    def test_parser_separates_name_headline_contact_and_bullets(self):
+        document = parse_resume(MASTER)
+
+        self.assertEqual(document["name"], "ADA LOVELACE")
+        self.assertEqual(document["headline"], "AI Product Engineer")
+        self.assertEqual(document["contact"], ["Riyadh, Saudi Arabia · ada@example.test"])
+        self.assertEqual(len(document["sections"][0]["entries"]), 2)
+        self.assertEqual(document["sections"][0]["entries"][0]["lead"],
+                         "Arabic-first AI SaaS, live in production.")
+
+    def test_rendered_pdf_is_one_page_and_carries_no_markdown_syntax(self):
+        from pypdf import PdfReader
+
+        pdf = render_pdf(parse_resume(MASTER))
+        reader = PdfReader(BytesIO(pdf))
+        text = reader.pages[0].extract_text()
+
+        self.assertEqual(len(reader.pages), 1)
+        for leak in ("##", "**", "- **", "### "):
+            self.assertNotIn(leak, text)
+        self.assertIn("ADA LOVELACE", text)
+        self.assertIn("EXPERIENCE", text)
+
+    def test_full_master_resume_still_fits_one_page(self):
+        from pypdf import PdfReader
+
+        with open("resume.md", encoding="utf-8") as handle:
+            document = parse_resume(handle.read())
+
+        self.assertEqual(len(PdfReader(BytesIO(render_pdf(document))).pages), 1)
+
+
+class TestEvidenceGuards(unittest.TestCase):
+    def test_rejects_an_invented_framework_in_a_rewritten_bullet(self):
+        sources = {"b1": "Built an LLM evaluation pipeline that judge-scores prompt variants."}
+        tailored = {
+            "summary": "",
+            "bullets": [{"text": "Built an evaluation pipeline in PyTorch.", "source_refs": ["b1"]}],
+        }
+
+        errors = validate_tailored_resume(tailored, sources, vocabulary(MASTER), MASTER)
+
+        self.assertTrue(any("PyTorch" in error for error in errors))
+
+    def test_accepts_a_rephrasing_that_keeps_every_hard_fact(self):
+        sources = {"b4": "Cut expired-unit waste 60% year-over-year through quantitative analysis."}
+        tailored = {
+            "summary": "",
+            "bullets": [{"text": "Reduced expired-unit waste by 60% year-over-year using quantitative analysis.",
+                         "source_refs": ["b4"]}],
+        }
+
+        self.assertEqual(validate_tailored_resume(tailored, sources, vocabulary(MASTER), MASTER), [])
+
+    def test_thousands_separators_do_not_read_as_invented_numbers(self):
+        sources = {"b1": "Built the platform solo in 28,000+ lines of TypeScript."}
+        tailored = {"summary": "", "bullets": [
+            {"text": "Shipped 28,000 lines of TypeScript solo.", "source_refs": ["b1"]}]}
+
+        self.assertEqual(validate_tailored_resume(tailored, sources, vocabulary(MASTER), MASTER), [])
+
+
+class TestTailoringPlan(unittest.TestCase):
+    def test_plan_keeps_only_cited_bullets_in_the_models_order(self):
+        document = parse_resume(MASTER)
+        plan = _plan(bullets=[
+            {"ref": "b2", "text": "Instrumented production monitoring with Sentry."},
+            {"ref": "b1", "text": "Built an LLM evaluation pipeline."},
+        ])
+
+        tailored = resume_tailor.apply_plan(document, plan)
+        watheq = tailored["sections"][0]["entries"][0]
+
+        self.assertEqual([bullet["ref"] for bullet in watheq["bullets"]], ["b2", "b1"])
+        self.assertEqual(tailored["headline"], "AI Product Engineer / Machine Learning Engineer")
+
+    def test_a_role_with_no_kept_bullets_leaves_the_resume(self):
+        document = parse_resume(MASTER)
+        plan = _plan(bullets=[{"ref": "b1", "text": "Built an LLM evaluation pipeline."}])
+
+        tailored = resume_tailor.apply_plan(document, plan)
+
+        self.assertEqual([entry["title"] for entry in tailored["sections"][0]["entries"]],
+                         ["Founder & AI Product Engineer — Watheq"])
+
+    def test_skills_survive_tailoring_even_though_no_bullet_cites_them(self):
+        document = parse_resume(MASTER)
+
+        tailored = resume_tailor.apply_plan(document, _plan())
+        skills = [section for section in tailored["sections"] if section["heading"] == "SKILLS"][0]
+
+        self.assertTrue(skills["lines"])
+
+    def test_stopword_gaps_are_discarded_and_concrete_ones_kept(self):
+        document = parse_resume(MASTER)
+        plan = _plan(gaps=[
+            "about, accuracy, acknowledge, address, advantage",
+            "The resume does not evidence PyTorch or TensorFlow, both named in the job description.",
+        ])
+
+        gaps = resume_tailor.clean_gaps(plan, document, {})
+
+        self.assertEqual(len(gaps), 1)
+        self.assertIn("PyTorch", gaps[0])
+
+    def test_a_draft_that_keeps_almost_nothing_is_rejected_as_too_thin(self):
+        document = parse_resume(MASTER)
+        plan = _plan(bullets=[{"ref": "b1", "text": "Built an LLM evaluation pipeline."}])
+
+        failures = resume_tailor.substance_failures(plan, document)
+
+        self.assertTrue(any("only 1 bullets" in failure for failure in failures))
+        self.assertTrue(any("experience bullets" in failure for failure in failures))
+
+    def test_an_empty_draft_never_reaches_the_renderer(self):
+        document = parse_resume(MASTER)
+        snapshot = {"title": "ML Engineer", "company": "Jobgether", "jd": {"text": "Python."}}
+
+        with mock.patch.object(resume_tailor, "call_model", return_value=_plan(bullets=[])):
+            with self.assertRaisesRegex(ValueError, "evidence check"):
+                resume_tailor.tailor(document, snapshot, "key", source_refs(document), MASTER)
+
+    def test_tailoring_retries_once_then_gives_up_on_bad_evidence(self):
+        document = parse_resume(MASTER)
+        bad = _plan(bullets=[{"ref": "b4", "text": "Cut expired-unit waste 95% year-over-year."}])
+        snapshot = {"title": "Machine Learning Engineer", "company": "Jobgether", "jd": {"text": "Python."}}
+
+        with mock.patch.object(resume_tailor, "call_model", return_value=bad) as call:
+            with self.assertRaisesRegex(ValueError, "evidence check"):
+                resume_tailor.tailor(document, snapshot, "key", source_refs(document), MASTER)
+
+        self.assertEqual(call.call_count, 2)
+        self.assertIn("unsupported hard fact 95", call.call_args_list[1].args[0])
+
+
+class TestRunnerDelivery(unittest.TestCase):
+    def setUp(self):
+        # The fixture plan cites the small MASTER above, so the runner is
+        # pointed at it rather than at the repository's real resume.
+        patch = mock.patch.object(interactive_runner, "_master_document",
+                                  return_value=(parse_resume(MASTER), MASTER))
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def _snapshot(self):
+        return make_snapshot(JOB, "2026-08-03T12:00:00Z")
+
+    def test_gaps_reach_the_message_and_never_the_pdf(self):
+        from pypdf import PdfReader
+
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=_plan()):
+            result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
+
+        text = PdfReader(BytesIO(base64.b64decode(result["pdf_base64"]))).pages[0].extract_text()
+
+        self.assertIn("PyTorch", result["content"])
+        self.assertNotIn("PyTorch", text)
+        self.assertNotIn("Gaps to verify", text)
+        self.assertTrue(result["tailored"])
+
+    def test_a_model_failure_still_delivers_the_master_resume_with_a_reason(self):
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", side_effect=ValueError("Gemini HTTP 503")):
+            result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
+
+        self.assertEqual(result["status"], "completed")
+        self.assertTrue(result["pdf_base64"])
+        self.assertFalse(result["tailored"])
+        self.assertIn("untailored master resume", result["content"])
+
+    def test_a_missing_api_key_degrades_instead_of_failing(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("GEMINI_API_KEY", None)
+            result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
+
+        self.assertEqual(result["status"], "completed")
+        self.assertIn("GEMINI_API_KEY", result["content"])
+
+    def test_the_callback_no_longer_claims_pdf_generation_is_unbuilt(self):
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=_plan()):
+            result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
+
+        self.assertNotIn("implementation slice", result["content"])
+        self.assertLessEqual(len(result["content"]), interactive_runner.MESSAGE_LIMIT)
 
 
 if __name__ == "__main__":
