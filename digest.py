@@ -155,34 +155,25 @@ JSEARCH_HOST = "jsearch.p.rapidapi.com"
 # ~25k-35k SAR/mo, AI/ML 28k-35k.
 SALARY_FLOOR_SAR_MONTH = 25000
 
-# Gemini models. Two tiers on purpose, verified against ai.google.dev/gemini-api/docs/models
-# (page last updated 2026-07-30, read 2026-08-02) — both strings are listed STABLE:
+# Ranking model, verified against ai.google.dev/gemini-api/docs/models
+# (page last updated 2026-07-30, read 2026-08-02) — listed STABLE:
 #
 #   RANK_MODEL   gemini-3.1-flash-lite — scoring is classification over <=25 short
 #                records in one call. Flash-Lite is built for exactly this and is
 #                the cheapest option. Keeping it.
-#   TAILOR_MODEL gemini-3.6-flash — rewriting a full resume is long-form generation
-#                under hard truth constraints, and Google's own guidance puts
-#                Flash-Lite at "classification, extraction, basic summarization"
-#                while Flash handles longer reasoning chains and sustained
-#                coherence. Flash-Lite drifts on this job: it drops sections,
-#                loosens the no-invention rule, and writes thinner Fit notes.
-#                Costs more per call, but it runs at most TAILOR_MAX times a day.
 #
 # NOTE: gemini-3.1-flash-lite-PREVIEW is shut down; the stable id above is not.
+# Resume tailoring runs in interactive_runner.py and picks its own model there.
 RANK_MODEL = "gemini-3.1-flash-lite"
-TAILOR_MODEL = "gemini-3.6-flash"
 
 MAX_JOBS_IN_DIGEST = 25
 STRONG_MATCH_MIN_SCORE = 80
 
-# Per-job resume tailoring is now an explicit Discord interaction.  The daily
-# run archives JD evidence and posts jobs only; it never spends tailoring
-# credits or writes private resumes into the repository.
-RESUME_FILE = "resume.md"
-TAILOR_DIR = "tailored"
-TAILOR_MAX = 10
-JD_MAX_CHARS = 6000    # JD text handed to the tailor prompt
+# Per-job resume tailoring is an explicit Discord interaction handled by
+# interactive_runner.py. The daily run archives JD evidence and posts jobs
+# only; it never spends tailoring credits or writes private resumes into the
+# repository. These two bounds are what the daily run still needs from the JD.
+JD_MAX_CHARS = 6000    # JD text stored per job in the snapshot archive
 JD_RANK_CHARS = 900    # JD excerpt per job inside the one ranking call
 
 STATE_FILE = "seen.json"
@@ -767,84 +758,6 @@ def split_tiers(jobs):
     ]
     review = [job for job in jobs if job not in strong]
     return strong, review
-
-
-def load_resume():
-    """resume.md is the tailoring source of truth. Missing or unreadable file
-    logs a WARN and disables tailoring for the run; the digest still delivers."""
-    if not os.path.exists(RESUME_FILE):
-        log(f"WARN {RESUME_FILE} not found; tailoring skipped this run")
-        return ""
-    try:
-        with open(RESUME_FILE, encoding="utf-8") as f:
-            return f.read().strip()
-    except OSError as e:
-        log(f"WARN could not read {RESUME_FILE}: {e}")
-        return ""
-
-
-def slugify(s, maxlen=60):
-    s = re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")
-    return s[:maxlen].rstrip("-") or "job"
-
-
-def tailor_resume(job, jd_text, resume_md, api_key):
-    """One Gemini call -> tailored resume markdown, or None on failure.
-
-    Truth-constrained by prompt: only facts from resume.md, no invention; JD
-    demands the resume can't support come back as explicit gaps, not padding."""
-    prompt = (
-        "You are tailoring a real resume to one specific job description.\n"
-        "HARD RULES:\n"
-        "- Use ONLY facts present in the master resume below. Never invent, inflate, or add "
-        "employers, titles, dates, tools, metrics, or skills.\n"
-        "- Reorder, reword, and re-emphasize honestly: lead with the experience this JD cares "
-        "about most, and mirror the JD's terminology only where the resume's facts genuinely "
-        "support it.\n"
-        "- Keep the same sections as the master, tightened to stay one page.\n"
-        "- End with a section titled '## Fit notes (remove before sending)': 3 bullets on the "
-        "strongest matches, then 'Gaps:' listing every JD requirement the master resume cannot "
-        "support. If a gap is fundamental (seniority, degree, years of experience), say so "
-        "plainly. Never soften a gap into a claim.\n"
-        "Return ONLY the tailored resume as markdown, no preamble.\n\n"
-        f"MASTER RESUME:\n{resume_md}\n\n"
-        f"JOB: {job['title']} at {job['company']} ({job['location']})\n"
-        f"JOB DESCRIPTION:\n"
-        f"{jd_text or '(JD text unavailable — tailor on the title only and say so in Fit notes)'}"
-    )
-    endpoint = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{TAILOR_MODEL}:generateContent?key={api_key}"
-    )
-    body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.3},
-    }
-    try:
-        r = requests.post(endpoint, json=body, timeout=90)
-        if r.status_code != 200:
-            log(f"WARN tailor Gemini HTTP {r.status_code} on {TAILOR_MODEL}: {r.text[:200]}")
-            return None
-        text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-        text = text.strip()
-        # Models sometimes wrap the whole answer in a markdown fence; unwrap it.
-        if text.startswith("```"):
-            text = re.sub(r"^```[a-z]*\n?", "", text)
-            text = re.sub(r"\n?```$", "", text).strip()
-        return text or None
-    except Exception as e:
-        log(f"WARN tailor Gemini failed: {e}")
-        return None
-
-
-def tailored_url(relpath):
-    """Repo web link when running in Actions (GITHUB_REPOSITORY is set there),
-    plain relative path on a local run."""
-    repo = os.environ.get("GITHUB_REPOSITORY")
-    if repo:
-        server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
-        return f"{server}/{repo}/blob/main/{relpath}"
-    return relpath
 
 
 # Substrings that a closed/expired posting page shows. Checked case-insensitively
