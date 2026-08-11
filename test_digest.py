@@ -243,6 +243,60 @@ class TestTierClassification(unittest.TestCase):
         self.assertFalse(next(job for job in jobs if job["id"] == "malformed")["ranking_verified"])
 
 
+class TestStatsRows(unittest.TestCase):
+    def _rows(self, work):
+        with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def test_rerunning_the_same_day_replaces_that_days_row(self):
+        work = tempfile.mkdtemp(prefix="digest_stats_")
+        old_cwd = os.getcwd()
+        os.chdir(work)
+        try:
+            stats = []
+            digest.save_stats(stats, "2026-08-08", 200, 20, 5, 70.0)
+            stats = digest.load_stats()
+            digest.save_stats(stats, "2026-08-08", 214, 21, 8, 76.9)
+            rows = digest.load_stats()
+        finally:
+            os.chdir(old_cwd)
+            shutil.rmtree(work)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["avg_score"], 76.9)
+        self.assertEqual(rows[0]["fetched"], 214)
+
+    def test_a_different_day_is_appended_and_history_stays_sorted(self):
+        work = tempfile.mkdtemp(prefix="digest_stats_")
+        old_cwd = os.getcwd()
+        os.chdir(work)
+        try:
+            stats = []
+            digest.save_stats(stats, "2026-08-09", 214, 21, 8, 68.3)
+            stats = digest.load_stats()
+            digest.save_stats(stats, "2026-08-08", 214, 21, 8, 76.9)
+            rows = digest.load_stats()
+        finally:
+            os.chdir(old_cwd)
+            shutil.rmtree(work)
+
+        self.assertEqual([row["date"] for row in rows], ["2026-08-08", "2026-08-09"])
+
+    def test_drift_counts_days_not_runs(self):
+        # 14 distinct scored days are required before a comparison is trusted.
+        # 13 days plus a duplicate must NOT be enough.
+        rows = [{"date": f"2026-07-{day:02d}", "avg_score": 80.0} for day in range(1, 14)]
+        rows.append({"date": "2026-07-13", "avg_score": 20.0})
+        self.assertIsNone(digest.check_drift(rows))
+
+    def test_drift_warns_on_a_real_multi_day_drop(self):
+        rows = [{"date": f"2026-07-{day:02d}", "avg_score": 85.0} for day in range(1, 8)]
+        rows += [{"date": f"2026-07-{day:02d}", "avg_score": 60.0} for day in range(8, 15)]
+        warning = digest.check_drift(rows)
+        self.assertIsNotNone(warning)
+        self.assertIn("profile may be stale", warning)
+
+
 def run_main(monkey_env, gemini_ranking, tailor_result, link_statuses=None):
     """Run digest.main() fully mocked; return (discord_posts, workdir)."""
     posts = []
