@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import json
 import os
@@ -12,6 +13,11 @@ JD_MIN_CHARS = 400
 JD_MIN_WORDS = 60
 RESPONSIBILITY_MARKERS = ("responsibil", "you will", "duties", "about the role")
 REQUIREMENT_MARKERS = ("requirement", "qualification", "experience", "skills")
+
+# Snapshots exist so a "Tailor CV" button clicked days later still resolves to
+# the exact captured job description. Once a job id has aged out of seen.json
+# there is nothing left to resolve, so this matches STATE_TTL_DAYS in digest.py.
+ARCHIVE_TTL_DAYS = 120
 
 
 def jd_completeness_failures(jd_text: str) -> list[str]:
@@ -97,9 +103,32 @@ def job_card_payload(snapshot: dict) -> dict:
     }
 
 
+def prune_snapshots(archive_dir: str = "jobs", ttl_days: int = ARCHIVE_TTL_DAYS,
+                    today: datetime.date | None = None) -> list[str]:
+    """Delete archive files older than the TTL and return the removed paths."""
+    if not os.path.isdir(archive_dir):
+        return []
+    cutoff = ((today or datetime.date.today()) - datetime.timedelta(days=ttl_days)).isoformat()
+    removed = []
+    for name in sorted(os.listdir(archive_dir)):
+        if not name.endswith(".json"):
+            continue
+        stem = name[: -len(".json")]
+        # Only prune files this module names. An unexpected filename is left
+        # alone rather than guessed at.
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", stem):
+            continue
+        if stem < cutoff:
+            path = os.path.join(archive_dir, name)
+            os.remove(path)
+            removed.append(path)
+    return removed
+
+
 def write_snapshots(jobs: list[dict], date: str, archive_dir: str = "jobs") -> str:
     """Append new same-day evidence without replacing an existing job snapshot."""
     os.makedirs(archive_dir, exist_ok=True)
+    prune_snapshots(archive_dir)
     path = os.path.join(archive_dir, f"{date}.json")
     existing_jobs = []
     if os.path.exists(path):
