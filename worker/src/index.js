@@ -383,7 +383,6 @@ async function handleInteraction(request, env, ctx) {
       task.jobKey = snapshot.job_key;
     }
     else if (payload.data?.name === "resume") task = { kind: "resume", userId: allowed.userId, input: { attachment: attachmentFrom(payload) } };
-    else if (payload.data?.name === "tailor-jd") task = { kind: "tailor-jd", userId: allowed.userId, input: { attachment: attachmentFrom(payload) } };
     else return json({ type: 4, data: { content: "Unsupported command.", flags: 64 } });
     const taskId = await createTask(env, task, payload.token);
     // Discord discards the interaction if it is not acknowledged within 3

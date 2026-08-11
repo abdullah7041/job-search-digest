@@ -21,19 +21,6 @@ export const COMMANDS = [
       },
     ],
   },
-  {
-    name: "tailor-jd",
-    type: 1,
-    description: "Supply a full job description as a PDF for a role whose posting could not be captured.",
-    options: [
-      {
-        name: "file",
-        type: 11,
-        description: "The job description as a PDF.",
-        required: true,
-      },
-    ],
-  },
 ];
 
 // Every name here must have a matching dispatch branch in handleInteraction.

@@ -27,6 +27,11 @@ test("command names are unique", () => {
   assert.equal(new Set(COMMAND_NAMES).size, COMMAND_NAMES.length);
 });
 
+test("registers only the working resume command", () => {
+  assert.deepEqual(COMMAND_NAMES, ["resume"]);
+  assert.equal(COMMANDS[0].options[0].type, 11);
+});
+
 test("every registered command name has a dispatch branch in the worker", () => {
   // Guards the drift that would present to the user as "Unsupported command."
   const source = readFileSync(new URL("../src/index.js", import.meta.url), "utf8");
