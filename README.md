@@ -92,9 +92,21 @@ The digest makes that confidence visible instead of hiding borderline roles. **S
 
 Every card in the digest — Strong or Worth reviewing — carries a "Tailor CV" button. Its `custom_id` is `tailor:<first 32 hex chars of sha256(job_key)>`; the job key itself never appears in the id. Clicking it sends a signed Ed25519 interaction to the Cloudflare Worker, which checks the interaction's guild, channel, and user against its own configured ids before doing anything else — only the one person this deployment is scoped to can trigger a tailor.
 
-If that check passes, the Worker looks up the immutable snapshot captured for that exact Discord message at delivery time and re-verifies the job description text against the SHA-256 recorded in the snapshot. Only if it still matches does the Worker write a task row to D1 (with the interaction token encrypted) and trigger the `interactive.yml` workflow with the task id. `interactive_runner.py` fetches that task over HMAC-authenticated HTTP, re-checks the JD hash and completeness a second time, and builds a conservative two-page PDF from `resume.md`: source lines whose wording overlaps the JD's vocabulary, plus a "gaps to verify" list of JD terms the resume doesn't support. Nothing is invented — it selects and quotes, it doesn't rewrite. The Worker attaches the PDF to the original interaction as an ephemeral reply (`flags: 64`), visible only to the requester. No channel message is posted, and nothing tailored is ever committed to the repository — that's a stated constraint of the design, not an oversight.
+If that check passes, the Worker looks up the immutable snapshot captured for that exact Discord message at delivery time and re-verifies the job description text against the SHA-256 recorded in the snapshot. Only if it still matches does the Worker write a task row to D1 (with the interaction token encrypted) and trigger the `interactive.yml` workflow with the task id. `interactive_runner.py` fetches that task over HMAC-authenticated HTTP and re-checks the JD hash and completeness a second time before anything is generated.
 
-Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth the tailoring quotes from.
+### How the tailoring stays honest
+
+`resume_render.parse_resume` splits the master into sections, entries and bullets, giving every bullet a stable ref. `resume_tailor` sends those refs with the JD and gets back the refs to keep, in order, each with its rewritten wording. Nothing without a ref can enter the document.
+
+`resume_source.validate_tailored_resume` then checks each rewrite against the exact bullet it cites: every number must survive verbatim, and every proper noun must already exist in the master or the job title, so an invented framework or cloud platform is rejected rather than sent. A rejected draft goes back to the model once with the specific failures; if it fails again, the untouched master resume is delivered with the reason stated in the message. The same thing happens when `GEMINI_API_KEY` is absent — you get your master resume and a note saying why it wasn't tailored. A failure costs you the tailoring, never the document.
+
+The PDF is single column, standard fonts, no tables, forced to one page by shrinking type first and dropping the least relevant bullets second. Gaps and fit notes travel in the Discord message, never in the PDF — the attachment is always safe to forward as-is.
+
+The Worker attaches the PDF to the original interaction as an ephemeral reply (`flags: 64`), visible only to the requester. No channel message is posted, and nothing tailored is ever committed to the repository — that's a stated constraint of the design, not an oversight.
+
+`resume_tailor.py` picks its own model, `TAILOR_MODEL`, defaulting to `gemini-3.6-flash` and overridable by environment variable. Rewriting a resume under hard truth constraints is long-form generation; Google's guidance puts Flash-Lite at classification and extraction, and Flash at longer reasoning chains. Flash-Lite drifts on this job — it drops sections and loosens the no-invention rule. Scoring is the cheaper model and is configured separately in `digest.py` (see "How it ranks" above).
+
+Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth every tailored CV is built from.
 
 ## Delivery
 

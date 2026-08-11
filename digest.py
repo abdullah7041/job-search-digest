@@ -41,7 +41,7 @@ import datetime
 import requests
 
 from discord_delivery import post_interactive_cards
-from job_archive import make_snapshot, write_snapshots
+from job_archive import jd_completeness_failures, make_snapshot, write_snapshots
 
 # ------------------------------- CONFIG -------------------------------------
 # Each company names its ATS in "source":
@@ -697,9 +697,38 @@ def get_description(job):
                     w.get("shortcode"): strip_html(w.get("description") or "") for w in jobs
                 }
             job["description"] = _workable_details_cache.get(token, {}).get(job.get("shortcode"), "")
+        else:
+            job["description"] = fetch_posting_page(job)
     except (requests.RequestException, ValueError) as e:
         log(f"WARN JD fetch failed for {job['company']} — {job['title']}: {e}")
     return (job.get("description") or "")[:JD_MAX_CHARS]
+
+
+def fetch_posting_page(job):
+    """Last-resort JD text: read the posting page an aggregator linked to.
+
+    Aggregators like Jooble hand over a title and a URL and nothing else, so
+    these jobs used to reach the ranker with an empty jd_excerpt. The rubric
+    then correctly refuses to score a title above 85 without evidence, and a
+    real match lands mid-band: the Jobgether ML role scored 55 on 2026-08-05
+    while its own JD supported 85. Reading the page closes that gap. Anything
+    that comes back looking like navigation chrome rather than a job
+    description is discarded, so a bot-blocked page scores exactly as it does
+    today instead of scoring on noise.
+    """
+    url = job.get("url")
+    if not url:
+        return ""
+    r = _get(url)
+    if r.status_code != 200:
+        log(f"WARN JD page HTTP {r.status_code} for {job['title']}")
+        return ""
+    body = re.sub(r"(?is)<(script|style|nav|header|footer)[^>]*>.*?</\1>", " ", r.text)
+    text = strip_html(body)
+    if jd_completeness_failures(text):
+        log(f"WARN JD page for {job['title']} did not read as a full description")
+        return ""
+    return text[:JD_MAX_CHARS]
 
 
 def enrich_descriptions(jobs):
