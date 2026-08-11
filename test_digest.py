@@ -7,11 +7,10 @@ Covers:
   - the six real jobs from the 2026-07-31 digest through the new filters
   - location_conflict (the Bangkok-as-Riyadh bug)
   - the seniority ceiling (the Lead/Staff-scored-98 bug)
-  - strip_html / slugify helpers
+  - strip_html helper
   - main() end-to-end with mocks: full job snapshots written, no unsolicited
     tailored resumes, seen.json updated
-  - fail-soft paths: Gemini down -> keyword scores, no key -> no tailoring,
-    tailor failure -> job still delivered
+  - fail-soft paths: Gemini down -> keyword scores
 """
 
 import os
@@ -115,20 +114,6 @@ class TestHelpers(unittest.TestCase):
 
     def test_strip_html_raw(self):
         self.assertEqual(digest.strip_html("<b>Senior</b> role"), "Senior role")
-
-    def test_slugify(self):
-        self.assertEqual(digest.slugify("Senior Software Engineer (AI Systems)"),
-                         "senior-software-engineer-ai-systems")
-        self.assertEqual(digest.slugify("شركة"), "job")  # non-latin falls back safely
-
-    def test_tailored_url_local_and_actions(self):
-        with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("GITHUB_REPOSITORY", None)
-            self.assertEqual(digest.tailored_url("tailored/x.md"), "tailored/x.md")
-        with mock.patch.dict(os.environ, {"GITHUB_REPOSITORY": "abdullah7041/job-search-digest"}):
-            self.assertEqual(
-                digest.tailored_url("tailored/x.md"),
-                "https://github.com/abdullah7041/job-search-digest/blob/main/tailored/x.md")
 
 
 class TestLinkEvidence(unittest.TestCase):
@@ -297,7 +282,7 @@ class TestStatsRows(unittest.TestCase):
         self.assertIn("profile may be stale", warning)
 
 
-def run_main(monkey_env, gemini_ranking, tailor_result, link_statuses=None):
+def run_main(monkey_env, gemini_ranking, link_statuses=None):
     """Run digest.main() fully mocked; return (discord_posts, workdir)."""
     posts = []
 
@@ -323,7 +308,6 @@ def run_main(monkey_env, gemini_ranking, tailor_result, link_statuses=None):
              mock.patch.object(digest, "COMPANIES", []), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "gemini_rank", return_value=gemini_ranking), \
-             mock.patch.object(digest, "tailor_resume", return_value=tailor_result), \
              mock.patch.object(digest.requests, "post", side_effect=fake_post), \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
             digest.main()
@@ -377,7 +361,7 @@ class TestEndToEnd(unittest.TestCase):
             }
 
         with mock.patch.object(digest, "post_interactive_cards", side_effect=retryable):
-            posts, work = run_main(env, ranking, None)
+            posts, work = run_main(env, ranking)
 
         self.assertEqual(posts, [])
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
@@ -406,7 +390,7 @@ class TestEndToEnd(unittest.TestCase):
              mock.patch.object(digest, "post_discord") as post_webhook, \
              mock.patch.object(digest, "save_seen") as save_seen:
             with self.assertRaises(SystemExit) as raised:
-                run_main(env, ranking, None)
+                run_main(env, ranking)
 
         # The run fails loudly...
         self.assertEqual(raised.exception.code, 1)
@@ -433,7 +417,7 @@ class TestEndToEnd(unittest.TestCase):
             }
 
         with mock.patch.object(digest, "post_interactive_cards", side_effect=partial):
-            posts, work = run_main(env, ranking, None)
+            posts, work = run_main(env, ranking)
 
         self.assertEqual(posts, [])
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
@@ -442,7 +426,7 @@ class TestEndToEnd(unittest.TestCase):
     def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
                    "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
-        posts, work = run_main(self.ENV, ranking, "# Tailored resume\ncontent")
+        posts, work = run_main(self.ENV, ranking)
         body = "\n".join(posts)
         # Only the two senior IC roles delivered
         self.assertIn("Senior Software Engineer (AI Systems)", body)
@@ -474,7 +458,6 @@ class TestEndToEnd(unittest.TestCase):
         posts, work = run_main(
             self.ENV,
             ranking,
-            "# Tailored resume\ncontent",
             link_statuses=[digest.LINK_UNKNOWN, digest.LINK_OPEN],
         )
         body = "\n".join(posts)
@@ -494,7 +477,6 @@ class TestEndToEnd(unittest.TestCase):
         posts, work = run_main(
             self.ENV,
             ranking,
-            "# Tailored resume\ncontent",
             link_statuses=[digest.LINK_CLOSED, digest.LINK_OPEN],
         )
         body = "\n".join(posts)
@@ -505,7 +487,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual(set(seen), {"jsearch_e"})
 
     def test_gemini_down_keyword_fallback_still_delivers(self):
-        posts, work = run_main(self.ENV, None, None)
+        posts, work = run_main(self.ENV, None)
         body = "\n".join(posts)
         self.assertIn("Senior Software Engineer (AI Systems)", body)
         self.assertIn("fit ", body)
@@ -516,7 +498,7 @@ class TestEndToEnd(unittest.TestCase):
         env.pop("GEMINI_API_KEY")
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("GEMINI_API_KEY", None)
-            posts, work = run_main(env, None, None)
+            posts, work = run_main(env, None)
         body = "\n".join(posts)
         self.assertIn("Senior Software Engineer (AI Systems)", body)
         self.assertNotIn("tailored resume:", body)
