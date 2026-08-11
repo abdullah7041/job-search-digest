@@ -154,6 +154,120 @@ function signedInternalRequest(method, path, body, secret, timestamp = String(Ma
   });
 }
 
+// One signed button interaction, plus the env, fake D1, and execution context
+// the /interactions route needs. Returns everything the caller asserts on.
+async function buttonInteraction() {
+  const keys = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
+  const publicKey = Buffer.from(await crypto.subtle.exportKey("raw", keys.publicKey)).toString("base64");
+  const jobKey = "greenhouse:provider-42";
+  const snapshot = {
+    job_key: jobKey,
+    jd: { status: "captured", text: FULL_JD, sha256: createHash("sha256").update(FULL_JD).digest("hex") },
+  };
+  const payload = {
+    type: 3,
+    guild_id: "guild-1",
+    channel_id: "channel-1",
+    member: { user: { id: "user-1" } },
+    message: { id: "message-1" },
+    token: "interaction-token",
+    data: { custom_id: `tailor:${await buttonReferenceForJobKey(jobKey)}` },
+  };
+  const raw = JSON.stringify(payload);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const signature = await crypto.subtle.sign("Ed25519", keys.privateKey, new TextEncoder().encode(timestamp + raw));
+  const request = new Request("https://worker.test/interactions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Signature-Ed25519": hex(signature),
+      "X-Signature-Timestamp": timestamp,
+    },
+    body: raw,
+  });
+
+  const db = {
+    prepare() {
+      return {
+        bind() {
+          return {
+            async first() {
+              return { job_key: jobKey, snapshot_json: JSON.stringify(snapshot) };
+            },
+            async run() {
+              return { meta: { changes: 1 } };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  const backgrounded = [];
+  return {
+    request,
+    backgrounded,
+    ctx: { waitUntil: (promise) => backgrounded.push(promise) },
+    env: {
+      DISCORD_PUBLIC_KEY_BASE64: publicKey,
+      DISCORD_GUILD_ID: "guild-1",
+      DISCORD_CHANNEL_ID: "channel-1",
+      DISCORD_USER_ID: "user-1",
+      DISCORD_APPLICATION_ID: "app-1",
+      GITHUB_REPOSITORY: "owner/repo",
+      GITHUB_TOKEN: "placeholder-not-a-real-token",
+      TASK_ENCRYPTION_KEY: "test-encryption-key",
+      DB: db,
+    },
+  };
+}
+
+test("acknowledges a button interaction without waiting for the GitHub dispatch", async () => {
+  const { request, env, ctx, backgrounded } = await buttonInteraction();
+  const originalFetch = globalThis.fetch;
+  let dispatched = 0;
+  globalThis.fetch = async () => {
+    dispatched += 1;
+    return new Response(null, { status: 204 });
+  };
+
+  try {
+    const response = await worker.fetch(request, env, ctx);
+
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).type, 5);
+    // The acknowledgement was produced with the dispatch still pending.
+    assert.equal(backgrounded.length, 1);
+    await Promise.all(backgrounded);
+    assert.equal(dispatched, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("a failed GitHub dispatch reports back to the user's interaction", async () => {
+  const { request, env, ctx, backgrounded } = await buttonInteraction();
+  const originalFetch = globalThis.fetch;
+  const patched = [];
+  globalThis.fetch = async (url, init) => {
+    if (String(url).includes("api.github.com")) return new Response("{}", { status: 500 });
+    patched.push({ url: String(url), body: init?.body });
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const response = await worker.fetch(request, env, ctx);
+
+    assert.equal((await response.json()).type, 5);
+    await Promise.all(backgrounded);
+    assert.equal(patched.length, 1);
+    assert.match(patched[0].url, /webhooks\/app-1\/interaction-token\/messages\/@original/);
+    assert.match(patched[0].body, /Could not start that task/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("binds internal HMAC authentication to the method, path, and fresh timestamp", async () => {
   const secret = "callback-secret";
   const nonces = new Set();
