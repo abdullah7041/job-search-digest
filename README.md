@@ -182,6 +182,15 @@ Two halves: the repository that runs the daily job, and the Cloudflare Worker th
 3. Fill in the non-secret `vars` in `worker/wrangler.jsonc`: the Discord application, guild, channel and user ids, the GitHub repository, and the Discord public key (public by design, safe to commit).
 4. Set the Worker's secret values with `wrangler secret put` — these are not committed anywhere: `DISCORD_BOT_TOKEN`, `GITHUB_TOKEN`, `CALLBACK_HMAC_SECRET`, `TASK_ENCRYPTION_KEY`.
 
+**Registering the slash commands.** `worker/commands.js` is the source of
+truth for which slash commands exist. `npm run register --prefix worker`
+applies it to the Discord application, guild-scoped so it takes effect
+immediately. It uses `PUT`, so a command removed from that file is removed
+from Discord on the next run. It needs `DISCORD_BOT_TOKEN`,
+`DISCORD_APPLICATION_ID` and `DISCORD_GUILD_ID` in the environment — the
+latter two are in `worker/wrangler.jsonc`. Run it by hand when the command
+set changes; no workflow runs it.
+
 ## Test before you trust it (in Claude Code)
 
 - Run `python -m unittest test_digest.py test_interactive.py`. CI runs this offline regression suite before it calls any live API.
