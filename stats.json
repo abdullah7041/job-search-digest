@@ -190,5 +190,18 @@
 "strong": 8,
 "tailor_failed": 0,
 "tailored": 0
+},
+{
+"avg_score": 70.0,
+"date": "2026-08-11",
+"fetched": 209,
+"link_closed": 0,
+"link_unknown": 7,
+"matched": 25,
+"new": 13,
+"review": 5,
+"strong": 8,
+"tailor_failed": 0,
+"tailored": 0
 }
 ]
