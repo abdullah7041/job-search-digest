@@ -371,6 +371,37 @@ test("binds internal HMAC authentication to the method, path, and fresh timestam
   assert.equal((await worker.fetch(stale, { CALLBACK_HMAC_SECRET: secret, DB: db })).status, 401);
 });
 
+test("returns only the configured user's confirmed resume to a signed daily sync", async () => {
+  const secret = "callback-secret";
+  const db = {
+    prepare(sql) {
+      return {
+        bind() {
+          return {
+            async run() { return { meta: { changes: 1 } }; },
+            async first() {
+              if (sql.startsWith("SELECT markdown")) {
+                return { markdown: "# Confirmed", source_sha256: "a".repeat(64), version: 2 };
+              }
+              return null;
+            },
+          };
+        },
+      };
+    },
+  };
+  const request = signedInternalRequest("GET", "/internal/confirmed-resume", "", secret);
+
+  const response = await worker.fetch(request, {
+    CALLBACK_HMAC_SECRET: secret,
+    DISCORD_USER_ID: "user-1",
+    DB: db,
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { markdown: "# Confirmed", source_sha256: "a".repeat(64), version: 2 });
+});
+
 test("rejects expired and terminal tasks at internal task routes", () => {
   const now = new Date("2026-08-07T12:00:00Z");
   assert.equal(taskAccessStatus({ status: "dispatched", expires_at: "2026-08-07T11:59:59Z" }, now), 410);

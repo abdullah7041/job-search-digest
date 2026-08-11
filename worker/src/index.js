@@ -427,6 +427,11 @@ export default {
       }
       return json(summary);
     }
+    if (url.pathname === "/internal/confirmed-resume" && request.method === "GET") {
+      const resume = await currentConfirmedResume(env.DB, env.DISCORD_USER_ID);
+      if (!resume) return json({ error: "no confirmed resume" }, 404);
+      return json(resume);
+    }
     const input = /^\/internal\/tasks\/([^/]+)\/input$/.exec(url.pathname);
     if (input && request.method === "GET") {
       const task = await env.DB.prepare("SELECT input_json, status, expires_at FROM tasks WHERE id = ?").bind(input[1]).first();
