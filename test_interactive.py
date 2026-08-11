@@ -4,6 +4,8 @@
 import datetime
 import hashlib
 import hmac
+import importlib
+import importlib.util
 import base64
 import json
 import os
@@ -299,6 +301,50 @@ class TestInteractiveRunner(unittest.TestCase):
         self.assertEqual(received["post_path"], f"/internal/tasks/{task_id}/result")
         self.assertTrue(received["post_signed"])
         self.assertEqual(received["result"]["status"], "completed")
+
+
+class TestWorkerClient(unittest.TestCase):
+    def test_signed_request_uses_the_existing_hmac_canonical_form(self):
+        """Catches a client that signs a different path/body than the Worker verifies."""
+        spec = importlib.util.find_spec("worker_client")
+        self.assertIsNotNone(spec, "worker_client must provide signed_request for shared Worker calls")
+        signed_request = importlib.import_module("worker_client").signed_request
+        secret = "callback-secret"
+        received = {}
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                timestamp = self.headers.get("X-Job-Digest-Timestamp", "")
+                nonce = self.headers.get("X-Job-Digest-Nonce", "")
+                canonical = f"{timestamp}\n{nonce}\nGET\n{self.path}\n".encode()
+                expected = base64.b64encode(hmac.new(secret.encode(), canonical, hashlib.sha256).digest()).decode()
+                received["signed"] = hmac.compare_digest(
+                    self.headers.get("X-Job-Digest-Signature", ""), expected
+                )
+                body = b'{}'
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, _format, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            response = signed_request(
+                "GET", f"http://127.0.0.1:{server.server_port}/internal/confirmed-resume", secret
+            )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(received["signed"])
 
 
 class TestInteractiveWorkflowWiring(unittest.TestCase):

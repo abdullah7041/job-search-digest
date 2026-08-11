@@ -15,18 +15,15 @@ import hmac
 import json
 import os
 import sys
-import time
-import uuid
 from urllib.parse import quote
-from urllib.parse import urlsplit
 
 import requests
 
 from job_archive import jd_completeness_failures
 from resume_render import parse_resume, render_pdf, source_refs
+from worker_client import signed_request
 
 
-SIGNATURE_HEADER = "X-Job-Digest-Signature"
 MESSAGE_LIMIT = 1900
 
 
@@ -85,12 +82,6 @@ def _encoded_result(value: dict) -> bytes:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
-def _signature(secret: str, timestamp: str, nonce: str, method: str, path: str, body: bytes) -> str:
-    canonical = f"{timestamp}\n{nonce}\n{method}\n{path}\n".encode("utf-8") + body
-    digest = hmac.new(secret.encode("utf-8"), canonical, hashlib.sha256).digest()
-    return base64.b64encode(digest).decode("ascii")
-
-
 def run_task(task: dict) -> dict:
     """Validate the exact archived JD before any later tailoring can run."""
     snapshot = task.get("input", {}).get("job_snapshot")
@@ -123,27 +114,6 @@ def run_task(task: dict) -> dict:
     }
 
 
-def _request(method: str, url: str, secret: str, body: bytes = b"") -> requests.Response:
-    timestamp = str(int(time.time()))
-    nonce = str(uuid.uuid4())
-    path = urlsplit(url).path
-    response = requests.request(
-        method,
-        url,
-        data=body if method != "GET" else None,
-        headers={
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            SIGNATURE_HEADER: _signature(secret, timestamp, nonce, method, path, body),
-            "X-Job-Digest-Timestamp": timestamp,
-            "X-Job-Digest-Nonce": nonce,
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-    return response
-
-
 def process_task(worker_url: str, secret: str, task_id: str) -> bool:
     """Fetch, run, and report one task. Failures are reported before exit."""
     root = worker_url.rstrip("/")
@@ -152,7 +122,7 @@ def process_task(worker_url: str, secret: str, task_id: str) -> bool:
     result_url = f"{root}/internal/tasks/{safe_task_id}/result"
 
     try:
-        task = _request("GET", input_url, secret).json()
+        task = signed_request("GET", input_url, secret).json()
         result = run_task(task)
     except Exception as error:
         result = {
@@ -161,7 +131,7 @@ def process_task(worker_url: str, secret: str, task_id: str) -> bool:
         }
 
     body = _encoded_result(result)
-    _request("POST", result_url, secret, body)
+    signed_request("POST", result_url, secret, body)
     return result["status"] == "completed"
 
 
