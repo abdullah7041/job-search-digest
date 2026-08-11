@@ -2,38 +2,52 @@ name: job-digest
 
 on:
   schedule:
-    - cron: "0 4 * * *"   # 04:00 UTC = 07:00 AST (UTC+3)
-  workflow_dispatch: {}    # manual "Run workflow" button for testing
+    - cron: "0 4 * * *" # Daily target: 07:00 Riyadh; GitHub scheduling may be late.
+  workflow_dispatch: {}
 
-permissions:
-  contents: write          # needed to commit seen.json back to the repo
-
-# Prevent an overlapping manual run + cron run from racing on the git push.
 concurrency:
   group: job-digest
   cancel-in-progress: false
 
 jobs:
-  digest:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10      # cap a hung run so it can't burn the Actions budget
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
           cache: pip
-
-      - run: pip install -r requirements.txt
-
-      - name: Run offline regression tests
-        run: python -m unittest test_digest.py test_interactive.py
-
-      - name: Run Worker regression tests
-        working-directory: worker
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --require-hashes -r requirements.txt
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: python -m unittest test_digest.py test_interactive.py test_workflow_guard.py
+      - working-directory: worker
         run: npm test
 
+  execute:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --require-hashes -r requirements.txt
       - name: Run digest
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -42,15 +56,71 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python digest.py
+      - name: Package generated state
+        run: python workflow_guard.py package-state --root . --output state-artifact
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: digest-state-${{ github.run_id }}-${{ github.run_attempt }}
+          path: state-artifact
+          if-no-files-found: error
+          retention-days: 7
 
-      - name: Persist state and immutable job snapshots
+  persist-state:
+    needs: execute
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: digest-state-${{ github.run_id }}-${{ github.run_attempt }}
+          path: state-artifact
+      - name: Verify and apply generated state
+        run: python workflow_guard.py apply-state --artifact state-artifact --target .
+      - name: Commit state with conflict-safe retry
         run: |
-          if [[ -n "$(git status --porcelain -- seen.json stats.json jobs/)" ]]; then
-            git config user.name "github-actions"
-            git config user.email "actions@github.com"
-            git add -- seen.json stats.json jobs/
-            git commit -m "update state and job snapshots [skip ci]"
-            git push
-          else
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- seen.json stats.json jobs/
+          if git diff --cached --quiet; then
             echo "no state change"
+            exit 0
           fi
+          git commit -m "update state and job snapshots [skip ci]"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "State commit could not be pushed after three safe retries." >&2
+          exit 1
+
+  notify-failure:
+    if: ${{ always() && (needs.preflight.result == 'failure' || needs.execute.result == 'failure' || needs.persist-state.result == 'failure') }}
+    needs: [preflight, execute, persist-state]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Send redacted failure alert
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          stage=preflight
+          if [[ "${{ needs.execute.result }}" == "failure" ]]; then stage=execute; fi
+          if [[ "${{ needs.persist-state.result }}" == "failure" ]]; then stage=persist-state; fi
+          python workflow_guard.py notify --webhook "$DISCORD_WEBHOOK_URL" --workflow "job-digest" --stage "$stage" --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" --timestamp "$(date --iso-8601=seconds)"
