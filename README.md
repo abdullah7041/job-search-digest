@@ -104,6 +104,8 @@ Posting is idempotent. A `delivery_claims` row per job key, held under a lease, 
 
 If the Worker is unreachable, the run falls back to the plain Discord webhook and posts the old-style text digest: grouped by company within Strong matches and Worth reviewing, sorted by fit score, split into sub-2000-character messages so it never hits Discord's limit.
 
+The fallback is deliberately *not* used when the Worker answers but every card fails — posting the same jobs through two channels is worse than posting them late, and nothing is marked seen, so the next run retries them. Instead the run exits non-zero, so a day where the digest reached nobody shows up as a red workflow rather than a green one. A broken run stays loud.
+
 Link verification is evidence, not a source of false negatives. A link marked *inconclusive* means GitHub Actions received a block, rate limit, authentication gate, or network failure; the role remains in the digest because it may open from your browser. Only a definite closure (for example a not-found response or a closed-posting page) is dropped.
 
 Use [the weekly review template](docs/weekly-job-review-template.md) for a two-minute review of saved, applied, noisy, and inaccessible roles. That feedback is deliberately manual: it tells you when to tune the score threshold, profile wording, or filters without allowing the workflow to change selection rules silently.
