@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-12",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_WS10RlBqV1dGX0otWnM1V0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMlJZY1RsSmNHcFZabXBRUlZGTFJUVkdNMDVzWkVGaloyRlRaekZzZFVjMk5FVldTV295WnpsaFMxSjBWVUV0UkMxaGRWTmlObDltTTB0bExVZHVVRkI1U0ZacWIyWnZaVmhqUW1oblNGbEtTa1ZFTjJKT2REWXhSbEphUkhoM1VXRkdiM2REYURaQ2JsRTJZMU5XWkVNNWVHMUJWRlJ5UzI5Q1NIaFNaWHBXU2sxdWIyc1NGek5SVGpoaGRrUlJRblJETkhKMVJWQnJZVmRXTmtGckdpSkJSSE55T1daUlRVMW5NbDlVT1VOeFdqSjNjM05xVFdKMFVVcHZhVVpGTTNCMw",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_WS10RlBqV1dGX0otWnM1V0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMlJZY1RsSmNHcFZabXBRUlZGTFJUVkdNMDVzWkVGaloyRlRaekZzZFVjMk5FVldTV295WnpsaFMxSjBWVUV0UkMxaGRWTmlObDltTTB0bExVZHVVRkI1U0ZacWIyWnZaVmhqUW1oblNGbEtTa1ZFTjJKT2REWXhSbEphUkhoM1VXRkdiM2REYURaQ2JsRTJZMU5XWkVNNWVHMUJWRlJ5UzI5Q1NIaFNaWHBXU2sxdWIyc1NGek5SVGpoaGRrUlJRblJETkhKMVJWQnJZVmRXTmtGckdpSkJSSE55T1daUlRVMW5NbDlVT1VOeFdqSjNjM05xVFdKMFVVcHZhVVpGTTNCMw",
+      "title": "Senior AI-Driven Software Engineer — Backend & Frontend",
+      "company": "IBES Technologies",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/senior-ai-driven-software-engineer-backend-frontend--riyadh--e8f7dabe2625026dad09d9d56d669573e",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 70,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "IBES Technologies is seeking a Senior Software Engineer to design, build, and deploy scalable AI-driven solutions across backend and frontend systems. You will work with modern frameworks like React, Next.js, Node.js, and Python, delivering RESTful APIs and data optimization for high availability.\n\nYou will also craft automation workflows with Power Automate, Zapier, or n8n, and integrate Generative AI APIs into production.",
+        "sha256": "d01745ae7602d9ed5b6ae9ddb3c303e8c9b0af1dd69596b10c232cc1c2315efe",
+        "completeness_failures": [
+          "requirements_not_evidenced"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_LVMzUElxUUkySFBxcXUzWkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbWxzVDNGWmEwMWtjalpCYTJ0R1puZENVVmR0VG5BM2JXaDRRM1ExUVhKYVpsSXlVVnAyVURZNFZVRlRRbmRQVW1OcmJGSXRaWEo0WldjdGNGRnlaUzFuTVRCdFNEYzBjbmRXUVVnMk1WWjFTRWhoYzJ0Vk9VdE5NVFE0Y3pKNVVVOXdZMjVFUm1VMVUzcFJkRTFsUTBwc1NWSmFjREJOVTJwRVIwOTVMVFk1ZHpSTFJsb1NGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daUlRXSkZhSFZvWldrMGRWSk5jekEyUldRelkyaFZhWE0wWTIxbg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_LVMzUElxUUkySFBxcXUzWkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbWxzVDNGWmEwMWtjalpCYTJ0R1puZENVVmR0VG5BM2JXaDRRM1ExUVhKYVpsSXlVVnAyVURZNFZVRlRRbmRQVW1OcmJGSXRaWEo0WldjdGNGRnlaUzFuTVRCdFNEYzBjbmRXUVVnMk1WWjFTRWhoYzJ0Vk9VdE5NVFE0Y3pKNVVVOXdZMjVFUm1VMVUzcFJkRTFsUTBwc1NWSmFjREJOVTJwRVIwOTVMVFk1ZHpSTFJsb1NGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daUlRXSkZhSFZvWldrMGRWSk5jekEyUldRelkyaFZhWE0wWTIxbg",
+      "title": "Data & Analytics Platform Developer (Tableau, Alteryx, BI)",
+      "company": "EJADA",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/data-analytics-platform-developer-tableau-alteryx-bi-at-ejada-4452197898",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 70,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "open",
+      "jd": {
+        "status": "incomplete",
+        "text": "Job Purpose:\n\nThe Data & Analytics Platform Developer is responsible for the administration, development, support, and optimization of enterprise analytics and business intelligence platforms, including Tableau, Alteryx, and Microsoft BI technologies. The role ensures the availability, performance, security, and reliability of reporting and analytics environments while delivering scalable data integration, visualization, and business intelligence solutions that support organizational decision-making.\n\nKey Accountabilities:\n\n• Administer, maintain, and support Tableau Server, Tableau Cloud, Alteryx Server, and BI platforms across enterprise environments.\n• Design, develop, and publish dashboards, reports, and self-service analytics solutions using Tableau and Power BI.\n• Develop and maintain ETL processes, data integration workflows, and semantic models using SSIS and SSAS.\n• Monitor platform health, system performance, and application availability through proactive monitoring and alerting activities.\n• Manage incidents, problems, service requests, and change activities in accordance with ITIL best practices.\n• Perform root cause analysis (RCA) and implement corrective and preventive actions for recurring issues.\n• Support platform upgrades, migrations, patching activities, and environment optimization initiatives.\n• Ensure compliance with security standards, audit requirements, access management controls, and periodic user access reviews.\n• Administer authentication and authorization mechanisms including Active Directory, LDAP, SSO, and SAML integrations.\n• Collaborate with infrastructure, database, networking, security, and business teams to support analytics and reporting solutions.\n• Develop and maintain technical documentation, operational procedures, support guides, and knowledge repositories.\n• Support high-availability and multi-node platform environments to ensure business continuity and operational excellence.\n• Provide L2/L3 application support and contribute to continuous service improvement initiatives.\n\nMinimum Qualifications:\n\n• Bachelor's Degree in Computer Science, Information Systems, Information Technology, Software Engineering, or related.\n• Tableau, Microsoft BI, Alteryx, ITIL, or Data Analytics certifications are preferred.\n\nMinimum Experience:\n\n• +4 years of experience in Business Intelligence, Analytics Platform Administration, Application Support, or Data Engineering.\n• Hands-on experience with one or more of the following technologies: Tableau, Alteryx, SSIS, SSAS, Power BI.\n• Experience supporting enterprise reporting, analytics, or data platform environments.\n• Experience working within SLA-driven support and operational environments.\n• Experience in platform upgrades, migrations, or enterprise application administration is preferred.\n\nJob-Specific Skills:\n\n• Tableau Desktop, Tableau Server, Tableau Cloud, and Tableau Prep Builder.\n• Tableau Administration, Dashboard Development, and Performance Optimization.\n• Alteryx Server Administration and Platform Support.\n• SQL Server Integration Services (SSIS).\n• SQL Server Analysis Services (SSAS).\n• ETL Development, Data Integration, and Data Transformation.\n• Data Warehousing, Data Modeling, and Semantic Modeling.\n• Power BI Reporting and Data Visualization.\n• Advanced SQL and Database Management.\n• Oracle, PostgreSQL, MySQL, and SQL Server databases.\n• Windows Server and Linux Administration.\n• Bash and/or Python Scripting.\n• Authentication and Security Integration (SSO, SAML, LDAP, Active Directory).\n• Networking Fundamentals (DNS, SSL/TLS, TCP/IP, Firewalls, Load Balancers).\n• ITIL Processes, Incident Management, Problem Management, and Change Management.\n• Troubleshooting, Log Analysis, Root Cause Analysis, and Operational Support.\n• Strong analytical, communication, stakeholder management, and problem-solving skills.",
+        "sha256": "44c01ad7c2bb54af0e0249de5f9f1032b8bda238b0d3895ccba79d1b947b805e",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_QW9BWWV3S3hRbHZ4WWJnUEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM1JOZVVsMmJHbFdXWEE1YzNKaWFIaDBORlV0V2t3NWNGODJSSGxzWm1zMFExVldTMUZDV1RjeVJqTmlWbHAzVVdJMGNGRkdVamQ1TUVoeWMxVXRVVUZHZUZOZlJFOTZibTVoZERoRmFrWnBkbHBUTTJ0a2RTMVFUMkZDWWt4aVVFWkhOV2N4TlRObGNGZExXbVJYUmpCRmQwbDRaM3A2Y1daVWIyMXhabkEzV21WRVJGTVNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daVU1rSXhOMmhwZGxsM00yaDFWVkJZUTNBeE4yeGpVWFZPTURsMw",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_QW9BWWV3S3hRbHZ4WWJnUEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM1JOZVVsMmJHbFdXWEE1YzNKaWFIaDBORlV0V2t3NWNGODJSSGxzWm1zMFExVldTMUZDV1RjeVJqTmlWbHAzVVdJMGNGRkdVamQ1TUVoeWMxVXRVVUZHZUZOZlJFOTZibTVoZERoRmFrWnBkbHBUTTJ0a2RTMVFUMkZDWWt4aVVFWkhOV2N4TlRObGNGZExXbVJYUmpCRmQwbDRaM3A2Y1daVWIyMXhabkEzV21WRVJGTVNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daVU1rSXhOMmhwZGxsM00yaDFWVkJZUTNBeE4yeGpVWFZPTURsMw",
+      "title": "Senior Data Engineer: Architect Scalable Data Pipelines",
+      "company": "Qiddiya | القدية",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/senior-data-engineer-architect-scalable-data-pipelines--riyadh--eec06f1042de2d2b8cb8521dd981a5e64",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 70,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "Qiddiya is seeking a Senior Data Engineer to transform raw data into scalable systems and enable analytics. You will architect and optimize data pipelines, collaborate with cross-functional teams, and drive data availability and reliability for decision making.\n\nYou'll work with Python/Java/Scala, SQL/NoSQL, and cloud services (GCP, AWS/Azure as needed) to build modern data platforms and support ML initiatives.",
+        "sha256": "3eecf343459eeeccd2966e6470dfa8e8e1b15a8274179e062227c3a7d724a3bf",
+        "completeness_failures": [
+          "requirements_not_evidenced"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_LVRETmFpYUpvRTdWc1loYkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVXBmYWxvd1NIWkNXbVZQZWsxSE1HTlRWVVZzTUU0MWNWSk9ZVFJvU0Rock9HRm5jMlJVVjFWdlJVeEdNWFJ0YzBsRmJGbE1iVEV0V21FdGRUQTBSM1I1V1dOeVJuQkRWamhWYWpSbVowaDJhWHBPVjFZd2JqaEZTMHMzY0hkeFZVcGhkSEI2ZURSQlpVVTRRalF6VW5Kc1QwUklja0p0ZGtoSmJraHlORTF2WWxWemNVWVNGelZuVGpoaGRXRlFUa3h1UkdrdFoxQTFUMGd4TUVFNEdpSkJSSE55T1daVVdFTTJXalkxY0haV1UwRmZVMmh0V2pSbE5WQnJibTl1T1hCbg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_LVRETmFpYUpvRTdWc1loYkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVXBmYWxvd1NIWkNXbVZQZWsxSE1HTlRWVVZzTUU0MWNWSk9ZVFJvU0Rock9HRm5jMlJVVjFWdlJVeEdNWFJ0YzBsRmJGbE1iVEV0V21FdGRUQTBSM1I1V1dOeVJuQkRWamhWYWpSbVowaDJhWHBPVjFZd2JqaEZTMHMzY0hkeFZVcGhkSEI2ZURSQlpVVTRRalF6VW5Kc1QwUklja0p0ZGtoSmJraHlORTF2WWxWemNVWVNGelZuVGpoaGRXRlFUa3h1UkdrdFoxQTFUMGd4TUVFNEdpSkJSSE55T1daVVdFTTJXalkxY0haV1UwRmZVMmh0V2pSbE5WQnJibTl1T1hCbg",
+      "title": "AI/ML Specialist",
+      "company": "Advanced Analytics LLC",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/ai-ml-specialist-at-advanced-analytics-llc-4446631098",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 70,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Artificial Intelligence Jobs Opportunity\n\nBuilding and Maintaining Hierarchical/Hybrid Multi-Agent Reinforcement Learning (MARL) System with Agent Orchestration and RAG Architecture\n\nJob Title: AI Developer, AI/ML/LLM Specialist – Graduate Python Developer\n\nJob Description: Building and Maintaining Hierarchical/Hybrid Multi-Agent Reinforcement Learning\n\n(MARL) System with Agent Orchestration and RAG Architecture using Python and\n\nLangGraph of LangChain and other tools\n\nJob Type: Full-Time\n\nLocation: Advanced Analytics, Riyadh, Saudi Arabia\n\nAbout Us\n\nAdvanced Analytics is a leading innovator in Decision Support Systems using artificial intelligence and multi-agent frameworks, dedicated to solving complex challenges through cutting-edge technology. We are seeking a talented and driven new graduate to join our team as a Python Developer to design and implement a Hierarchical/Hybrid Multi-Agent Reinforcement Learning (MARL) System with Agent Orchestration and RAG (Retrieval-Augmented Generation) Architecture.\n\nThis is an exciting opportunity to work on state-of-the-art AI projects that push the boundaries of what’s possible in multi-agent systems and knowledge-driven workflows.\n\nKey Responsibilities\n\nDevelop Hierarchical/Hybrid MARL Systems:\n• Design and implement multi-agent reinforcement learning (MARL) systems that utilize hierarchical or hybrid architectures.\n• Apply advanced RL techniques, such as Centralized Training with Decentralized Execution (CTDE), MADDPG, and QMIX, to enable agent collaboration and coordination.\n\nIntegrate RAG Pipelines into Agent Workflows:\n• Build Retrieval-Augmented Generation (RAG) pipelines to optimize information retrieval and decision-making for agents.\n• Leverage vector databases (e.g., Pinecone, FAISS, or Weaviate) and embedding techniques for context-aware retrieval.\n\nDesign Agent Orchestration Frameworks:\n• Use LangGraph to create dynamic workflows for agent orchestration, where agents can invoke other agents, external tools, or APIs.\n• Develop hierarchical agent structures with task-managing agents orchestrating sub-agents for specific problem domains.\n\nOptimize System Performance and Scalability:\n• Build scalable multi-agent systems capable of handling high-volume tasks and large-scale data.\n• Optimize performance in distributed and cloud-based environments.\n\nCollaborate and Experiment:\n• Work closely with AI researchers, engineers, and developers to define system requirements and architectures.\n• Conduct experiments to evaluate and iterate on MARL, RAG, and agent orchestration designs.\n\nWrite Clean, Modular Python Code:\n• Develop maintainable and reusable code using best practices in Python development, including asynchronous programming, modular design, and version control.\n\nRequired Skills and Qualifications\n\nEssential:\n• Education: Bachelor’s degree in Computer Science, Artificial Intelligence, Software Engineering, or a related field.\n• Programming Skills: Advanced Python skills, including experience with libraries such as NumPy, pandas, and scikit-learn.\n• Multi-Agent Systems: Understanding of multi-agent systems, including hierarchical architectures and agent coordination.\n• Reinforcement Learning (RL):\n• Familiarity with RL algorithms such as Q-learning, DDPG, and Actor-Critic methods.\n• Knowledge of MARL frameworks like CTDE, MADDPG, QMIX, or QTRAN.\n• Retrieval-Augmented Generation (RAG):\n• Experience with RAG pipelines for information retrieval and response generation.\n• Familiarity with vector similarity search tools (e.g., Pinecone, FAISS, or Weaviate).\n• LangGraph/Agent Orchestration: Knowledge of LangGraph or similar agent orchestration frameworks for building workflows.\n• Problem-Solving: Strong analytical and debugging skills to tackle complex AI challenges.\n• Team Collaboration: Excellent communication skills to work effectively in cross-functional teams.\n\nPreferred:\n• NLP and RAG Integration: Experience with NLP frameworks like Hugging Face Transformers for integrating language models into RAG workflows.\n• Cloud and Distributed Systems: Familiarity with cloud platforms (AWS, GCP, or Azure) for deploying and scaling multi-agent systems.\n• Experimentation Tools: Experience with tools like Weights & Biases or TensorBoard for tracking RL experiments.\n• Graph-Based Approaches: Knowledge of graph-based algorithms and tools (e.g., NetworkX) for agent relationships or task modeling.\n• Knowledge Representation: Familiarity with knowledge graphs and ontologies for agent reasoning.\n• Asynchronous Programming: Experience with multi-threading or asynchronous programming in Python for agent orchestration.\n\nTools and Technologies\n• Languages and Libraries: Python, NumPy, pandas, PyTorch, TensorFlow, Stable-Baselines3.\n• Multi-Agent and RL Frameworks: OpenAI Gym, PettingZoo, LangGraph, LangChain.AutoGen or CrewAI\n• RAG and Vector Search Tools: Pinecone, FAISS, Weaviate, Milvus.\n• Cloud Deployment: AWS, GCP, or Azure.\n• Orchestration Tools: LangGraph, Docker, Kubernetes.\n• Experiment Tracking: Weights & Biases, TensorBoard.\n\nWhat We Offer\n• Competitive salary, benefits and bonuses\n• Opportunity to work on cutting-edge AI and multi-agent systems.\n• Mentorship and training to accelerate your career growth.\n• A collaborative and inclusive work environment with flexible hours.\n• The chance to make an impact with innovative AI solutions.\n\nHow to Apply\n\nSubmit your resume, a cover letter, and any relevant project portfolio to HR Manager. Ms. Mashael Alhazmi at <al.mashael@advtics.com>].\n\nWe’re looking for passionate individuals excited to make a difference in the field of AI and multi-agent systems!",
+        "sha256": "206697b5a9932ac6f47f6732b98133e3963b1953007ffb4ef5d489ea69f8003e",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_bUhHZ3kwRTNudjcxdGZTeEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTekEwUlcxaVNGSTBPSHBMYldGeVJqZE9kazE1U1V4RlZDMHljVzVtVEZKV2RqTTVUa054YVVFNFVWZzNTV3RhUzBobGJYWlFOMWhoVjNsVVJtRnFOM3BuY1d0RVp6TTFTVlUxV1dkVWVtbHFWMU01YjA5V2VWUjJXRk10ZDBsYVpsZHBiems1VEZZMmRWWnRWRWhQZVRkMGFYaFFNbWhITFdaTU0yTldjVXRuUVU1bU1sb1NGelZuVGpoaGRXRlFUa3h1UkdrdFoxQTFUMGd4TUVFNEdpSkJSSE55T1daVVUwcEdUVGhETVhSWlNrY3hVa1ZXUnpnMWJrSkljSFZOTmpaMw",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_bUhHZ3kwRTNudjcxdGZTeEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTekEwUlcxaVNGSTBPSHBMYldGeVJqZE9kazE1U1V4RlZDMHljVzVtVEZKV2RqTTVUa054YVVFNFVWZzNTV3RhUzBobGJYWlFOMWhoVjNsVVJtRnFOM3BuY1d0RVp6TTFTVlUxV1dkVWVtbHFWMU01YjA5V2VWUjJXRk10ZDBsYVpsZHBiems1VEZZMmRWWnRWRWhQZVRkMGFYaFFNbWhITFdaTU0yTldjVXRuUVU1bU1sb1NGelZuVGpoaGRXRlFUa3h1UkdrdFoxQTFUMGd4TUVFNEdpSkJSSE55T1daVVUwcEdUVGhETVhSWlNrY3hVa1ZXUnpnMWJrSkljSFZOTmpaMw",
+      "title": "Production AI/ML Engineer: Ship Reliable Models",
+      "company": "Kanz",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/production-ai-ml-engineer-ship-reliable-models--riyadh--e7f8b09514a051b55ee3cf0124959b885",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 70,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "unknown",
+      "jd": {
+        "status": "captured",
+        "text": "Kanz in Riyadh is seeking an AI/ML Engineer to design, build and deploy AI/ML solutions that deliver measurable business value.\n\nYou will own end-to-end ML workflows, implement deep learning models with PyTorch or TensorFlow, and collaborate with cross-functional teams to ship features on schedule while monitoring model performance.\n\nCandidates should have 5+ years in AI/ML, strong software engineering, and experience deploying models to production; a CS degree is required.",
+        "sha256": "647a3d177a2286cdb0cedb24d2840d4258b7e1e431004bec86cf61d625f955cf",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_UmxHZURCdXZ6VDN5VFRGZ0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTWHB0UkdScVFrazFRV2xLTkdodGIzRmphSFJtWkhZeVRVbDNia2hGV2s0MVlrRllVVkF0VjJ3NE16TllWazFqYlVRMVEzQmxNV041UkdSVlRETm9OMWxrTXpScFVVNWhaMmhSTkZSSGIwOXpjV2hPWDBwRVNYazNPWE5NUW5VdFpHSkJOMDVNYjNOcVdVcDVUbkpCWm1Fek1YVnBiMTlDUnpseWNIQnBObEZqT0dKYU5USVNGelZuVGpoaGRXRlFUa3h1UkdrdFoxQTFUMGd4TUVFNEdpSkJSSE55T1daU2EzWmtOWEprTFd4dlVuTXhMWE01WWpOVWExZFZkVU00U21OUg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_UmxHZURCdXZ6VDN5VFRGZ0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTWHB0UkdScVFrazFRV2xLTkdodGIzRmphSFJtWkhZeVRVbDNia2hGV2s0MVlrRllVVkF0VjJ3NE16TllWazFqYlVRMVEzQmxNV041UkdSVlRETm9OMWxrTXpScFVVNWhaMmhSTkZSSGIwOXpjV2hPWDBwRVNYazNPWE5NUW5VdFpHSkJOMDVNYjNOcVdVcDVUbkpCWm1Fek1YVnBiMTlDUnpseWNIQnBObEZqT0dKYU5USVNGelZuVGpoaGRXRlFUa3h1UkdrdFoxQTFUMGd4TUVFNEdpSkJSSE55T1daU2EzWmtOWEprTFd4dlVuTXhMWE01WWpOVWExZFZkVU00U21OUg",
+      "title": "Software Engineer II - QuantumBlack, AI by McKinsey",
+      "company": "QuantumBlack, AI by McKinsey",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-ii-quantumblack-ai-by-mckinsey-at-quantumblack-ai-by-mckinsey-4359286300",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Who You'll Work With\n\nDriving lasting impact and building long-term capabilities with our clients is not easy work. You are the kind of person who thrives in a high performance/high reward culture - doing hard things, picking yourself up when you stumble, and having the resilience to try another way forward.\n\nIn return for your drive, determination, and curiosity, we'll provide the resources, mentorship, and opportunities you need to become a stronger leader faster than you ever thought possible. Your colleagues—at all levels—will invest deeply in your development, just as much as they invest in delivering exceptional results for clients. Every day, you'll receive apprenticeship, coaching, and exposure that will accelerate your growth in ways you won’t find anywhere else.\n\nWhen you join us, you will have:\n\n• Continuous learning: Our learning and apprenticeship culture, backed by structured programs, is all about helping you grow while creating an environment where feedback is clear, actionable, and focused on your development. The real magic happens when you take the input from others to heart and embrace the fast-paced learning experience, owning your journey.\n• A voice that matters: From day one, we value your ideas and contributions. You’ll make a tangible impact by offering innovative ideas and practical solutions, all while upholding our unwavering commitment to ethics and integrity. We not only encourage diverse perspectives, but they are critical in driving us toward the best possible outcomes.\n• Global community: With colleagues across 65+ countries and over 100 different nationalities, our firm’s diversity fuels creativity and helps us come up with the best solutions for our clients. Plus, you’ll have the opportunity to learn from exceptional colleagues with diverse backgrounds and experiences.\n• World-class benefits: On top of a competitive salary (based on your location, experience, and skills), we provide a comprehensive benefits package to enable holistic well-being for you and your family.\n\nYour Impact\n\nAs a Software Engineer with Tech & AI at McKinsey, you will work with clients across a wide range of sectors and industries, advising them on how to best leverage technology.\n\nYou will drive architectural design, make key technology decisions, and employ agile methodologies to build and deliver the next generation of products for our clients at scale.\n\nYou will also lead project workstreams, helping clients build their technical capabilities and foster a culture centered around engineering best practices, user-centricity, and Agile values.\n\nAs a core member of the team, you will take on responsibilities that include driving architectural design and making strategic technology decisions to shape next-generation products for various internal teams, ensuring that we remain at the forefront of technological innovation.\n\nAdditionally, you will be hands-on and co-creating solutions alongside our clients and their leadership, enabling you to grow into a recognized technology leader.\n\nYou will be part of the McKinsey Digital team in Riyadh, Saudi Arabia. This group brings together the best of McKinsey’s digital capabilities to help our clients use digital technology to transform their businesses.\n\nMcKinsey Digital is our tech delivery people unit. A global team of software, data and cloud engineers, passionate designers, technology architects, product owners, and leading technologists.\n\nYou will join a multidisciplinary community of developers, Agile coaches, designers, business strategists and experts. Together, we will design and create industry shaping products and tools for our clients.\n\nWhile we advocate for using the right tech for the right task, we often leverage the following technologies: JavaScript, TypeScript, React.js, Angular.js, Next.js, Vue.js, Python, Java, C#, NodeJS, SQL, MongoDB, AWS, Azure, GCP, and more!\n\nOur office culture is casual and social, with an emphasis on education and innovation. You will have the freedom to try new ideas and experiment in your role and will be guaranteed significant dedicated time to tinker, create, continuously learn and share cool new stuff. We also have a strong emphasis in our teams on mentoring others enabling them to grow and learn.\n\nChanging the world requires us to sit with our clients at times, so some travel is expected in this role.\n\nYour Qualifications and Skills\n\n• Undergraduate or master’s degree; or equivalent experience\n• 5+ years of experience in software development, with significant full-stack web application development experience strongly preferred\n• Demonstrated knowledge and hands-on experience across the full application stack with some of the following languages/frameworks: JavaScript, TypeScript, React, Angular, Vue, jQuery, Java, Sprint, C#, .NET, Node.js, SQL, MySQL, SQL Server, MongoDB, cloud-native databases, AWS, Azure, GCP, Jenkins, Docker, Circle CI, Travis\n• Experience leading in Agile teams, including coaching and modeling Agile mindsets as part of sprint ceremonies, work definition and building developer capabilities\n• Experience working collaboratively with technical and non-technical team members and stakeholders including modeling and coaching others to use engineering best practices such as design patterns, customer-centric design, test-driven development, code refactoring, code review, and OWASP Top 10 security awareness",
+        "sha256": "d3fe00ac893fbc5b925f846fe40485d472676c8bfdb6982a64366ad9ef246bf2",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_YXdUVWZYOEU1RUZtQ1k2WkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMHRrYlZsMVprSnBTVnBhTlhsZk1WUkZXV2xrWTNaVGExbDVibE01UTBremRVRXhhRzVwTVd4a1dGSldSMVl0UnpGUVVIaHhlblJwY1VkZmVsOU1kSEJSU1RWbFExRnFSa2wwTUVZMlJGQm5TblpwUzBJMk5tVmZZbGd5VnpOeFNVMUxjRFJ3Y1RSWmFrZE1ZblZQV1ZGcmFYTlNObGhsU0RaTFgyWmpVbXRWU0VGQlEyMFNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daUmFuZDNlRTQ1T0V4dWVFTmlZbU51UW1aMFdtTlhPVWRsVGpoQg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_YXdUVWZYOEU1RUZtQ1k2WkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMHRrYlZsMVprSnBTVnBhTlhsZk1WUkZXV2xrWTNaVGExbDVibE01UTBremRVRXhhRzVwTVd4a1dGSldSMVl0UnpGUVVIaHhlblJwY1VkZmVsOU1kSEJSU1RWbFExRnFSa2wwTUVZMlJGQm5TblpwUzBJMk5tVmZZbGd5VnpOeFNVMUxjRFJ3Y1RSWmFrZE1ZblZQV1ZGcmFYTlNObGhsU0RaTFgyWmpVbXRWU0VGQlEyMFNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daUmFuZDNlRTQ1T0V4dWVFTmlZbU51UW1aMFdtTlhPVWRsVGpoQg",
+      "title": "Data Engineer Jobs in Dhahran, Saudi Arabia | Data Infrastructure & ETL Engineering Careers",
+      "company": "Mind Stream",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.jobrapido.com/jobpreview/3761172935646117888",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Location\nDhahran, Saudi Arabia\nJob Category\nInformation Technology (IT) & Software\nEngineering & Technical\nScience & Research\nJob Overview\nMind Stream is seeking an experienced\nData Engineer\nto join its team in Dhahran, Saudi Arabia. This role is ideal for professionals with expertise in building scalable data infrastructure, developing reliable data pipelines, and supporting modern analytics platforms that enable data-driven business decisions.\nAs a Data Engineer, you will design, develop, and optimize enterprise data solutions while ensuring efficient data ingestion, transformation, and processing. You will collaborate with cross-functional teams using Agile methodologies to deliver high-quality data platforms. This position offers excellent opportunities for professional development through hands-on experience with modern big data technologies, workflow automation, and cloud-ready data architectures.\nKey Responsibilities\nDesign, develop, and maintain scalable ETL and ELT data pipelines.\nBuild and optimize batch and streaming data processing solutions using Apache Spark.\nDevelop and manage workflow orchestration using Apache Airflow.\nDesign and maintain Data Lake architectures for enterprise-scale data management.\nImplement efficient data ingestion, transformation, and integration processes.\nOptimize SQL and NoSQL databases for performance and scalability.\nCollaborate with engineering teams using Git version control and Agile methodologies.\nEnsure data quality, reliability, and performance across data platforms.\nSupport business intelligence and analytics initiatives through robust data engineering solutions.\nRequirements & Qualifications\nBachelor’s degree in Computer Science, Information Technology, Data Engineering, Software Engineering, or a related field.\nStrong experience designing and maintaining ETL/ELT data pipelines.\nHands-on experience with Apache Spark for batch and streaming data processing.\nExperience using Apache Airflow for workflow orchestration.\nStrong understanding of Data Lake architectures and modern data engineering practices.\nProficiency in SQL and NoSQL database design, modeling, and optimization.\nExperience with Git and Agile software development methodologies.\nExcellent analytical, problem-solving, communication, and teamwork skills.\nSalary, Benefits & Career Growth\nBenefits\nOpportunity to work on enterprise-scale data engineering projects.\nExposure to modern big data technologies and scalable data platforms.\nCollaborative and technology-driven work environment.\nCareer Growth\nOpportunity to advance into Senior Data Engineer, Data Platform Engineer, Big Data Engineer, or Data Architect roles.\nExposure to complex data engineering challenges that support long-term professional development.\nTraining & Professional Development\nHands-on experience with Apache Spark, Apache Airflow, Data Lake architectures, SQL, NoSQL, and enterprise data engineering best practices.\nOpportunity to strengthen expertise in workflow orchestration, scalable data infrastructure, and modern data technologies.\n#J-18808-Ljbffr",
+        "sha256": "15f8f64050acb944e6eb184c363139f8283ef067c584b08533bb7aad63066832",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_U1pWRHptb0gxV1l3ZVNtckFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbnBtV1c1a1gzcE9WMEZTTTFVMGFVTjBOV3RVYjFrdE1GVk5NekZ1UWxWTFJHNUdPREZZVUVRNGRqSkxRbGszVmxKYVptaDJTazVST0UxWE9GQjRRVU5WYUZkalFYRktRVVZyYlRoQ1UzY3RMVEZuV1dodlJIbHVWMUV5WjBSME1UbDJURXR0U0hCUVV6QnhWRmx2WjJzNU9GazBXRzVFVG1aSmNHMDFkbmh6VTBOVlpFTVNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daVE0zTTBWMjVoVG1ScFYwaExNMmxtVmpaUk1qQTJiVXA1U1ZwMw",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_U1pWRHptb0gxV1l3ZVNtckFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbnBtV1c1a1gzcE9WMEZTTTFVMGFVTjBOV3RVYjFrdE1GVk5NekZ1UWxWTFJHNUdPREZZVUVRNGRqSkxRbGszVmxKYVptaDJTazVST0UxWE9GQjRRVU5WYUZkalFYRktRVVZyYlRoQ1UzY3RMVEZuV1dodlJIbHVWMUV5WjBSME1UbDJURXR0U0hCUVV6QnhWRmx2WjJzNU9GazBXRzVFVG1aSmNHMDFkbmh6VTBOVlpFTVNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daVE0zTTBWMjVoVG1ScFYwaExNMmxtVmpaUk1qQTJiVXA1U1ZwMw",
+      "title": "Data Pipeline Engineer: ETL & Big Data in Riyadh",
+      "company": "exequt MENA",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/data-pipeline-engineer-etl-big-data-in-riyadh--riyadh--ed7ed54b00629f5d80b3eac9131f12e6f",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "unknown",
+      "jd": {
+        "status": "captured",
+        "text": "ExeQut is seeking an ETL Engineer to build and maintain data pipelines for analytics and data platforms. You will own end-to-end ETL processes—from extraction strategies to transformation logic—working in a big data stack and collaborating with business teams to translate requirements into pipelines.\n\nRole includes international projects, including Saudi Arabia, with English as the primary language for documentation, progress updates, and client-facing presentations.",
+        "sha256": "05e6744b865271be6f4f0769b439ad879c6ff194c3de227a0749bbed054a3549",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_Vlo0NkYxXzhwRk8xOW1SekFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMUZ2WW04MFFVRTFVMWhKVG1STlRHUnZUblZWTVV4b1lXeHBhMUV5U0VKU1FrcFBYM3BvUmxwTVpHZEdUMTlTYWxGM1kwNUxhbGt0UkRjMmJEVkRTa3BpVWpkQ1RUWjFaRXB4TkUxalZWTTNiakowTm14QlpucGZVSGxWVVZvM2RVRlJSa2huY2xOa1V6ZEtRalJVT0c5RWFrZG5SMDVCYzJKak5scE9hbXhGY2w5U0xXWVNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daVVFucG9VMGxJZFZsalRIWllaWE5sVWpWdFUwVXdZVmgwVjNwQg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_Vlo0NkYxXzhwRk8xOW1SekFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMUZ2WW04MFFVRTFVMWhKVG1STlRHUnZUblZWTVV4b1lXeHBhMUV5U0VKU1FrcFBYM3BvUmxwTVpHZEdUMTlTYWxGM1kwNUxhbGt0UkRjMmJEVkRTa3BpVWpkQ1RUWjFaRXB4TkUxalZWTTNiakowTm14QlpucGZVSGxWVVZvM2RVRlJSa2huY2xOa1V6ZEtRalJVT0c5RWFrZG5SMDVCYzJKak5scE9hbXhGY2w5U0xXWVNGelJSVGpoaGNWQjVTUzB0ZFhWeU9GQnZVREozTmtGakdpSkJSSE55T1daVVFucG9VMGxJZFZsalRIWllaWE5sVWpWdFUwVXdZVmgwVjNwQg",
+      "title": "Senior Data Engineer - Remote, Flexible Hours & Growth",
+      "company": "DataPlus",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.jooble.org/jdp/617382006340993830",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "A leading data solutions company in Riyadh is seeking an experienced Data Engineer to build and optimize ETL workflows and scalable data architectures on cloud platforms. The ideal candidate should have over 7 years of experience in data engineering, proficiency in SQL and Python, and familiarity with cloud data services. This role offers professional growth in an innovative environment that values work-life balance and teamwork.\n#J-18808-Ljbffr",
+        "sha256": "ad46e21d9688abba6d028c4c576c406e74ab8cf428c19940ee7a8d01f7affb35",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_bWJFdnl3QzVkNFBvdXh3N0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMVpmUmxwc2FuSndNRUYzWjNOS1VURXRWbTg1WkVaaU1GQklSREJMVkZGVFptOXVSbmRtZERScmF6RnVkekl0ZVZWaFl6Vkxja1F6VkVoM1NIbHdVWGxMVFVadFdESjBSbk00VlVkRFFtVXdNSFF5WDJ4Qk9WaHRWR0UyTlVKSk0xaDFTVUZoZGtORE1EVldhMVZyWmxGTldYUklWRTFZVEdvMFFUUTJSV0oxVERsbWRVOFNGek5SVGpoaGRrUlJRblJETkhKMVJWQnJZVmRXTmtGckdpSkJSSE55T1daU1dXcFNjREZhTVZKWldUSlNTV2RTZG5KcldtbE1kMDlSTTNwUg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_bWJFdnl3QzVkNFBvdXh3N0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMVpmUmxwc2FuSndNRUYzWjNOS1VURXRWbTg1WkVaaU1GQklSREJMVkZGVFptOXVSbmRtZERScmF6RnVkekl0ZVZWaFl6Vkxja1F6VkVoM1NIbHdVWGxMVFVadFdESjBSbk00VlVkRFFtVXdNSFF5WDJ4Qk9WaHRWR0UyTlVKSk0xaDFTVUZoZGtORE1EVldhMVZyWmxGTldYUklWRTFZVEdvMFFUUTJSV0oxVERsbWRVOFNGek5SVGpoaGRrUlJRblJETkhKMVJWQnJZVmRXTmtGckdpSkJSSE55T1daU1dXcFNjREZhTVZKWldUSlNTV2RTZG5KcldtbE1kMDlSTTNwUg",
+      "title": "Senior Software Engineer (Frontend/UI-UX)",
+      "company": "JAL International Co. Ltd.",
+      "location": "الظهران, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-frontend-ui-ux-at-jal-international-co-ltd-4442004936",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 40,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "About the Role\n\nAs a Senior Software Engineer with a Frontend/UI-UX specialty, you will define interaction architecture and deliver high-assurance, mission-critical digital platforms. Operating in an Agile environment, you'll solve complex usability challenges related to real-time data synchronization, cryptographic state visualization, and secure content handling. This role blends expert proficiency in design tooling (Figma) with robust front-end engineering (Vue.js, TypeScript), combining UX ownership with production-level UI implementation.\n\nResponsibilities\n• Architect user flows for applications requiring real-time state updates and low-latency user feedback\n• Design unobtrusive visual indicators for data integrity, encryption status, and content protection layers\n• Independently develop pixel-perfect, responsive components using Vue.js and TypeScript\n• Implement complex client-side logic for dynamic content rendering and secure data presentation\n• Ensure seamless integration with RESTful APIs and real-time WebSockets for live telemetry data\n• Maintain and expand the internal Design System (icons, typography, atomic components) across web, mobile, and desktop\n• Create high-fidelity interactive prototypes in Figma to validate complex workflows and state transitions\n• Transform abstract security concepts (identity verification, data classification, regulatory compliance) into clear, human-readable interface elements\n• Champion inclusive design, ensuring all interfaces strictly adhere to WCAG 2.1 AA standards\n\nRequirements\n• Bachelor's or Master's degree in Computer Science, Design, Human-Computer Interaction (HCI), or a related field\n• 5+ years of professional experience in UI/UX design and front-end engineering\n• Proven ability to architect, build, and deploy complex, stateful web applications (real-time dashboards, high-density data-processing interfaces)\n• Clear track record of translating UX requirements into production-ready code within structured Agile/Scrum workflows\n• Strong proficiency in HTML5, CSS3, and TypeScript, including secure integration of RESTful APIs and WebSockets\n• Mandatory professional experience with the Vue.js ecosystem (Pinia, Vue Router)\n• Expert proficiency in Figma (Auto Layout, Components, Prototyping)\n• Comprehensive understanding of WCAG 2.1 AA guidelines and ARIA roles\n• Proven ability to articulate and defend complex design decisions to engineering and product stakeholders in fluent English\n\nDesirable Certifications\n• Google UX Design Professional Certificate\n• Certified Professional in Accessibility Core Competencies (CPACC)\n• UX Certification from Nielsen Norman Group (NN/g)",
+        "sha256": "67e9f393324f01c9097b4158adf081912cae9802a5022893e7f8bb0b121e1faf",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_X00xZk1Kc2JYWkZSWnp4WEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTV3MwWnpWc0xXZGZPWE5zV0ZGeWFuWndPR1E0VEZOTU1UaG1SSEpsVmxNMWVGRkZjM1pmT0ZRdE1tczNaekZJTm1SelNHdFBaV0YwZFVSaVRtbDBPVGRJU25oRVdreHhUek5NZVdsSlNqZDFWVkpuZDNaNGVYUktkRlUyUm1KbmFFMWlOVmxGY2pGaFNHZFNORTB6TkV3M1RVbHRVa1Y1WW5SRlYyeFFUekpQTURsclkya1NGek5SVGpoaGRrUlJRblJETkhKMVJWQnJZVmRXTmtGckdpSkJSSE55T1daU2NVY3RVbFJSU1dKMmFGQkJRMmhNTWt0S2RXVm5iRzlEVGtSbg",
+      "captured_at": "2026-08-12T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_X00xZk1Kc2JYWkZSWnp4WEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTV3MwWnpWc0xXZGZPWE5zV0ZGeWFuWndPR1E0VEZOTU1UaG1SSEpsVmxNMWVGRkZjM1pmT0ZRdE1tczNaekZJTm1SelNHdFBaV0YwZFVSaVRtbDBPVGRJU25oRVdreHhUek5NZVdsSlNqZDFWVkpuZDNaNGVYUktkRlUyUm1KbmFFMWlOVmxGY2pGaFNHZFNORTB6TkV3M1RVbHRVa1Y1WW5SRlYyeFFUekpQTURsclkya1NGek5SVGpoaGRrUlJRblJETkhKMVJWQnJZVmRXTmtGckdpSkJSSE55T1daU2NVY3RVbFJSU1dKMmFGQkJRMmhNTWt0S2RXVm5iRzlEVGtSbg",
+      "title": "Flutter Engineer",
+      "company": "Colada",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/flutter-engineer-at-colada-4444558976?refId=ISltUKeEW7u9BcpiOSVvlw%3D%3D&trackingId=ZDMchayY3Xv9rvuIZpjQqA%3D%3D",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 40,
+      "why": "matches your target titles and skills",
+      "ranking_verified": false,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "DescriptionColada, a leading company in the Food & Beverage industry based in Riyadh, Saudi Arabia.\n\nWe're looking for a mid-to-senior Flutter developer to join the mobile team and own features end-to-end — from UI to state management to API integration.\n\nRequirements• 3+ years of professional Flutter/Dart experience, with apps shipped to both the App Store and Google Play\n\n• Strong understanding of state management patterns — we use Riverpod (incl. code generation via riverpod_generator)\n\n• Experience with auto_route or comparable declarative/generated routing\n\n• Solid grasp of async Dart, REST API integration (we use Dio), and JSON serialization/code generation\n\n• Experience with Firebase (Messaging/push notifications at minimum)\n\n• Comfortable with Git-based workflows and code review\n\n• Understanding of mobile app release processes (App Store Connect / Play Console); Fastlane experience a plus\n\n• Clear written communication for a fully remote, async-friendly team\n\nRoles And Responsibilities• Build and maintain core product features across ordering, checkout, and customer loyalty/rewards\n\n• Integrate with our REST API (Dio) and real-time updates (Socket.IO)\n\n• Work with payment providers to support checkout flows across markets\n\n• Implement location-based features (maps, geolocation)\n\n• Maintain push notification flows (Firebase Messaging) and lifecycle/marketing notifications\n\n• Support analytics and experimentation instrumentation\n\n• Ship bilingual UI (English/Arabic, RTL-aware)\n\n• Participate in code review, and help keep the codebase's architecture clean as the app scales",
+        "sha256": "23988c5c27db3ff0017f97e1b876f600f8ed050c56274f25ed10ee77d5f113cb",
+        "completeness_failures": []
+      }
+    }
+  ]
+}
