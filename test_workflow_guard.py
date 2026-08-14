@@ -2,6 +2,8 @@ import datetime as dt
 import hashlib
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -46,6 +48,31 @@ class WorkflowGuardTests(unittest.TestCase):
             ],
         )
         self.assertEqual(verify_state_artifact(self.artifact), manifest["files"])
+
+    def test_package_state_command_dispatches_and_writes_an_artifact(self):
+        subprocess.run(["git", "init"], cwd=self.root, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.root, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.root, check=True)
+        subprocess.run(["git", "add", "seen.json", "stats.json", "jobs"], cwd=self.root, check=True)
+        subprocess.run(["git", "commit", "-m", "initial state"], cwd=self.root, check=True, capture_output=True, text=True)
+        (self.root / "seen.json").write_text('{"job-1":"2026-08-12"}', encoding="utf-8")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("workflow_guard.py")),
+                "package-state",
+                "--root",
+                str(self.root),
+                "--output",
+                str(self.artifact),
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.artifact / "manifest.json").is_file())
 
     def test_rejects_unexpected_or_unsafe_state_paths(self):
         for path in ["resume.md", "jobs/not-a-date.json", "../seen.json", "/seen.json"]:

@@ -214,6 +214,7 @@ def main() -> int:
     notify.add_argument("--run-url", required=True)
     notify.add_argument("--timestamp")
     notify.set_defaults(func=_command_notify)
+    args = parser.parse_args()
     return args.func(args)
 
 
