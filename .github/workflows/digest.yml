@@ -94,7 +94,7 @@ jobs:
             exit 0
           fi
           git commit -m "update state and job snapshots [skip ci]"
-          for attempt in 1 2 3; do
+          for _ in 1 2 3; do
             if git push origin HEAD:main; then
               exit 0
             fi
