@@ -132,6 +132,14 @@ class WorkflowGuardTests(unittest.TestCase):
             [],
         )
         self.assertEqual(
+            freshness_report(
+                self.root / "stats.json",
+                {"conclusion": "success", "updatedAt": "2026-08-11T05:01:21Z"},
+                dt.date(2026, 8, 11),
+            ),
+            [],
+        )
+        self.assertEqual(
             freshness_report(self.root / "stats.json", {"conclusion": "failure", "completedAt": "2026-08-11T05:01:21Z"}, dt.date(2026, 8, 11)),
             ["latest digest run was not successful"],
         )

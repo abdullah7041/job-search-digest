@@ -116,7 +116,8 @@ def freshness_report(stats_path: Path, latest_run: dict[str, object], day: dt.da
         problems.append("latest digest run was not successful")
     else:
         try:
-            completed = dt.datetime.fromisoformat(str(latest_run["completedAt"]).replace("Z", "+00:00"))
+            completed_at = latest_run.get("completedAt") or latest_run.get("updatedAt")
+            completed = dt.datetime.fromisoformat(str(completed_at).replace("Z", "+00:00"))
             if completed.astimezone(RIYADH).date() != day:
                 problems.append("latest digest run did not complete on the Riyadh day")
         except (KeyError, TypeError, ValueError):

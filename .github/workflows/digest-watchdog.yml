@@ -26,7 +26,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          gh run list --workflow job-digest --status completed --limit 1 --json conclusion,completedAt > latest-run.json
+          gh run list --workflow job-digest --status completed --limit 1 --json conclusion,updatedAt > latest-run.json
           if [[ "$(jq length latest-run.json)" -eq 0 ]]; then
             printf '{}' > latest-run.json
           else
