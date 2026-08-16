@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-16",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_WHV1UXNzN0tVWTVLR1d6VkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTelJ4UzB0SmJERlZTVkpUTVRCWk0yeHdUMloyZVhZellWcFVZMVZLYVdOVGVXNHpNM05XTW1KVFNFOXNRMDEyTm1GNFQxTkNNeTFsYkVneGFEa3ljbWhMTVRNeVIydHJiV3BMVEdWYVpWbEZlbFV4YmtSSE4ydG9kbmxLYlhGQ1FXVTJhSEUwWVVOaWFISk5OMmxaT1RaT09WSkJNWEp2TVRGU2EwNWtkRXBVYnkxSll6WVNGMk5VZVVKaGNXSllTSFJVTUd0UVNWQjZUbnBwT0ZGbkdpSkJSSE55T1daVVJFTnNiblI0UjJFMGMyZG1SRXhrU0ROeVdYcHpYelZUZW1obg",
+      "captured_at": "2026-08-16T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_WHV1UXNzN0tVWTVLR1d6VkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTelJ4UzB0SmJERlZTVkpUTVRCWk0yeHdUMloyZVhZellWcFVZMVZLYVdOVGVXNHpNM05XTW1KVFNFOXNRMDEyTm1GNFQxTkNNeTFsYkVneGFEa3ljbWhMTVRNeVIydHJiV3BMVEdWYVpWbEZlbFV4YmtSSE4ydG9kbmxLYlhGQ1FXVTJhSEUwWVVOaWFISk5OMmxaT1RaT09WSkJNWEp2TVRGU2EwNWtkRXBVYnkxSll6WVNGMk5VZVVKaGNXSllTSFJVTUd0UVNWQjZUbnBwT0ZGbkdpSkJSSE55T1daVVJFTnNiblI0UjJFMGMyZG1SRXhrU0ROeVdYcHpYelZUZW1obg",
+      "title": "Senior Software Engineer (.NET)",
+      "company": "Emdad By Elm",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-net-at-emdad-by-elm-4444827310",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 65,
+      "why": "Senior IC role in Saudi Arabia, but requires .NET stack instead of candidate's Python expertise.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Job Summary\n\nResponsible for designing, developing, and maintaining scalable enterprise applications and backend services using Microsoft .NET technologies. The role involves collaborating with cross-functional teams to deliver secure, high-performance solutions, translating business requirements into technical implementations, and contributing to the overall software architecture and development standards.\n\nKey Responsibilities\n• Design, develop, and maintain enterprise-grade web applications and backend services using C# and ASP.NET Core.\n• Develop and maintain RESTful APIs and system integrations with internal and external platforms.\n• Design and optimize relational databases using SQL Server and PostgreSQL.\n• Apply software engineering best practices, including Domain-Driven Design (DDD), clean architecture, and design patterns.\n• Collaborate with Product Managers, Business Analysts, and QA teams to deliver business requirements.\n• Participate in solution design, technical reviews, and architecture discussions.\n• Troubleshoot and resolve complex application issues across different system layers.\n• Optimize application performance, scalability, and security.\n• Mentor junior engineers and support knowledge sharing within the development team.\n• Participate in code reviews and ensure adherence to coding standards and development processes.\n• Manage source code using Git and participate in CI/CD workflows.\n\nRequired Qualifications\n• Bachelor's degree in Computer Science, Information Technology, or a related field.\n• 5+ years of experience in software development.\n• Strong proficiency in C# and ASP.NET Core.\n• Experience with ASP.NET MVC and Entity Framework Core.\n• Strong knowledge of REST API development.\n• Experience with SQL Server and PostgreSQL.\n• Solid understanding of Domain-Driven Design (DDD).\n• Experience with Git and version control practices.\n• Strong debugging, troubleshooting, and analytical skills.\n• Good understanding of software architecture and system design.\n• Excellent communication and collaboration skills.\n\nPreferred Qualifications\n• Experience with Angular.\n• Experience with Dapper and LINQ.\n• Experience working on payment platforms or fintech solutions.\n• Experience developing HR, ERP, or enterprise business systems.\n• Familiarity with Agile/Scrum methodologies.\n\nTechnical Skills\n• Languages: C#, Java\n• Frameworks: ASP.NET Core, ASP.NET MVC, Entity Framework Core, ABP\n• Frontend: Angular, JavaScript, HTML5, CSS3, Bootstrap, jQuery\n• Databases: SQL Server, PostgreSQL\n• Architecture: REST APIs, Domain-Driven Design (DDD)\n• Version Control: Git, TFS",
+        "sha256": "c985f152bad4a57514aad1fabb7116f55ad28d78ae31013ac957c59794857ed4",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_U2tTTFZweTZZa1Vwd09Ya0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMnQ2TmxGeFoxTkJUVzVtVDJ4VFl6bEVTRGRrWWxOd05VVjRRMk5oTjBwaU5EQkthM2xxY0RCRU9GY3dNV1ozVDJoc1lsQk5Rbm8zTnpWaFJtdHNaamg1TjB4bVIwTTRPRlZwWkZSUmJrRklZbkZhTlZWdmJqUlZOVEp5TmtOclNUUlZaelptUldNdFZsbFZlbmxGYVVRM056bGFVbVJ3TTJsM056WklZVEo0YkZKZllXa1NGMk5VZVVKaGNXSllTSFJVTUd0UVNWQjZUbnBwT0ZGbkdpSkJSSE55T1daVFduZE5kVVpmUTJGcVZESnhTR05vWHpCTmRqaGtPV2RIZGxGQg",
+      "captured_at": "2026-08-16T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_U2tTTFZweTZZa1Vwd09Ya0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMnQ2TmxGeFoxTkJUVzVtVDJ4VFl6bEVTRGRrWWxOd05VVjRRMk5oTjBwaU5EQkthM2xxY0RCRU9GY3dNV1ozVDJoc1lsQk5Rbm8zTnpWaFJtdHNaamg1TjB4bVIwTTRPRlZwWkZSUmJrRklZbkZhTlZWdmJqUlZOVEp5TmtOclNUUlZaelptUldNdFZsbFZlbmxGYVVRM056bGFVbVJ3TTJsM056WklZVEo0YkZKZllXa1NGMk5VZVVKaGNXSllTSFJVTUd0UVNWQjZUbnBwT0ZGbkdpSkJSSE55T1daVFduZE5kVVpmUTJGcVZESnhTR05vWHpCTmRqaGtPV2RIZGxGQg",
+      "title": "Full Stack Engineer",
+      "company": "Infosys",
+      "location": "الدمام, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/full-stack-engineer-at-infosys-4426818556",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 60,
+      "why": "Senior IC role in Saudi Arabia, but requires React/Angular stack instead of Python/AI focus.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Role – Senior Consultant\n\nTechnology – React.js / Angular & .Net\n\nLocation – Dammam, Saudi Arabia\n\nJob Description\n\nToday, the corporate landscape is dynamic and the world ahead is full of possibilities! None of the amazing things we do at Infosys would be possible without an equally amazing culture, the environment where ideas can flourish and where you are empowered to move forward as far as your ideas will take you.\n\nAt Infosys, we assure that your career will never stand still, we will inspire you to build what’s next and we will navigate further together. Our journey of learnability, values and trusted relationships with our clients continue to be the cornerstones of our organization and these values are upheld only because of our people.\n\nKey responsibilities\n• Design and develop scalable full-stack web applications with a strong focus on modern frontend frameworks (React.js / Angular) and robust backend services.\n• Build responsive, high-performance UI components using HTML5, CSS3, and advanced web development practices ensuring cross-device compatibility.\n• Develop and integrate backend services and RESTful APIs using Python and microservices architecture.\n• Integrate frontend applications with backend APIs, AI/GenAI services, and vector databases hosted on OpenShift, cloud, or on-premise environments.\n• Implement secure role-based access control (RBAC) and authorization aligned with enterprise standards.\n• Collaborate closely with Data Scientists and Data Engineers to:\n• Consume and operationalize GenAI/ML outputs\n• Build intuitive UI layers for insights, recommendations, and analytics\n• Contribute to UI/UX design enhancements, ensuring seamless user journeys and usability improvements.\n• Participate in application deployment, containerization, and hosting (OpenShift/Kubernetes), along with monitoring, performance tuning, and production support.\n• Support UAT cycles, defect resolution, and continuous improvement of application features.\n• Prepare and maintain technical documentation, including UI architecture, API contracts, deployment artifacts, and design specifications.\n\nRequired\n• 6+ years of experience as a Full Stack Developer in enterprise environments\n• Strong hands-on expertise in:\n• React.js and/or Angular frameworks\n• .Net backend development\n• HTML5, CSS3, Responsive Web Design\n• JavaScript / TypeScript\n• Web development fundamentals and UI engineering best practices\n• Python-based backend development\n• RESTful APIs, Microservices architecture\n• Other preferred experience:\n• Developing end-to-end full-stack solutions (frontend + backend integration)\n• Deploying and hosting applications on OpenShift / Kubernetes / Cloud / On-Prem environments\n• Experience integrating AI/GenAI services (LLMs, inference APIs, chatbots) into enterprise applications\n• Working knowledge of DevOps practices, CI/CD pipelines, and secure SDLC\n\nGood to have\n• Hands-on experience with SAP UI5 / Fiori development\n• Exposure to enterprise integration patterns (SAP backend, APIs, middleware)\n• Experience building AI-powered dashboards, chatbots, or decision-support systems\n• Familiarity with containerization, orchestration, and cloud-native architectures\n\nPersonal\n\nBesides the professional qualifications of the candidates, we place great importance in addition to various forms personality profile. These include:\n• High analytical skills\n• A high degree of initiative and flexibility\n• High customer orientation\n• High quality awareness\n• Excellent verbal and written communication skills\n\nAbout Infosys\n\nInfosys is a global leader in next-generation digital services and consulting. We enable clients in 56 countries to navigate their digital transformation. With over three decades of experience in managing the systems and workings of global enterprises, we expertly steer our clients through the many next of their digital journey. We do it by enabling the enterprise with an AI-powered core that helps prioritize the execution of change. We also empower the business with agile digital at scale to deliver unprecedented levels of performance and customer delight. Our always-on learning agenda drives their continuous improvement through building and transferring digital skills, expertise and ideas from our innovation ecosystem.\n\nVisit www.infosys.com to see how Infosys can help your enterprise navigate your next.\n\nAll aspects of employment at Infosys are based on merit, competence and performance. We are committed to embracing diversity and creating an inclusive environment for all employees. Infosys is proud to be an equal opportunity employer.",
+        "sha256": "1b55917c62db73f62a4950956c46a23081f598a3acad3509397ebc08f1ced052",
+        "completeness_failures": []
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_bWJFdnl3QzVkNFBvdXh3N0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM2wwU1ZWVk1GQnBTbXRLTlVsSVlsQkpOR0ZVVlRoR2EwOXVjazlrTW5KNmJuWXhUMVpLTUdSaFRIaElRMmR3TTI1MlltVnJWWE5QUVZGTmMwaEpUbTFvTVhOV05WUlFibGhmV21oTU9IQm1VRk5CVGxkRFQxWjVaREZTY0ZGc1ZYZERlRjh0WVZaeE5XdHhSbTlGUlhZemFVWldYMnBKVVdFeWVVMWFOVzlFY1c1TFV6Y1NGMk5VZVVKaGNXSllTSFJVTUd0UVNWQjZUbnBwT0ZGbkdpSkJSSE55T1daUmFUUldZbnBUUVVOeVVGazNja1k1UlZkb01EWlJOMnd4UlU5Mw",
+      "captured_at": "2026-08-16T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_bWJFdnl3QzVkNFBvdXh3N0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM2wwU1ZWVk1GQnBTbXRLTlVsSVlsQkpOR0ZVVlRoR2EwOXVjazlrTW5KNmJuWXhUMVpLTUdSaFRIaElRMmR3TTI1MlltVnJWWE5QUVZGTmMwaEpUbTFvTVhOV05WUlFibGhmV21oTU9IQm1VRk5CVGxkRFQxWjVaREZTY0ZGc1ZYZERlRjh0WVZaeE5XdHhSbTlGUlhZemFVWldYMnBKVVdFeWVVMWFOVzlFY1c1TFV6Y1NGMk5VZVVKaGNXSllTSFJVTUd0UVNWQjZUbnBwT0ZGbkdpSkJSSE55T1daUmFUUldZbnBUUVVOeVVGazNja1k1UlZkb01EWlJOMnd4UlU5Mw",
+      "title": "Senior Software Engineer (Frontend/UI-UX)",
+      "company": "JAL International Co. Ltd.",
+      "location": "الظهران, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-frontend-ui-ux-at-jal-international-co-ltd-4442004936",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 50,
+      "why": "Senior IC role in Saudi Arabia, but heavily focused on frontend/UI-UX rather than AI/backend.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "About the Role\n\nAs a Senior Software Engineer with a Frontend/UI-UX specialty, you will define interaction architecture and deliver high-assurance, mission-critical digital platforms. Operating in an Agile environment, you'll solve complex usability challenges related to real-time data synchronization, cryptographic state visualization, and secure content handling. This role blends expert proficiency in design tooling (Figma) with robust front-end engineering (Vue.js, TypeScript), combining UX ownership with production-level UI implementation.\n\nResponsibilities\n• Architect user flows for applications requiring real-time state updates and low-latency user feedback\n• Design unobtrusive visual indicators for data integrity, encryption status, and content protection layers\n• Independently develop pixel-perfect, responsive components using Vue.js and TypeScript\n• Implement complex client-side logic for dynamic content rendering and secure data presentation\n• Ensure seamless integration with RESTful APIs and real-time WebSockets for live telemetry data\n• Maintain and expand the internal Design System (icons, typography, atomic components) across web, mobile, and desktop\n• Create high-fidelity interactive prototypes in Figma to validate complex workflows and state transitions\n• Transform abstract security concepts (identity verification, data classification, regulatory compliance) into clear, human-readable interface elements\n• Champion inclusive design, ensuring all interfaces strictly adhere to WCAG 2.1 AA standards\n\nRequirements\n• Bachelor's or Master's degree in Computer Science, Design, Human-Computer Interaction (HCI), or a related field\n• 5+ years of professional experience in UI/UX design and front-end engineering\n• Proven ability to architect, build, and deploy complex, stateful web applications (real-time dashboards, high-density data-processing interfaces)\n• Clear track record of translating UX requirements into production-ready code within structured Agile/Scrum workflows\n• Strong proficiency in HTML5, CSS3, and TypeScript, including secure integration of RESTful APIs and WebSockets\n• Mandatory professional experience with the Vue.js ecosystem (Pinia, Vue Router)\n• Expert proficiency in Figma (Auto Layout, Components, Prototyping)\n• Comprehensive understanding of WCAG 2.1 AA guidelines and ARIA roles\n• Proven ability to articulate and defend complex design decisions to engineering and product stakeholders in fluent English\n\nDesirable Certifications\n• Google UX Design Professional Certificate\n• Certified Professional in Accessibility Core Competencies (CPACC)\n• UX Certification from Nielsen Norman Group (NN/g)",
+        "sha256": "67e9f393324f01c9097b4158adf081912cae9802a5022893e7f8bb0b121e1faf",
+        "completeness_failures": []
+      }
+    }
+  ]
+}
