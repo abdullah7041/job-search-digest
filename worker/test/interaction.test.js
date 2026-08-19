@@ -606,3 +606,152 @@ test("a failing retention sweep never breaks the digest delivery path", async ()
   assert.match(String(removed.tasks), /^error: /);
   assert.equal(removed.deliveries, 0);
 });
+
+// A tailored CV used to be PATCHed onto the interaction message with flags: 64.
+// Ephemeral messages are absent from channel history and vanish on client
+// reload, so the document the user asked for disappeared and no copy survived
+// anywhere. These tests pin the durable channel post that replaced it.
+function resultDelivery(taskResult, { channelStatus = 200, ackStatus = 200 } = {}) {
+  let status = "running";
+  const db = {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              if (sql.startsWith("SELECT * FROM tasks")) {
+                return {
+                  id: "task-1",
+                  status,
+                  expires_at: new Date(Date.now() + 600000).toISOString(),
+                  interaction_token: "not-a-decryptable-token",
+                };
+              }
+              return null;
+            },
+            async run() {
+              if (sql.startsWith("INSERT OR IGNORE INTO internal_nonces")) return { meta: { changes: 1 } };
+              if (sql.startsWith("UPDATE tasks SET status = 'delivering'")) {
+                if (status !== "running") return { meta: { changes: 0 } };
+                status = "delivering";
+                return { meta: { changes: 1 } };
+              }
+              if (sql.startsWith("UPDATE tasks SET status = 'delivery_retryable'")) {
+                status = "delivery_retryable";
+                return { meta: { changes: 1 } };
+              }
+              if (sql.startsWith("UPDATE tasks SET status = ?")) {
+                status = args[0];
+                return { meta: { changes: 1 } };
+              }
+              return { meta: { changes: 0 } };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  const calls = [];
+  const secret = "callback-secret";
+  const body = JSON.stringify(taskResult);
+  const request = signedInternalRequest("POST", "/internal/tasks/task-1/result", body, secret);
+  const env = {
+    CALLBACK_HMAC_SECRET: secret,
+    DISCORD_CHANNEL_ID: "channel-1",
+    DISCORD_APPLICATION_ID: "app-1",
+    DISCORD_BOT_TOKEN: "bot-token",
+    TASK_ENCRYPTION_KEY: "test-encryption-key",
+    DB: db,
+  };
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const entry = { url: String(url), method: init?.method, headers: init?.headers || {}, body: init?.body };
+    calls.push(entry);
+    const isChannelPost = entry.url.includes("/channels/");
+    return new Response("{}", { status: isChannelPost ? channelStatus : ackStatus });
+  };
+
+  return {
+    calls,
+    taskStatus: () => status,
+    async run() {
+      try {
+        return await worker.fetch(request, env, {});
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    },
+  };
+}
+
+test("posts a tailored CV to the channel so it survives a Discord reload", async () => {
+  const delivery = resultDelivery({
+    status: "completed",
+    content: "Tailored one-page CV for the role.",
+    pdf_base64: Buffer.from("%PDF-1.4 fake").toString("base64"),
+    filename: "tailored-example-labs-ml-engineer.pdf",
+  });
+
+  const response = await delivery.run();
+
+  assert.equal(response.status, 200);
+  const posted = delivery.calls[0];
+  assert.match(posted.url, /channels\/channel-1\/messages$/);
+  assert.equal(posted.method, "POST");
+  assert.equal(posted.headers.authorization, "Bot bot-token");
+  assert.ok(posted.body instanceof FormData);
+  // Ephemeral is what made the document disappear, so nothing may set it.
+  assert.equal(JSON.parse(posted.body.get("payload_json")).flags, undefined);
+  assert.equal(posted.body.get("files[0]").name, "tailored-example-labs-ml-engineer.pdf");
+  assert.equal(delivery.taskStatus(), "completed");
+});
+
+test("posts a failure to the channel too, rather than into a message that vanishes", async () => {
+  // The rarer branch: _tailored_pdf returns a PDF even when the model fails, so
+  // this fires only when the runner itself rejects the task. It is also the
+  // message most worth keeping, because it names what went wrong.
+  const delivery = resultDelivery({
+    status: "failed",
+    content: "Interactive task failed safely: the job snapshot has no stable key.",
+  });
+
+  const response = await delivery.run();
+
+  assert.equal(response.status, 200);
+  const posted = delivery.calls[0];
+  assert.match(posted.url, /channels\/channel-1\/messages$/);
+  assert.equal(posted.method, "POST");
+  assert.equal(JSON.parse(posted.body).flags, undefined);
+  assert.match(JSON.parse(posted.body).content, /failed safely/);
+  assert.equal(delivery.taskStatus(), "failed");
+});
+
+test("a dead interaction token cannot cost the user an already-posted CV", async () => {
+  // The workflow can outlive Discord's interaction token. The ephemeral ack is
+  // a convenience; the channel message is the deliverable.
+  const delivery = resultDelivery({
+    status: "completed",
+    content: "Tailored one-page CV for the role.",
+    pdf_base64: Buffer.from("%PDF-1.4 fake").toString("base64"),
+  }, { ackStatus: 401 });
+
+  const response = await delivery.run();
+
+  assert.equal(response.status, 200);
+  assert.equal(delivery.taskStatus(), "completed");
+});
+
+test("a failed channel post leaves the task retryable instead of silently completed", async () => {
+  const delivery = resultDelivery({
+    status: "completed",
+    content: "Tailored one-page CV for the role.",
+    pdf_base64: Buffer.from("%PDF-1.4 fake").toString("base64"),
+  }, { channelStatus: 500 });
+
+  const response = await delivery.run();
+
+  assert.equal(response.status, 502);
+  assert.equal(delivery.taskStatus(), "delivery_retryable");
+});

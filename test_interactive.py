@@ -11,6 +11,7 @@ import json
 import os
 import tempfile
 import threading
+import time
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
@@ -222,7 +223,8 @@ class TestInteractiveRunner(unittest.TestCase):
         snapshot = make_snapshot(JOB, "2026-08-03T12:00:00Z")
         result = run_task({"input": {"job_snapshot": snapshot}, "status": "dispatched"})
 
-        self.assertEqual(result["filename"], "tailored-resume.pdf")
+        self.assertEqual(result["filename"],
+                         "tailored-example-labs-senior-machine-learning-engineer.pdf")
         self.assertTrue(result["pdf_base64"])
         self.assertEqual(result["jd_sha256"], snapshot["jd"]["sha256"])
 
@@ -349,7 +351,7 @@ class TestWorkerClient(unittest.TestCase):
 
 class TestInteractiveWorkflowWiring(unittest.TestCase):
     """The runner's tailoring silently degrades to an untailored resume when
-    GEMINI_API_KEY is absent, so the workflow must supply it."""
+    OPENROUTER_API_KEY is absent, so the workflow must supply it."""
 
     WORKFLOW = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), ".github", "workflows", "interactive.yml"
@@ -359,8 +361,16 @@ class TestInteractiveWorkflowWiring(unittest.TestCase):
         with open(self.WORKFLOW, encoding="utf-8") as handle:
             return handle.read()
 
-    def test_workflow_passes_the_gemini_key_to_the_runner(self):
-        self.assertIn("GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}", self._workflow_text())
+    def test_workflow_passes_the_openrouter_key_to_the_runner(self):
+        self.assertIn("OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}", self._workflow_text())
+
+    def test_workflow_makes_the_model_override_reachable(self):
+        """TAILOR_MODEL was an env override the workflow never passed, so the
+        model name was effectively hardcoded and a bad one could not be
+        retuned without a commit."""
+        text = self._workflow_text()
+        self.assertIn("TAILOR_MODEL: ${{ vars.TAILOR_MODEL }}", text)
+        self.assertIn("TAILOR_FALLBACK_MODELS: ${{ vars.TAILOR_FALLBACK_MODELS }}", text)
 
     def test_workflow_still_passes_the_worker_callback_configuration(self):
         text = self._workflow_text()
@@ -547,6 +557,189 @@ class TestTailoringPlan(unittest.TestCase):
         self.assertIn("unsupported hard fact 95", call.call_args_list[1].args[0])
 
 
+class TestTailoringTransport(unittest.TestCase):
+    """The transport around the model, which is what actually broke in use.
+
+    A 404 on the model name and a 429 on the quota each ended the whole attempt
+    outright, because the call had one model, no retry, and no time budget.
+    """
+
+    def _response(self, status, payload=None, headers=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.headers = headers or {}
+        response.text = json.dumps(payload or {})
+        response.json.return_value = payload or {}
+        return response
+
+    def _plan_payload(self):
+        return {"choices": [{"message": {"content": json.dumps(_plan())}, "finish_reason": "stop"}]}
+
+    def _deadline(self, seconds=200.0):
+        return time.monotonic() + seconds
+
+    def test_the_whole_chain_is_offered_to_openrouter_in_one_request(self):
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(200, self._plan_payload())) as post:
+            resume_tailor.call_model("prompt", "key", self._deadline())
+
+        body = post.call_args.kwargs["json"]
+        self.assertEqual(body["models"][0], resume_tailor.TAILOR_MODEL)
+        self.assertEqual(body["models"][1:], resume_tailor.TAILOR_FALLBACKS)
+        self.assertGreater(len(body["models"]), 1)
+        self.assertEqual(post.call_args.kwargs["headers"]["Authorization"], "Bearer key")
+
+    def test_the_resume_is_never_routed_to_a_provider_that_retains_prompts(self):
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(200, self._plan_payload())) as post:
+            resume_tailor.call_model("prompt", "key", self._deadline())
+
+        provider = post.call_args.kwargs["json"]["provider"]
+        self.assertEqual(provider["data_collection"], "deny")
+        # Without this, an endpoint that ignores the schema could serve the call
+        # and answer in prose, which no amount of retrying would fix.
+        self.assertTrue(provider["require_parameters"])
+
+    def test_a_rate_limited_call_is_retried_rather_than_abandoned(self):
+        responses = [self._response(429, {"error": "rate limited"}),
+                     self._response(200, self._plan_payload())]
+        with mock.patch.object(resume_tailor.requests, "post", side_effect=responses) as post, \
+                mock.patch.object(resume_tailor.time, "sleep") as sleep:
+            plan = resume_tailor.call_model("prompt", "key", self._deadline())
+
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(sleep.call_count, 1)
+        self.assertEqual(plan["headline"], _plan()["headline"])
+
+    def test_a_retry_honours_the_wait_the_server_asked_for(self):
+        responses = [self._response(429, {}, {"Retry-After": "4"}),
+                     self._response(200, self._plan_payload())]
+        with mock.patch.object(resume_tailor.requests, "post", side_effect=responses), \
+                mock.patch.object(resume_tailor.time, "sleep") as sleep:
+            resume_tailor.call_model("prompt", "key", self._deadline())
+
+        self.assertEqual(sleep.call_args.args[0], 4.0)
+
+    def test_an_unretryable_status_fails_immediately(self):
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(401, {})) as post:
+            with self.assertRaises(ValueError) as raised:
+                resume_tailor.call_model("prompt", "key", self._deadline())
+
+        self.assertEqual(post.call_count, 1)
+        self.assertIn("401", str(raised.exception))
+
+    def test_a_failure_names_the_model_so_discord_can_report_it(self):
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(404, {})):
+            with self.assertRaises(ValueError) as raised:
+                resume_tailor.call_model("prompt", "key", self._deadline())
+
+        self.assertIn(resume_tailor.TAILOR_MODEL, str(raised.exception))
+
+    def test_a_backoff_that_would_overrun_the_budget_is_not_taken(self):
+        """A killed workflow posts no result at all, leaving the user watching
+        'Preparing your tailored CV privately...' forever. Sleeping past the
+        budget to buy one more attempt trades a reported failure for silence."""
+        # Room for one call, but not for the backoff plus a second one.
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(503, {})) as post, \
+                mock.patch.object(resume_tailor.time, "sleep") as sleep:
+            with self.assertRaises(ValueError) as raised:
+                resume_tailor.call_model("prompt", "key", time.monotonic() + 16)
+
+        self.assertEqual(post.call_count, 1)
+        self.assertEqual(sleep.call_count, 0)
+        self.assertIn("503", str(raised.exception))
+
+    def test_an_exhausted_budget_says_so_instead_of_calling_anyway(self):
+        with mock.patch.object(resume_tailor.requests, "post") as post:
+            with self.assertRaises(ValueError) as raised:
+                resume_tailor.call_model("prompt", "key", time.monotonic() - 1)
+
+        self.assertEqual(post.call_count, 0)
+        self.assertIn("time budget", str(raised.exception))
+
+    def test_an_error_returned_with_a_200_is_not_read_as_an_answer(self):
+        payload = {"error": {"message": "no endpoints found"}}
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(200, payload)):
+            with self.assertRaises(ValueError) as raised:
+                resume_tailor.call_model("prompt", "key", self._deadline())
+
+        self.assertIn("no endpoints found", str(raised.exception))
+
+    def test_a_truncated_answer_names_its_finish_reason(self):
+        payload = {"choices": [{"message": {"content": ""}, "finish_reason": "length"}]}
+        with mock.patch.object(resume_tailor.requests, "post",
+                               return_value=self._response(200, payload)):
+            with self.assertRaises(ValueError) as raised:
+                resume_tailor.call_model("prompt", "key", self._deadline())
+
+        self.assertIn("length", str(raised.exception))
+
+    def test_an_unset_workflow_variable_does_not_erase_the_default_model(self):
+        """GitHub renders an unset ${{ vars.X }} as an empty string, which the
+        two-argument os.environ.get would have handed straight to the API."""
+        try:
+            with mock.patch.dict(os.environ, {"TAILOR_MODEL": "", "TAILOR_FALLBACK_MODELS": ""}):
+                importlib.reload(resume_tailor)
+                self.assertEqual(resume_tailor.TAILOR_MODEL, resume_tailor.DEFAULT_MODEL)
+                self.assertTrue(resume_tailor.TAILOR_FALLBACKS)
+        finally:
+            importlib.reload(resume_tailor)
+
+
+class TestTailoringPrompt(unittest.TestCase):
+    def _prompt(self):
+        return resume_tailor.build_prompt(parse_resume(MASTER), {"title": "ML Engineer"})
+
+    def test_the_prompt_no_longer_asks_for_words_the_checker_rejects(self):
+        """Rule 2 used to invite the job's vocabulary while the validator allows
+        only the resume's own, so the model was told to produce exactly what
+        would be thrown out — burning both attempts on every click."""
+        prompt = self._prompt()
+
+        self.assertNotIn("use the job's vocabulary", prompt)
+        self.assertIn("Every word you write must already appear in this resume", prompt)
+
+    def test_the_word_rule_still_leaves_room_for_the_headline_rule(self):
+        """`allowed` is vocabulary(master, title, company), and rule 4 needs the
+        job title for the headline. A word rule that forbade everything outside
+        the resume would read as banning what rule 4 asks for."""
+        prompt = self._prompt()
+
+        self.assertIn("in the target role's title, or in the employer's name", prompt)
+        self.assertIn("combine the candidate's current title with the job's title", prompt)
+
+    def test_the_bullet_target_reflects_what_the_resume_actually_offers(self):
+        """'Roughly 16' is unreachable on a short resume, so it read as 'keep
+        everything' and left selection with nothing to select."""
+        document = parse_resume(MASTER)
+        available = sum(len(entry["bullets"]) for section in document["sections"]
+                        for entry in section["entries"])
+        available += sum(len(section["lines"]) for section in document["sections"]
+                         if section["heading"] in ("EXPERIENCE", "PROJECTS"))
+
+        prompt = self._prompt()
+
+        self.assertIn("offers {0} achievement bullets".format(available), prompt)
+        self.assertNotIn("roughly 16 bullets", prompt)
+
+
+class TestTailoredFilename(unittest.TestCase):
+    """Permanent channel messages make one constant filename a real problem."""
+
+    def test_the_pdf_is_named_after_the_job(self):
+        self.assertEqual(
+            interactive_runner._filename("Senior AI/ML Engineer", "Jobs for Humanity"),
+            "tailored-jobs-for-humanity-senior-ai-ml-engineer.pdf",
+        )
+
+    def test_an_unnamed_job_still_produces_a_usable_filename(self):
+        self.assertEqual(interactive_runner._filename("", ""), "tailored-resume.pdf")
+
+
 class TestRunnerDelivery(unittest.TestCase):
     def setUp(self):
         # The fixture plan cites the small MASTER above, so the runner is
@@ -562,7 +755,7 @@ class TestRunnerDelivery(unittest.TestCase):
     def test_gaps_reach_the_message_and_never_the_pdf(self):
         from pypdf import PdfReader
 
-        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "key"}), \
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
              mock.patch.object(resume_tailor, "call_model", return_value=_plan()):
             result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
 
@@ -574,8 +767,8 @@ class TestRunnerDelivery(unittest.TestCase):
         self.assertTrue(result["tailored"])
 
     def test_a_model_failure_still_delivers_the_master_resume_with_a_reason(self):
-        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "key"}), \
-             mock.patch.object(resume_tailor, "call_model", side_effect=ValueError("Gemini HTTP 503")):
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", side_effect=ValueError("OpenRouter HTTP 503 (openai/gpt-5.6-luna)")):
             result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
 
         self.assertEqual(result["status"], "completed")
@@ -585,14 +778,14 @@ class TestRunnerDelivery(unittest.TestCase):
 
     def test_a_missing_api_key_degrades_instead_of_failing(self):
         with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("GEMINI_API_KEY", None)
+            os.environ.pop("OPENROUTER_API_KEY", None)
             result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
 
         self.assertEqual(result["status"], "completed")
-        self.assertIn("GEMINI_API_KEY", result["content"])
+        self.assertIn("OPENROUTER_API_KEY", result["content"])
 
     def test_the_callback_no_longer_claims_pdf_generation_is_unbuilt(self):
-        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "key"}), \
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
              mock.patch.object(resume_tailor, "call_model", return_value=_plan()):
             result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
 

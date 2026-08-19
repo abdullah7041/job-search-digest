@@ -39,7 +39,11 @@ jobs:
         env:
           INTERACTIVE_WORKER_URL: ${{ secrets.INTERACTIVE_WORKER_URL }}
           WORKER_CALLBACK_SECRET: ${{ secrets.WORKER_CALLBACK_SECRET }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # Both are optional. resume_tailor falls back to its own defaults when
+          # the variable is unset, which renders here as an empty string.
+          TAILOR_MODEL: ${{ vars.TAILOR_MODEL }}
+          TAILOR_FALLBACK_MODELS: ${{ vars.TAILOR_FALLBACK_MODELS }}
           TASK_ID: ${{ inputs.task_id }}
         run: python interactive_runner.py
       - name: Send redacted failure alert

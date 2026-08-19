@@ -347,19 +347,49 @@ export async function postCard(env, card) {
   return { status: "posted", job_key: card.job_key };
 }
 
-async function deliverResult(env, task, result) {
-  const token = await decrypt(task.interaction_token, env.TASK_ENCRYPTION_KEY);
-  const endpoint = `https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}/messages/@original`;
+// A tailored CV used to be PATCHed onto the interaction's own message with
+// flags: 64. Ephemeral messages are not in channel history and vanish when the
+// client reloads, so the document the user asked for disappeared and nothing
+// anywhere held a copy. Results are now ordinary channel messages, which
+// Discord keeps. The channel is the one authorizeInteraction already restricts
+// to a single guild, channel and user, and gaps still travel in the message
+// rather than in the PDF, so nothing an employer sees has changed.
+async function postResultToChannel(env, result) {
+  const endpoint = `https://discord.com/api/v10/channels/${env.DISCORD_CHANNEL_ID}/messages`;
+  const authorization = `Bot ${env.DISCORD_BOT_TOKEN}`;
+  const payload = { content: result.content, allowed_mentions: { parse: [] } };
   let response;
   if (result.pdf_base64) {
     const form = new FormData();
-    form.set("payload_json", JSON.stringify({ content: result.content, flags: 64 }));
+    form.set("payload_json", JSON.stringify(payload));
     form.set("files[0]", new Blob([fromBase64(result.pdf_base64)], { type: "application/pdf" }), result.filename || "tailored-resume.pdf");
-    response = await fetch(endpoint, { method: "PATCH", body: form });
+    response = await fetch(endpoint, { method: "POST", headers: { authorization }, body: form });
   } else {
-    response = await fetch(endpoint, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ content: result.content, flags: 64 }) });
+    // A failure has no PDF, and it is the message most worth keeping: it names
+    // the model and status that a retry would otherwise have to rediscover.
+    response = await fetch(endpoint, { method: "POST", headers: { authorization, "content-type": "application/json" }, body: JSON.stringify(payload) });
   }
   if (!response.ok) throw new Error(`Discord result delivery failed: ${response.status}`);
+}
+
+async function acknowledgeOriginal(env, task, content) {
+  // Best effort only. The durable message is already posted, and the
+  // interaction token behind this edit may have expired while the workflow ran.
+  try {
+    const token = await decrypt(task.interaction_token, env.TASK_ENCRYPTION_KEY);
+    await fetch(`https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}/messages/@original`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content, flags: 64 }),
+    });
+  } catch {
+    // Nothing to do: the result is in the channel either way.
+  }
+}
+
+async function deliverResult(env, task, result) {
+  await postResultToChannel(env, result);
+  await acknowledgeOriginal(env, task, "Posted in this channel.");
 }
 
 async function handleInteraction(request, env, ctx) {

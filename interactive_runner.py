@@ -14,6 +14,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sys
 from urllib.parse import quote
 
@@ -25,6 +26,7 @@ from worker_client import signed_request
 
 
 MESSAGE_LIMIT = 1900
+FILENAME_PART = 40
 
 
 def _master_document(resume_path: str = "resume.md") -> tuple[dict, str]:
@@ -45,10 +47,10 @@ def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, 
     it costs them the tailoring, and it says so plainly.
     """
     document, resume = _master_document(resume_path)
-    api_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
         return base64.b64encode(render_pdf(document)).decode("ascii"), [], [], \
-            "GEMINI_API_KEY is not configured, so this is the untailored master resume."
+            "OPENROUTER_API_KEY is not configured, so this is the untailored master resume."
 
     from resume_tailor import tailor
 
@@ -60,6 +62,23 @@ def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, 
         return base64.b64encode(render_pdf(fresh)).decode("ascii"), [], [], \
             f"Tailoring did not pass its own checks, so this is the untailored master resume. Reason: {str(error)[:300]}"
     return base64.b64encode(render_pdf(tailored)).decode("ascii"), gaps, fit_notes, ""
+
+
+def _slug(value: str) -> str:
+    """A filename-safe fragment of a job title or company name."""
+    cleaned = re.sub(r"[^a-z0-9]+", "-", (value or "").lower())
+    return re.sub(r"-+", "-", cleaned).strip("-")[:FILENAME_PART].strip("-")
+
+
+def _filename(title: str, company: str) -> str:
+    """Name the PDF after the job it was tailored for.
+
+    The result is now a permanent channel message rather than an ephemeral one,
+    so a channel full of files all called tailored-resume.pdf stops being a
+    curiosity and starts being the problem.
+    """
+    parts = [part for part in (_slug(company), _slug(title)) if part]
+    return f"tailored-{'-'.join(parts)}.pdf" if parts else "tailored-resume.pdf"
 
 
 def _message(title: str, company: str, gaps: list[str], fit_notes: list[str], note: str) -> str:
@@ -108,7 +127,7 @@ def run_task(task: dict) -> dict:
         "job_key": snapshot["job_key"],
         "jd_sha256": actual_digest,
         "pdf_base64": pdf_base64,
-        "filename": "tailored-resume.pdf",
+        "filename": _filename(title, company),
         "gaps": "; ".join(gaps),
         "tailored": not note,
     }

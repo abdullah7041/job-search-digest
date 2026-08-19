@@ -2,7 +2,7 @@
 
 A daily digest of new senior tech jobs in Saudi Arabia, posted to Discord at 07:00 AST. Same shape as your AI-news digest: gather, filter, rank, deliver, run on GitHub Actions cron.
 
-This folder is the plan plus the working code. Build and test the live parts in Claude Code. The Cowork sandbox can't POST to Discord or call Gemini, so the real test runs where the network is open.
+This folder is the plan plus the working code. Build and test the live parts in Claude Code. The Cowork sandbox can't POST to Discord or reach the model APIs, so the real test runs where the network is open.
 
 ## The source decision
 
@@ -98,13 +98,17 @@ If that check passes, the Worker looks up the immutable snapshot captured for th
 
 `resume_render.parse_resume` splits the master into sections, entries and bullets, giving every bullet a stable ref. `resume_tailor` sends those refs with the JD and gets back the refs to keep, in order, each with its rewritten wording. Nothing without a ref can enter the document.
 
-`resume_source.validate_tailored_resume` then checks each rewrite against the exact bullet it cites: every number must survive verbatim, and every proper noun must already exist in the master or the job title, so an invented framework or cloud platform is rejected rather than sent. A rejected draft goes back to the model once with the specific failures; if it fails again, the untouched master resume is delivered with the reason stated in the message. The same thing happens when `GEMINI_API_KEY` is absent — you get your master resume and a note saying why it wasn't tailored. A failure costs you the tailoring, never the document.
+`resume_source.validate_tailored_resume` then checks each rewrite against the exact bullet it cites: every number must survive verbatim, and every proper noun must already exist in the master or the job title, so an invented framework or cloud platform is rejected rather than sent. A rejected draft goes back to the model once with the specific failures; if it fails again, the untouched master resume is delivered with the reason stated in the message. The same thing happens when `OPENROUTER_API_KEY` is absent — you get your master resume and a note saying why it wasn't tailored. A failure costs you the tailoring, never the document.
 
 The PDF is single column, standard fonts, no tables, forced to one page by shrinking type first and dropping the least relevant bullets second. Gaps and fit notes travel in the Discord message, never in the PDF — the attachment is always safe to forward as-is.
 
-The Worker attaches the PDF to the original interaction as an ephemeral reply (`flags: 64`), visible only to the requester. No channel message is posted, and nothing tailored is ever committed to the repository — that's a stated constraint of the design, not an oversight.
+The Worker posts the PDF as an ordinary message in the private channel, using the bot token. It previously attached the PDF to the interaction as an ephemeral reply (`flags: 64`); ephemeral messages are absent from channel history and vanish when the Discord client reloads, so the document disappeared and no copy survived anywhere. The channel is the one the Worker already restricts to a single guild, channel and user id, so the audience is unchanged — only the lifetime is. Gaps and fit notes still travel in the message rather than in the PDF, and nothing tailored is committed to the repository. The interaction's own message gets a short ephemeral acknowledgement, best effort: if its token has expired the channel message is already delivered.
 
-`resume_tailor.py` picks its own model, `TAILOR_MODEL`, defaulting to `gemini-3.6-flash` and overridable by environment variable. Rewriting a resume under hard truth constraints is long-form generation; Google's guidance puts Flash-Lite at classification and extraction, and Flash at longer reasoning chains. Flash-Lite drifts on this job — it drops sections and loosens the no-invention rule. Scoring is the cheaper model and is configured separately in `digest.py` (see "How it ranks" above).
+Tailoring calls **OpenRouter**, not the Gemini API directly. It used to call `generativelanguage.googleapis.com` with a single model and no retry, so a 404 on the model name or a 429 on the quota ended the attempt outright and returned the untailored master resume. OpenRouter takes a chain — `TAILOR_MODEL` then `TAILOR_FALLBACK_MODELS`, defaulting to `openai/gpt-5.6-luna`, `google/gemini-3.6-flash`, `minimax/minimax-m3` — and walks it itself when a member is missing, rate-limited or erroring. Both are overridable through repository *variables* of the same names, which `interactive.yml` passes through; an unset variable renders as an empty string, so the code falls back with `or`, never with `os.environ.get(name, default)`.
+
+Chain members are picked for instruction-following per token, not headline price: the evidence check rejects a draft that loosens the rules, and a rejected draft costs a whole retry, so the flash-class tier below these saves nothing. Every member must accept `response_format` and `reasoning_effort`, because one request body is sent to whichever of them serves the call. Routing sets `data_collection: deny` — the prompt carries the master resume, contact details included — and `require_parameters: true`, so no endpoint that would ignore the schema and answer in prose can serve the request. Scoring is a separate, cheaper model still on the Gemini API and configured in `digest.py` (see "How it ranks" above).
+
+One click always reports an outcome. `resume_tailor` holds a 210-second budget spanning both evidence attempts and every HTTP retry, because a workflow killed at its 10-minute timeout posts nothing at all and leaves "Preparing your tailored CV privately…" on screen forever.
 
 Keep `resume.md` in sync with the master resume in Cowork (`OUTPUTS/master-resume/master-resume.md`) — it is the single source of truth every tailored CV is built from.
 
@@ -132,7 +136,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `requirements.txt` — `requests` for every HTTP call, `pypdf` and `reportlab` for building the tailored PDF.
 - `discord_delivery.py` — signs and POSTs the daily batch of job cards to the Worker's `/internal/digest` route.
 - `job_archive.py` — builds job snapshots (including the JD SHA-256), the Discord card/button payload, and writes `jobs/<date>.json`.
-- `interactive_runner.py` — runs one on-demand tailoring task: re-verifies the JD hash, builds the two-page PDF, reports the result back to the Worker.
+- `interactive_runner.py` — runs one on-demand tailoring task: re-verifies the JD hash, builds the one-page PDF, reports the result back to the Worker.
 - `resume_source.py` — evidence helpers shared by resume ingestion and tailoring: splits `resume.md` into quotable source blocks and checks a tailored draft's claims against them.
 - `resume_ingest.py` — normalizes raw resume text (from a `/resume` upload) into the form `resume.md` needs, with a preview step before anything is accepted as the new master.
 - `test_digest.py` — offline tests for the daily pipeline (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths.
@@ -144,7 +148,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 
 **On-demand tailoring (Cloudflare Worker)**
 
-- `worker/src/index.js` — the Worker: verifies Discord interactions, claims delivery of daily cards idempotently, creates and serves tailoring tasks, relays the PDF back as an ephemeral reply.
+- `worker/src/index.js` — the Worker: verifies Discord interactions, claims delivery of daily cards idempotently, creates and serves tailoring tasks, posts the PDF back to the private channel.
 - `worker/schema.sql` — the D1 schema: `tasks`, `deliveries`, `delivery_claims`, `internal_nonces`, `job_snapshots`.
 - `worker/wrangler.jsonc` — Worker config: non-secret `vars` (Discord application/guild/channel/user ids, the GitHub repository, the Discord public key) and the D1 binding. No secret values live here.
 - `worker/test/interaction.test.js` — the Worker's Node test suite (`node --test`): signature verification, channel/user gating, snapshot hash checks, idempotent delivery claims, nonce handling.
@@ -185,7 +189,8 @@ Two halves: the repository that runs the daily job, and the Cloudflare Worker th
    - `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — the Worker's address and the shared HMAC secret. Without these the run always falls back to the plain webhook and never posts a Tailor CV button.
    - `RAPIDAPI_KEY` — optional. Without it the digest runs against the five ATS APIs only, no JSearch.
    - `GEMINI_API_KEY` — optional. Without it ranking falls back to deterministic keyword scoring.
-   `.github/workflows/interactive.yml` reuses `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — same secrets, same names.
+   - `OPENROUTER_API_KEY` — optional, and read only by `.github/workflows/interactive.yml`. Without it a Tailor CV click returns your untailored master resume with a note saying why.
+   `.github/workflows/interactive.yml` reuses `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — same secrets, same names. It also reads two optional repository *variables*, `TAILOR_MODEL` and `TAILOR_FALLBACK_MODELS`, which let you retune the tailoring chain without a commit.
 3. Actions tab, run the `job-digest` workflow manually once. Read the log.
 
 **Cloudflare Worker**
