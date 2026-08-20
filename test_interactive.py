@@ -18,6 +18,7 @@ from io import BytesIO
 from unittest import mock
 
 import interactive_runner
+import openrouter
 import resume_tailor
 from job_archive import make_snapshot, job_card_payload, prune_snapshots, write_snapshots
 from resume_render import parse_resume, render_pdf, source_refs
@@ -223,8 +224,10 @@ class TestInteractiveRunner(unittest.TestCase):
         snapshot = make_snapshot(JOB, "2026-08-03T12:00:00Z")
         result = run_task({"input": {"job_snapshot": snapshot}, "status": "dispatched"})
 
+        # The candidate's name comes from the master resume, not from a constant,
+        # so the recruiter's inbox shows who sent it before what it is for.
         self.assertEqual(result["filename"],
-                         "tailored-example-labs-senior-machine-learning-engineer.pdf")
+                         "Abdullah_Bin_Ahmed_Senior_Machine_Learning_Engineer.pdf")
         self.assertTrue(result["pdf_base64"])
         self.assertEqual(result["jd_sha256"], snapshot["jd"]["sha256"])
 
@@ -579,7 +582,7 @@ class TestTailoringTransport(unittest.TestCase):
         return time.monotonic() + seconds
 
     def test_the_whole_chain_is_offered_to_openrouter_in_one_request(self):
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(200, self._plan_payload())) as post:
             resume_tailor.call_model("prompt", "key", self._deadline())
 
@@ -589,8 +592,21 @@ class TestTailoringTransport(unittest.TestCase):
         self.assertGreater(len(body["models"]), 1)
         self.assertEqual(post.call_args.kwargs["headers"]["Authorization"], "Bearer key")
 
+    def test_temperature_is_never_sent_so_discounted_endpoints_stay_eligible(self):
+        """require_parameters drops any provider missing a parameter the request
+        names. Google serves Gemini Flash on Vertex endpoints that accept seed
+        but not temperature, and those are the discounted ones — naming
+        temperature routes around them to buy a knob seed already provides."""
+        with mock.patch.object(openrouter.requests, "post",
+                               return_value=self._response(200, self._plan_payload())) as post:
+            resume_tailor.call_model("prompt", "key", self._deadline())
+
+        body = post.call_args.kwargs["json"]
+        self.assertNotIn("temperature", body)
+        self.assertEqual(body["seed"], 7)
+
     def test_the_resume_is_never_routed_to_a_provider_that_retains_prompts(self):
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(200, self._plan_payload())) as post:
             resume_tailor.call_model("prompt", "key", self._deadline())
 
@@ -603,8 +619,8 @@ class TestTailoringTransport(unittest.TestCase):
     def test_a_rate_limited_call_is_retried_rather_than_abandoned(self):
         responses = [self._response(429, {"error": "rate limited"}),
                      self._response(200, self._plan_payload())]
-        with mock.patch.object(resume_tailor.requests, "post", side_effect=responses) as post, \
-                mock.patch.object(resume_tailor.time, "sleep") as sleep:
+        with mock.patch.object(openrouter.requests, "post", side_effect=responses) as post, \
+                mock.patch.object(openrouter.time, "sleep") as sleep:
             plan = resume_tailor.call_model("prompt", "key", self._deadline())
 
         self.assertEqual(post.call_count, 2)
@@ -614,14 +630,14 @@ class TestTailoringTransport(unittest.TestCase):
     def test_a_retry_honours_the_wait_the_server_asked_for(self):
         responses = [self._response(429, {}, {"Retry-After": "4"}),
                      self._response(200, self._plan_payload())]
-        with mock.patch.object(resume_tailor.requests, "post", side_effect=responses), \
-                mock.patch.object(resume_tailor.time, "sleep") as sleep:
+        with mock.patch.object(openrouter.requests, "post", side_effect=responses), \
+                mock.patch.object(openrouter.time, "sleep") as sleep:
             resume_tailor.call_model("prompt", "key", self._deadline())
 
         self.assertEqual(sleep.call_args.args[0], 4.0)
 
     def test_an_unretryable_status_fails_immediately(self):
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(401, {})) as post:
             with self.assertRaises(ValueError) as raised:
                 resume_tailor.call_model("prompt", "key", self._deadline())
@@ -630,7 +646,7 @@ class TestTailoringTransport(unittest.TestCase):
         self.assertIn("401", str(raised.exception))
 
     def test_a_failure_names_the_model_so_discord_can_report_it(self):
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(404, {})):
             with self.assertRaises(ValueError) as raised:
                 resume_tailor.call_model("prompt", "key", self._deadline())
@@ -642,9 +658,9 @@ class TestTailoringTransport(unittest.TestCase):
         'Preparing your tailored CV privately...' forever. Sleeping past the
         budget to buy one more attempt trades a reported failure for silence."""
         # Room for one call, but not for the backoff plus a second one.
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(503, {})) as post, \
-                mock.patch.object(resume_tailor.time, "sleep") as sleep:
+                mock.patch.object(openrouter.time, "sleep") as sleep:
             with self.assertRaises(ValueError) as raised:
                 resume_tailor.call_model("prompt", "key", time.monotonic() + 16)
 
@@ -653,7 +669,7 @@ class TestTailoringTransport(unittest.TestCase):
         self.assertIn("503", str(raised.exception))
 
     def test_an_exhausted_budget_says_so_instead_of_calling_anyway(self):
-        with mock.patch.object(resume_tailor.requests, "post") as post:
+        with mock.patch.object(openrouter.requests, "post") as post:
             with self.assertRaises(ValueError) as raised:
                 resume_tailor.call_model("prompt", "key", time.monotonic() - 1)
 
@@ -662,7 +678,7 @@ class TestTailoringTransport(unittest.TestCase):
 
     def test_an_error_returned_with_a_200_is_not_read_as_an_answer(self):
         payload = {"error": {"message": "no endpoints found"}}
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(200, payload)):
             with self.assertRaises(ValueError) as raised:
                 resume_tailor.call_model("prompt", "key", self._deadline())
@@ -671,7 +687,7 @@ class TestTailoringTransport(unittest.TestCase):
 
     def test_a_truncated_answer_names_its_finish_reason(self):
         payload = {"choices": [{"message": {"content": ""}, "finish_reason": "length"}]}
-        with mock.patch.object(resume_tailor.requests, "post",
+        with mock.patch.object(openrouter.requests, "post",
                                return_value=self._response(200, payload)):
             with self.assertRaises(ValueError) as raised:
                 resume_tailor.call_model("prompt", "key", self._deadline())
@@ -732,12 +748,36 @@ class TestTailoredFilename(unittest.TestCase):
 
     def test_the_pdf_is_named_after_the_job(self):
         self.assertEqual(
-            interactive_runner._filename("Senior AI/ML Engineer", "Jobs for Humanity"),
-            "tailored-jobs-for-humanity-senior-ai-ml-engineer.pdf",
+            interactive_runner._filename("ABDULLAH BIN AHMED", "Senior AI/ML Engineer"),
+            "Abdullah_Bin_Ahmed_Senior_AI_ML_Engineer.pdf",
         )
 
     def test_an_unnamed_job_still_produces_a_usable_filename(self):
-        self.assertEqual(interactive_runner._filename("", ""), "tailored-resume.pdf")
+        self.assertEqual(interactive_runner._filename("", ""),
+                         interactive_runner.FALLBACK_FILENAME)
+
+    def test_the_employers_own_capitalisation_survives(self):
+        """Title-casing every word turned ML into Ml and II into Ii, which is
+        not how the employer wrote the role or how a recruiter reads it."""
+        self.assertEqual(
+            interactive_runner._filename("Abdullah Bin Ahmed",
+                                         "Software Engineer II - QuantumBlack"),
+            "Abdullah_Bin_Ahmed_Software_Engineer_II_QuantumBlack.pdf",
+        )
+
+    def test_a_long_title_is_cut_at_a_word_not_mid_word(self):
+        """Truncating at a character limit used to land on a separator, which is
+        where the trailing hyphen in ...software-engineer-ii-.pdf came from."""
+        name = interactive_runner._filename(
+            "Abdullah Bin Ahmed",
+            "Senior Staff Principal Distributed Systems Reliability Engineer")
+
+        self.assertTrue(name.endswith(".pdf"))
+        self.assertNotIn("_.", name)
+        self.assertNotIn("__", name)
+        for word in name[:-len(".pdf")].split("_"):
+            self.assertIn(word, "Abdullah Bin Ahmed Senior Staff Principal "
+                                "Distributed Systems Reliability Engineer")
 
 
 class TestRunnerDelivery(unittest.TestCase):
@@ -765,6 +805,36 @@ class TestRunnerDelivery(unittest.TestCase):
         self.assertNotIn("PyTorch", text)
         self.assertNotIn("Gaps to verify", text)
         self.assertTrue(result["tailored"])
+
+    def test_a_teaser_is_tailored_but_the_message_says_it_was_a_teaser(self):
+        """A 497-character aggregator blurb passes the completeness gate, so the
+        button works. The candidate still has to know the CV was aimed at a
+        summary rather than at the requirements — and `tailored` stays true,
+        because the tailoring itself did not degrade."""
+        teaser_job = dict(JOB, description=(
+            "Pasqal seeks a Senior Machine Learning Engineer to adapt and deploy "
+            "quantum ML methods for client datasets, leveraging around 5 years of "
+            "experience in ML. You will build pipelines, collaborate with R&D, and "
+            "ensure client-ready solutions with strong maintainability. The position "
+            "entails close coordination with hardware teams, domain experts from "
+            "partner enterprises, and ongoing scientific monitoring to keep the "
+            "company at the cutting edge."))
+        snapshot = make_snapshot(teaser_job, "2026-08-20T12:00:00Z")
+        self.assertEqual(snapshot["jd"]["status"], "captured")
+
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=_plan()):
+            result = run_task({"input": {"job_snapshot": snapshot}, "status": "dispatched"})
+
+        self.assertTrue(result["tailored"])
+        self.assertIn("teaser", result["content"])
+
+    def test_a_full_posting_carries_no_teaser_warning(self):
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=_plan()):
+            result = run_task({"input": {"job_snapshot": self._snapshot()}, "status": "dispatched"})
+
+        self.assertNotIn("teaser", result["content"])
 
     def test_a_model_failure_still_delivers_the_master_resume_with_a_reason(self):
         with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \

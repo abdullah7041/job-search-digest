@@ -6,15 +6,15 @@ Pattern (same as the AI-news digest):
   gather  -> JSearch (RapidAPI, Google for Jobs aggregator) for breadth
              + company ATS APIs (Greenhouse, Ashby, Workable, Lever) for depth
   filter  -> Saudi-only, senior+, title relevant, not seen before
-  rank    -> one cheap Gemini call for score + one-line "why it fits"
-             (deterministic keyword fallback if Gemini is missing or fails)
+  rank    -> one cheap OpenRouter call for score + one-line "why it fits"
+             (deterministic keyword fallback if the ranker is missing or fails)
   deliver -> Discord webhook
 Runs on GitHub Actions cron. No laptop needed.
 
 Secrets (GitHub repo -> Settings -> Secrets and variables -> Actions):
   DISCORD_WEBHOOK_URL   required
   RAPIDAPI_KEY          required for JSearch. Without it JSearch is skipped (ATS-only run).
-  GEMINI_API_KEY        optional. Without it, scoring is keyword-only.
+  OPENROUTER_API_KEY    optional. Without it, scoring is keyword-only.
 
 State:
   seen.json holds job ids already sent. The workflow commits it back after each
@@ -25,7 +25,7 @@ State:
 
 Profile:
   profile.json holds the candidate blurb, skill keywords, and target titles fed
-  to Gemini and the keyword fallback. Refresh it with PROFILE_REFRESH_PROMPT.md
+  to the ranking model and the keyword fallback. Refresh it with PROFILE_REFRESH_PROMPT.md
   (manually, or via the monthly nudge) as your background/skills/target roles
   change. Missing or corrupt profile.json falls back to DEFAULT_PROFILE below.
 """
@@ -41,7 +41,9 @@ import datetime
 import requests
 
 from discord_delivery import post_interactive_cards
-from job_archive import jd_completeness_failures, make_snapshot, write_snapshots
+from job_archive import (GRADE_TEASER, jd_completeness_failures, jd_grade, jd_signal,
+                         make_snapshot, score_instability, write_snapshots)
+from openrouter import chat_json, configured_chain
 
 # ------------------------------- CONFIG -------------------------------------
 # Each company names its ATS in "source":
@@ -155,16 +157,30 @@ JSEARCH_HOST = "jsearch.p.rapidapi.com"
 # ~25k-35k SAR/mo, AI/ML 28k-35k.
 SALARY_FLOOR_SAR_MONTH = 25000
 
-# Ranking model, verified against ai.google.dev/gemini-api/docs/models
-# (page last updated 2026-07-30, read 2026-08-02) — listed STABLE:
+# Ranking model, read from the OpenRouter catalogue on 2026-08-20.
 #
-#   RANK_MODEL   gemini-3.1-flash-lite — scoring is classification over <=25 short
-#                records in one call. Flash-Lite is built for exactly this and is
-#                the cheapest option. Keeping it.
+#   google/gemini-3.7-flash — $0.375/M in, $1.875/M out, carrying a 0.75 discount
+#   on its Vertex endpoints, which makes it cheaper than gemini-3.6-flash while
+#   scoring materially higher (Artificial Analysis intelligence 56 vs 51.6).
 #
-# NOTE: gemini-3.1-flash-lite-PREVIEW is shut down; the stable id above is not.
-# Resume tailoring runs in interactive_runner.py and picks its own model there.
-RANK_MODEL = "gemini-3.1-flash-lite"
+# Scoring is not the classification-over-short-records job it was sized for when
+# this ran on Flash-Lite: the ranker now reads the requirements section of each
+# posting and has to weigh it against a profile. That is worth a real model, and
+# at 25 jobs a day it still costs under a quarter a month.
+#
+# Both ids are overridable through repository variables of the same name.
+DEFAULT_RANK_MODEL = "google/gemini-3.7-flash"
+DEFAULT_RANK_FALLBACKS = "google/gemini-3.6-flash,openai/gpt-5.6-luna"
+RANK_MODEL, RANK_FALLBACKS = configured_chain(
+    "RANK_MODEL", "RANK_FALLBACK_MODELS", DEFAULT_RANK_MODEL, DEFAULT_RANK_FALLBACKS)
+
+# Ranking carries no personal data — a title, a company, a location and public
+# JD text — but it still has to reach an endpoint that honours the JSON schema.
+RANK_PROVIDER = {"require_parameters": True}
+
+# The daily run has no user waiting on it, but it does have a ten-minute
+# workflow timeout it shares with every fetch above.
+RANK_BUDGET_SECONDS = 120
 
 MAX_JOBS_IN_DIGEST = 25
 STRONG_MATCH_MIN_SCORE = 80
@@ -173,8 +189,22 @@ STRONG_MATCH_MIN_SCORE = 80
 # interactive_runner.py. The daily run archives JD evidence and posts jobs
 # only; it never spends tailoring credits or writes private resumes into the
 # repository. These two bounds are what the daily run still needs from the JD.
-JD_MAX_CHARS = 6000    # JD text stored per job in the snapshot archive
-JD_RANK_CHARS = 900    # JD excerpt per job inside the one ranking call
+JD_MAX_CHARS = 6000     # JD text stored per job in the snapshot archive
+JD_RANK_CHARS = 2000    # JD window per job inside the one ranking call
+
+# The window is taken from where the posting starts describing the job, not from
+# the top. The old 900 leading characters of a McKinsey posting are entirely
+# recruiting copy — the role begins at character 1931 — so the ranker reported,
+# correctly, that the description named no technical requirements. It had never
+# been shown them. 25 jobs at this width is roughly 14k input tokens per run.
+
+# A teaser is a paragraph of marketing copy that clears the completeness checks
+# without evidencing anything. It can be reviewed, and it can be tailored
+# against with a warning, but it can never be a strong match: the score that
+# says so would be built on nothing. 69 is the top of the rubric's "adjacent
+# function, seniority mismatch, or several gaps" band, one point below the
+# strong-match line.
+TEASER_SCORE_CAP = 69
 
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
@@ -187,6 +217,10 @@ STATS_TTL_DAYS = 120
 DRIFT_WINDOW_DAYS = 7          # trailing window compared against the prior one
 DRIFT_MIN_SCORED_RUNS = 14     # need two full windows before trusting a comparison
 DRIFT_SCORE_DROP_THRESHOLD = 15  # point drop (7d avg vs prior 7d avg) that triggers a warning
+# Drift watches the daily average, which averages away a ranker that gives one
+# unchanged posting 40 one day and 75 the next. The archives already hold every
+# score and every JD digest, so that instability is readable without new state.
+ARCHIVE_INSTABILITY_DAYS = 14
 
 # Link verification is evidence, not a binary gate. Third-party job sites can
 # block or rate-limit GitHub Actions while still serving the applicant's browser.
@@ -601,22 +635,53 @@ def keyword_score(job):
     return min(100, 40 + hits * 15)  # 40 base for passing filters, +15 per skill hit
 
 
-def gemini_rank(jobs, api_key):
+RANK_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "scores": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "score": {"type": "integer"},
+                    "why": {"type": "string"},
+                },
+                "required": ["id", "score", "why"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["scores"],
+    "additionalProperties": False,
+}
+
+
+def rank_jobs(jobs, api_key):
     """One call. Returns {id: {score, why}} or None on any failure (caller falls back).
 
     The 2026-07-31 digest handed Lead/Staff roles 92-98 because the old prompt
     had no rubric: it asked for a 0-100 with no anchor, so everything AI-flavored
-    scored 90+. The rubric below pins the bands, makes seniority-above-target a
-    hard penalty, and feeds a JD excerpt so scores reflect actual requirements
-    instead of title vibes."""
+    scored 90+. The rubric below pins the bands and makes seniority-above-target
+    a hard penalty.
+
+    What the rubric could not fix on its own is what it was scoring. The excerpt
+    used to be the first 900 characters of the posting, which on a McKinsey
+    posting is the culture section and nothing else, and the model duly reported
+    that the description named no technical requirements — nine days running,
+    at scores between 40 and 75 for a byte-identical description. It reads the
+    requirements section now, and the listing is sorted so a score no longer
+    depends on which other jobs happened to be new that day.
+    """
     profile = PROFILE["blurb"]
     targets = PROFILE.get("target_titles")
     if targets:
         profile += " Currently targeting: " + ", ".join(targets) + "."
     listing = [
         {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"],
-         "jd_excerpt": (j.get("description") or "")[:JD_RANK_CHARS]}
-        for j in jobs
+         "description_kind": jd_grade(j.get("description") or ""),
+         "jd_excerpt": jd_signal(j.get("description") or "", JD_RANK_CHARS)}
+        for j in sorted(jobs, key=lambda j: j["id"])
     ]
     prompt = (
         f"{profile}\n\n"
@@ -628,32 +693,28 @@ def gemini_rank(jobs, api_key):
         "- 40-69: adjacent function, seniority mismatch, or several gaps.\n"
         "- 0-39: leadership/staff/principal/management track, wrong location (including a title "
         "that says based elsewhere or offers relocation), or wrong function.\n"
-        "Never score above 85 when jd_excerpt is empty: a title alone cannot prove fit.\n"
-        "Give a one-line reason of at most 15 words naming the deciding factor. "
-        'Return ONLY a JSON array of objects {"id","score","why"}.\n'
+        "jd_excerpt starts where the posting begins describing the job, so it is the "
+        "requirements and responsibilities, not the company's recruiting copy. Score against "
+        "what it states. A requirement the excerpt does not mention is unknown, not a gap: "
+        "never lower a score for something the posting simply did not say.\n"
+        "description_kind tells you what you are reading. 'full' is a complete posting. "
+        "'teaser' is a short aggregator summary and 'incomplete' is a fragment — for those two, "
+        "judge on title and function alone and say so in your reason. Never score above 85 when "
+        "jd_excerpt is empty: a title alone cannot prove fit.\n"
+        "Give a one-line reason of at most 15 words naming the deciding factor.\n"
         f"Jobs:\n{json.dumps(listing, ensure_ascii=False)}"
     )
-    endpoint = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{RANK_MODEL}:generateContent?key={api_key}"
-    )
-    body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.2, "response_mime_type": "application/json"},
-    }
     try:
-        r = requests.post(endpoint, json=body, timeout=60)
-        if r.status_code != 200:
-            log(f"WARN Gemini HTTP {r.status_code}: {r.text[:200]}")
-            return None
-        text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-        arr = json.loads(text)
+        answer = chat_json(prompt, RANK_SCHEMA, "job_fit_scores", api_key,
+                           RANK_MODEL, RANK_FALLBACKS,
+                           time.monotonic() + RANK_BUDGET_SECONDS,
+                           provider=RANK_PROVIDER)
         return {
             str(it["id"]): {"score": int(it["score"]), "why": str(it["why"])[:140]}
-            for it in arr
+            for it in answer["scores"]
         }
     except Exception as e:
-        log(f"WARN Gemini failed: {e}")
+        log(f"WARN ranking failed: {e}")
         return None
 
 
@@ -746,6 +807,26 @@ def apply_ranking(jobs, ranking):
                 why="matches your target titles and skills",
                 ranking_verified=False,
             )
+
+
+def cap_teaser_scores(jobs):
+    """Hold a job scored off a marketing blurb out of the strong tier.
+
+    An aggregator teaser clears every completeness check — 400 characters, 60
+    words, the word "experience" — while evidencing nothing. The ranker is told
+    what it is reading and asked to judge on title alone, but a title can look
+    like a perfect match, and "strong match" has to mean the description backed
+    it up. Returns the jobs it capped."""
+    capped = []
+    for job in jobs:
+        if jd_grade(job.get("description") or "") != GRADE_TEASER:
+            continue
+        if job["score"] <= TEASER_SCORE_CAP:
+            continue
+        job["score"] = TEASER_SCORE_CAP
+        job["why"] = f"{job['why']} (capped: description is a short teaser)"[:140]
+        capped.append(job)
+    return capped
 
 
 def split_tiers(jobs):
@@ -907,6 +988,23 @@ def check_drift(stats):
     return None
 
 
+def instability_warning(unstable):
+    """One line naming the worst scores that moved on an unchanged posting.
+
+    Reported rather than silently corrected: the fix for an unstable ranker is
+    a better prompt or a better model, and this is how you find out whether the
+    last change to either actually worked."""
+    if not unstable:
+        return None
+    worst = unstable[0]
+    scored = "-".join(str(s) for s in sorted(worst["scores"]))
+    return (
+        f"{len(unstable)} posting(s) scored differently on an unchanged description "
+        f"in the last {ARCHIVE_INSTABILITY_DAYS}d — worst: {worst['title'][:60]} "
+        f"({scored}). The ranker, not the market."
+    )
+
+
 def post_discord(webhook, lines):
     chunks, cur = [], ""
     for ln in lines:
@@ -934,11 +1032,14 @@ def main():
     if worker_url and not worker_secret:
         log("WARN INTERACTIVE_WORKER_URL set without WORKER_CALLBACK_SECRET; using plain webhook")
         worker_url = ""
-    gemini_key = os.environ.get("GEMINI_API_KEY")  # optional
+    rank_key = os.environ.get("OPENROUTER_API_KEY")  # optional
 
     seen = load_seen()
     stats = load_stats()
     drift_warning = check_drift(stats)  # uses history only; today's row isn't recorded yet
+    # Same rule: read only what previous runs committed, before today's archive
+    # is written, so the warning describes history rather than this run.
+    ranker_warning = instability_warning(score_instability(window_days=ARCHIVE_INSTABILITY_DAYS))
     rapidapi_key = os.environ.get("RAPIDAPI_KEY")
 
     all_jobs = []
@@ -985,6 +1086,8 @@ def main():
         ]
         if drift_warning:
             lines.append(f"⚠️ {drift_warning}")
+        if ranker_warning:
+            lines.append(f"⚠️ {ranker_warning}")
         if worker_url:
             post_interactive_cards(
                 worker_url,
@@ -1003,10 +1106,12 @@ def main():
         return
 
     enrich_descriptions(fresh)
-    ranking = gemini_rank(fresh, gemini_key) if gemini_key else None
-    if gemini_key and ranking is None:
-        log("Gemini unavailable, using keyword scoring for this run")
+    ranking = rank_jobs(fresh, rank_key) if rank_key else None
+    if rank_key and ranking is None:
+        log("Ranker unavailable, using keyword scoring for this run")
     apply_ranking(fresh, ranking)
+    for job in cap_teaser_scores(fresh):
+        log(f"Capped {job['company']} — {job['title']} at {job['score']}: teaser, not a full JD")
 
     # Captured before the MAX_JOBS_IN_DIGEST cut below, so a stale profile shows
     # up in the drift trend even on days the real drop is buried past the top 25.
@@ -1033,6 +1138,8 @@ def main():
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     if drift_warning:
         lines.append(f"⚠️ {drift_warning}")
+    if ranker_warning:
+        lines.append(f"⚠️ {ranker_warning}")
     by_company = {}
     for j in fresh:
         by_company.setdefault((j["tier"], j["company"]), []).append(j)
