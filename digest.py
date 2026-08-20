@@ -668,8 +668,8 @@ def rank_jobs(jobs, api_key):
     What the rubric could not fix on its own is what it was scoring. The excerpt
     used to be the first 900 characters of the posting, which on a McKinsey
     posting is the culture section and nothing else, and the model duly reported
-    that the description named no technical requirements — nine days running,
-    at scores between 40 and 75 for a byte-identical description. It reads the
+    that the description named no technical requirements — across seven days and
+    a 35-point spread on a byte-identical description. It reads the
     requirements section now, and the listing is sorted so a score no longer
     depends on which other jobs happened to be new that day.
     """

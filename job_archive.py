@@ -216,9 +216,9 @@ def job_card_payload(snapshot: dict) -> dict:
 
 # A score that moves while the description behind it does not is the ranker
 # being unstable, not the market changing. QuantumBlack's Software Engineer II
-# scored 40, 45, 50, 55, 65 and 75 across ten runs on a byte-identical 5417-char
-# description. Nothing in the daily average showed it, because each of those was
-# a different day's row.
+# scored 40, 40, 40, 45, 50, 50 and 75 across the seven runs the model scored it,
+# on a byte-identical 5417-char description. Nothing in the daily average showed
+# it, because those scores sat in different days' rows.
 INSTABILITY_WINDOW_DAYS = 14
 INSTABILITY_THRESHOLD = 15
 
