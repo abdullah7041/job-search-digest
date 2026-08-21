@@ -283,6 +283,7 @@ class TestJobIdentity(unittest.TestCase):
     def test_a_description_already_delivered_is_split_out(self):
         seen = {}
         job = {"source": "jsearch", "id": "a", "url": "https://x/1",
+               "company": "Acme", "title": "Backend Engineer",
                "description": "About the role. Responsibilities. Requirements."}
         seen[digest.description_key(job)] = "2026-08-20"
         relisted = dict(job, id="b", url="https://x/2")
@@ -299,14 +300,29 @@ class TestJobIdentity(unittest.TestCase):
         self.assertEqual(len(kept), 1)
         self.assertEqual(repeats, [])
 
-    def test_the_description_key_matches_the_hash_the_archive_stores(self):
-        """The state file and the snapshot archive have to agree on what counts
-        as the same description."""
-        job = dict(REAL_JOBS[1])
-        snapshot = job_archive.make_snapshot(job, "2026-08-20T00:00:00Z")
+    def test_a_shared_description_for_a_different_role_is_not_a_repeat(self):
+        description = "About the role. Responsibilities. Requirements."
+        delivered = {"source": "jsearch", "id": "a", "url": "https://x/1",
+                     "company": "Acme", "title": "Backend Engineer",
+                     "description": description}
+        distinct = {"source": "jsearch", "id": "b", "url": "https://x/2",
+                    "company": "Beta", "title": "Data Engineer",
+                    "description": description}
+        seen = {digest.description_key(delivered): "2026-08-20"}
 
-        self.assertEqual(digest.description_key(job),
-                         digest.JD_SEEN_PREFIX + snapshot["jd"]["sha256"])
+        kept, repeats = digest.drop_repeat_descriptions([distinct], seen)
+
+        self.assertEqual(kept, [distinct])
+        self.assertEqual(repeats, [])
+
+    def test_description_key_is_stable_for_normalized_role_context(self):
+        job = {"company": "Acme", "title": "Backend Engineer",
+               "description": "About the role. Responsibilities. Requirements."}
+        normalized = dict(job, company="  ACME ", title="Backend   Engineer")
+        distinct = dict(job, company="Beta")
+
+        self.assertEqual(digest.description_key(job), digest.description_key(normalized))
+        self.assertNotEqual(digest.description_key(job), digest.description_key(distinct))
 
 
 class TestRankedExcerpt(unittest.TestCase):
@@ -363,6 +379,19 @@ class TestRankedExcerpt(unittest.TestCase):
 
         self.assertEqual(captured[0], captured[1])
 
+    def test_ranker_denies_provider_data_collection(self):
+        captured = {}
+
+        def fake(*args, **kwargs):
+            captured.update(kwargs)
+            return {"scores": []}
+
+        with mock.patch.object(digest, "chat_json", side_effect=fake):
+            self.assertEqual(digest.rank_jobs([REAL_JOBS[0]], "key"), {})
+
+        self.assertEqual(captured["provider"].get("data_collection"), "deny")
+        self.assertTrue(captured["provider"]["require_parameters"])
+
 
 class TestTeaserGrading(unittest.TestCase):
     """An aggregator blurb clears every completeness check while evidencing
@@ -390,6 +419,23 @@ class TestTeaserGrading(unittest.TestCase):
                  "exposure to streaming systems and infrastructure as code.")
         self.assertLess(len(short), job_archive.TEASER_MIN_CHARS)
         self.assertEqual(job_archive.jd_grade(short), job_archive.GRADE_FULL)
+
+    def test_newline_delimited_headings_survive_teaser_grading(self):
+        """A real posting often puts headings on their own lines, without a
+        colon or a preceding sentence ending mark."""
+        structured = (
+            "Our platform team builds the data services used across the company\n"
+            "Responsibilities\n"
+            + ("Design reliable APIs, review production changes, improve monitoring, "
+               "and collaborate with product engineers on delivery plans " * 3)
+            + "\nRequirements\n"
+            + ("Five years building Python services, strong SQL skills, experience "
+               "operating cloud workloads, and clear written communication " * 3)
+        )
+        self.assertLess(len(structured), job_archive.TEASER_MIN_CHARS)
+        self.assertEqual(len(job_archive.signal_headings(structured)), 2)
+        self.assertEqual(job_archive.jd_completeness_failures(structured), [])
+        self.assertEqual(job_archive.jd_grade(structured), job_archive.GRADE_FULL)
 
     def test_a_long_posting_without_familiar_headings_is_still_a_posting(self):
         """Two archived descriptions over 3000 characters carry no heading this

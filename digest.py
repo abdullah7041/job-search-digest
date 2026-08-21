@@ -176,9 +176,10 @@ DEFAULT_RANK_FALLBACKS = "google/gemini-3.6-flash,openai/gpt-5.6-luna"
 RANK_MODEL, RANK_FALLBACKS = configured_chain(
     "RANK_MODEL", "RANK_FALLBACK_MODELS", DEFAULT_RANK_MODEL, DEFAULT_RANK_FALLBACKS)
 
-# Ranking carries no personal data — a title, a company, a location and public
-# JD text — but it still has to reach an endpoint that honours the JSON schema.
-RANK_PROVIDER = {"require_parameters": True}
+# Ranking carries the user's target roles and profile blurb alongside public job
+# data, so provider-side collection is explicitly disabled while retaining the
+# JSON-schema requirement.
+RANK_PROVIDER = {"data_collection": "deny", "require_parameters": True}
 
 # The daily run has no user waiting on it, but it does have a ten-minute
 # workflow timeout it shares with every fetch above.
@@ -234,8 +235,9 @@ TRACKING_PARAMS = {
 }
 
 # seen.json holds two kinds of key. A job identity remembers the posting; this
-# prefix remembers the description text, which catches an aggregator that
-# relists the same job under a fresh URL. Both age out on the same TTL.
+# prefix remembers a description within its employer and title context, which
+# catches an aggregator that relists the same job under a fresh URL. Both age
+# out on the same TTL.
 JD_SEEN_PREFIX = "jd:"
 USER_AGENT = "job-digest/1.0 (personal job search)"
 
@@ -684,26 +686,25 @@ def job_identity(job):
 
 
 def description_key(job):
-    """The seen.json key for this job's exact description text, if it has one.
-
-    Hashed the same way make_snapshot hashes it, so the archive and the state
-    file agree on what counts as the same description.
-    """
+    """The seen.json key for a description within one employer and role."""
     text = (job.get("description") or "").strip()
-    if not text:
+    company = " ".join(str(job.get("company") or "").casefold().split())
+    title = " ".join(str(job.get("title") or "").casefold().split())
+    if not text or not company or not title:
         return ""
-    return JD_SEEN_PREFIX + hashlib.sha256(text.encode("utf-8")).hexdigest()
+    fingerprint = "\n".join((company, title, text))
+    return JD_SEEN_PREFIX + hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()
 
 
 def drop_repeat_descriptions(jobs, seen):
-    """Split off postings whose exact description was already delivered.
+    """Split off postings whose role-scoped description was already delivered.
 
     A stable URL catches almost everything, but an aggregator can relist the
     same job under a new URL of its own: Jooble did it once in the first 11
     archived days, minting /jdp/-514809098470354554 and /jdp/6609179533026884564
-    for one posting. The description is the last thing left that does not move.
-    Safe as a second pass because no archived description is shared by two
-    different companies, and it runs after enrichment, when the text exists.
+    for one posting. The description plus normalized company and title is the
+    last identity left that does not move. It runs after enrichment, when all
+    three fields exist.
     """
     kept, repeats = [], []
     for job in jobs:

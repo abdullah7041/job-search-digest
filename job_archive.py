@@ -111,13 +111,14 @@ def jd_signal(jd_text: str, limit: int) -> str:
 
 def jd_grade(jd_text: str) -> str:
     """How much of a real job description this text actually is."""
-    normalized = " ".join((jd_text or "").split())
+    text = jd_text or ""
+    normalized = " ".join(text.split())
     if not normalized:
         return GRADE_MISSING
     if jd_completeness_failures(normalized):
         return GRADE_INCOMPLETE
     if (len(normalized) < TEASER_MIN_CHARS
-            and len(signal_headings(normalized)) < TEASER_MIN_HEADINGS):
+            and len(signal_headings(text)) < TEASER_MIN_HEADINGS):
         return GRADE_TEASER
     return GRADE_FULL
 
