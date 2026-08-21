@@ -233,6 +233,82 @@ TEASER_JD = (
 )
 
 
+class TestJobIdentity(unittest.TestCase):
+    """What seen.json remembers a posting by."""
+
+    def test_an_aggregator_posting_keys_on_its_url_not_its_id(self):
+        job = {"source": "jsearch", "id": "jsearch_opaque_token_1",
+               "url": "https://sa.linkedin.com/jobs/view/senior-engineer-4442"}
+        same = dict(job, id="jsearch_opaque_token_2")
+
+        self.assertEqual(digest.job_identity(job), digest.job_identity(same))
+        self.assertNotIn("opaque", digest.job_identity(job))
+
+    def test_linkedin_tracking_parameters_are_not_part_of_the_identity(self):
+        """refId and trackingId change on every response, so leaving them in
+        would recreate exactly the churn this replaces."""
+        plain = {"source": "jsearch", "id": "a", "url": "https://sa.linkedin.com/jobs/view/x-1"}
+        tracked = {"source": "jsearch", "id": "b",
+                   "url": "https://sa.linkedin.com/jobs/view/x-1?refId=Q%3D%3D&trackingId=zz9"}
+
+        self.assertEqual(digest.job_identity(plain), digest.job_identity(tracked))
+
+    def test_a_meaningful_query_parameter_is_kept(self):
+        """Indeed's ?jk= is the job. Dropping the whole query string would
+        collapse every Indeed posting onto one key."""
+        first = {"source": "jsearch", "id": "a", "url": "https://sa.indeed.com/viewjob?jk=aaa"}
+        second = {"source": "jsearch", "id": "b", "url": "https://sa.indeed.com/viewjob?jk=bbb"}
+
+        self.assertNotEqual(digest.job_identity(first), digest.job_identity(second))
+
+    def test_an_ats_job_keeps_the_bare_id_already_in_seen_json(self):
+        """Changing this would make every previously delivered ATS role look new
+        on the first run after deploy."""
+        job = {"source": "greenhouse", "id": "4556956101",
+               "url": "https://boards.greenhouse.io/hala/jobs/4556956101"}
+
+        self.assertEqual(digest.job_identity(job), "4556956101")
+
+    def test_trailing_slashes_and_host_case_do_not_split_one_posting(self):
+        first = {"source": "jsearch", "id": "a", "url": "https://Apply.Workable.com/foodics/j/902C/"}
+        second = {"source": "jsearch", "id": "b", "url": "https://apply.workable.com/foodics/j/902C"}
+
+        self.assertEqual(digest.job_identity(first), digest.job_identity(second))
+
+    def test_an_aggregator_posting_with_no_url_falls_back_to_its_id(self):
+        self.assertEqual(
+            digest.job_identity({"source": "jsearch", "id": "jsearch_x", "url": ""}),
+            "jsearch_x")
+
+    def test_a_description_already_delivered_is_split_out(self):
+        seen = {}
+        job = {"source": "jsearch", "id": "a", "url": "https://x/1",
+               "description": "About the role. Responsibilities. Requirements."}
+        seen[digest.description_key(job)] = "2026-08-20"
+        relisted = dict(job, id="b", url="https://x/2")
+
+        kept, repeats = digest.drop_repeat_descriptions([relisted], seen)
+
+        self.assertEqual(kept, [])
+        self.assertEqual(repeats, [relisted])
+
+    def test_a_job_with_no_description_is_never_treated_as_a_repeat(self):
+        kept, repeats = digest.drop_repeat_descriptions(
+            [{"source": "jsearch", "id": "a", "url": "https://x/1", "description": ""}], {})
+
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(repeats, [])
+
+    def test_the_description_key_matches_the_hash_the_archive_stores(self):
+        """The state file and the snapshot archive have to agree on what counts
+        as the same description."""
+        job = dict(REAL_JOBS[1])
+        snapshot = job_archive.make_snapshot(job, "2026-08-20T00:00:00Z")
+
+        self.assertEqual(digest.description_key(job),
+                         digest.JD_SEEN_PREFIX + snapshot["jd"]["sha256"])
+
+
 class TestRankedExcerpt(unittest.TestCase):
     """What the ranker reads, which is what the whole score rests on."""
 
@@ -497,8 +573,12 @@ class TestStatsRows(unittest.TestCase):
         self.assertIn("profile may be stale", warning)
 
 
-def run_main(monkey_env, ranking, link_statuses=None):
-    """Run digest.main() fully mocked; return (discord_posts, workdir)."""
+def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None):
+    """Run digest.main() fully mocked; return (discord_posts, workdir).
+
+    Pass `work` from a previous call to run a second day against the seen.json
+    and archives the first one wrote, which is how repeat delivery is tested.
+    """
     posts = []
 
     def fake_post(url, json=None, timeout=None):
@@ -508,18 +588,20 @@ def run_main(monkey_env, ranking, link_statuses=None):
         resp.text = ""
         return resp
 
-    work = tempfile.mkdtemp(prefix="digest_run_")
-    for f in ("profile.json", "resume.md"):
-        src = os.path.join(REPO, f)
-        if os.path.exists(src):
-            shutil.copy(src, work)
+    if work is None:
+        work = tempfile.mkdtemp(prefix="digest_run_")
+        for f in ("profile.json", "resume.md"):
+            src = os.path.join(REPO, f)
+            if os.path.exists(src):
+                shutil.copy(src, work)
+    supplied = REAL_JOBS if jobs is None else jobs
     old_cwd = os.getcwd()
     os.chdir(work)
     if link_statuses is None:
-        link_statuses = [digest.LINK_OPEN] * len(REAL_JOBS)
+        link_statuses = [digest.LINK_OPEN] * len(supplied)
     try:
         with mock.patch.dict(os.environ, monkey_env, clear=False), \
-             mock.patch.object(digest, "fetch_jsearch", return_value=[dict(j) for j in REAL_JOBS]), \
+             mock.patch.object(digest, "fetch_jsearch", return_value=[dict(j) for j in supplied]), \
              mock.patch.object(digest, "COMPANIES", []), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "rank_jobs", return_value=ranking), \
@@ -636,7 +718,9 @@ class TestEndToEnd(unittest.TestCase):
 
         self.assertEqual(posts, [])
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
-            self.assertEqual(len(json.load(handle)), 1)
+            seen = json.load(handle)
+        # One posting remembered two ways: its identity, and its description.
+        self.assertEqual(len([k for k in seen if not k.startswith(digest.JD_SEEN_PREFIX)]), 1)
 
     def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
@@ -663,7 +747,12 @@ class TestEndToEnd(unittest.TestCase):
         # State written
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertEqual(set(seen), {"jsearch_b", "jsearch_e"})
+        # An aggregator posting is remembered by URL, never by the per-request
+        # id it arrived with, plus one key for its description text.
+        identities = {k for k in seen if not k.startswith(digest.JD_SEEN_PREFIX)}
+        self.assertEqual(identities, {"url:https://example.com/b", "url:https://example.com/e"})
+        self.assertEqual(len(seen) - len(identities), 2)
+        self.assertFalse(identities & {"jsearch_b", "jsearch_e"})
 
     def test_unknown_link_is_reviewable_and_only_strong_is_tailored(self):
         ranking = {
@@ -684,6 +773,53 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual(stats[-1]["strong"], 1)
         self.assertEqual(stats[-1]["review"], 1)
 
+    def test_the_same_posting_under_a_new_id_is_not_delivered_twice(self):
+        """JSearch mints a fresh opaque id per request, so seen.json keyed on it
+        never matched and 65 of the first 122 aggregator cards were repeats. One
+        JAL frontend role arrived on 9 days under 11 ids."""
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+        posts, work = run_main(self.ENV, ranking)
+        self.assertIn("Senior Software Engineer (AI Systems)", "\n".join(posts))
+
+        # Tomorrow: same postings, same URLs, brand new ids, and a LinkedIn
+        # tracking parameter that also changes on every response.
+        tomorrow = [dict(job, id=f"jsearch_{job['id']}_regenerated",
+                         url=f"{job['url']}?refId=abc%3D%3D&trackingId=xyz")
+                    for job in REAL_JOBS]
+        posts, _ = run_main(self.ENV, ranking, jobs=tomorrow, work=work)
+
+        body = "\n".join(posts)
+        self.assertIn("no new roles today", body)
+        self.assertNotIn("Senior Software Engineer (AI Systems)", body)
+
+    def test_a_relisted_posting_with_a_new_url_is_caught_by_its_description(self):
+        """Jooble relisted one posting under two of its own ids in the first 11
+        archived days. The description is the last thing that does not move."""
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+        _, work = run_main(self.ENV, ranking)
+
+        relisted = [dict(job, id=f"{job['id']}_new", url=f"{job['url']}-relisted-elsewhere")
+                    for job in REAL_JOBS]
+        posts, _ = run_main(self.ENV, ranking, jobs=relisted, work=work)
+
+        self.assertIn("no new roles today", "\n".join(posts))
+
+    def test_a_genuinely_new_posting_still_gets_through(self):
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+        _, work = run_main(self.ENV, ranking)
+
+        fresh_job = dict(REAL_JOBS[1], id="jsearch_brand_new",
+                         url="https://example.com/brand-new",
+                         title="Senior Machine Learning Engineer",
+                         description=REAL_JOBS[1]["description"] + " Extra requirement: Rust.")
+        posts, _ = run_main(self.ENV, {"jsearch_brand_new": {"score": 91, "why": "Senior IC role"}},
+                            jobs=[fresh_job], work=work)
+
+        self.assertIn("Senior Machine Learning Engineer", "\n".join(posts))
+
     def test_closed_link_is_not_delivered_or_seen(self):
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
@@ -699,7 +835,10 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("Senior Data Architect", body)
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertEqual(set(seen), {"jsearch_e"})
+        # The closed posting is not remembered at all, so it stays deliverable
+        # if the employer reopens it.
+        self.assertEqual({k for k in seen if not k.startswith(digest.JD_SEEN_PREFIX)},
+                         {"url:https://example.com/e"})
 
     def test_gemini_down_keyword_fallback_still_delivers(self):
         posts, work = run_main(self.ENV, None)

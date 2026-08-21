@@ -32,6 +32,7 @@ Profile:
 
 import os
 import re
+import hashlib
 import sys
 import html
 import json
@@ -39,6 +40,7 @@ import time
 import datetime
 
 import requests
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
 from job_archive import (GRADE_TEASER, jd_completeness_failures, jd_grade, jd_signal,
@@ -208,6 +210,33 @@ TEASER_SCORE_CAP = 69
 
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
+
+# Sources that mint a fresh id for the same posting on every request. JSearch
+# hands back an opaque per-request token, so seen.json keyed on it never matched
+# twice and the same posting was delivered day after day: 65 of the 122
+# aggregator cards in the first 11 archived days were repeats. One JAL frontend
+# role arrived on 9 separate days under 11 different ids. Their URL does not
+# move, so that is what the state file remembers them by.
+#
+# An ATS id is canonical and stable, so those keep it. That also leaves every
+# existing key in seen.json matching exactly as before.
+VOLATILE_ID_SOURCES = {"jsearch"}
+
+# Query parameters that identify the click rather than the job. LinkedIn adds
+# refId and trackingId per response, so leaving them in would recreate the churn
+# this is here to remove. Everything else is kept: Indeed's ?jk= IS the job, and
+# dropping the whole query string would collapse every Indeed posting onto one
+# key.
+TRACKING_PARAMS = {
+    "refid", "trackingid", "utm_source", "utm_medium", "utm_campaign",
+    "utm_term", "utm_content", "utm_id", "gh_src", "src", "ref", "source",
+    "trk", "originalsubdomain",
+}
+
+# seen.json holds two kinds of key. A job identity remembers the posting; this
+# prefix remembers the description text, which catches an aggregator that
+# relists the same job under a fresh URL. Both age out on the same TTL.
+JD_SEEN_PREFIX = "jd:"
 USER_AGENT = "job-digest/1.0 (personal job search)"
 
 # Drift monitoring: stats.json tracks one row per run (fetched/matched/new/avg
@@ -629,6 +658,60 @@ def matches_filters(job):
     return True
 
 
+def canonical_url(url):
+    """A posting URL reduced to the parts that identify the posting."""
+    split = urlsplit((url or "").strip())
+    if not split.netloc:
+        return ""
+    kept = [(key, value) for key, value in parse_qsl(split.query)
+            if key.lower() not in TRACKING_PARAMS]
+    return urlunsplit((split.scheme.lower(), split.netloc.lower(),
+                       split.path.rstrip("/"), urlencode(sorted(kept)), ""))
+
+
+def job_identity(job):
+    """The key seen.json remembers one posting by, stable across runs.
+
+    Only a source with a volatile id changes shape here. An ATS job still keys
+    on its bare id, which is what every entry already in seen.json uses, so no
+    previously delivered role reappears because of this.
+    """
+    if job.get("source") in VOLATILE_ID_SOURCES:
+        url = canonical_url(job.get("url"))
+        if url:
+            return f"url:{url}"
+    return job.get("id") or f"url:{canonical_url(job.get('url'))}"
+
+
+def description_key(job):
+    """The seen.json key for this job's exact description text, if it has one.
+
+    Hashed the same way make_snapshot hashes it, so the archive and the state
+    file agree on what counts as the same description.
+    """
+    text = (job.get("description") or "").strip()
+    if not text:
+        return ""
+    return JD_SEEN_PREFIX + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def drop_repeat_descriptions(jobs, seen):
+    """Split off postings whose exact description was already delivered.
+
+    A stable URL catches almost everything, but an aggregator can relist the
+    same job under a new URL of its own: Jooble did it once in the first 11
+    archived days, minting /jdp/-514809098470354554 and /jdp/6609179533026884564
+    for one posting. The description is the last thing left that does not move.
+    Safe as a second pass because no archived description is shared by two
+    different companies, and it runs after enrichment, when the text exists.
+    """
+    kept, repeats = [], []
+    for job in jobs:
+        key = description_key(job)
+        (repeats if key and key in seen else kept).append(job)
+    return kept, repeats
+
+
 def keyword_score(job):
     title = job["title"].lower()
     hits = sum(1 for k in PROFILE["skill_keywords"] if k in title)
@@ -1005,6 +1088,30 @@ def instability_warning(unstable):
     )
 
 
+def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, warnings):
+    """Confirm a quiet day out loud.
+
+    A green workflow run with no new roles used to exit silently, which is
+    indistinguishable from a broken job. matched-but-seen is shown so you know
+    the pipeline reached real jobs and just had nothing new to add.
+    """
+    lines = [
+        f"**Job digest — {today}** · no new roles today. "
+        f"Scanned {scanned} postings across {len(COMPANIES)} companies, "
+        f"{matched} matched your filters (already sent), 0 new."
+    ]
+    lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
+    if worker_url:
+        post_interactive_cards(
+            worker_url,
+            worker_secret,
+            [],
+            heartbeat={"key": f"heartbeat:{today}", "content": "\n".join(lines)},
+        )
+    else:
+        post_discord(webhook, lines)
+
+
 def post_discord(webhook, lines):
     chunks, cur = [], ""
     for ln in lines:
@@ -1055,11 +1162,11 @@ def main():
     # dedupe within the run (same posting could appear twice)
     uniq = {}
     for j in all_jobs:
-        uniq[j["url"] or j["id"]] = j
+        uniq[canonical_url(j.get("url")) or job_identity(j)] = j
     all_jobs = list(uniq.values())
 
     matched = [j for j in all_jobs if matches_filters(j)]
-    fresh = [j for j in matched if j["id"] not in seen]
+    fresh = [j for j in matched if job_identity(j) not in seen]
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, {len(fresh)} new")
 
     # Verification is evidence, not a boolean gate: a third-party site may block
@@ -1074,29 +1181,11 @@ def main():
 
     today = datetime.date.today().isoformat()
 
+    warnings = [drift_warning, ranker_warning]
+
     if not fresh:
-        # Heartbeat: a green workflow run with no new roles used to exit silently,
-        # which is indistinguishable from a broken job. Always post a one-liner so a
-        # quiet day is confirmed working, not a failure. matched-but-seen is shown so
-        # you know the pipeline reached real jobs and just had nothing new to add.
-        lines = [
-            f"**Job digest — {today}** · no new roles today. "
-            f"Scanned {len(all_jobs)} postings across {len(COMPANIES)} companies, "
-            f"{len(matched)} matched your filters (already sent), 0 new."
-        ]
-        if drift_warning:
-            lines.append(f"⚠️ {drift_warning}")
-        if ranker_warning:
-            lines.append(f"⚠️ {ranker_warning}")
-        if worker_url:
-            post_interactive_cards(
-                worker_url,
-                worker_secret,
-                [],
-                heartbeat={"key": f"heartbeat:{today}", "content": "\n".join(lines)},
-            )
-        else:
-            post_discord(webhook, lines)
+        post_heartbeat(webhook, worker_url, worker_secret, today,
+                       len(all_jobs), len(matched), warnings)
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
@@ -1106,6 +1195,25 @@ def main():
         return
 
     enrich_descriptions(fresh)
+
+    # Second pass, now that the text exists: a posting relisted under a new URL
+    # is still the same posting. Runs before ranking so a repeat never costs a
+    # model call.
+    fresh, relisted = drop_repeat_descriptions(fresh, seen)
+    for job in relisted:
+        log(f"Skipping {job['company']} — {job['title']}: description already delivered")
+    if not fresh:
+        post_heartbeat(webhook, worker_url, worker_secret, today,
+                       len(all_jobs), len(matched), warnings)
+        save_stats(
+            stats, today, len(all_jobs), len(matched), 0, None,
+            link_closed=len(closed), link_unknown=unknown_count,
+            strong=0, review=0, tailored=0, tailor_failed=0,
+            relisted=len(relisted),
+        )
+        log(f"All {len(relisted)} new postings were relists. Heartbeat sent.")
+        return
+
     ranking = rank_jobs(fresh, rank_key) if rank_key else None
     if rank_key and ranking is None:
         log("Ranker unavailable, using keyword scoring for this run")
@@ -1136,10 +1244,7 @@ def main():
     write_snapshots(fresh, today)
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
-    if drift_warning:
-        lines.append(f"⚠️ {drift_warning}")
-    if ranker_warning:
-        lines.append(f"⚠️ {ranker_warning}")
+    lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     by_company = {}
     for j in fresh:
         by_company.setdefault((j["tier"], j["company"]), []).append(j)
@@ -1201,13 +1306,18 @@ def main():
 
     for j in fresh:
         if j["id"] in delivered_ids:
-            seen[j["id"]] = today
+            seen[job_identity(j)] = today
+            # Remember the description too, so a relist under a fresh URL is
+            # recognised even though its identity is new.
+            key = description_key(j)
+            if key:
+                seen[key] = today
     save_seen(seen)
     save_stats(
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
         strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
-        delivered=len(delivered_ids),
+        delivered=len(delivered_ids), relisted=len(relisted),
     )
     log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")
     if delivery_failed:

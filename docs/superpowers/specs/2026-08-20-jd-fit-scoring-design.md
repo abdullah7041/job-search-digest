@@ -208,7 +208,6 @@ Run `OPENROUTER_API_KEY=... python digest.py` to close this.
 
 JSearch mints a fresh opaque job id for the same posting on every request, and
 `seen.json` deduplicates on that id. The QuantumBlack posting was therefore
-delivered on 7 separate days, and a JAL frontend role on 9. Fixing this
-means changing the dedupe key to something stable, most likely the JD SHA-256
-with a URL fallback, and it changes what "new" means for both `stats.json` and
-the daily heartbeat. It deserves its own design.
+delivered on 7 separate days, and a JAL frontend role on 9.
+
+Addressed separately in `2026-08-21-stable-job-identity-design.md`.

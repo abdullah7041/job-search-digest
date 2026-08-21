@@ -72,7 +72,11 @@ The job is matching, not relevance ranking, so the filter is strict before anyth
 2. **Seniority** drops junior, intern, graduate, trainee, tamheer, associate, entry — and, since 31 Jul 2026, everything above senior IC too: lead, staff, principal, head-of, director, engineering manager, team leader. The 2026-07-31 digest scored Lead/Staff roles 85–98 because seniority was only bounded from below.
 2b. **Title-vs-location conflict** drops a job whose title says it's really elsewhere ("Bangkok based", "relocation provided") even when the board's location metadata claims Saudi. Same digest delivered Agoda's Bangkok role as Riyadh because only the metadata was checked.
 3. **Title** must hit one of your target areas: engineer, software, AI/ML, data, DevOps/SRE, platform, automation, architect, product manager, solutions engineer.
-4. **Not seen before.** `seen.json` holds every id already sent, so you only get new postings.
+4. **Not seen before.** `seen.json` holds every posting already sent, so you only get new ones.
+
+   What it remembers a posting *by* matters more than it sounds. JSearch mints a fresh opaque id for the same job on every request, so a state file keyed on that id never matched twice and the same role arrived day after day. Over the first 11 archived days, 65 of 122 aggregator cards were repeats, and one JAL frontend role landed on 9 separate days under 11 different ids. `job_identity()` keys an aggregator posting on its canonical URL, which does not move. LinkedIn's `refId` and `trackingId` are stripped because they change per response; Indeed's `?jk=` is kept, because it *is* the job. An ATS id is canonical already, so those postings keep the bare id every existing `seen.json` entry uses.
+
+   `drop_repeat_descriptions()` is the second pass, after JD text is fetched and before any model call: an aggregator that relists a job under a fresh URL of its own (Jooble did it once in 11 days) is still caught, because the description bytes are the same. Safe as a backstop because no archived description is shared by two different companies.
 
 Salary is a soft signal, not a filter. These boards almost never publish a number, so a hard salary floor would reject nearly everything. The benchmark for your floor: senior engineer in Riyadh runs SAR 25,000 to 35,000 per month in 2026, AI/ML 28,000 to 35,000. The config records SAR 25,000/month for reference and never rejects a posting for missing salary.
 
@@ -151,7 +155,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `test_interactive.py` — offline contract tests for the snapshot/tailoring/Worker-callback pipeline.
 - `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, and `jobs/` back.
 - `jobs/` — one `<date>.json` per digest date: full evidence (title, company, location, URL, score, tier, link status, complete JD text and its SHA-256) for every delivered job. Committed back by the workflow; same-day re-runs append, never rewrite.
-- `seen.json` — job ids already delivered. Created on first run; only the workflow commits it.
+- `seen.json` — postings already delivered, keyed by `job_identity()`, plus one `jd:<sha256>` key per delivered description. Created on first run; only the workflow commits it. Entries age out after `STATE_TTL_DAYS`, which is also how the pre-2026-08-21 `jsearch_*` id keys retire on their own.
 - `stats.json` — the per-run trend (fetched/matched/new/avg-score) the drift warning reads.
 
 **On-demand tailoring (Cloudflare Worker)**
