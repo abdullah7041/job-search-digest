@@ -54,7 +54,12 @@ jobs:
           INTERACTIVE_WORKER_URL: ${{ secrets.INTERACTIVE_WORKER_URL }}
           WORKER_CALLBACK_SECRET: ${{ secrets.WORKER_CALLBACK_SECRET }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # Optional overrides. An unset ${{ vars.X }} renders as an empty
+          # string, which digest.py falls back from with `or`, never with the
+          # two-argument os.environ.get.
+          RANK_MODEL: ${{ vars.RANK_MODEL }}
+          RANK_FALLBACK_MODELS: ${{ vars.RANK_FALLBACK_MODELS }}
         run: python digest.py
       - name: Package generated state
         run: python workflow_guard.py package-state --root . --output state-artifact

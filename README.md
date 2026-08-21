@@ -72,7 +72,11 @@ The job is matching, not relevance ranking, so the filter is strict before anyth
 2. **Seniority** drops junior, intern, graduate, trainee, tamheer, associate, entry — and, since 31 Jul 2026, everything above senior IC too: lead, staff, principal, head-of, director, engineering manager, team leader. The 2026-07-31 digest scored Lead/Staff roles 85–98 because seniority was only bounded from below.
 2b. **Title-vs-location conflict** drops a job whose title says it's really elsewhere ("Bangkok based", "relocation provided") even when the board's location metadata claims Saudi. Same digest delivered Agoda's Bangkok role as Riyadh because only the metadata was checked.
 3. **Title** must hit one of your target areas: engineer, software, AI/ML, data, DevOps/SRE, platform, automation, architect, product manager, solutions engineer.
-4. **Not seen before.** `seen.json` holds every id already sent, so you only get new postings.
+4. **Not seen before.** `seen.json` holds every posting already sent, so you only get new ones.
+
+   What it remembers a posting *by* matters more than it sounds. JSearch mints a fresh opaque id for the same job on every request, so a state file keyed on that id never matched twice and the same role arrived day after day. Over the first 11 archived days, 65 of 122 aggregator cards were repeats, and one JAL frontend role landed on 9 separate days under 11 different ids. `job_identity()` keys an aggregator posting on its canonical URL, which does not move. LinkedIn's `refId` and `trackingId` are stripped because they change per response; Indeed's `?jk=` is kept, because it *is* the job. An ATS id is canonical already, so those postings keep the bare id every existing `seen.json` entry uses.
+
+   `drop_repeat_descriptions()` is the second pass, after JD text is fetched and before any model call: an aggregator that relists the same employer/title under a fresh URL of its own (Jooble did it once in 11 days) is still caught, because its description is fingerprinted with normalized employer and title context. Shared boilerplate from a different role remains deliverable.
 
 Salary is a soft signal, not a filter. These boards almost never publish a number, so a hard salary floor would reject nearly everything. The benchmark for your floor: senior engineer in Riyadh runs SAR 25,000 to 35,000 per month in 2026, AI/ML 28,000 to 35,000. The config records SAR 25,000/month for reference and never rejects a posting for missing salary.
 
@@ -82,11 +86,17 @@ One caveat the filter can't catch: some Gulf roles are nationality-gated (for ex
 
 ## How it ranks
 
-One Gemini call scores the survivors 0 to 100 and writes a one-line "why it fits," using a short profile of you. Since 31 Jul 2026 the prompt carries an explicit rubric (90+ only for senior-IC core-area roles whose JD requirements the profile covers; leadership/staff/wrong-location scores 0–39; never above 85 without JD text) and each job includes a JD excerpt, so scores reflect actual requirements rather than title vibes. If `GEMINI_API_KEY` is missing or the call fails, it falls back to deterministic keyword scoring so a model outage never kills the run. Same fallback design as the news digest.
+One model call scores the survivors 0 to 100 and writes a one-line "why it fits," using a short profile of you. Since 31 Jul 2026 the prompt carries an explicit rubric (90+ only for senior-IC core-area roles whose JD requirements the profile covers; leadership/staff/wrong-location scores 0–39; never above 85 without JD text). If `OPENROUTER_API_KEY` is missing or the call fails, it falls back to deterministic keyword scoring so a model outage never kills the run. Same fallback design as the news digest.
+
+**The excerpt it scores starts at the requirements, not at the top of the posting.** It used to be the first 900 characters, which on a McKinsey posting is entirely recruiting copy — the role itself begins at character 1931. The model reported, accurately, that the description named no technical requirements; it had never been shown them. `job_archive.jd_signal` finds the first heading that introduces the work (`Your Impact`, `Responsibilities`, `Requirements`, `Qualifications`, and the rest) and takes `JD_RANK_CHARS` from there. Of the 34 distinct archived descriptions longer than 1500 characters, 10 put that heading past the old 900-character cut and 8 carry no recognised heading at all.
+
+**A teaser is scored as a teaser.** Aggregators publish a paragraph of marketing copy that clears every completeness check — 400 characters, 60 words, the word "experience" — while evidencing nothing; 23 of the first 104 captured descriptions were under 1500 characters. `job_archive.jd_grade` calls those `teaser`, the ranker is told what it is reading, `cap_teaser_scores` holds them below the strong-match line, and the card footer says so. They stay tailorable, with a warning in the message.
+
+**An unstable ranker is visible rather than averaged away.** `score_instability` reads the committed archives and reports postings whose score moved while their JD digest did not — keyed on the description hash, because the aggregator mints a fresh id for the same posting every day. It found nine, worst at a 55-point spread. The daily average `check_drift` watches could never show that.
 
 The digest makes that confidence visible instead of hiding borderline roles. **Strong matches** have a validated Gemini score of at least 80 and JD text. **Worth reviewing** passed every hard eligibility filter but have a lower or invalid score, no JD text, or another fit uncertainty. This favors finding viable roles without presenting every result as equally ready to apply for. Every delivered job, either tier, still gets its own Tailor CV button (see below); a card without captured JD text says so in its footer and the button reports back what's missing instead of guessing.
 
-`RANK_MODEL = gemini-3.1-flash-lite` does the scoring — classification over at most 25 short records in a single call, which is what Flash-Lite is built for and the cheapest option available. The id was checked against [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) on 2 Aug 2026 and listed **stable**; `gemini-3.1-flash-lite-preview` is shut down. Re-check when a run starts returning HTTP 404 from the model endpoint.
+`RANK_MODEL = google/gemini-3.7-flash` does the scoring, through OpenRouter, with `google/gemini-3.6-flash` and `openai/gpt-5.6-luna` behind it; both ids are overridable through repository *variables* of the same names. Read from the OpenRouter catalogue on 20 Aug 2026: $0.375/M in and $1.875/M out, carrying a `0.75` discount on its Vertex endpoints, which makes it *cheaper* than 3.6 Flash while scoring materially higher (Artificial Analysis intelligence 56 vs 51.6). This used to be `gemini-3.1-flash-lite` on the Gemini API directly, sized for classification over short records — but scoring now means reading a requirements section and weighing it against a profile, which is worth a real model. At 25 jobs a day it is still under a quarter a month, and it retires the second API key.
 
 ## Tailoring, on demand
 
@@ -106,7 +116,9 @@ The Worker posts the PDF as an ordinary message in the private channel, using th
 
 Tailoring calls **OpenRouter**, not the Gemini API directly. It used to call `generativelanguage.googleapis.com` with a single model and no retry, so a 404 on the model name or a 429 on the quota ended the attempt outright and returned the untailored master resume. OpenRouter takes a chain — `TAILOR_MODEL` then `TAILOR_FALLBACK_MODELS`, defaulting to `openai/gpt-5.6-luna`, `google/gemini-3.6-flash`, `minimax/minimax-m3` — and walks it itself when a member is missing, rate-limited or erroring. Both are overridable through repository *variables* of the same names, which `interactive.yml` passes through; an unset variable renders as an empty string, so the code falls back with `or`, never with `os.environ.get(name, default)`.
 
-Chain members are picked for instruction-following per token, not headline price: the evidence check rejects a draft that loosens the rules, and a rejected draft costs a whole retry, so the flash-class tier below these saves nothing. Every member must accept `response_format` and `reasoning_effort`, because one request body is sent to whichever of them serves the call. Routing sets `data_collection: deny` — the prompt carries the master resume, contact details included — and `require_parameters: true`, so no endpoint that would ignore the schema and answer in prose can serve the request. Scoring is a separate, cheaper model still on the Gemini API and configured in `digest.py` (see "How it ranks" above).
+Chain members are picked for instruction-following per token, not headline price: the evidence check rejects a draft that loosens the rules, and a rejected draft costs a whole retry, so the flash-class tier below these saves nothing. Every member must accept `response_format` and `reasoning_effort`, because one request body is sent to whichever of them serves the call. Routing sets `data_collection: deny` — the prompt carries the master resume, contact details included — and `require_parameters: true`, so no endpoint that would ignore the schema and answer in prose can serve the request. Scoring uses the same transport and key with the same no-collection policy, configured separately in `digest.py` (see "How it ranks" above).
+
+`require_parameters: true` cuts both ways, and **no request sends `temperature`**. The flag drops any provider missing a parameter the request names, and Google serves Gemini Flash on Vertex endpoints that take `seed` but not `temperature` — which are the discounted ones. Naming `temperature` quietly routed around them to buy a knob `seed: 7` already provides here. The shared transport lives in `openrouter.py`, used by both scoring and tailoring.
 
 One click always reports an outcome. `resume_tailor` holds a 210-second budget spanning both evidence attempts and every HTTP retry, because a workflow killed at its 10-minute timeout posts nothing at all and leaves "Preparing your tailored CV privately…" on screen forever.
 
@@ -132,7 +144,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 
 - `digest.py` — the whole engine. Config block and company list at the top, the five ATS fetchers, filters, and ranking in the middle, delivery and the candidates/`--discover` mode at the bottom. One file, no framework.
 - `resume.md` — the master resume the on-demand tailoring quotes from. Update it whenever the Cowork master changes.
-- `profile.json` — your job-fit profile (blurb, skill keywords, target titles) sent to Gemini for scoring and used by the keyword fallback. Refreshed by hand or via `PROFILE_REFRESH_PROMPT.md`.
+- `profile.json` — your job-fit profile (blurb, skill keywords, target titles) sent to the ranking model and used by the keyword fallback. Refreshed by hand or via `PROFILE_REFRESH_PROMPT.md`.
 - `requirements.txt` — `requests` for every HTTP call, `pypdf` and `reportlab` for building the tailored PDF.
 - `discord_delivery.py` — signs and POSTs the daily batch of job cards to the Worker's `/internal/digest` route.
 - `job_archive.py` — builds job snapshots (including the JD SHA-256), the Discord card/button payload, and writes `jobs/<date>.json`.
@@ -143,7 +155,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `test_interactive.py` — offline contract tests for the snapshot/tailoring/Worker-callback pipeline.
 - `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, and `jobs/` back.
 - `jobs/` — one `<date>.json` per digest date: full evidence (title, company, location, URL, score, tier, link status, complete JD text and its SHA-256) for every delivered job. Committed back by the workflow; same-day re-runs append, never rewrite.
-- `seen.json` — job ids already delivered. Created on first run; only the workflow commits it.
+- `seen.json` — postings already delivered, keyed by `job_identity()`, plus one `jd:<sha256>` key per delivered description. Created on first run; only the workflow commits it. Entries age out after `STATE_TTL_DAYS`, which is also how the pre-2026-08-21 `jsearch_*` id keys retire on their own.
 - `stats.json` — the per-run trend (fetched/matched/new/avg-score) the drift warning reads.
 
 **On-demand tailoring (Cloudflare Worker)**
@@ -188,7 +200,7 @@ Two halves: the repository that runs the daily job, and the Cloudflare Worker th
    - `DISCORD_WEBHOOK_URL` — the fallback delivery path, used whenever the Worker can't be reached. Not optional: if interactive delivery fails and this isn't set, the run logs FATAL and exits non-zero instead of silently dropping the digest.
    - `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — the Worker's address and the shared HMAC secret. Without these the run always falls back to the plain webhook and never posts a Tailor CV button.
    - `RAPIDAPI_KEY` — optional. Without it the digest runs against the five ATS APIs only, no JSearch.
-   - `GEMINI_API_KEY` — optional. Without it ranking falls back to deterministic keyword scoring.
+   - `OPENROUTER_API_KEY` — used by both ranking and tailoring. Without it, ranking falls back to deterministic keyword scoring and the Tailor CV button returns the untouched master resume.
    - `OPENROUTER_API_KEY` — optional, and read only by `.github/workflows/interactive.yml`. Without it a Tailor CV click returns your untailored master resume with a note saying why.
    `.github/workflows/interactive.yml` reuses `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — same secrets, same names. It also reads two optional repository *variables*, `TAILOR_MODEL` and `TAILOR_FALLBACK_MODELS`, which let you retune the tailoring chain without a commit.
 3. Actions tab, run the `job-digest` workflow manually once. Read the log.

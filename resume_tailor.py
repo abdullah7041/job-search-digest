@@ -10,16 +10,12 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import re
 import time
 
-import requests
-
+from openrouter import chat_json, configured_chain
 from resume_source import unsupported_terms, validate_tailored_resume, vocabulary
 
-
-ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
 # Tailoring is long-form generation under hard truth constraints, and the
 # evidence check rejects a draft that loosens them — which costs a retry. So the
@@ -28,14 +24,16 @@ ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 # One request body is sent to whichever member serves the call, so every member
 # has to accept response_format and reasoning_effort.
 DEFAULT_MODEL = "openai/gpt-5.6-luna"
-DEFAULT_FALLBACKS = "google/gemini-3.6-flash,minimax/minimax-m3"
+DEFAULT_FALLBACKS = "google/gemini-3.7-flash,minimax/minimax-m3"
 
-# A GitHub `${{ vars.X }}` that is unset renders as an empty string, so the
-# two-argument form of os.environ.get would return "" instead of the default.
-TAILOR_MODEL = os.environ.get("TAILOR_MODEL") or DEFAULT_MODEL
-TAILOR_FALLBACKS = [name.strip() for name
-                    in (os.environ.get("TAILOR_FALLBACK_MODELS") or DEFAULT_FALLBACKS).split(",")
-                    if name.strip()]
+TAILOR_MODEL, TAILOR_FALLBACKS = configured_chain(
+    "TAILOR_MODEL", "TAILOR_FALLBACK_MODELS", DEFAULT_MODEL, DEFAULT_FALLBACKS)
+
+# The prompt carries the master resume, name and contact details included, so
+# routing must skip providers that retain prompts. It must also skip endpoints
+# that would ignore the schema and answer in prose, which require_parameters
+# enforces.
+TAILOR_PROVIDER = {"data_collection": "deny", "require_parameters": True}
 
 JD_CHARS = 6000
 MAX_ATTEMPTS = 2
@@ -46,11 +44,6 @@ MAX_ATTEMPTS = 2
 # budget spans every attempt and every retry, so the runner always gets to
 # answer — even when the answer is that tailoring ran out of time.
 BUDGET_SECONDS = 210
-CALL_TIMEOUT = 60
-MIN_CALL_SECONDS = 15
-HTTP_ATTEMPTS = 3
-BACKOFF_SECONDS = (2, 6)
-RETRY_STATUSES = {408, 429, 500, 502, 503, 504}
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -137,107 +130,11 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
     return prompt
 
 
-def _retry_after_seconds(response) -> float | None:
-    """The wait the server asked for, when it named one we can act on."""
-    try:
-        return max(0.0, float(response.headers.get("Retry-After", "")))
-    except (TypeError, ValueError):
-        return None
-
-
-def _plan_from_payload(payload: dict) -> dict:
-    """Read the tailoring plan out of one OpenRouter response body.
-
-    Every failure here names the model, because that string is what reaches the
-    candidate in Discord and it is the only clue they get about which member of
-    the chain answered.
-    """
-    error = payload.get("error")
-    if error:
-        # OpenRouter reports some upstream failures as a 200 with an error body.
-        raise ValueError(f"OpenRouter error ({TAILOR_MODEL}): {str(error)[:200]}")
-    choices = payload.get("choices") or []
-    if not choices:
-        raise ValueError(f"OpenRouter returned no choices ({TAILOR_MODEL}).")
-    content = (choices[0].get("message") or {}).get("content") or ""
-    if not content.strip():
-        reason = choices[0].get("finish_reason") or "unknown"
-        raise ValueError(
-            f"OpenRouter returned an empty answer ({TAILOR_MODEL}, finish_reason={reason})."
-        )
-    return json.loads(content)
-
-
 def call_model(prompt: str, api_key: str, deadline: float) -> dict:
-    """One tailoring plan from the model chain, or raise for the caller.
-
-    OpenRouter walks ``models`` itself when a member is missing, rate-limited or
-    erroring, which is exactly what the old single-model call could not do: a
-    404 on the model name or a 429 on the quota ended the whole attempt. The
-    loop below covers the remaining case, where the entire chain is briefly
-    unavailable, and never runs past the caller's deadline.
-    """
-    body = {
-        "model": TAILOR_MODEL,
-        "models": [TAILOR_MODEL, *TAILOR_FALLBACKS],
-        "messages": [{"role": "user", "content": prompt}],
-        # Not every member of the chain accepts temperature, so seed carries the
-        # determinism this stage wants and temperature is a best-effort hint.
-        "temperature": 0.25,
-        "seed": 7,
-        "reasoning": {"effort": "low"},
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "tailoring_plan",
-                "strict": True,
-                "schema": RESPONSE_SCHEMA,
-            },
-        },
-        # The prompt carries the master resume, name and contact details
-        # included, so routing must skip providers that retain prompts. It must
-        # also skip endpoints that would ignore the schema and answer in prose,
-        # which is what require_parameters enforces.
-        "provider": {"data_collection": "deny", "require_parameters": True},
-    }
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/abdullah7041/job-search-digest",
-        "X-Title": "job-search-digest",
-    }
-
-    last_error = ""
-    for attempt in range(HTTP_ATTEMPTS):
-        remaining = deadline - time.monotonic()
-        if remaining < MIN_CALL_SECONDS:
-            raise ValueError(
-                "Tailoring ran out of its time budget before the model answered. "
-                f"Last problem: {last_error or 'none'}"
-            )
-        retry_after = None
-        try:
-            response = requests.post(ENDPOINT, json=body, headers=headers,
-                                     timeout=min(CALL_TIMEOUT, remaining))
-        except requests.RequestException as error:
-            last_error = f"OpenRouter request failed ({TAILOR_MODEL}): {error}"
-        else:
-            if response.status_code == 200:
-                return _plan_from_payload(response.json())
-            last_error = (f"OpenRouter HTTP {response.status_code} ({TAILOR_MODEL}): "
-                          f"{response.text[:200]}")
-            if response.status_code not in RETRY_STATUSES:
-                raise ValueError(last_error)
-            retry_after = _retry_after_seconds(response)
-
-        if attempt == HTTP_ATTEMPTS - 1:
-            break
-        wait = BACKOFF_SECONDS[attempt] if retry_after is None else retry_after
-        if wait > deadline - time.monotonic() - MIN_CALL_SECONDS:
-            # Sleeping this long would leave no room to use the result.
-            break
-        time.sleep(wait)
-    raise ValueError(last_error)
+    """One tailoring plan from the model chain, or raise for the caller."""
+    return chat_json(prompt, RESPONSE_SCHEMA, "tailoring_plan", api_key,
+                     TAILOR_MODEL, TAILOR_FALLBACKS, deadline,
+                     provider=TAILOR_PROVIDER)
 
 
 def apply_plan(document: dict, plan: dict) -> dict:
