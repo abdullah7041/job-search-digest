@@ -314,5 +314,20 @@
 "strong": 8,
 "tailor_failed": 0,
 "tailored": 0
+},
+{
+"avg_score": 59.2,
+"date": "2026-08-22",
+"delivered": 5,
+"fetched": 197,
+"link_closed": 0,
+"link_unknown": 2,
+"matched": 26,
+"new": 5,
+"relisted": 0,
+"review": 3,
+"strong": 2,
+"tailor_failed": 0,
+"tailored": 0
 }
 ]

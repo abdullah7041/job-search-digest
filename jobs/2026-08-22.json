@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-22",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_bkhaN2pIRjh6c0F3MVlWbkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTakZLUjFsdFRucENiR2R6ZUZCNFlXVXhkREpUZGs5TldVc3lVMU00Y1VJMlowSXRNM1poTFVsMWNpMHRiVEpXVUY5eGQzbDRYMUk1V1dKVFpYUTJUSFUyYjE5MmJEY3hVUzF2YTFVMVlrSmFSRXQ1UzBGclJYcFBZa0YyVHpOUFRITjZNRU4xVkMxV1ZIWmhTMWRZWnpjd1dGODNZVXRUV2xweE1ERnVNM05YZFVOQmNURVNGM05UVTBwaGNIcGZRWEZIYUd0UVNWQXdXVk5aTFVGdkdpSkJSSE55T1daVU1XOXlMVWxVTkdWMmNuWkxVVVYzUlhoRE5uWk1hWEJRWVVoQg",
+      "captured_at": "2026-08-22T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_bkhaN2pIRjh6c0F3MVlWbkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTakZLUjFsdFRucENiR2R6ZUZCNFlXVXhkREpUZGs5TldVc3lVMU00Y1VJMlowSXRNM1poTFVsMWNpMHRiVEpXVUY5eGQzbDRYMUk1V1dKVFpYUTJUSFUyYjE5MmJEY3hVUzF2YTFVMVlrSmFSRXQ1UzBGclJYcFBZa0YyVHpOUFRITjZNRU4xVkMxV1ZIWmhTMWRZWnpjd1dGODNZVXRUV2xweE1ERnVNM05YZFVOQmNURVNGM05UVTBwaGNIcGZRWEZIYUd0UVNWQXdXVk5aTFVGdkdpSkJSSE55T1daVU1XOXlMVWxVTkdWMmNuWkxVVVYzUlhoRE5uWk1hWEJRWVVoQg",
+      "title": "Software Engineer",
+      "company": "netzero",
+      "location": "الخبر, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-at-netzero-4456179284",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 93,
+      "why": "High-ownership full-stack role perfectly matching candidate's React, TypeScript, Postgres, and end-to-end shipping experience.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Company Description:\n\nNetzero is a Saudi climate-tech company based in Khobar. We build the technology behind large-scale tree planting and ecosystem restoration.\n\nRestoration at scale runs on software. Field teams need tools that hold up in the desert. Operations and customers need products that make complicated projects simple to run and easy to understand. That is what we are building, and we want someone to build it with us.\n\nWho we are looking for:\n\nWe hire for agency above everything else.\n\nThe person we want does not wait to be assigned work. They use the product, notice what is broken, fix it, then tell us what else they found. They read about something new on Saturday and have a prototype by Tuesday.\n\nWhen they learn something worth knowing, the whole team knows it by Friday.\n\nTitles matter less to us than impact. Junior or senior counts for less than how fast you move and how deeply you think. Problems here belong to whoever sees them, not to a team or a ticket.\n\nWhat you will work on:\n\n• Own features end to end: scope, design, build, ship, then keep improving them in production.\n\n• Build customer-facing products that make environmental impact clear and engaging.\n\n• Build and maintain backend services: APIs, auth, payments, notifications, background jobs, internal workflows.\n\n• Build mobile experiences that work for people in real field conditions.\n\n• Turn requests from non-technical stakeholders into product and technical decisions you can defend.\n\n• Fix production issues at the root cause, not the symptom.\n\n• Improve tooling, tests, observability, and CI/CD so the whole team ships faster.\n\nOur stack:\n\nFrontend: TypeScript, React, Vite, TanStack Router/Start, TanStack Query, Tailwind CSS, Zustand\n\nBackend: TypeScript, Node.js, Bun, Express, PostgreSQL, Drizzle ORM\n\nMobile: TypeScript, React Native, Expo Router, TanStack Query, Zustand, Unistyles\n\nWhat we want to see:\n\n• Strong fundamentals and a track record of shipping.\n\n• Frontend and backend experience. Mobile is a strong advantage.\n\n• Something significant you built, rebuilt, or rescued, and can walk us through in detail.\n\n• Improvements you shipped that nobody asked for.\n\n• Comfort with problems that are not fully defined yet.\n\n• Strong architectural opinions, backed by judgment and real evidence.\n\n• You use AI tools to move faster and try more approaches without dropping the quality bar. Move fast, do not ship slop.\n\nWhy netzero:\n\n• Real environmental impact. The software you write changes how restoration projects are run and experienced.\n\n• A small, senior team. High ownership, little bureaucracy, fast execution.\n\n• Direct access to decision-makers. Your technical and product input actually lands.\n\nLocation and work style:\n\nKhobar, Eastern Province. Hybrid: mostly together at the Khobar office, with a coup. This is not a fully remote role.\n\nAbove all: what you can build, and how you think.",
+        "sha256": "32a1d01b57a42782016ec6dc2491c3313b1669d49391c3d9e98849495b8d6794",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_THp1OFBybkdNQ0RZaDRSLUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVkpmYlhGeGFsRnlYMlJZWlhweFdHTlhjbkl4TUZsTmMyWlpaVUZFVGtOSVJUSmFNRWM0Vm5WdlFubElTbFpWZG5aR1QzUTVhRmw2WDBKelZYZElTR0ozWldjMGIzTldZbHB0ZWpaVWFHWmhPVGhtU1dweVpVVjVXa3d4YURobGQzZ3hialpvYlVWV1ZXOWhXSFp2TlhSdmJYbzJjalpEZWxGa1NVWkxhVk56V21sVE4za1NGM2REVTBwaGNrUTFTVzk2VDJ0UVNWQndXVzVsZVVGM0dpSkJSSE55T1daVFlrcDBSMUJZY1ROU1YwOW9VM1I2UW5wWmIxZG1kSGM0UldwMw",
+      "captured_at": "2026-08-22T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_THp1OFBybkdNQ0RZaDRSLUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVkpmYlhGeGFsRnlYMlJZWlhweFdHTlhjbkl4TUZsTmMyWlpaVUZFVGtOSVJUSmFNRWM0Vm5WdlFubElTbFpWZG5aR1QzUTVhRmw2WDBKelZYZElTR0ozWldjMGIzTldZbHB0ZWpaVWFHWmhPVGhtU1dweVpVVjVXa3d4YURobGQzZ3hialpvYlVWV1ZXOWhXSFp2TlhSdmJYbzJjalpEZWxGa1NVWkxhVk56V21sVE4za1NGM2REVTBwaGNrUTFTVzk2VDJ0UVNWQndXVzVsZVVGM0dpSkJSSE55T1daVFlrcDBSMUJZY1ROU1YwOW9VM1I2UW5wWmIxZG1kSGM0UldwMw",
+      "title": "GenAI​/LLM Data Scientist & Engineer — Consultant",
+      "company": "Infosys Limited",
+      "location": "الدمام, Saudi Arabia",
+      "url": "https://www.learn4good.com/jobs/dammam/saudiarabia/info_technology/5375860547/e/",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 83,
+      "why": "Incomplete excerpt; strong title and functional match for applied GenAI, LLMs, and RAG architectures.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "incomplete",
+        "text": "Infosys Limited in Dammam, Saudi Arabia is seeking a Data Engineering/Science consultant focused on GenAI and LLMs. The role emphasizes building GenAI-powered models, prompt frameworks, and AI logic across data sources.\n\nCollaboration with data engineers is essential to enable semantic search and contextual retrieval. The ideal candidate has 6+ years in Data Science / Applied AI, strong GenAI/NLP expertise, and experience with vector databases and RAG-based architectures.\n#J-18808-Ljbffr",
+        "sha256": "868875c63d8df0013bf4c4a2551c0e4721b2e323ec04dbed6e1e537895627ea0",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_OVVMWHEtcEpZOXFEUmg4WUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTV2xSY3pCTFpYbHJYemRuZUVRemRtaDJVRkZ5ZFY4dFJtUnpVMDFFV1RBeVowMVZjbU16VXpoSFpraDZhemQ2U1VGNE0yMWxRemxKUW05bVFWSnJTbVZ2V0dacU5qUXpTVzkyZFhoWVYzWlRPRWh1UTFod1ZsTmFlVkZmYWtKdlZtUnVVRzU0WW5CU1RtOXVjM1EzTjJVeFRWTkthRkpTYVhoWWRYRndTVWMyVVMxMlJGOFNGM2REVTBwaGNrUTFTVzk2VDJ0UVNWQndXVzVsZVVGM0dpSkJSSE55T1daVVYwRmlkSFJoTnpaRWVIZGZaa0pEZDAxZlRtSnVWMmxuUkdGUg",
+      "captured_at": "2026-08-22T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_OVVMWHEtcEpZOXFEUmg4WUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTV2xSY3pCTFpYbHJYemRuZUVRemRtaDJVRkZ5ZFY4dFJtUnpVMDFFV1RBeVowMVZjbU16VXpoSFpraDZhemQ2U1VGNE0yMWxRemxKUW05bVFWSnJTbVZ2V0dacU5qUXpTVzkyZFhoWVYzWlRPRWh1UTFod1ZsTmFlVkZmYWtKdlZtUnVVRzU0WW5CU1RtOXVjM1EzTjJVeFRWTkthRkpTYVhoWWRYRndTVWMyVVMxMlJGOFNGM2REVTBwaGNrUTFTVzk2VDJ0UVNWQndXVzVsZVVGM0dpSkJSSE55T1daVVYwRmlkSFJoTnpaRWVIZGZaa0pEZDAxZlRtSnVWMmxuUkdGUg",
+      "title": "AI-ML Support Analyst",
+      "company": "KAUST (King Abdullah University of Science and Technology)",
+      "location": "مكة, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/ai-ml-support-analyst--makkah-region--edf80cc9f6fb086dc4b8cb8ca9f05f498",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Focuses heavily on HPC infrastructure, SLURM, and helpdesk support rather than applied LLM product engineering.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "The AI/ML Support Analyst will be a key member of the KAUST Supercomputing Lab’s (KSL) AI/ML Support Team, supporting the delivery of AI research services to KAUST's diverse research community. Working under the AI/ML Support Team Lead, this role focuses on developing and optimizing Generative AI models, maintaining computational benchmarks, and providing expert consultation to researchers across multiple scientific domains, including Climate & Weather, Bioinformatics, CFD, NLP, and multimodal AI. The analyst will help bridge the gap between cutting-edge computational infrastructure and the diverse needs of the research community, contributing to governance, technical enablement, and community development initiatives.\nResponsibilities\nGenerative AI Development and Consulting\n• Providing timely and useful user support via telephone, walk-in, email, and ticketing system submissions for all types of inquiries.\n• Maintain high customer service standards in dealing with and responding to user issues and questions.\n• Develop and consult on large-scale Generative AI model training on domain-specific datasets across research areas including Climate & Weather, Bioinformatics, Computational Fluid Dynamics (CFD), NLP, and multimodal AI.\n• Support researchers in fine-tuning foundation models on domain-specific datasets using advanced optimization techniques.\n• Develop data engineering pipelines to support AI research workflows.\n• Design and implement efficient AI workflows optimized for KSL's high-performance computing environment.\n• Build and maintain secure, OCI-compliant, HPC-ready container images using Singularity, Podman, or similar.\n• Develop complex workflows using SLURM and Kubernetes for distributed training and inference.\nGovernance and Compliance Support\n• Conduct computational readiness reviews for AI research projects.\n• Assist in AI model and artifact control reviews to ensure compliance with institutional standards.\n• Support researchers in designing secure, compliant, and performant workflows.\n• Provide expert consultation to researchers on efficient utilization of AI resources and best practices.\n• Support the implementation of usage monitoring and reporting systems.\n• Ensure user workflows comply with KSL security policies and best practices.\nBenchmarking and Quality Assurance\n• Develop and maintain computational benchmarks for AI workloads on KSL systems.\n• Create and maintain regression testing workloads to stress test system functionality.\n• Support performance debugging and optimization activities for research workloads.\n• Contribute to technology evaluation and benchmarking exercises for future infrastructure investments.\n• Perform benchmarking of new hardware and software configurations.\nTraining and Documentation\n• Create comprehensive training materials for end-users on KSL’s HPC systems hosting AI workloads and tools.\n• Develop and maintain high-quality technical documentation.\n• Support the delivery of workshops on distributed training, fine-tuning, and inference optimization.\n• Contribute to knowledge transfer initiatives within the KAUST research community.\n• Provide one-on-one consultation to researchers on efficient use of computational resources.\nQualifications\n• Bachelor's or master’s degree in computer science, Data Science, Computational Science, Artificial Intelligence, or a related field.\n• Strong academic foundation in machine learning, deep learning, and AI fundamentals.\nRequired Skills\n• Technical Skills - Essential\n• Programming: Proficiency in Python; experience with R, Julia, Rust or C/C++ is a plus.\n• AI/ML Frameworks: Strong expertise in PyTorch and/or TensorFlow, JAX or similar.\n• Generative AI: Experience with foundation model development and fine-tuning techniques.\n• HPC Systems: Experience developing complex workflows using SLURM and/or Kubernetes.\n• Containerization: Experience building efficient HPC-ready container images using Singularity, Podman or similar.\n• Data Engineering: Experience with data engineering techniques for developing AI pipelines.\n• Linux: Strong Linux/Unix skills and bash scripting capabilities.\nTechnical Skills - Desired\n• Experience with Cray EX supercomputers with NVIDIA GPUs.\n• Experience with Kubeflow pipelines and Kubeflow Training Operator.\n• Experience with distributed inference frameworks (NVIDIA Triton, NIM, SGLang, llama.cpp, llm-d, LLMcache).\n• Knowledge of security vulnerability inspection in software libraries, AI models, datasets, and pipelines.\n• Experience with software supply chain tools (JFrog, Nexus, Trivy, Cloudsmith).\n• Experience with data management on S3-compatible object storage at scale.\n• Experience with high-performance distributed filesystems (Lustre, Weka IO, VAST Data).\n• Proficiency with NVIDIA Nsight and Compute for profiling AI workloads on GPUs.\n• Experience with software build tools (autoconf, CMake, scons, SPACK, EasyBuild, Conda, Pip).\nSoft Skills\n• Strong problem-solving and analytical abilities.\n• Excellent written and verbal communication skills in English.\n• Customer service mindset with patience for supporting diverse skill levels.\n• Ability to work independently and as part of a collaborative team.\n• Strong documentation and knowledge-sharing practices.\n• Cultural sensitivity for working in an international environment.",
+        "sha256": "6f6f3e91aff2c0a74123d016d9a42958ae241113c4c8ce87c9e59dd3a345a52d",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_QmQ5LUxDSWVQeTRpWGZPd0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM0JoYzFWVFl6YzVPV2R3Tm5kaVRtd3dNR0pNWkdONGVHbEZhMEZJWTBabWFUUnlVREZRTjFKblREZFBXVTFyZDBOcVNYSjJTMVpxTkZndFgyWkZUM2RSYnpjeWEwOWxSMFZvYm5oVFRqbFVObEYyWTE5dFFVaGZNMmhhWVV0SWNsVmhaMmhUWmxVM2QzRm5SVlZWUW05M1ZYUTFUM1p1TVd4U1VrNHRMVlJoVkhKYWRuY1NGM2REVTBwaGNrUTFTVzk2VDJ0UVNWQndXVzVsZVVGM0dpSkJSSE55T1daVFJWOTFhVzk1YlZkVlNHeEdVVTQwWlRWQ2FXRlNNSFJMZVRoUg",
+      "captured_at": "2026-08-22T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_QmQ5LUxDSWVQeTRpWGZPd0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM0JoYzFWVFl6YzVPV2R3Tm5kaVRtd3dNR0pNWkdONGVHbEZhMEZJWTBabWFUUnlVREZRTjFKblREZFBXVTFyZDBOcVNYSjJTMVpxTkZndFgyWkZUM2RSYnpjeWEwOWxSMFZvYm5oVFRqbFVObEYyWTE5dFFVaGZNMmhhWVV0SWNsVmhaMmhUWmxVM2QzRm5SVlZWUW05M1ZYUTFUM1p1TVd4U1VrNHRMVlJoVkhKYWRuY1NGM2REVTBwaGNrUTFTVzk2VDJ0UVNWQndXVzVsZVVGM0dpSkJSSE55T1daVFJWOTFhVzk1YlZkVlNHeEdVVTQwWlRWQ2FXRlNNSFJMZVRoUg",
+      "title": "Senior quantum ml engineer - real-world solutions delivery",
+      "company": "Pasqal",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.thebigjobsite.com/details/381D1F4386D42998BEC6150E157C7815/senior-quantum-ml-engineer---real-world-solutions-delivery",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 50,
+      "why": "Incomplete excerpt; requires specialized quantum computing hardware and QPU algorithm expertise.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "Pasqal is seeking a Senior Machine Learning Engineer to join the Quantum Applications department. You will adapt and deploy our quantum ML algorithms, turning research into practical, client-ready solutions that run on Pasqal QPUs and emulation platforms. You will build end-to-end ML pipelines, collaborate with internal R&D and hardware teams, and work with enterprise partners to translate complex data into actionable results while delivering maintainable code and clear documentation. #J-18808-Ljbffr",
+        "sha256": "8bd720094b73e2a61c52f493243bd17a5c1bbeeac90759304d9893148a913f83",
+        "completeness_failures": [
+          "requirements_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_cWJSTGtaY1duYldOQmxGMUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMGN4UlhKSWJsb3RWRXBKY3pONVNGOHdMVWhHVDIxQ2FVdE5ibXd4Y1cxRlQzcElhbWsyYVZoVlRtczFNRGh6WVZBMmRVOWliVk5TWDFSMlNsTnJNVnBFU0RkVFYweEhXRzh0WlVGWVMzSnVXVFJCVm0xTU56VTNVbkJ5YTJSM01GWmFibTFWVlZwUlYyc3paVzU2YnpNeWJWcHliSGhJVFhScFdEWkRiRU5UU2t4U1Qyc1NGM1JwVTBwaGMxTk9SamhQVURkT1dWQmZUVXgyT0ZGTkdpSkJSSE55T1daU2VXOHdlbWQxVTFoMlUwUmhVV0pUWTNjNGVtRXhXbnBmZFVKUg",
+      "captured_at": "2026-08-22T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_cWJSTGtaY1duYldOQmxGMUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMGN4UlhKSWJsb3RWRXBKY3pONVNGOHdMVWhHVDIxQ2FVdE5ibXd4Y1cxRlQzcElhbWsyYVZoVlRtczFNRGh6WVZBMmRVOWliVk5TWDFSMlNsTnJNVnBFU0RkVFYweEhXRzh0WlVGWVMzSnVXVFJCVm0xTU56VTNVbkJ5YTJSM01GWmFibTFWVlZwUlYyc3paVzU2YnpNeWJWcHliSGhJVFhScFdEWkRiRU5UU2t4U1Qyc1NGM1JwVTBwaGMxTk9SamhQVURkT1dWQmZUVXgyT0ZGTkdpSkJSSE55T1daU2VXOHdlbWQxVTFoMlUwUmhVV0pUWTNjNGVtRXhXbnBmZFVKUg",
+      "title": "Splunk Integration & Data Engineers",
+      "company": "Visible Stars, Inc.",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.jooble.org/jdp/-3562457133977110745",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 15,
+      "why": "Wrong function; requires specialized Splunk administration and enterprise SIEM/security log integrations.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "captured",
+        "text": "Job Description\n• Expertise: Splunk Enterprise Certified Admin, 3–5 years in log onboarding and integration.\n• Responsibilities:\n• Manage data source onboarding, parsing, and CIM alignment.\n• Review and optimize data models and field extractions.\n• Ensure integrations with security technologies (EDR, IAM, WAF, Firewalls, DLP, etc.).\n• Manage troubleshooting of ingestion and parsing issues.\n\nQualifications\n• Proven experience in managing enterprise Splunk environments at scale (preferably in banking/financial institutions).\n• Certified Splunk engineers across architecture, administration, and use case development.\n• Ability to provide at least 5 full-time technical resources.\n• 24x7 support capabilities with SLA-driven response times.\n• Familiarity with regulatory and compliance requirements in the financial sector (SAMA CSF, NCA, PCI DSS, etc.).\n#J-18808-Ljbffr",
+        "sha256": "3ff7b19a61bc1a5493d3cee4a9660bbce76fd1a89de9599573cfcbe43018d0ee",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
