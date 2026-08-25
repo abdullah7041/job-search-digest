@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-25",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_LTFiUE1iQXpNTlRaTnBXSEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVWhaVnpOdk1HVkxWRGRrUmxVMlJ6SmtYMU5TWTNJdFUzUXdiV1J3UjNkRlFqQnZjV1IxYVZKblVESkdVR001YnpSV2EwdGhUbVJrV2pKUmNqaE1OMmRGU1Vsa2VYQldPVWd5WkRSdlZXSjNTM1Z2TURSRFUwTnRORnBIUjBwNmJUZG1Ralp4WkRVM1RrcGxVWE4wVTNFNVMyUlNSa1JQU1VabVJEaGFOMjlQZDFoWU9WOFNGM1JvY1U1aGN6WktSMk42VGpGelVWQnhUV1Z3TWtGVkdpSkJSSE55T1daU1RHaEdaSGRKU3pRemVUUkhUWEZmU21SR0xWcHNaVU5pTkhKbg",
+      "captured_at": "2026-08-25T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_LTFiUE1iQXpNTlRaTnBXSEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVWhaVnpOdk1HVkxWRGRrUmxVMlJ6SmtYMU5TWTNJdFUzUXdiV1J3UjNkRlFqQnZjV1IxYVZKblVESkdVR001YnpSV2EwdGhUbVJrV2pKUmNqaE1OMmRGU1Vsa2VYQldPVWd5WkRSdlZXSjNTM1Z2TURSRFUwTnRORnBIUjBwNmJUZG1Ralp4WkRVM1RrcGxVWE4wVTNFNVMyUlNSa1JQU1VabVJEaGFOMjlQZDFoWU9WOFNGM1JvY1U1aGN6WktSMk42VGpGelVWQnhUV1Z3TWtGVkdpSkJSSE55T1daU1RHaEdaSGRKU3pRemVUUkhUWEZmU21SR0xWcHNaVU5pTkhKbg",
+      "title": "Senior Data Engineer: Web Scraping & Automation (Remote)",
+      "company": "Jobgether",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.jobrapido.com/jobpreview/6620785113628147712",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 83,
+      "why": "Incomplete posting; strong fit for Python scraping automation in Saudi Arabia.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "Jobgether is seeking a Senior Data Engineer - Web Scraping, based remotely with Saudi Arabia as the operating base. You will design and maintain advanced scrapers, transform diverse sources into reliable datasets, and build scalable data products to support analytical and investment decisions.\nExpect hands-on Python development, Pandas-driven data cleaning, and orchestration with Airflow. You’ll collaborate with analysts, engineers, and cross-functional teams while driving automation and\n#J-18808-Ljbffr",
+        "sha256": "dcebfa39ee8a7ccd3f2c0d9e14e3976faa598f76571acdfd5e5bcac5044d4cdd",
+        "completeness_failures": [
+          "requirements_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_UVdQOG9ScHQ4d19GY3R3QUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURFpYUVVaRGFHaFZXVFpNTTJoNFdEbFVRbkpWYjBWNlJFVlJkV3BpZW1NelEwVlBkM0JwVm1oVVUyNWtSSE5hVFROb2JYbENkMVJQTW05UmRHcHpUM3BvUnpBeWNIQXpRVU13VkMxWVQyZHlaMkp5YW1KSVJETkhlWGRHVDBKYU5ITm1hR3hTTmtsWWMzRmphbFI1UzNCbVJIcFJjM0pFWjAxVk1GTjJOMFpQU0haYU1Wb1NGM1JvY1U1aGN6WktSMk42VGpGelVWQnhUV1Z3TWtGVkdpSkJSSE55T1daU1UyMVpXVWc1UmpSUFRYWm1RbVZTYjJFeFlXRXdiM3BwVFdwUg",
+      "captured_at": "2026-08-25T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_UVdQOG9ScHQ4d19GY3R3QUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURFpYUVVaRGFHaFZXVFpNTTJoNFdEbFVRbkpWYjBWNlJFVlJkV3BpZW1NelEwVlBkM0JwVm1oVVUyNWtSSE5hVFROb2JYbENkMVJQTW05UmRHcHpUM3BvUnpBeWNIQXpRVU13VkMxWVQyZHlaMkp5YW1KSVJETkhlWGRHVDBKYU5ITm1hR3hTTmtsWWMzRmphbFI1UzNCbVJIcFJjM0pFWjAxVk1GTjJOMFpQU0haYU1Wb1NGM1JvY1U1aGN6WktSMk42VGpGelVWQnhUV1Z3TWtGVkdpSkJSSE55T1daU1UyMVpXVWc1UmpSUFRYWm1RbVZTYjJFeFlXRXdiM3BwVFdwUg",
+      "title": "Senior Data Engineering Consultant - AI & Cloud Analytics",
+      "company": "Ernst & Young AE",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/senior-data-engineering-consultant-ai-cloud-analytics--riyadh--e7a6f6b86008ee775244612ec7cdc8bdf",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 75,
+      "why": "Incomplete posting; matches data and AI engineering but consulting proposal work adds mismatch.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "incomplete",
+        "text": "Ernst & Young AE seeks an experienced data engineering consultant to translate business strategies into robust data platforms and pipelines across client engagements in the Saudi market.\n\nYou will architect end-to-end data solutions, design modern architectures, and collaborate with stakeholders to enable analytics, BI, and AI use cases. The role includes proposal shaping and mentoring junior team members.",
+        "sha256": "1741e4640cf9be0b33897f960b1cd785986eeccf60d28463f64d3198ab92e8d5",
+        "completeness_failures": [
+          "too_short"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_dE9uNi1qWUEwSzRBcHVyV0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVTVhWlRoQmFsOU9lV3RFTVhRNFZHNVNjbVF5V1VzdFdVcEJSSE10YnpOV1FWcHNkamsyWmxvNGJXbFBjV2xUZUdoU1NrcGpabk41Y1dORFJIcHlXa2cwVlhSdFNHNDVhSFpuWDFKb00weGZNRFJHUVZsS1ZuTjVUVXBWWkU5TGVVNXFlVTVLVjNGdE5tcFVibTl0U1haWGMydE1URVp4WVZGRExVZFVhbGRrV2pNdGNGOFNGM05vY1U1aGRtbFpTRXhsUjNGMGMxQnhOV0pQYzBGM0dpSkJSSE55T1daVWFHSmliM1Y0WlhCeVdIQldVakJXWTA1UmRrUXlUREZLYjJSMw",
+      "captured_at": "2026-08-25T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_dE9uNi1qWUEwSzRBcHVyV0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVTVhWlRoQmFsOU9lV3RFTVhRNFZHNVNjbVF5V1VzdFdVcEJSSE10YnpOV1FWcHNkamsyWmxvNGJXbFBjV2xUZUdoU1NrcGpabk41Y1dORFJIcHlXa2cwVlhSdFNHNDVhSFpuWDFKb00weGZNRFJHUVZsS1ZuTjVUVXBWWkU5TGVVNXFlVTVLVjNGdE5tcFVibTl0U1haWGMydE1URVp4WVZGRExVZFVhbGRrV2pNdGNGOFNGM05vY1U1aGRtbFpTRXhsUjNGMGMxQnhOV0pQYzBGM0dpSkJSSE55T1daVWFHSmliM1Y0WlhCeVdIQldVakJXWTA1UmRrUXlUREZLYjJSMw",
+      "title": "Senior Mobile Engineer",
+      "company": "Zid | زد",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-mobile-engineer-at-zid-%D8%B2%D8%AF-4457889746?refId=IRhnyrodNzO%2F08ptCyS2mw%3D%3D&trackingId=taowzbT46tgUsDqGz%2BzAOw%3D%3D",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 60,
+      "why": "Incomplete posting; primary mobile frontend focus is adjacent to candidate's full-stack/AI core.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "incomplete",
+        "text": "📍 Location: Riyadh, Saudi Arabia | Type: Hybird\n\nBuild Mobile Experiences. Scale Impact. Power Commerce.\n\nAt Zid, we’re not just building software, we're building the infrastructure behind retail success in Saudi Arabia. Our mission is to empower merchants to start, grow, and scale through a unified, seamless commerce ecosystem.\n\nWe’re looking for a Senior Mobile Engineer, a product-minded engineer who thrives on building reliable mobile experiences, solving complex technical challenges, and turning product ideas into high-quality features that make a real impact.\n\nMobile will be your primary focus, with opportunities to contribute to web frontend development when product priorities require it. You’ll work closely with product, design, and engineering teams to build, ship, and continuously improve Zid’s mobile experiences.\n\nAI-assisted engineering is also a core part of this role. You’ll work with tools such as Claude Code, Codex, Cursor, or similar coding agents throughout the development lifecycle, while owning the technical decisions and the final result.\n\nWhat You’ll Do:\n\n1. Mobile Development & Product Engineering\n• Build and ship complex mobile features using React Native and Expo across iOS and Android.\n• Turn PRDs, designs, and acceptance criteria into scalable technical solutions and production-ready software.\n• Own mobile product quality from technical planning through release readiness.\n• Build fast, responsive, accessible, and RTL-ready experiences for both Arabic and English users.\n• Contribute to web frontend features using React and TypeScript when product priorities require it.\n\n2. Offline, Data & Performance\n• Design reliable mobile experiences that remain useful and predictable when connectivity is weak, interrupted, or unavailable.\n• Implement local data models, caching, migrations, synchronization, retries, and conflict handling using SQLite, Realm Database, or similar technologies.\n• Integrate REST APIs and manage asynchronous data and application state using tools such as Redux Toolkit, TanStack Query, or similar solutions.\n• Debug and optimize application performance across different devices, operating systems, and network conditions.\n\n3. Quality, Testing & Technical Ownership\n• Write and maintain unit, integration, and end-to-end tests using Jest, React Testing Library, Detox, or similar tools.\n• Own technical decisions around mobile architecture, quality, security, and release readiness.\n• Debug complex iOS, Android, network, and device-specific issues.\n• Support mobile CI/CD, app releases, monitoring, and store submission processes.\n• Identify technical debt and continuously improve the architecture and reliability of the mobile codebase.\n\n4. AI-Assisted Engineering & Innovation\n• Use AI coding agents such as Claude Code, Codex, Cursor, or similar tools as part of your everyday engineering workflow.\n• Give coding agents clear context, break work into meaningful steps, and direct them effectively across the codebase.\n• Use AI tools for implementation, testing, debugging, refactoring, maintenance, and technical documentation.\n• Stay current with modern mobile engineering and AI-assisted development practices.\n\n5. Collaboration & Technical Leadership\n• Collaborate closely with product, design, and engineering teams to shape scope, feasibility, risks, and technical options.\n• Lead technical discussions and explain complex engineering concepts clearly to technical and non-technical stakeholders.\n• Mentor less experienced engineers through pairing, code reviews, and written guidance.\n• Own high-impact initiatives, unblock teammates, surface risks early, and improve engineering workflows.\n\nWho We’re Looking For:\n\nExperience:\n• 3+ years of professional experience building mobile applications.\n• Strong production experience with React Native and Expo.\n• Proven ability to independently deliver complex mobile features from planning to production.\n\nSkills:\n• Strong JavaScript and TypeScript skills.\n• Strong understanding of mobile architecture, app lifecycle, navigation, performance, and platform constraints.\n• Experience with SQLite, Realm Database, or similar local data stores.\n• Experience with state management and server data tools such as Redux Toolkit, TanStack Query, or similar.\n• Experience integrating APIs and handling loading, error, empty, and offline states.\n• Experience writing and maintaining automated tests.\n• Experience debugging iOS and Android applications and supporting mobile releases.\n• Experience with mobile CI/CD.\n• Strong understanding of responsive layouts, accessibility, internationalization, and RTL interfaces.\n• Active experience using AI coding agents such as Claude Code, Codex, Cursor, or similar tools.\n\nNice to Have:\n• Professional experience building web frontends with React, TypeScript, Next.js, or similar frameworks.\n• Experience working across both mobile and web frontend codebases.\n• Experience with Swift, Kotlin, or native mobile modules.\n• Experience with mobile performance, accessibility, observability, or security testing.\n• Experience with background tasks, offline-first architecture, or data synchronization.\n• Experience with GraphQL or event-driven data flows.\n• Experience in e-commerce, point-of-sale, payments, inventory, or other commerce products.\n• Contributions to open-source projects or internal tools that improve engineering workflows.\n• Experience coaching engineers or leading technical initiatives.\n\nPersonal Attributes:\n• Strong ownership mindset with a focus on quality and delivery.\n• Product-minded with strong business acumen and problem-solving skills.\n• Collaborative, proactive, and comfortable working across teams.\n• Adaptable and comfortable moving between mobile and web frontend work when needed.\n• Clear communicator who can explain technical decisions and trade-offs effectively.\n• Curious and committed to continuous learning in mobile and AI-assisted engineering.\n• Comfortable working in a fast-paced, high-impact e",
+        "sha256": "5a313a3cd8987a3871e6d1ea60944c3f9bc2e110d6a9cc575447241b3690c560",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_VVlwekNpaTByM3R2d1hMd0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBUSFU0UVRWdFVVZEJkbFJ2YlZSYU0wTXlWRlpGUzNsUVV5MUtTa3BaZVRaR1MwOWlWVzB4Y3pFeU16ZG1WbVZ5ZWpJNFR6Uk5UbUpDVm5JMk9IQm9iVE5HUnpsV2VIVm9jekJIYTNJeE9UVlZhSEpoVlRZMlUzQkliM3BPWldGTlFXNUZSa1JuT0haVmJVODVkV2xCUWxCR1dHSjJWazU0TlZwMmFVbHpZek5SU25Od1pUY1NGM1JvY1U1aGN6WktSMk42VGpGelVWQnhUV1Z3TWtGVkdpSkJSSE55T1daU05rRmphME5QYXpCS2FtZHZUalJOV1VnMVJqbFdaRzFGYTFwMw",
+      "captured_at": "2026-08-25T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_VVlwekNpaTByM3R2d1hMd0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBUSFU0UVRWdFVVZEJkbFJ2YlZSYU0wTXlWRlpGUzNsUVV5MUtTa3BaZVRaR1MwOWlWVzB4Y3pFeU16ZG1WbVZ5ZWpJNFR6Uk5UbUpDVm5JMk9IQm9iVE5HUnpsV2VIVm9jekJIYTNJeE9UVlZhSEpoVlRZMlUzQkliM3BPWldGTlFXNUZSa1JuT0haVmJVODVkV2xCUWxCR1dHSjJWazU0TlZwMmFVbHpZek5SU25Od1pUY1NGM1JvY1U1aGN6WktSMk42VGpGelVWQnhUV1Z3TWtGVkdpSkJSSE55T1daU05rRmphME5QYXpCS2FtZHZUalJOV1VnMVJqbFdaRzFGYTFwMw",
+      "title": "Senior Data Science Specialist",
+      "company": "PayTech Group",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-data-science-specialist-at-paytech-group-4456234254",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Traditional predictive modeling and client consulting focus instead of AI/software engineering.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Job Title: Senior Data Science Specialist\n\nEmployment type: Contract (On-site)\n\nContract length: 6 - 12 months\n\nLocation: Riyadh, KSA\n\nPURPOSE OF THE PROJECT\n\nThe position will support and expand our portfolio of regional (GCC) and global clients by serving as a strategic partner and trusted advisor. The role is responsible for delivering high-quality analytical insights, guiding clients in leveraging data effectively, and influencing key business decisions.\n\nThe ideal candidate will bring strong expertise in predictive modelling, statistical analysis, and data interpretation, combined with solid business acumen. They will be proficient in transforming complex analytical results into clear, actionable recommendations while managing and strengthening long-term client relationships. Exceptional communication, stakeholder management, and consultative skills are essential.\n\nCore Responsibilities and Accountabilities:\n\n• Manage deliverable development and workstreams on projects across a range of industries and problem statements.\n• Contribute to and/or develop strategies and programs for regional and global clients by leveraging data science tools including Test & Learn.\n• Manage working relationship with client managers and function as a trusted and reliable partner.\n• Provide analytical and technical subject matter expertise and drive client success through Test & Learn adoption and competency.\n• Develop sound business recommendations and deliver effective client presentations.\n• Plan, organise, and structure own work and that of junior project delivery consultants to identify effective analysis structures to address client problems using Test & Learn, synthesize analyses into relevant findings, and create impactful storylines.\n• Contribute to the firm's intellectual capital and solution development.\n\nKnowledge and Experience:\n\n• 8-10 years' experience in predictive modelling and advanced data analysis, with the ability to design, implement, and validate analytical models to support business decision-making.\n• Strong proficiency in SQL and Python for data extraction, transformation, analysis, and automation; experience with SAS is a valuable advantage.\n• Proven ability to interpret complex analytical outputs, synthesize findings, and translate them into clear, actionable business recommendations.\n• Skilled in collaborating with cross-functional teams to understand business requirements, define analytical approaches, and ensure insights are aligned with client objectives.\n• The ability to present insights and drive data-driven conclusions to senior stakeholders, supporting strategic planning and operational improvement initiatives.\n\nMandatory Skills:\n\n• Bachelor's degree in Finance, Economics, Business Administration, Computer Science, Information Technology, or a related field (Master's preferred).\n• Previous experience within Banking, Digital Payment & Card solutions or the FinTech industry.\n• Regional experience, including working in a faced-paced matrix organisation.\n• Excellent communication skills in English (written, verbal, and presentation); Arabic preferred.\n\nPreferred Skills:\n\n• Good understanding of payment systems, digital platforms, system workflows, security basics, and industry technologies.\n• An understanding of regional regulations across financial services or payment networks.",
+        "sha256": "c89b6ad09355bcfc24cd2f4f43f72757fbc4883d8fb0b76f61ba5500d353721c",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_WjlxZERCWUVlRGJNSFEyckFBQUFBQT09OkVzc0JDb3dCUVVwcFZEUjBUSGh1WDBjeFdYTktPSFZKUkdST1VsRndVMUYzUW1oZmJWSmpXbkJPV2tVMVkyazVaMGxuT0RobE5rbFpSMU5vUVhJeFZsZzJNMWRDU1c1SlMzbzJTbE5TYUVkbFZIWjVYM2RpZEY5VVVsOUpTRVJrY3pObVZFaG1VQzFGVjNCVVozWktla2xaUlV0SFRrUlhkMnBJYTBKUlVUbHpXbmR5TjNwalZHZE1PWFJsVmxoUVRuWVNGblpDY1U1aGNUWXhRblJ4TUhCMFVWQjFjRXhVVVVFYUlrRkVjM0k1WmxSdGMzVmlRbEpFTjJ4RGEzVlJibVJxVVRoVWNFbEhWazFPVVZF",
+      "captured_at": "2026-08-25T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_WjlxZERCWUVlRGJNSFEyckFBQUFBQT09OkVzc0JDb3dCUVVwcFZEUjBUSGh1WDBjeFdYTktPSFZKUkdST1VsRndVMUYzUW1oZmJWSmpXbkJPV2tVMVkyazVaMGxuT0RobE5rbFpSMU5vUVhJeFZsZzJNMWRDU1c1SlMzbzJTbE5TYUVkbFZIWjVYM2RpZEY5VVVsOUpTRVJrY3pObVZFaG1VQzFGVjNCVVozWktla2xaUlV0SFRrUlhkMnBJYTBKUlVUbHpXbmR5TjNwalZHZE1PWFJsVmxoUVRuWVNGblpDY1U1aGNUWXhRblJ4TUhCMFVWQjFjRXhVVVVFYUlrRkVjM0k1WmxSdGMzVmlRbEpFTjJ4RGEzVlJibVJxVVRoVWNFbEhWazFPVVZF",
+      "title": "AI-ML Support Analyst",
+      "company": "KAUST (King Abdullah University of Science and Technology)",
+      "location": "ثول, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/ai-ml-support-analyst-at-kaust-king-abdullah-university-of-science-and-technology-4455276760",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "HPC academic helpdesk/support analyst role rather than senior AI product builder.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "About the Role\n\nThe AI/ML Support Analyst will be a key member of the KAUST Supercomputing Lab’s (KSL) AI/ML Support Team, supporting the delivery of AI research services to KAUST's diverse research community. Working under the AI/ML Support Team Lead, this role focuses on developing and optimizing Generative AI models, maintaining computational benchmarks, and providing expert consultation to researchers across multiple scientific domains, including Climate & Weather, Bioinformatics, CFD, NLP, and multimodal AI. The analyst will help bridge the gap between cutting-edge computational infrastructure and the diverse needs of the research community, contributing to governance, technical enablement, and community development initiatives.\n\nResponsibilities\n\nGenerative AI Development and Consulting\n• Providing timely and useful user support via telephone, walk-in, email, and ticketing system submissions for all types of inquiries.\n• Maintain high customer service standards in dealing with and responding to user issues and questions.\n• Develop and consult on large-scale Generative AI model training on domain-specific datasets across research areas including Climate & Weather, Bioinformatics, Computational Fluid Dynamics (CFD), NLP, and multimodal AI.\n• Support researchers in fine-tuning foundation models on domain-specific datasets using advanced optimization techniques.\n• Develop data engineering pipelines to support AI research workflows.\n• Design and implement efficient AI workflows optimized for KSL's high-performance computing environment.\n• Build and maintain secure, OCI-compliant, HPC-ready container images using Singularity, Podman, or similar.\n• Develop complex workflows using SLURM and Kubernetes for distributed training and inference.\n\nGovernance and Compliance Support\n• Conduct computational readiness reviews for AI research projects.\n• Assist in AI model and artifact control reviews to ensure compliance with institutional standards.\n• Support researchers in designing secure, compliant, and performant workflows.\n• Provide expert consultation to researchers on efficient utilization of AI resources and best practices.\n• Support the implementation of usage monitoring and reporting systems.\n• Ensure user workflows comply with KSL security policies and best practices.\n\nBenchmarking and Quality Assurance\n• Develop and maintain computational benchmarks for AI workloads on KSL systems.\n• Create and maintain regression testing workloads to stress test system functionality.\n• Support performance debugging and optimization activities for research workloads.\n• Contribute to technology evaluation and benchmarking exercises for future infrastructure investments.\n• Perform benchmarking of new hardware and software configurations.\n\nTraining and Documentation\n• Create comprehensive training materials for end-users on KSL’s HPC systems hosting AI workloads and tools.\n• Develop and maintain high-quality technical documentation.\n• Support the delivery of workshops on distributed training, fine-tuning, and inference optimization.\n• Contribute to knowledge transfer initiatives within the KAUST research community.\n• Provide one-on-one consultation to researchers on efficient use of computational resources.\n\nQualifications\n\n• Bachelor's or master’s degree in computer science, Data Science, Computational Science, Artificial Intelligence, or a related field.\n• Strong academic foundation in machine learning, deep learning, and AI fundamentals.\n\nRequired Skills\n\n• Technical Skills - Essential\n• Programming: Proficiency in Python; experience with R, Julia, Rust or C/C++ is a plus.\n• AI/ML Frameworks: Strong expertise in PyTorch and/or TensorFlow, JAX or similar.\n• Generative AI: Experience with foundation model development and fine-tuning techniques.\n• HPC Systems: Experience developing complex workflows using SLURM and/or Kubernetes.\n• Containerization: Experience building efficient HPC-ready container images using Singularity, Podman or similar.\n• Data Engineering: Experience with data engineering techniques for developing AI pipelines.\n• Linux: Strong Linux/Unix skills and bash scripting capabilities.\n\nTechnical Skills - Desired\n• Experience with Cray EX supercomputers with NVIDIA GPUs.\n• Experience with Kubeflow pipelines and Kubeflow Training Operator.\n• Experience with distributed inference frameworks (NVIDIA Triton, NIM, SGLang, llama.cpp, llm-d, LLMcache).\n• Knowledge of security vulnerability inspection in software libraries, AI models, datasets, and pipelines.\n• Experience with software supply chain tools (JFrog, Nexus, Trivy, Cloudsmith).\n• Experience with data management on S3-compatible object storage at scale.\n• Experience with high-performance distributed filesystems (Lustre, Weka IO, VAST Data).\n• Proficiency with NVIDIA Nsight and Compute for profiling AI workloads on GPUs.\n• Experience developing CI/CD pipelines using GitLab, Travis, CircleCI, or similar tools.\n• Experience with software build tools (autoconf, CMake, scons, SPACK, EasyBuild, Conda, Pip).\n\nSoft Skills\n• Strong problem-solving and analytical abilities.\n• Excellent written and verbal communication skills in English.\n• Customer service mindset with patience for supporting diverse skill levels.\n• Ability to work independently and as part of a collaborative team.\n• Strong documentation and knowledge-sharing practices.\n• Cultural sensitivity for working in an international environment.",
+        "sha256": "132fbaeda7f2e1e8725d84d1a6d112dd66a1291c2f7eeb9190c4eb530bc4245d",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
