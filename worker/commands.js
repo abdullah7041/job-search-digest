@@ -35,6 +35,18 @@ export const COMMANDS = [
     description: "Tailor your CV to a job the digest did not deliver, or could not read.",
     options: [
       {
+        name: "title",
+        type: 3,
+        description: "Job title (required with a link or screenshot).",
+        required: false,
+      },
+      {
+        name: "company",
+        type: 3,
+        description: "Company (required with a link or screenshot).",
+        required: false,
+      },
+      {
         name: "url",
         type: 3,
         description: "Link to the posting. I read the description from it myself.",

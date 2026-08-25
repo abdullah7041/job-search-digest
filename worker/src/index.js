@@ -475,10 +475,15 @@ export async function manualTaskFromModal(payload, userId) {
 // A link or a screenshot is enough on its own: the runner reads the posting or
 // transcribes the images, so there is nothing to type and no modal to open.
 export async function manualTaskFromCommand(payload, userId) {
+  const title = stringOption(payload, "title");
+  const company = stringOption(payload, "company");
   const url = stringOption(payload, "url");
   const image = attachmentFrom(payload, "image");
   if (!url && !image) return null;
-  const snapshot = await manualSnapshot({ title: "", company: "", url });
+  if (!title || !company) {
+    throw new Error("Add the job title and company when using a link or screenshot.");
+  }
+  const snapshot = await manualSnapshot({ title, company, url });
   return {
     kind: "tailor",
     userId,

@@ -837,12 +837,24 @@ test("a paste that is not a full posting is refused before a workflow is spent",
   await assert.rejects(manualTaskFromModal(payload, "user-1"), /full job description/i);
 });
 
-test("a link alone is enough, and nothing has to be typed", async () => {
+test("a link requires target metadata before a workflow is spent", async () => {
   const payload = { data: { name: "tailor-jd", options: [{ name: "url", type: 3, value: "https://jobs.example.test/42" }] } };
+
+  await assert.rejects(manualTaskFromCommand(payload, "user-1"), /title and company/i);
+});
+
+test("a link task keeps the supplied target metadata", async () => {
+  const payload = { data: { name: "tailor-jd", options: [
+    { name: "title", type: 3, value: "AI/ML Support Analyst" },
+    { name: "company", type: 3, value: "KAUST" },
+    { name: "url", type: 3, value: "https://jobs.example.test/42" },
+  ] } };
 
   const task = await manualTaskFromCommand(payload, "user-1");
 
   assert.equal(task.input.url, "https://jobs.example.test/42");
+  assert.equal(task.input.job_snapshot.title, "AI/ML Support Analyst");
+  assert.equal(task.input.job_snapshot.company, "KAUST");
   assert.deepEqual(task.input.images, []);
   assert.equal(task.input.job_snapshot.jd.status, "missing");
 });
@@ -851,13 +863,19 @@ test("a screenshot alone is enough, and its URL is what the runner reads", async
   const payload = {
     data: {
       name: "tailor-jd",
-      options: [{ name: "image", type: 11, value: "att-1" }],
+      options: [
+        { name: "title", type: 3, value: "ML Engineer" },
+        { name: "company", type: 3, value: "Example Labs" },
+        { name: "image", type: 11, value: "att-1" },
+      ],
       resolved: { attachments: { "att-1": { url: "https://cdn.discordapp.test/a.png", filename: "a.png", content_type: "image/png", size: 900 } } },
     },
   };
 
   const task = await manualTaskFromCommand(payload, "user-1");
 
+  assert.equal(task.input.job_snapshot.title, "ML Engineer");
+  assert.equal(task.input.job_snapshot.company, "Example Labs");
   assert.deepEqual(task.input.images, ["https://cdn.discordapp.test/a.png"]);
 });
 

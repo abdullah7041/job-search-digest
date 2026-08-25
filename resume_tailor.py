@@ -284,6 +284,9 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
     # else. Until now nothing enforced it: the model's headline was written
     # straight into the document unchecked.
     headline_terms = vocabulary(document["headline"], snapshot.get("title", ""))
+    expected_headline = None
+    if document["headline"].strip() and snapshot.get("title", "").strip():
+        expected_headline = f"{document['headline'].strip()} — {snapshot['title'].strip()}"
     skills_refs = subset_line_refs(document)
     corrections: list[str] = []
     last_errors: list[str] = []
@@ -301,7 +304,9 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
         }
         errors = validate_tailored_resume(checked, sources, allowed, master_text,
                                           subset_refs=skills_refs,
-                                          headline_terms=headline_terms)
+                                          headline_terms=headline_terms,
+                                          expected_headline=expected_headline,
+                                          master_summary=document["summary"])
         errors += substance_failures(plan, document)
         if not errors:
             return apply_plan(document, plan), clean_gaps(plan, document, snapshot), \

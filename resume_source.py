@@ -161,12 +161,16 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
                              allowed_terms: set[str] | None = None,
                              master_text: str | None = None,
                              subset_refs: set[str] | None = None,
-                             headline_terms: set[str] | None = None) -> list[str]:
+                             headline_terms: set[str] | None = None,
+                             expected_headline: str | None = None,
+                             master_summary: str | None = None) -> list[str]:
     """Return user-visible evidence failures; an empty list permits rendering.
 
     ``subset_refs`` names the refs whose rewrite must be a subset of its source
     -- skills lines, which may be pruned and reordered but never added to.
     ``headline_terms`` is the vocabulary the headline is held to.
+    ``expected_headline`` and ``master_summary`` enforce the role-specific
+    rewrite rules that vocabulary and fact checks alone cannot express.
     """
     errors: list[str] = []
     subset_refs = subset_refs or set()
@@ -200,6 +204,10 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
                 f"The headline uses \"{word}\", which is in neither your own headline "
                 "nor the target job title."
             )
+    if headline and expected_headline and headline.strip() != expected_headline.strip():
+        errors.append(
+            "The headline must be the current title, an em dash, then the target job title."
+        )
 
     summary = tailored.get("summary", "")
     if summary and allowed_terms is not None:
@@ -215,4 +223,6 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
             f"The summary runs to {sentence_count(summary)} sentences; "
             f"keep it to {SUMMARY_MAX_SENTENCES} at most."
         )
+    if summary and master_summary and summary.strip() == master_summary.strip():
+        errors.append("The summary is unchanged from your master resume; rewrite it for this job.")
     return errors

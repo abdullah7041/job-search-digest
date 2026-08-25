@@ -125,8 +125,8 @@ Every one of them passes the same completeness gate, and whichever won is named 
 
 `/tailor-jd` exists for the postings this pipeline cannot reach at all — a LinkedIn role behind a login, something a friend sent you. It takes an optional `url` and an optional `image`, and needs neither:
 
-- **`/tailor-jd url:<link>`** — the runner reads the posting itself. Nothing to type.
-- **`/tailor-jd image:<screenshot>`** — the vision model transcribes it. Attach the screenshot to the command.
+- **`/tailor-jd title:<role> company:<employer> url:<link>`** — the runner reads the posting itself. The title and company make the target headline and message truthful.
+- **`/tailor-jd title:<role> company:<employer> image:<screenshot>`** — the vision model transcribes it. Attach the screenshot to the command.
 - **`/tailor-jd`** with neither — Discord opens a paste box: job title, company, an optional link, and the description in two paragraph fields. One text input caps at 4000 characters and real postings run past that, so the description arrives in two boxes and is joined back together; five rows is the modal maximum, which is exactly what this needs.
 
 The command builds a snapshot in the same shape the daily run archives, so tailoring has one code path rather than two. What it cannot honestly fill in, it leaves empty: no score, no tier, no link check, and `source: "manual"`.

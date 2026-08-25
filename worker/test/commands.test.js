@@ -41,11 +41,15 @@ test("registers exactly the commands the worker can serve", () => {
   assert.equal(COMMANDS[0].options[0].type, 11);
 });
 
-test("/tailor-jd asks for a link or a screenshot, and requires neither", () => {
+test("/tailor-jd asks for target metadata with an optional link or screenshot", () => {
   // Both absent is the case that opens the paste modal, so neither option can
   // be required or the user could never reach it.
   const tailor = COMMANDS.find((command) => command.name === "tailor-jd");
   const byName = Object.fromEntries((tailor.options || []).map((option) => [option.name, option]));
+  assert.equal(byName.title.type, 3);
+  assert.equal(byName.title.required, false);
+  assert.equal(byName.company.type, 3);
+  assert.equal(byName.company.required, false);
   assert.equal(byName.url.type, 3);
   assert.equal(byName.url.required, false);
   assert.equal(byName.image.type, 11);

@@ -406,8 +406,8 @@ Arabic-first AI SaaS, live in production.
 
 def _plan(**overrides):
     plan = {
-        "headline": "AI Product Engineer / Machine Learning Engineer",
-        "summary": "AI Product Engineer shipping production LLM systems, with 5+ years across engineering.",
+        "headline": "AI Product Engineer — Senior Machine Learning Engineer",
+        "summary": "AI Product Engineer with 5+ years across engineering, shipping production LLM systems.",
         "bullets": [
             {"ref": "b1", "text": "Built an LLM evaluation pipeline that judge-scores prompt and model variants."},
             {"ref": "b2", "text": "Instrumented production monitoring with Sentry and real-time Telegram alerting."},
@@ -499,7 +499,7 @@ class TestTailoringPlan(unittest.TestCase):
         watheq = tailored["sections"][0]["entries"][0]
 
         self.assertEqual([bullet["ref"] for bullet in watheq["bullets"]], ["b2", "b1"])
-        self.assertEqual(tailored["headline"], "AI Product Engineer / Machine Learning Engineer")
+        self.assertEqual(tailored["headline"], "AI Product Engineer — Senior Machine Learning Engineer")
 
     def test_a_role_with_no_kept_bullets_leaves_the_resume(self):
         document = parse_resume(MASTER)
@@ -889,7 +889,8 @@ class TestHeadlineAndSummaryGuards(unittest.TestCase):
         request rather than a constraint."""
         errors = validate_tailored_resume(
             {"headline": "Senior HPC Engineer", "bullets": []}, {},
-            headline_terms=self._terms())
+            headline_terms=self._terms(),
+            expected_headline="AI Product Engineer — AI/ML Support Analyst")
 
         self.assertTrue(any("hpc" in error.lower() for error in errors))
 
@@ -910,6 +911,24 @@ class TestHeadlineAndSummaryGuards(unittest.TestCase):
             allowed_terms=vocabulary(MASTER_FULL), master_text=MASTER_FULL)
 
         self.assertTrue(any("sentences" in error for error in errors))
+
+    def test_an_incomplete_headline_is_rejected_even_when_its_words_are_supported(self):
+        errors = validate_tailored_resume(
+            {"headline": "AI Product Engineer", "bullets": []}, {},
+            headline_terms=self._terms(),
+            expected_headline="AI Product Engineer — AI/ML Support Analyst")
+
+        self.assertTrue(any("current title" in error.lower() for error in errors))
+
+    def test_an_unchanged_master_summary_is_rejected(self):
+        master_summary = parse_resume(MASTER_FULL)["summary"]
+
+        errors = validate_tailored_resume(
+            {"summary": master_summary, "bullets": []}, {},
+            allowed_terms=vocabulary(MASTER_FULL), master_text=MASTER_FULL,
+            master_summary=master_summary)
+
+        self.assertTrue(any("unchanged" in error.lower() for error in errors))
 
 
 class TestJdResolution(unittest.TestCase):
