@@ -19,6 +19,10 @@ import worker, {
   tailoringInputFromSnapshotRow,
   taskAccessStatus,
   taskExpiryMilliseconds,
+  PASTE_MODAL,
+  manualSnapshot,
+  manualTaskFromCommand,
+  manualTaskFromModal,
 } from "../src/index.js";
 
 const env = {
@@ -754,4 +758,121 @@ test("a failed channel post leaves the task retryable instead of silently comple
 
   assert.equal(response.status, 502);
   assert.equal(delivery.taskStatus(), "delivery_retryable");
+});
+
+test("a snapshot with no captured JD reaches the runner instead of ending the click", async () => {
+  // This used to throw "A full job description is required; use /tailor-jd to
+  // provide it." -- pointing at a command that was not registered, for the one
+  // case that is actually recoverable. The runner reads the posting again
+  // before it gives up, so the snapshot has to get that far.
+  const snapshot = {
+    job_key: "jsearch:https://sa.jooble.org/jdp/-19135",
+    url: "https://sa.jooble.org/jdp/-19135",
+    jd: { status: "missing", text: "", sha256: "", completeness_failures: ["no text"] },
+  };
+
+  const input = await tailoringInputFromSnapshotRow(
+    { job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) },
+    snapshot.job_key,
+  );
+
+  assert.deepEqual(input, { job_snapshot: snapshot });
+});
+
+test("the paste modal fits Discord's limits and takes a description in two parts", () => {
+  // One text input caps at 4000 characters and a real posting runs past that,
+  // so the description arrives in two boxes. Five rows is the modal maximum.
+  assert.ok(PASTE_MODAL.components.length <= 5);
+  const fields = PASTE_MODAL.components.map((row) => row.components[0]);
+  const byId = Object.fromEntries(fields.map((field) => [field.custom_id, field]));
+  assert.equal(byId.jd_1.style, 2);
+  assert.equal(byId.jd_1.required, true);
+  assert.equal(byId.jd_2.required, false);
+  assert.equal(byId.jd_1.max_length + byId.jd_2.max_length, 8000);
+  assert.equal(byId.url.required, false);
+  for (const field of fields) assert.equal(field.type, 4);
+});
+
+test("a pasted description becomes a tailoring task with both boxes joined", async () => {
+  // Split where a person would: at a sentence boundary, because the boxes are
+  // joined with a newline and gluing two halves of a word back together is not
+  // something a paste-in-two-parts flow can be asked to do.
+  const half = FULL_JD.indexOf(" ", Math.ceil(FULL_JD.length / 2)) + 1;
+  const payload = {
+    type: 5,
+    data: {
+      custom_id: "tailor-jd-paste",
+      components: [
+        { type: 1, components: [{ custom_id: "title", value: "AI/ML Support Analyst" }] },
+        { type: 1, components: [{ custom_id: "company", value: "KAUST" }] },
+        { type: 1, components: [{ custom_id: "url", value: "" }] },
+        { type: 1, components: [{ custom_id: "jd_1", value: FULL_JD.slice(0, half) }] },
+        { type: 1, components: [{ custom_id: "jd_2", value: FULL_JD.slice(half) }] },
+      ],
+    },
+  };
+
+  const task = await manualTaskFromModal(payload, "user-1");
+
+  assert.equal(task.kind, "tailor");
+  assert.equal(task.input.job_snapshot.title, "AI/ML Support Analyst");
+  assert.equal(task.input.job_snapshot.company, "KAUST");
+  assert.equal(task.input.pasted_jd.replace(/\s+/g, " ").trim(), FULL_JD.replace(/\s+/g, " ").trim());
+  assert.match(task.jobKey, /^manual:[0-9a-f]{32}$/);
+});
+
+test("a paste that is not a full posting is refused before a workflow is spent", async () => {
+  const payload = {
+    type: 5,
+    data: {
+      custom_id: "tailor-jd-paste",
+      components: [
+        { type: 1, components: [{ custom_id: "title", value: "Data Engineer" }] },
+        { type: 1, components: [{ custom_id: "company", value: "Acme" }] },
+        { type: 1, components: [{ custom_id: "jd_1", value: "Python role in Riyadh." }] },
+      ],
+    },
+  };
+
+  await assert.rejects(manualTaskFromModal(payload, "user-1"), /full job description/i);
+});
+
+test("a link alone is enough, and nothing has to be typed", async () => {
+  const payload = { data: { name: "tailor-jd", options: [{ name: "url", type: 3, value: "https://jobs.example.test/42" }] } };
+
+  const task = await manualTaskFromCommand(payload, "user-1");
+
+  assert.equal(task.input.url, "https://jobs.example.test/42");
+  assert.deepEqual(task.input.images, []);
+  assert.equal(task.input.job_snapshot.jd.status, "missing");
+});
+
+test("a screenshot alone is enough, and its URL is what the runner reads", async () => {
+  const payload = {
+    data: {
+      name: "tailor-jd",
+      options: [{ name: "image", type: 11, value: "att-1" }],
+      resolved: { attachments: { "att-1": { url: "https://cdn.discordapp.test/a.png", filename: "a.png", content_type: "image/png", size: 900 } } },
+    },
+  };
+
+  const task = await manualTaskFromCommand(payload, "user-1");
+
+  assert.deepEqual(task.input.images, ["https://cdn.discordapp.test/a.png"]);
+});
+
+test("neither a link nor a screenshot asks for the text instead", async () => {
+  const payload = { data: { name: "tailor-jd", options: [] } };
+
+  assert.equal(await manualTaskFromCommand(payload, "user-1"), null);
+});
+
+test("a manual snapshot claims no score, tier or link evidence it does not have", async () => {
+  const snapshot = await manualSnapshot({ title: "AI/ML Support Analyst", company: "KAUST", url: "" });
+
+  assert.equal(snapshot.score, 0);
+  assert.equal(snapshot.ranking_verified, false);
+  assert.equal(snapshot.link_status, "unknown");
+  assert.equal(snapshot.source, "manual");
+  assert.equal(snapshot.jd.status, "missing");
 });

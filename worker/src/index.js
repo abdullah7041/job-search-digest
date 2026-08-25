@@ -66,13 +66,21 @@ export async function tailoringInputFromSnapshotRow(row, expectedJobKey) {
   const snapshot = JSON.parse(row.snapshot_json);
   if (snapshot.job_key !== expectedJobKey) throw new Error("The stored job snapshot does not match this button.");
   const jd = snapshot.jd || {};
-  if (jd.status !== "captured" || !jd.text?.trim()) {
-    throw new Error("A full job description is required; use /tailor-jd to provide it.");
+  // A snapshot without a captured description is no longer refused here. The
+  // click used to end at this line telling the user a job description was
+  // required, which left the only recoverable case -- an aggregator page the
+  // 07:00 run could not read -- with no recovery at all. The runner reads the
+  // posting again before it gives up, and asks for text only if that fails too.
+  //
+  // Integrity is unchanged for a snapshot that does have one: it is still
+  // checked against the digest archived with it and against the completeness
+  // gate, so an altered snapshot fails closed rather than being tailored.
+  if (jd.status === "captured" && jd.text?.trim()) {
+    if (!jd.sha256 || await sha256Hex(jd.text) !== jd.sha256) {
+      throw new Error("The stored job description no longer matches its digest.");
+    }
+    if (!jdIsComplete(jd.text)) throw new Error("The snapshot does not contain a complete job description.");
   }
-  if (!jd.sha256 || await sha256Hex(jd.text) !== jd.sha256) {
-    throw new Error("The stored job description no longer matches its digest.");
-  }
-  if (!jdIsComplete(jd.text)) throw new Error("The snapshot does not contain a complete job description.");
   return { job_snapshot: snapshot };
 }
 
@@ -290,11 +298,19 @@ async function reportDispatchFailure(env, interactionToken, message) {
   }
 }
 
-function attachmentFrom(payload) {
-  const option = payload.data?.options?.find((item) => item.type === 11);
+function attachmentFrom(payload, name) {
+  // Returns null when the option was not supplied. /resume requires its file
+  // and says so itself; /tailor-jd's screenshot is one of several ways to give
+  // it a description, so an absent attachment there is not an error.
+  const option = payload.data?.options?.find((item) => item.type === 11 && (!name || item.name === name));
   const attachment = option && payload.data?.resolved?.attachments?.[option.value];
-  if (!attachment?.url) throw new Error("Attach a PDF to this command.");
-  return { url: attachment.url, filename: attachment.filename || "resume.pdf", contentType: attachment.content_type || "", size: attachment.size || 0 };
+  if (!attachment?.url) return null;
+  return { url: attachment.url, filename: attachment.filename || "upload", contentType: attachment.content_type || "", size: attachment.size || 0 };
+}
+
+function stringOption(payload, name) {
+  const option = payload.data?.options?.find((item) => item.name === name && item.type === 3);
+  return (option?.value || "").trim();
 }
 
 export async function postCard(env, card) {
@@ -392,6 +408,85 @@ async function deliverResult(env, task, result) {
   await acknowledgeOriginal(env, task, "Posted in this channel.");
 }
 
+// Discord caps one text input at 4000 characters, and a real posting can run
+// past that, so the description arrives in two boxes and is joined back
+// together. Five rows is the modal maximum, which is exactly what this needs.
+export const PASTE_MODAL = {
+  custom_id: "tailor-jd-paste",
+  title: "Tailor a CV to a job description",
+  components: [
+    { type: 1, components: [{ type: 4, custom_id: "title", label: "Job title", style: 1, required: true, max_length: 120 }] },
+    { type: 1, components: [{ type: 4, custom_id: "company", label: "Company", style: 1, required: true, max_length: 120 }] },
+    { type: 1, components: [{ type: 4, custom_id: "url", label: "Link to the posting (optional)", style: 1, required: false, max_length: 400 }] },
+    { type: 1, components: [{ type: 4, custom_id: "jd_1", label: "Job description", style: 2, required: true, max_length: 4000 }] },
+    { type: 1, components: [{ type: 4, custom_id: "jd_2", label: "…continued, if it did not all fit", style: 2, required: false, max_length: 4000 }] },
+  ],
+};
+
+function modalValues(payload) {
+  const values = {};
+  for (const row of payload.data?.components || []) {
+    for (const field of row.components || []) {
+      values[field.custom_id] = (field.value || "").trim();
+    }
+  }
+  return values;
+}
+
+// A job the digest never delivered still has to reach the runner as a snapshot,
+// because that is the one shape the tailoring path reads. Everything the daily
+// run would have measured is absent and says so: no score, no tier, no link
+// check, and a jd the runner is expected to resolve for itself.
+export async function manualSnapshot({ title, company, url }) {
+  const identity = url || `${company}|${title}`;
+  return {
+    schema_version: 1,
+    job_key: `manual:${(await sha256Hex(identity)).slice(0, 32)}`,
+    captured_at: new Date().toISOString(),
+    source: "manual",
+    source_id: "",
+    title: title || "",
+    company: company || "",
+    location: "",
+    url: url || "",
+    salary: "",
+    tier: "Worth reviewing",
+    score: 0,
+    why: "",
+    ranking_verified: false,
+    link_status: "unknown",
+    jd: { status: "missing", text: "", sha256: "", completeness_failures: [], grade: "missing" },
+  };
+}
+
+export async function manualTaskFromModal(payload, userId) {
+  const values = modalValues(payload);
+  const jd = [values.jd_1, values.jd_2].filter(Boolean).join("\n").trim();
+  if (!jdIsComplete(jd)) {
+    throw new Error(
+      "That does not read as a full job description. Paste the whole posting, " +
+      "including what the role does and what it requires."
+    );
+  }
+  const snapshot = await manualSnapshot({ title: values.title, company: values.company, url: values.url });
+  return { kind: "tailor", userId, jobKey: snapshot.job_key, input: { job_snapshot: snapshot, pasted_jd: jd } };
+}
+
+// A link or a screenshot is enough on its own: the runner reads the posting or
+// transcribes the images, so there is nothing to type and no modal to open.
+export async function manualTaskFromCommand(payload, userId) {
+  const url = stringOption(payload, "url");
+  const image = attachmentFrom(payload, "image");
+  if (!url && !image) return null;
+  const snapshot = await manualSnapshot({ title: "", company: "", url });
+  return {
+    kind: "tailor",
+    userId,
+    jobKey: snapshot.job_key,
+    input: { job_snapshot: snapshot, url, images: image ? [image.url] : [] },
+  };
+}
+
 async function handleInteraction(request, env, ctx) {
   const raw = await request.text();
   if (!(await discordSignatureIsValid(request, raw, env))) return new Response("invalid signature", { status: 401 });
@@ -412,7 +507,19 @@ async function handleInteraction(request, env, ctx) {
       }
       task.jobKey = snapshot.job_key;
     }
-    else if (payload.data?.name === "resume") task = { kind: "resume", userId: allowed.userId, input: { attachment: attachmentFrom(payload) } };
+    else if (payload.type === 5) task = await manualTaskFromModal(payload, allowed.userId);
+    else if (payload.data?.name === "resume") {
+      const attachment = attachmentFrom(payload, "file");
+      if (!attachment) throw new Error("Attach a PDF to this command.");
+      task = { kind: "resume", userId: allowed.userId, input: { attachment } };
+    }
+    else if (payload.data?.name === "tailor-jd") {
+      task = await manualTaskFromCommand(payload, allowed.userId);
+      // Neither a link nor a screenshot: ask for the text instead. A modal is
+      // the only Discord surface that takes a paragraph, and it answers the
+      // interaction on its own, so nothing is dispatched on this pass.
+      if (!task) return json({ type: 9, data: PASTE_MODAL });
+    }
     else return json({ type: 4, data: { content: "Unsupported command.", flags: 64 } });
     const taskId = await createTask(env, task, payload.token);
     // Discord discards the interaction if it is not acknowledged within 3

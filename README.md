@@ -72,7 +72,13 @@ The job is matching, not relevance ranking, so the filter is strict before anyth
 2. **Seniority** drops junior, intern, graduate, trainee, tamheer, associate, entry — and, since 31 Jul 2026, everything above senior IC too: lead, staff, principal, head-of, director, engineering manager, team leader. The 2026-07-31 digest scored Lead/Staff roles 85–98 because seniority was only bounded from below.
 2b. **Title-vs-location conflict** drops a job whose title says it's really elsewhere ("Bangkok based", "relocation provided") even when the board's location metadata claims Saudi. Same digest delivered Agoda's Bangkok role as Riyadh because only the metadata was checked.
 3. **Title** must hit one of your target areas: engineer, software, AI/ML, data, DevOps/SRE, platform, automation, architect, product manager, solutions engineer.
-4. **Not seen before.** `seen.json` holds every posting already sent, so you only get new ones.
+4. **Score at least 50.** `MIN_DELIVER_SCORE` is the line below which a job is not delivered at all. The tiers only ever decided which *heading* a job appeared under, so everything that cleared the hard filters was delivered no matter how poorly it scored, and the weak ones crowded out the review tier. Override it with a repository *variable* of the same name.
+
+   Only a model score can send a job here. `apply_ranking` falls back to `keyword_score` whenever the ranker is missing or its answer fails validation, and those numbers are calibrated for ordering, not for a pass/fail line — dropping on them would turn a ranker outage into an empty digest with nothing anywhere saying why. A job dropped on its score is remembered like a delivered one, so tomorrow does not re-fetch, re-score and re-reject it for the next 120 days.
+
+   The drift average is taken *before* the floor cuts. `check_drift` compares today's average against the prior window, and measuring it after a cut that removes exactly the low scores would make a stale profile look like a healthy one.
+
+5. **Not seen before.** `seen.json` holds every posting already sent, so you only get new ones.
 
    What it remembers a posting *by* matters more than it sounds. JSearch mints a fresh opaque id for the same job on every request, so a state file keyed on that id never matched twice and the same role arrived day after day. Over the first 11 archived days, 65 of 122 aggregator cards were repeats, and one JAL frontend role landed on 9 separate days under 11 different ids. `job_identity()` keys an aggregator posting on its canonical URL, which does not move. LinkedIn's `refId` and `trackingId` are stripped because they change per response; Indeed's `?jk=` is kept, because it *is* the job. An ATS id is canonical already, so those postings keep the bare id every existing `seen.json` entry uses.
 
@@ -90,11 +96,13 @@ One model call scores the survivors 0 to 100 and writes a one-line "why it fits,
 
 **The excerpt it scores starts at the requirements, not at the top of the posting.** It used to be the first 900 characters, which on a McKinsey posting is entirely recruiting copy — the role itself begins at character 1931. The model reported, accurately, that the description named no technical requirements; it had never been shown them. `job_archive.jd_signal` finds the first heading that introduces the work (`Your Impact`, `Responsibilities`, `Requirements`, `Qualifications`, and the rest) and takes `JD_RANK_CHARS` from there. Of the 34 distinct archived descriptions longer than 1500 characters, 10 put that heading past the old 900-character cut and 8 carry no recognised heading at all.
 
+**The description is looked for in three places, not one.** An aggregator hands over a title and a URL, and stripping tags off the page it links to used to be the whole last-resort path — which is why so many cards said "Job description needed before tailoring". `jd_fetch.extract_jd` tries the page's `JobPosting` JSON-LD block first (a board that wants to be indexed by Google for Jobs publishes one, and it holds the description in full even when the visible page is a sign-in wall), then hops to the employer's own ATS when the aggregator is relisting a Greenhouse, Lever, Ashby, Workable or Pinpoint posting — the same APIs this project already reads for its tracked companies, reached through the same endpoints. The page body is the fallback it always was. The hop runs even when the page fetch itself failed, because an aggregator URL is often already an ATS posting. Everything returned passes the same `jd_completeness_failures` gate, so a bot-blocked page still yields nothing rather than scoring on navigation chrome.
+
 **A teaser is scored as a teaser.** Aggregators publish a paragraph of marketing copy that clears every completeness check — 400 characters, 60 words, the word "experience" — while evidencing nothing; 23 of the first 104 captured descriptions were under 1500 characters. `job_archive.jd_grade` calls those `teaser`, the ranker is told what it is reading, `cap_teaser_scores` holds them below the strong-match line, and the card footer says so. They stay tailorable, with a warning in the message.
 
 **An unstable ranker is visible rather than averaged away.** `score_instability` reads the committed archives and reports postings whose score moved while their JD digest did not — keyed on the description hash, because the aggregator mints a fresh id for the same posting every day. It found nine, worst at a 55-point spread. The daily average `check_drift` watches could never show that.
 
-The digest makes that confidence visible instead of hiding borderline roles. **Strong matches** have a validated Gemini score of at least 80 and JD text. **Worth reviewing** passed every hard eligibility filter but have a lower or invalid score, no JD text, or another fit uncertainty. This favors finding viable roles without presenting every result as equally ready to apply for. Every delivered job, either tier, still gets its own Tailor CV button (see below); a card without captured JD text says so in its footer and the button reports back what's missing instead of guessing.
+The digest makes that confidence visible instead of hiding borderline roles — above the delivery floor. **Strong matches** have a validated Gemini score of at least 80 and JD text. **Worth reviewing** passed every hard eligibility filter but have a lower or invalid score, no JD text, or another fit uncertainty. The floor and the tiers do different jobs: `MIN_DELIVER_SCORE` (see "How it filters") decides whether a job is delivered, `STRONG_MATCH_MIN_SCORE` decides which heading it lands under. This favors finding viable roles without presenting every result as equally ready to apply for. Every delivered job, either tier, still gets its own Tailor CV button (see below); a card without captured JD text says so in its footer, and clicking it makes the runner read the posting again rather than guessing.
 
 `RANK_MODEL = google/gemini-3.7-flash` does the scoring, through OpenRouter, with `google/gemini-3.6-flash` and `openai/gpt-5.6-luna` behind it; both ids are overridable through repository *variables* of the same names. Read from the OpenRouter catalogue on 20 Aug 2026: $0.375/M in and $1.875/M out, carrying a `0.75` discount on its Vertex endpoints, which makes it *cheaper* than 3.6 Flash while scoring materially higher (Artificial Analysis intelligence 56 vs 51.6). This used to be `gemini-3.1-flash-lite` on the Gemini API directly, sized for classification over short records — but scoring now means reading a requirements section and weighing it against a profile, which is worth a real model. At 25 jobs a day it is still under a quarter a month, and it retires the second API key.
 
@@ -102,7 +110,28 @@ The digest makes that confidence visible instead of hiding borderline roles. **S
 
 Every card in the digest — Strong or Worth reviewing — carries a "Tailor CV" button. Its `custom_id` is `tailor:<first 32 hex chars of sha256(job_key)>`; the job key itself never appears in the id. Clicking it sends a signed Ed25519 interaction to the Cloudflare Worker, which checks the interaction's guild, channel, and user against its own configured ids before doing anything else — only the one person this deployment is scoped to can trigger a tailor.
 
-If that check passes, the Worker looks up the immutable snapshot captured for that exact Discord message at delivery time and re-verifies the job description text against the SHA-256 recorded in the snapshot. Only if it still matches does the Worker write a task row to D1 (with the interaction token encrypted) and trigger the `interactive.yml` workflow with the task id. `interactive_runner.py` fetches that task over HMAC-authenticated HTTP and re-checks the JD hash and completeness a second time before anything is generated.
+If that check passes, the Worker looks up the immutable snapshot captured for that exact Discord message at delivery time. When that snapshot holds a captured description, the Worker re-verifies it against the SHA-256 recorded alongside it and only proceeds if it still matches; `interactive_runner.py` then re-checks the same hash and the completeness gate a second time, after fetching the task over HMAC-authenticated HTTP. An altered snapshot fails closed at both.
+
+**A card without a captured description is no longer a dead end.** The click used to stop at the Worker with "A full job description is required; use /tailor-jd to provide it" — naming a command that was not registered, for the one case that is actually recoverable. The snapshot now reaches the runner, which resolves the description itself, worst source last:
+
+1. the archived text, hash-verified as above;
+2. text the candidate supplied, through the paste box or `/tailor-jd`;
+3. the posting read again *now*, through the same `jd_fetch.extract_jd` the daily run uses — a page that blocked GitHub's runners at 07:00 often does not block them at 13:00;
+4. screenshots, transcribed by a vision model (`VISION_MODEL`, defaulting to `google/gemini-3.7-flash` through the same OpenRouter transport and no-retention policy as everything else).
+
+Every one of them passes the same completeness gate, and whichever won is named in the Discord message. A CV built from a screenshot and one built from the archived posting are not equally trustworthy, and the candidate is the one deciding whether to send it. Only if all four miss does the click report back — and it names `/tailor-jd` and the URL it could not read, so there is always a next step.
+
+### Tailoring a job the digest never delivered
+
+`/tailor-jd` exists for the postings this pipeline cannot reach at all — a LinkedIn role behind a login, something a friend sent you. It takes an optional `url` and an optional `image`, and needs neither:
+
+- **`/tailor-jd url:<link>`** — the runner reads the posting itself. Nothing to type.
+- **`/tailor-jd image:<screenshot>`** — the vision model transcribes it. Attach the screenshot to the command.
+- **`/tailor-jd`** with neither — Discord opens a paste box: job title, company, an optional link, and the description in two paragraph fields. One text input caps at 4000 characters and real postings run past that, so the description arrives in two boxes and is joined back together; five rows is the modal maximum, which is exactly what this needs.
+
+The command builds a snapshot in the same shape the daily run archives, so tailoring has one code path rather than two. What it cannot honestly fill in, it leaves empty: no score, no tier, no link check, and `source: "manual"`.
+
+**Re-register after changing the command set.** `worker/commands.js` is the source of truth and `register-commands.mjs` PUTs exactly what is in it, so a command removed from that file is removed from Discord on the next run — and a command left in Discord without being re-registered survives with nothing behind it. That is what happened to `/tailor-jd`: it was registered against an earlier build, dropped from `commands.js` without the registration being re-run, and answered "Unsupported command." for every use while an error message elsewhere in the Worker still told you to reach for it. `worker/test/commands.test.js` now pins the registered set and checks every name has a dispatch branch, but only running `npm run register --prefix worker` changes what Discord actually shows.
 
 ### How the tailoring stays honest
 
@@ -110,7 +139,17 @@ If that check passes, the Worker looks up the immutable snapshot captured for th
 
 `resume_source.validate_tailored_resume` then checks each rewrite against the exact bullet it cites: every number must survive verbatim, and every proper noun must already exist in the master or the job title, so an invented framework or cloud platform is rejected rather than sent. A rejected draft goes back to the model once with the specific failures; if it fails again, the untouched master resume is delivered with the reason stated in the message. The same thing happens when `OPENROUTER_API_KEY` is absent — you get your master resume and a note saying why it wasn't tailored. A failure costs you the tailoring, never the document.
 
-The PDF is single column, standard fonts, no tables, forced to one page by shrinking type first and dropping the least relevant bullets second. Gaps and fit notes travel in the Discord message, never in the PDF — the attachment is always safe to forward as-is.
+**What the model is asked to do with the JD changed; what it is allowed to invent did not.** Three things were shipping unchecked, and a tailored CV for a KAUST AI/ML Support Analyst role is what surfaced all three:
+
+- **The summary was the master's summary, word for word.** Rule 5 only forbade inventing facts; nothing asked the model to aim the summary at the job, so it took the safe path on every click. It now has to open with the two or three things the job asks for that the resume genuinely evidences, in the resume's own words, and returning the existing summary unchanged is named as a failure. The three-sentence cap is enforced in code rather than requested in prose.
+- **The skills block shipped identically on every job**, because `apply_plan` rewrote `section["lines"]` only under EXPERIENCE and PROJECTS — so `Frontend: React 19, Tailwind CSS, Vite, Zustand` went out on a supercomputing-lab role. Skills lines are now reordered and pruned for the job, and held to a *stricter* rule than the rest of the document: `subset_failures` requires every word of a rewritten skills line to already be in that same line. Reorder freely, drop what the job has no use for, add nothing. Resume-wide vocabulary is too loose here — it would let a term from the experience section drift into the skills list, where a recruiter reads it as a skill the candidate listed. Every category survives regardless: the model chooses which line leads, never whether a category exists.
+- **The headline went into the document unchecked.** `headline_failures` holds it to the candidate's own headline plus the target job title, which is all rule 4 ever permitted.
+
+None of this loosens rule 2. The KAUST CV carried no SLURM, Singularity or PyTorch because `resume.md` carries none, and it still won't: the job description decides what to lead with and what to drop, never what to add.
+
+The PDF is single column, standard fonts, no tables, forced to one page by shrinking type first and dropping the least relevant bullets second. Late sections are trimmed before early ones — iterating forward took a project away before a sixth certificate, and both before a skills line the job actually asked for. Within a section the last item goes, which after `apply_plan`'s ordering is the one the job supported least. Gaps and fit notes travel in the Discord message, never in the PDF — the attachment is always safe to forward as-is.
+
+**`LANGUAGES` was missing from every PDF this had ever rendered**, master and tailored alike. `parse_resume` files a plain line under `intro`, because only a `- ` line becomes a bullet, and the renderer skipped any section with no entries and no lines — so `Arabic (native) · English (professional)` was dropped silently, including from jobs that ask for English and for working in an international team. A section that is only an intro now renders.
 
 The Worker posts the PDF as an ordinary message in the private channel, using the bot token. It previously attached the PDF to the interaction as an ephemeral reply (`flags: 64`); ephemeral messages are absent from channel history and vanish when the Discord client reloads, so the document disappeared and no copy survived anywhere. The channel is the one the Worker already restricts to a single guild, channel and user id, so the audience is unchanged — only the lifetime is. Gaps and fit notes still travel in the message rather than in the PDF, and nothing tailored is committed to the repository. The interaction's own message gets a short ephemeral acknowledgement, best effort: if its token has expired the channel message is already delivered.
 
@@ -147,8 +186,9 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `profile.json` — your job-fit profile (blurb, skill keywords, target titles) sent to the ranking model and used by the keyword fallback. Refreshed by hand or via `PROFILE_REFRESH_PROMPT.md`.
 - `requirements.txt` — `requests` for every HTTP call, `pypdf` and `reportlab` for building the tailored PDF.
 - `discord_delivery.py` — signs and POSTs the daily batch of job cards to the Worker's `/internal/digest` route.
+- `jd_fetch.py` — gets the real job description out of a posting URL: the page's `JobPosting` JSON-LD, then the employer's ATS when an aggregator is relisting one, then the page text. Also transcribes a screenshotted posting through a vision model. Shared by the daily run and the tailoring runner, so both read a posting the same way. Nothing in it raises; a failure returns `""`.
 - `job_archive.py` — builds job snapshots (including the JD SHA-256), the Discord card/button payload, and writes `jobs/<date>.json`.
-- `interactive_runner.py` — runs one on-demand tailoring task: re-verifies the JD hash, builds the one-page PDF, reports the result back to the Worker.
+- `interactive_runner.py` — runs one on-demand tailoring task: settles which job description it may tailor against (`resolve_jd`: archived and hash-verified, pasted, refetched, or read from screenshots), builds the one-page PDF, reports the result and the description's provenance back to the Worker.
 - `resume_source.py` — evidence helpers shared by resume ingestion and tailoring: splits `resume.md` into quotable source blocks and checks a tailored draft's claims against them.
 - `resume_ingest.py` — normalizes raw resume text (from a `/resume` upload) into the form `resume.md` needs, with a preview step before anything is accepted as the new master.
 - `test_digest.py` — offline tests for the daily pipeline (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths.
@@ -160,7 +200,8 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 
 **On-demand tailoring (Cloudflare Worker)**
 
-- `worker/src/index.js` — the Worker: verifies Discord interactions, claims delivery of daily cards idempotently, creates and serves tailoring tasks, posts the PDF back to the private channel.
+- `worker/src/index.js` — the Worker: verifies Discord interactions, claims delivery of daily cards idempotently, creates and serves tailoring tasks, opens the paste modal, and posts the PDF back to the private channel.
+- `worker/commands.js` — the command set registered with Discord (`/resume`, `/tailor-jd`). Source of truth; `npm run register --prefix worker` applies it.
 - `worker/schema.sql` — the D1 schema: `tasks`, `deliveries`, `delivery_claims`, `internal_nonces`, `job_snapshots`.
 - `worker/wrangler.jsonc` — Worker config: non-secret `vars` (Discord application/guild/channel/user ids, the GitHub repository, the Discord public key) and the D1 binding. No secret values live here.
 - `worker/test/interaction.test.js` — the Worker's Node test suite (`node --test`): signature verification, channel/user gating, snapshot hash checks, idempotent delivery claims, nonce handling.
@@ -202,7 +243,7 @@ Two halves: the repository that runs the daily job, and the Cloudflare Worker th
    - `RAPIDAPI_KEY` — optional. Without it the digest runs against the five ATS APIs only, no JSearch.
    - `OPENROUTER_API_KEY` — used by both ranking and tailoring. Without it, ranking falls back to deterministic keyword scoring and the Tailor CV button returns the untouched master resume.
    - `OPENROUTER_API_KEY` — optional, and read only by `.github/workflows/interactive.yml`. Without it a Tailor CV click returns your untailored master resume with a note saying why.
-   `.github/workflows/interactive.yml` reuses `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — same secrets, same names. It also reads two optional repository *variables*, `TAILOR_MODEL` and `TAILOR_FALLBACK_MODELS`, which let you retune the tailoring chain without a commit.
+   `.github/workflows/interactive.yml` reuses `INTERACTIVE_WORKER_URL` and `WORKER_CALLBACK_SECRET` — same secrets, same names. It also reads four optional repository *variables*: `TAILOR_MODEL` and `TAILOR_FALLBACK_MODELS` retune the tailoring chain, `VISION_MODEL` and `VISION_FALLBACK_MODELS` the chain that reads a screenshotted posting. `digest.yml` reads one more, `MIN_DELIVER_SCORE`, the fit score below which a job is not delivered at all (default 50). All of them change behaviour without a commit; an unset or mistyped one falls back to the code's default rather than failing the run.
 3. Actions tab, run the `job-digest` workflow manually once. Read the log.
 
 **Cloudflare Worker**
@@ -229,10 +270,12 @@ set changes; no workflow runs it.
 - Read the fetch log. Each company prints its job count or a WARN. Confirm HALA, Tamara, Careem, and Lean all return jobs.
 - Check the first digest by hand: are the roles actually Saudi, actually senior, actually relevant? Tune `TITLE_INCLUDE` / `TITLE_EXCLUDE` if not.
 - Kill the Gemini key for one run and confirm the keyword fallback still posts.
+- After changing `worker/commands.js`, run `DISCORD_BOT_TOKEN=… npm run register --prefix worker`. Nothing else changes what Discord shows, and a command left registered with no branch behind it answers "Unsupported command." forever.
+- Click **Tailor CV** on a card whose footer says "Job description needed before tailoring". It should either come back with a PDF — the runner read the posting on the second try — or name `/tailor-jd` and the URL it could not read. It should never come back with nothing to do next.
 - Then let the cron take over.
 
 ## What's deliberately simple
 
-No scraper, no browser automation, no queue, no framework. `digest.py` is one file for the whole daily pipeline. Five ATS readers because the companies genuinely split across them, not for their own sake — each one was added only after a company you actually want forced it, and only after the live API was seen returning data.
+No browser automation, no queue, no framework. Reading a posting means parsing the `JobPosting` metadata a board publishes for search engines, or calling the employer's own ATS API — both of which are stable, documented and cheap. A headless browser would reach a few more pages, cost hundreds of megabytes and minutes on every daily run, and still not get past LinkedIn; that is what `/tailor-jd` and its paste box are for. `digest.py` is one file for the whole daily pipeline. Five ATS readers because the companies genuinely split across them, not for their own sake — each one was added only after a company you actually want forced it, and only after the live API was seen returning data.
 
 There is a database now — D1, five tables — but it's deliberately small: coordination state for the interaction flow (which delivery claimed which job, which task is waiting on which Discord token, a short-lived nonce table). The daily job's own state is still exactly what it always was: JSON files (`seen.json`, `stats.json`, `jobs/`) committed back by the Action. Nothing about the daily pipeline needed a database; the button flow did, because a Discord interaction has to be looked up minutes or days after the run that created it.

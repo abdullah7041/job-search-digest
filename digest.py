@@ -34,7 +34,6 @@ import os
 import re
 import hashlib
 import sys
-import html
 import json
 import time
 import datetime
@@ -43,7 +42,8 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from job_archive import (GRADE_TEASER, jd_completeness_failures, jd_grade, jd_signal,
+from jd_fetch import extract_jd, strip_html
+from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 from openrouter import chat_json, configured_chain
 
@@ -188,6 +188,38 @@ RANK_BUDGET_SECONDS = 120
 MAX_JOBS_IN_DIGEST = 25
 STRONG_MATCH_MIN_SCORE = 80
 
+def _score_floor(raw: str, default: int = 50) -> int:
+    """Read the delivery floor from the environment, tolerating a bad value.
+
+    An unset repository variable renders as an empty string, and a mistyped one
+    renders as whatever was typed. Neither is worth losing a day's digest over,
+    so a value that is not a whole number in range falls back and says so.
+    """
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        if raw:
+            print(f"WARN MIN_DELIVER_SCORE={raw!r} is not a number; using {default}",
+                  file=sys.stderr)
+        return default
+    if not 0 <= value <= 100:
+        print(f"WARN MIN_DELIVER_SCORE={value} is out of range; using {default}",
+              file=sys.stderr)
+        return default
+    return value
+
+
+# Below this, a job is not delivered at all. The tiers only ever decided which
+# heading a job appeared under, so every posting that cleared the hard filters
+# was delivered no matter how poorly it scored, and the weak ones crowded out
+# the review tier. Override with a repository variable of the same name.
+#
+# Only a model score can send a job here. A keyword fallback number is not
+# evidence of a bad match — it is what the pipeline produces when the ranker is
+# down — and silently delivering nothing on a ranker outage would be worse than
+# delivering a noisy digest. See drop_below_floor().
+MIN_DELIVER_SCORE = _score_floor(os.environ.get("MIN_DELIVER_SCORE") or "")
+
 # Per-job resume tailoring is an explicit Discord interaction handled by
 # interactive_runner.py. The daily run archives JD evidence and posts jobs
 # only; it never spends tailoring credits or writes private resumes into the
@@ -299,17 +331,6 @@ def _post(url, body):
         json=body,
         timeout=30,
     )
-
-
-def strip_html(s):
-    """Escaped or raw HTML -> readable plain text for LLM prompts. Greenhouse
-    double-escapes its content field (&lt;p&gt;), so unescape twice-safe first,
-    then drop tags and collapse whitespace."""
-    s = html.unescape(html.unescape(s or ""))
-    s = re.sub(r"<(br|/p|/li|/h[1-6])[^>]*>", "\n", s, flags=re.I)
-    s = re.sub(r"<[^>]+>", " ", s)
-    s = re.sub(r"[ \t]+", " ", s)
-    return re.sub(r"\s*\n\s*", "\n", s).strip()
 
 
 def fetch_greenhouse(c):
@@ -841,30 +862,22 @@ def get_description(job):
 
 
 def fetch_posting_page(job):
-    """Last-resort JD text: read the posting page an aggregator linked to.
+    """Last-resort JD text for a posting only an aggregator linked to.
 
     Aggregators like Jooble hand over a title and a URL and nothing else, so
     these jobs used to reach the ranker with an empty jd_excerpt. The rubric
     then correctly refuses to score a title above 85 without evidence, and a
     real match lands mid-band: the Jobgether ML role scored 55 on 2026-08-05
-    while its own JD supported 85. Reading the page closes that gap. Anything
-    that comes back looking like navigation chrome rather than a job
-    description is discarded, so a bot-blocked page scores exactly as it does
-    today instead of scoring on noise.
+    while its own JD supported 85.
+
+    Stripping tags off the landing page closed only part of that gap, because
+    the description is usually not in the body text at all: it is in the page's
+    JobPosting metadata, or on the employer's own ATS that the aggregator is
+    relisting. `jd_fetch.extract_jd` tries both before falling back to the page
+    text this used to be, and applies the same completeness gate, so a
+    bot-blocked page still scores exactly as it does today rather than on noise.
     """
-    url = job.get("url")
-    if not url:
-        return ""
-    r = _get(url)
-    if r.status_code != 200:
-        log(f"WARN JD page HTTP {r.status_code} for {job['title']}")
-        return ""
-    body = re.sub(r"(?is)<(script|style|nav|header|footer)[^>]*>.*?</\1>", " ", r.text)
-    text = strip_html(body)
-    if jd_completeness_failures(text):
-        log(f"WARN JD page for {job['title']} did not read as a full description")
-        return ""
-    return text[:JD_MAX_CHARS]
+    return extract_jd(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
 
 
 def enrich_descriptions(jobs):
@@ -911,6 +924,37 @@ def cap_teaser_scores(jobs):
         job["why"] = f"{job['why']} (capped: description is a short teaser)"[:140]
         capped.append(job)
     return capped
+
+
+def remember(seen, job, today):
+    """Record a posting so no later run reconsiders it.
+
+    Both the identity and the description are keyed, because an aggregator
+    relists the same posting under a fresh URL and only the description
+    fingerprint catches that.
+    """
+    seen[job_identity(job)] = today
+    key = description_key(job)
+    if key:
+        seen[key] = today
+
+
+def drop_below_floor(jobs):
+    """Split off jobs the ranker scored below the delivery floor.
+
+    Returns (kept, dropped). A job is only ever dropped on a verified model
+    score: `apply_ranking` falls back to `keyword_score` whenever the ranker is
+    missing or its answer fails validation, and those numbers are calibrated for
+    ordering, not for a pass/fail line. Dropping on them would turn a ranker
+    outage into an empty digest with no error anywhere.
+    """
+    kept, dropped = [], []
+    for job in jobs:
+        if job.get("ranking_verified") and job["score"] < MIN_DELIVER_SCORE:
+            dropped.append(job)
+        else:
+            kept.append(job)
+    return kept, dropped
 
 
 def split_tiers(jobs):
@@ -1222,10 +1266,34 @@ def main():
     for job in cap_teaser_scores(fresh):
         log(f"Capped {job['company']} — {job['title']} at {job['score']}: teaser, not a full JD")
 
-    # Captured before the MAX_JOBS_IN_DIGEST cut below, so a stale profile shows
-    # up in the drift trend even on days the real drop is buried past the top 25.
+    # Captured before the delivery floor and the MAX_JOBS_IN_DIGEST cut below, so
+    # a stale profile shows up in the drift trend even on days the real drop is
+    # buried past the top 25 — or below the floor. check_drift compares this
+    # average against the prior window, and measuring it after a cut that
+    # removes exactly the low scores would make every run look healthy.
     new_count = len(fresh)
     avg_score = round(sum(j["score"] for j in fresh) / new_count, 1)
+
+    fresh, below_floor = drop_below_floor(fresh)
+    for job in below_floor:
+        log(f"Below floor {job['company']} — {job['title']}: fit {job['score']} < {MIN_DELIVER_SCORE}")
+        # A verified score under the floor is a decision, not a delivery
+        # failure, so it is remembered here rather than left to be re-fetched,
+        # re-scored and re-rejected every day until it ages out.
+        remember(seen, job, today)
+
+    if not fresh:
+        save_seen(seen)
+        post_heartbeat(webhook, worker_url, worker_secret, today,
+                       len(all_jobs), len(matched), warnings)
+        save_stats(
+            stats, today, len(all_jobs), len(matched), new_count, avg_score,
+            link_closed=len(closed), link_unknown=unknown_count,
+            strong=0, review=0, tailored=0, tailor_failed=0,
+            relisted=len(relisted), below_floor=len(below_floor),
+        )
+        log(f"All {len(below_floor)} new postings scored below {MIN_DELIVER_SCORE}. Heartbeat sent.")
+        return
 
     strong, review = split_tiers(fresh)
     strong.sort(key=lambda x: x["score"], reverse=True)
@@ -1307,18 +1375,14 @@ def main():
 
     for j in fresh:
         if j["id"] in delivered_ids:
-            seen[job_identity(j)] = today
-            # Remember the description too, so a relist under a fresh URL is
-            # recognised even though its identity is new.
-            key = description_key(j)
-            if key:
-                seen[key] = today
+            remember(seen, j, today)
     save_seen(seen)
     save_stats(
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
         strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
         delivered=len(delivered_ids), relisted=len(relisted),
+        below_floor=len(below_floor),
     )
     log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")
     if delivery_failed:

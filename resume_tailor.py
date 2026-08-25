@@ -67,6 +67,22 @@ RESPONSE_SCHEMA = {
 }
 
 
+# Which sections the model may reorder and prune the standalone lines of.
+# EXPERIENCE and PROJECTS lines are achievements. SKILLS lines are lists of
+# claims, so they get the stricter subtractive rule below rather than the
+# ordinary evidence rule. EDUCATION and LANGUAGES are credentials: a
+# role-specific edit there would drop qualifications the reader expects to see.
+ACHIEVEMENT_LINE_SECTIONS = ("EXPERIENCE", "PROJECTS")
+SUBSET_LINE_SECTIONS = ("SKILLS",)
+
+
+def subset_line_refs(document: dict) -> set[str]:
+    """Refs whose rewrite may only drop and reorder what the source already has."""
+    return {line["ref"] for section in document["sections"]
+            if section["heading"] in SUBSET_LINE_SECTIONS
+            for line in section["lines"]}
+
+
 def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None = None) -> str:
     """Compose the tailoring instruction around the resume's own refs."""
     inventory = []
@@ -102,10 +118,13 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
         "the job description.\n"
         "3. Drop bullets that do not help for this job. Order the ones you keep by "
         "relevance to the job's stated requirements. Keep at least two per role you keep.\n"
-        "4. The headline may combine the candidate's current title with the job's title, "
-        "and nothing else.\n"
-        "5. The summary must be three sentences at most, drawn only from facts already in "
-        "the resume.\n"
+        "4. The headline is the candidate's current title, then an em dash, then the "
+        "job's title, and nothing else: \"<current title> — <target title>\".\n"
+        "5. Rewrite the summary for this job. Open with the two or three things this job "
+        "asks for that the resume genuinely evidences, described in the resume's own "
+        "words, and drop what this job does not care about. Three sentences at most, and "
+        "every fact in it must already be in the resume. Returning the existing summary "
+        "unchanged is a failure: it is written for a different job.\n"
         "6. gaps: the job's real requirements that this resume does not evidence. Name the "
         "specific missing framework, platform, or credential. Never list ordinary English "
         "words. Three to five items, empty if there are genuinely none.\n"
@@ -113,8 +132,14 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
         "naming concrete evidence.\n"
         f"8. This resume offers {achievements} achievement bullets. Keep about {target} of "
         "them — the strongest for this job — and drop the rest, so the result fits one "
-        "page. Never return more than 16, and never pad the count with skills, education "
-        "or language lines.\n\n"
+        "page. Never return more than 16. Skills lines are not achievements and do not "
+        "count towards that number; education and language lines are never returned at "
+        "all.\n"
+        "9. Return every line from the SKILLS section, in the order this job makes "
+        "sensible — the group this job cares about most first. Inside a line you may drop "
+        "items the job has no use for and reorder the rest. You may not add an item, a "
+        "word, or a group: a skills line is a list of claims, and anything new in one "
+        "reads as a skill the candidate never made. Keep the \"Label:\" prefix.\n\n"
         f"TARGET ROLE: {snapshot.get('title', '')} at {snapshot.get('company', '')}, "
         f"{snapshot.get('location', '')}\n\n"
         f"JOB DESCRIPTION:\n{(snapshot.get('jd', {}).get('text') or '')[:JD_CHARS]}\n\n"
@@ -155,9 +180,18 @@ def apply_plan(document: dict, plan: dict) -> dict:
             entry["bullets"] = sorted(kept, key=lambda bullet: order[bullet["ref"]])
         section["entries"] = [entry for entry in section["entries"]
                               if entry["bullets"] or entry["lead"]]
-        # Skills, education and languages are credentials, not achievements:
-        # a role-specific edit would drop qualifications the reader expects.
-        if section["heading"] in ("EXPERIENCE", "PROJECTS"):
+        if section["heading"] in SUBSET_LINE_SECTIONS:
+            # Every skills category survives. The model decides which line leads
+            # and what stays inside it, never whether a category exists at all:
+            # dropping "Data & Analytics" on a data role because the model spent
+            # its picks elsewhere would present a narrower engineer than the
+            # master resume does. A line it did not rewrite keeps its master
+            # wording and falls in behind the ones it did.
+            rewritten = [dict(line, text=rewrites[line["ref"]])
+                         for line in section["lines"] if line["ref"] in rewrites]
+            untouched = [line for line in section["lines"] if line["ref"] not in rewrites]
+            section["lines"] = sorted(rewritten, key=lambda line: order[line["ref"]]) + untouched
+        elif section["heading"] in ACHIEVEMENT_LINE_SECTIONS:
             kept_lines = [dict(line, text=rewrites[line["ref"]])
                           for line in section["lines"] if line["ref"] in rewrites]
             if kept_lines:
@@ -192,10 +226,14 @@ def substance_failures(plan: dict, document: dict) -> list[str]:
     name, a skills list and almost no career — which renders cleanly, fits one
     page, and would have gone out labelled as successfully tailored.
     """
-    kept = {item.get("ref") for item in plan.get("bullets", [])}
+    # Skills lines are returned on every draft now, so counting them here would
+    # let five of them satisfy a floor meant to prove the career survived.
+    skills = subset_line_refs(document)
+    kept = {item.get("ref") for item in plan.get("bullets", [])} - skills
     available = {bullet["ref"] for section in document["sections"]
                  for entry in section["entries"] for bullet in entry["bullets"]}
-    available |= {line["ref"] for section in document["sections"] for line in section["lines"]}
+    available |= {line["ref"] for section in document["sections"]
+                  for line in section["lines"]} - skills
     experience = {bullet["ref"]
                   for section in document["sections"] if section["heading"] == "EXPERIENCE"
                   for entry in section["entries"] for bullet in entry["bullets"]}
@@ -242,6 +280,11 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
     the caller can fall back to sending the untouched master resume.
     """
     allowed = vocabulary(master_text, snapshot.get("title", ""), snapshot.get("company", ""))
+    # Rule 4 permits the candidate's own headline and the job's title, nothing
+    # else. Until now nothing enforced it: the model's headline was written
+    # straight into the document unchecked.
+    headline_terms = vocabulary(document["headline"], snapshot.get("title", ""))
+    skills_refs = subset_line_refs(document)
     corrections: list[str] = []
     last_errors: list[str] = []
     # One budget spans both attempts and all their retries, so a slow chain
@@ -251,11 +294,14 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
     for _ in range(MAX_ATTEMPTS):
         plan = call_model(build_prompt(document, snapshot, corrections), api_key, deadline)
         checked = {
+            "headline": plan.get("headline", ""),
             "summary": plan.get("summary", ""),
             "bullets": [{"text": item["text"], "source_refs": [item["ref"]]}
                         for item in plan.get("bullets", [])],
         }
-        errors = validate_tailored_resume(checked, sources, allowed, master_text)
+        errors = validate_tailored_resume(checked, sources, allowed, master_text,
+                                          subset_refs=skills_refs,
+                                          headline_terms=headline_terms)
         errors += substance_failures(plan, document)
         if not errors:
             return apply_plan(document, plan), clean_gaps(plan, document, snapshot), \

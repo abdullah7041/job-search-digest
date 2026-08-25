@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """Run one HMAC-authenticated interactive task from the Discord Worker.
 
-The task verifies the immutable full-JD handoff, tailors the confirmed master
-resume against that job description, and returns a one-page PDF. Gap analysis
+The task settles which job description it is allowed to tailor against, tailors
+the confirmed master resume to it, and returns a one-page PDF. Gap analysis
 travels in the message rather than the document, so nothing that is meant for
 the candidate can be sent to an employer by accident.
+
+A card whose description the daily run could not capture used to end here, and
+the click reported that a job description was required. It no longer does: the
+posting is read again now, which often succeeds when the run at 07:00 did not,
+and only a second failure asks the candidate for the text. Whichever source
+wins is named in the message, because a CV built from a screenshot and one built
+from the archived posting are not equally trustworthy and the candidate is the
+one deciding whether to send it.
 """
 
 from __future__ import annotations
@@ -16,10 +24,12 @@ import json
 import os
 import re
 import sys
+import time
 from urllib.parse import quote
 
 import requests
 
+from jd_fetch import extract_jd, jd_from_image
 from job_archive import GRADE_TEASER, jd_completeness_failures, snapshot_grade
 from resume_render import parse_resume, render_pdf, source_refs
 from worker_client import signed_request
@@ -28,6 +38,30 @@ from worker_client import signed_request
 MESSAGE_LIMIT = 1900
 FILENAME_PART = 40
 FALLBACK_FILENAME = "Tailored_Resume.pdf"
+JD_MAX_CHARS = 6000
+
+# Where the job description this CV was built from actually came from, worst
+# last. Only the first is evidence the daily run archived and hash-verified.
+JD_CAPTURED = "captured"
+JD_PASTED = "pasted"
+JD_REFETCHED = "refetched"
+JD_IMAGE = "image"
+
+JD_PROVENANCE_NOTE = {
+    JD_PASTED: "Built from the job description you pasted, not from the posting itself.",
+    JD_REFETCHED: "The daily run could not read this posting, so it was fetched again just now.",
+    JD_IMAGE: ("Built from a job description read out of your screenshots. Check the CV "
+               "against the real posting before you send it."),
+}
+
+# Reading the posting again, or transcribing screenshots, has to stay small
+# next to resume_tailor's own 210-second budget: the workflow is killed at ten
+# minutes and a click that reports nothing is the one outcome worth avoiding.
+JD_BUDGET_SECONDS = 75
+
+
+def _log(message: str) -> None:
+    print(message, file=sys.stderr)
 
 
 def _master_document(resume_path: str = "resume.md") -> tuple[dict, str]:
@@ -132,22 +166,87 @@ def _encoded_result(value: dict) -> bytes:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
-def run_task(task: dict) -> dict:
-    """Validate the exact archived JD before any later tailoring can run."""
-    snapshot = task.get("input", {}).get("job_snapshot")
+NO_JD_MESSAGE = (
+    "I could not read a job description for this role.\n"
+    "The posting at {url} did not give one up, and none was supplied.\n"
+    "Run `/tailor-jd` and paste the description text, or attach screenshots of it."
+)
+
+
+def resolve_jd(snapshot: dict, task_input: dict, deadline: float,
+               fetch=extract_jd, transcribe=jd_from_image) -> tuple[str, str]:
+    """The job description this task may tailor against, and where it came from.
+
+    The archived description wins whenever there is one, and it is still
+    verified against the digest recorded with it, so a snapshot altered between
+    delivery and the click fails closed exactly as before. Everything after it
+    is a way to recover a card the daily run could not capture, ordered by how
+    much the text can be trusted: what the candidate deliberately supplied, then
+    the posting read again now, then screenshots.
+    """
+    jd = snapshot.get("jd") or {}
+    archived = (jd.get("text") or "").strip()
+    if jd.get("status") == "captured" and archived:
+        digest = hashlib.sha256(archived.encode("utf-8")).hexdigest()
+        if not jd.get("sha256") or not hmac.compare_digest(digest, jd["sha256"]):
+            raise ValueError("The job description no longer matches its archived digest.")
+        if jd_completeness_failures(archived):
+            raise ValueError("The snapshot does not contain a complete job description.")
+        return archived, JD_CAPTURED
+
+    pasted = (task_input.get("pasted_jd") or "").strip()
+    if pasted:
+        failures = jd_completeness_failures(pasted)
+        if failures:
+            raise ValueError(
+                "What you supplied does not read as a full job description "
+                f"({'; '.join(failures)}). Paste the whole posting, including its "
+                "responsibilities and requirements.")
+        return pasted[:JD_MAX_CHARS], JD_PASTED
+
+    url = (task_input.get("url") or snapshot.get("url") or "").strip()
+    if url:
+        text = fetch(url, limit=JD_MAX_CHARS, log=_log)
+        if text:
+            return text, JD_REFETCHED
+
+    images = [image for image in (task_input.get("images") or []) if image]
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if images and api_key:
+        try:
+            text = transcribe(images, api_key, deadline, limit=JD_MAX_CHARS)
+        except (ValueError, requests.RequestException) as error:
+            _log(f"WARN could not read the job description from the images: {error}")
+            text = ""
+        if text:
+            return text, JD_IMAGE
+
+    raise ValueError(NO_JD_MESSAGE.format(url=url or "this posting"))
+
+
+def run_task(task: dict, **resolvers) -> dict:
+    """Settle which job description may be tailored against, then tailor it.
+
+    ``resolvers`` forwards ``fetch`` and ``transcribe`` to resolve_jd, so a test
+    can exercise the recovery paths without reaching the network.
+    """
+    task_input = task.get("input", {})
+    snapshot = task_input.get("job_snapshot")
     if not isinstance(snapshot, dict):
         raise ValueError("The task has no immutable job snapshot.")
-    jd = snapshot.get("jd") or {}
-    jd_text = jd.get("text") or ""
-    if jd.get("status") != "captured" or not jd_text.strip():
-        raise ValueError("A full job description is required before tailoring.")
-    actual_digest = hashlib.sha256(jd_text.encode("utf-8")).hexdigest()
-    if not jd.get("sha256") or not hmac.compare_digest(actual_digest, jd["sha256"]):
-        raise ValueError("The job description no longer matches its archived digest.")
-    if jd_completeness_failures(jd_text):
-        raise ValueError("The snapshot does not contain a complete job description.")
     if not snapshot.get("job_key"):
         raise ValueError("The job snapshot has no stable key.")
+
+    jd_text, provenance = resolve_jd(snapshot, task_input,
+                                     time.monotonic() + JD_BUDGET_SECONDS,
+                                     **resolvers)
+    actual_digest = hashlib.sha256(jd_text.encode("utf-8")).hexdigest()
+    # Whatever won is what the tailoring model sees, so the snapshot carries it
+    # from here rather than the empty jd the button resolved to.
+    snapshot = dict(snapshot, jd=dict(snapshot.get("jd") or {}, status="captured",
+                                      text=jd_text, sha256=actual_digest,
+                                      completeness_failures=[]))
+    snapshot["jd"].pop("grade", None)
 
     title = snapshot.get("title") or "the selected role"
     company = snapshot.get("company") or "the employer"
@@ -156,12 +255,15 @@ def run_task(task: dict) -> dict:
     # requirements. This is a warning, not a degradation: `tailored` stays true
     # because the tailoring itself worked.
     warnings = [TEASER_WARNING] if snapshot_grade(snapshot) == GRADE_TEASER else []
+    if JD_PROVENANCE_NOTE.get(provenance):
+        warnings.append(JD_PROVENANCE_NOTE[provenance])
     pdf_base64, gaps, fit_notes, note, name = _tailored_pdf(snapshot)
     return {
         "status": "completed",
         "content": _message(title, company, gaps, fit_notes, note, warnings),
         "job_key": snapshot["job_key"],
         "jd_sha256": actual_digest,
+        "jd_source": provenance,
         "pdf_base64": pdf_base64,
         "filename": _filename(name, title),
         "gaps": "; ".join(gaps),

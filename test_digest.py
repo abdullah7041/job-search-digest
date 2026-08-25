@@ -36,6 +36,7 @@ for f in ("profile.json", "resume.md"):
 os.chdir(_TMP)
 
 import digest  # noqa: E402
+import jd_fetch  # noqa: E402
 import job_archive  # noqa: E402
 
 
@@ -659,6 +660,160 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None):
     return posts, work
 
 
+class TestJdFetch(unittest.TestCase):
+    """The aggregator recovery paths. Every response is injected; no network."""
+
+    def _page(self, body, status=200):
+        response = mock.Mock()
+        response.status_code = status
+        response.text = body
+        return response
+
+    def _json(self, payload, status=200):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: payload
+        response.text = ""
+        return response
+
+    def test_structured_data_is_read_when_the_body_is_a_login_wall(self):
+        """The case that produced "Job description needed before tailoring".
+
+        A relister renders a sign-in prompt and publishes the whole posting in
+        the JobPosting block anyway, because that is what Google indexes.
+        """
+        page = (
+            "<html><body><h1>Sign in to view this job</h1>"
+            '<script type="application/ld+json">'
+            + json.dumps({"@context": "https://schema.org", "@type": "JobPosting",
+                          "title": "Senior ML Engineer",
+                          "description": "<p>" + FULL_JD + "</p>"})
+            + "</script></body></html>"
+        )
+
+        out = jd_fetch.extract_jd("https://sa.jooble.org/jdp/-19135", get=lambda _u: self._page(page))
+
+        self.assertIn("Your Impact", out)
+        self.assertNotIn("Sign in to view", out)
+
+    def test_a_graph_wrapper_is_walked_rather_than_assumed(self):
+        page = (
+            '<script type="application/ld+json">'
+            + json.dumps({"@context": "https://schema.org",
+                          "@graph": [{"@type": "BreadcrumbList"},
+                                     {"@type": ["JobPosting"], "description": FULL_JD}]})
+            + "</script>"
+        )
+
+        self.assertIn("Your Impact", jd_fetch.jsonld_job_posting(page))
+
+    def test_an_escaped_block_is_still_parsed(self):
+        page = ('<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": FULL_JD}).replace('"', "&quot;")
+                + "</script>")
+
+        self.assertIn("Your Impact", jd_fetch.jsonld_job_posting(page))
+
+    def test_the_ats_the_aggregator_relisted_is_read_instead_of_the_aggregator(self):
+        """Jooble relists an employer's Greenhouse posting and links to it.
+
+        The employer's API is the posting; the relister's page is a rendering
+        of it, usually a partial one. So the hop outranks the page body.
+        """
+        page = ('<html><body><p>Apply on the company site.</p>'
+                '<a href="https://boards.greenhouse.io/examplelabs/jobs/4412">Apply</a>'
+                "</body></html>")
+
+        def get(url):
+            if "greenhouse" in url:
+                return self._json({"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"})
+            return self._page(page)
+
+        out = jd_fetch.extract_jd("https://sa.jooble.org/jdp/-771", get=get)
+
+        self.assertIn("Your Impact", out)
+        self.assertNotIn("Apply on the company site", out)
+
+    def test_an_ats_url_is_read_even_when_the_page_itself_never_loads(self):
+        """A 403 on the landing page does not have to end the attempt: the URL
+        already names the board and the posting."""
+        def get(url):
+            if "api.lever.co" in url:
+                return self._json([{"id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                                    "descriptionPlain": FULL_JD}])
+            return self._page("blocked", status=403)
+
+        out = jd_fetch.extract_jd(
+            "https://jobs.lever.co/examplelabs/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", get=get)
+
+        self.assertIn("Your Impact", out)
+
+    def test_a_bot_blocked_page_still_yields_nothing(self):
+        """Unchanged behaviour, and the point of the completeness gate: chrome
+        that reads as a description would score and tailor on noise."""
+        page = "<html><body><nav>Jobs Companies Salaries</nav><p>Access denied.</p></body></html>"
+
+        self.assertEqual(jd_fetch.extract_jd("https://x.test/1", get=lambda _u: self._page(page)), "")
+
+    def test_a_teaser_from_structured_data_is_refused_like_any_other(self):
+        page = ('<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": "We are hiring an engineer."})
+                + "</script>")
+
+        self.assertEqual(jd_fetch.extract_jd("https://x.test/2", get=lambda _u: self._page(page)), "")
+
+    def test_a_network_failure_returns_empty_rather_than_raising(self):
+        def get(_url):
+            raise digest.requests.ConnectionError("down")
+
+        self.assertEqual(jd_fetch.extract_jd("https://x.test/3", get=get), "")
+
+    def test_fetch_posting_page_routes_through_the_shared_extractor(self):
+        job = {"id": "1", "title": "t", "company": "c", "description": "",
+               "source": "jsearch", "token": "", "url": "https://x.test/4"}
+        page = ('<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": FULL_JD}) + "</script>")
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            self.assertIn("Your Impact", digest.get_description(job))
+
+
+class TestDeliveryFloor(unittest.TestCase):
+    def _jobs(self):
+        return [
+            {"id": "good", "title": "Senior AI Engineer", "description": "Python LLM",
+             "company": "A", "score": 55, "ranking_verified": True},
+            {"id": "weak", "title": "Senior Data Engineer", "description": "SQL",
+             "company": "B", "score": 45, "ranking_verified": True},
+            {"id": "edge", "title": "Senior Backend Engineer", "description": "Go",
+             "company": "C", "score": 50, "ranking_verified": True},
+        ]
+
+    def test_only_scores_under_the_floor_are_dropped(self):
+        kept, dropped = digest.drop_below_floor(self._jobs())
+
+        self.assertEqual([job["id"] for job in kept], ["good", "edge"])
+        self.assertEqual([job["id"] for job in dropped], ["weak"])
+
+    def test_a_heuristic_score_is_never_dropped(self):
+        """A keyword score is what the pipeline produces when the ranker is
+        down. Treating it as a verdict would turn an outage into an empty
+        digest with nothing anywhere saying why."""
+        jobs = [dict(job, ranking_verified=False) for job in self._jobs()]
+
+        kept, dropped = digest.drop_below_floor(jobs)
+
+        self.assertEqual(dropped, [])
+        self.assertEqual(len(kept), 3)
+
+    def test_the_floor_is_configurable(self):
+        with mock.patch.object(digest, "MIN_DELIVER_SCORE", 60):
+            kept, dropped = digest.drop_below_floor(self._jobs())
+
+        self.assertEqual([job["id"] for job in kept], [])
+        self.assertEqual(len(dropped), 3)
+
+
 class TestEndToEnd(unittest.TestCase):
     ENV = {"DISCORD_WEBHOOK_URL": "https://discord.test/webhook",
            "OPENROUTER_API_KEY": "test-key",
@@ -892,6 +1047,44 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("Senior Software Engineer (AI Systems)", body)
         self.assertIn("fit ", body)
         self.assertNotIn("tailored resume:", body)  # tailor also failed -> no links, no crash
+
+    def test_a_job_below_the_floor_is_neither_delivered_nor_offered_again(self):
+        """The Datamatics role scores 41 and stops being a card.
+
+        It is still remembered, so tomorrow's run does not re-fetch it,
+        re-score it and reject it again for the next 120 days.
+        """
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 41, "why": "Adjacent architecture work, most requirements missing"},
+        }
+
+        posts, work = run_main(self.ENV, ranking)
+
+        body = "\n".join(posts)
+        self.assertIn("Senior Software Engineer (AI Systems)", body)
+        self.assertNotIn("Senior Data Architect", body)
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            seen = json.load(handle)
+        self.assertIn("url:https://example.com/e", seen)
+
+    def test_the_drift_average_is_measured_before_the_floor_cuts(self):
+        """check_drift compares today's average against the prior window. Taking
+        it after a cut that removes exactly the low scores would make a stale
+        profile look like a healthy one."""
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 41, "why": "Adjacent architecture work, most requirements missing"},
+        }
+
+        posts, work = run_main(self.ENV, ranking)
+
+        with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+            row = json.load(handle)[-1]
+        self.assertEqual(row["avg_score"], 67.0)
+        self.assertEqual(row["new"], 2)
+        self.assertEqual(row["below_floor"], 1)
+        self.assertEqual(row["delivered"], 1)
 
     def test_no_ranker_key_no_tailoring(self):
         env = dict(self.ENV)
