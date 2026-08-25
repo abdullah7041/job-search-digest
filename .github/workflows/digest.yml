@@ -60,6 +60,7 @@ jobs:
           # two-argument os.environ.get.
           RANK_MODEL: ${{ vars.RANK_MODEL }}
           RANK_FALLBACK_MODELS: ${{ vars.RANK_FALLBACK_MODELS }}
+          MIN_DELIVER_SCORE: ${{ vars.MIN_DELIVER_SCORE }}
         run: python digest.py
       - name: Package generated state
         run: python workflow_guard.py package-state --root . --output state-artifact

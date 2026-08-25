@@ -406,8 +406,8 @@ Arabic-first AI SaaS, live in production.
 
 def _plan(**overrides):
     plan = {
-        "headline": "AI Product Engineer / Machine Learning Engineer",
-        "summary": "AI Product Engineer shipping production LLM systems, with 5+ years across engineering.",
+        "headline": "AI Product Engineer — Senior Machine Learning Engineer",
+        "summary": "AI Product Engineer with 5+ years across engineering, shipping production LLM systems.",
         "bullets": [
             {"ref": "b1", "text": "Built an LLM evaluation pipeline that judge-scores prompt and model variants."},
             {"ref": "b2", "text": "Instrumented production monitoring with Sentry and real-time Telegram alerting."},
@@ -499,7 +499,7 @@ class TestTailoringPlan(unittest.TestCase):
         watheq = tailored["sections"][0]["entries"][0]
 
         self.assertEqual([bullet["ref"] for bullet in watheq["bullets"]], ["b2", "b1"])
-        self.assertEqual(tailored["headline"], "AI Product Engineer / Machine Learning Engineer")
+        self.assertEqual(tailored["headline"], "AI Product Engineer — Senior Machine Learning Engineer")
 
     def test_a_role_with_no_kept_bullets_leaves_the_resume(self):
         document = parse_resume(MASTER)
@@ -726,7 +726,32 @@ class TestTailoringPrompt(unittest.TestCase):
         prompt = self._prompt()
 
         self.assertIn("in the target role's title, or in the employer's name", prompt)
-        self.assertIn("combine the candidate's current title with the job's title", prompt)
+        self.assertIn("the candidate's current title, then an em dash, then the job's title", prompt)
+
+    def test_the_summary_rule_asks_for_a_rewrite_rather_than_permitting_a_copy(self):
+        """The KAUST CV's summary was the master's summary, word for word. The
+        old rule only forbade inventing facts; nothing asked the model to aim
+        the summary at the job, so it took the safe path every time."""
+        prompt = self._prompt()
+
+        self.assertIn("Rewrite the summary for this job", prompt)
+        self.assertIn("Returning the existing summary unchanged is a failure", prompt)
+
+    def test_skills_lines_are_asked_for_and_bounded(self):
+        """The skills block shipped identically on every job, because nothing
+        ever rewrote it. Now it is requested, and the request names the one
+        thing the evidence check will not forgive."""
+        prompt = self._prompt()
+
+        self.assertIn("Return every line from the SKILLS section", prompt)
+        self.assertIn("You may not add an item, a word, or a group", prompt)
+
+    def test_skills_lines_do_not_count_towards_the_achievement_target(self):
+        """Five skills lines would otherwise satisfy a bullet target meant to
+        prove the career survived selection."""
+        prompt = self._prompt()
+
+        self.assertIn("Skills lines are not achievements and do not count", prompt)
 
     def test_the_bullet_target_reflects_what_the_resume_actually_offers(self):
         """'Roughly 16' is unreachable on a short resume, so it read as 'keep
@@ -741,6 +766,262 @@ class TestTailoringPrompt(unittest.TestCase):
 
         self.assertIn("offers {0} achievement bullets".format(available), prompt)
         self.assertNotIn("roughly 16 bullets", prompt)
+
+
+# The master's real shape: several skills categories, and a LANGUAGES section
+# whose only content is a plain line rather than a bullet.
+MASTER_FULL = MASTER + """- **Backend & Cloud:** Supabase, REST APIs, GitHub Actions CI/CD, Git
+- **Frontend:** React 19, Tailwind CSS, Vite, Zustand
+
+## LANGUAGES
+Arabic (native) · English (professional)
+"""
+
+
+class TestIntroOnlySection(unittest.TestCase):
+    def test_a_section_that_is_only_an_intro_still_reaches_the_pdf(self):
+        """LANGUAGES was absent from every PDF this has ever rendered.
+
+        parse_resume files a plain line under "intro", because only a "- " line
+        becomes a bullet, and the renderer skipped any section with no entries
+        and no lines. So "Arabic (native) . English (professional)" was dropped
+        from the master resume itself, not just from a tailored one -- including
+        on jobs that ask for English and for working in an international team.
+        """
+        from pypdf import PdfReader
+
+        text = PdfReader(BytesIO(render_pdf(parse_resume(MASTER_FULL)))).pages[0].extract_text()
+
+        self.assertIn("LANGUAGES", text)
+        self.assertIn("Arabic (native)", text)
+
+    def test_a_section_with_nothing_at_all_is_still_skipped(self):
+        document = parse_resume(MASTER_FULL)
+        document["sections"].append({"heading": "AWARDS", "entries": [], "lines": []})
+
+        from pypdf import PdfReader
+        text = PdfReader(BytesIO(render_pdf(document))).pages[0].extract_text()
+
+        self.assertNotIn("AWARDS", text)
+
+
+class TestSkillsTailoring(unittest.TestCase):
+    def _skills(self, document):
+        section = [s for s in document["sections"] if s["heading"] == "SKILLS"][0]
+        return [line["text"] for line in section["lines"]]
+
+    def test_skills_lines_are_reordered_and_pruned_for_the_job(self):
+        """The KAUST CV shipped "Frontend: React 19, Tailwind CSS, Vite,
+        Zustand" to a supercomputing lab, because apply_plan rewrote lines only
+        under EXPERIENCE and PROJECTS."""
+        document = parse_resume(MASTER_FULL)
+        refs = {line["ref"]: line["source"]
+                for section in document["sections"] if section["heading"] == "SKILLS"
+                for line in section["lines"]}
+        languages_ref, backend_ref, frontend_ref = list(refs)
+
+        plan = _plan(bullets=_plan()["bullets"] + [
+            {"ref": backend_ref, "text": "Backend & Cloud: GitHub Actions CI/CD, Git"},
+            {"ref": languages_ref, "text": "Languages: Python, SQL"},
+            {"ref": frontend_ref, "text": "Frontend: React 19"},
+        ])
+
+        lines = self._skills(resume_tailor.apply_plan(document, plan))
+
+        self.assertEqual(lines[0], "Backend & Cloud: GitHub Actions CI/CD, Git")
+        self.assertEqual(lines[1], "Languages: Python, SQL")
+        self.assertNotIn("Zustand", " ".join(lines))
+
+    def test_every_skills_category_survives_a_partial_plan(self):
+        """The model choosing which line leads is tailoring. The model deciding
+        a category does not exist would present a narrower engineer than the
+        master resume does, so a line it ignored keeps its master wording."""
+        document = parse_resume(MASTER_FULL)
+        backend_ref = [line["ref"] for section in document["sections"]
+                       if section["heading"] == "SKILLS" for line in section["lines"]][1]
+        plan = _plan(bullets=_plan()["bullets"]
+                     + [{"ref": backend_ref, "text": "Backend & Cloud: GitHub Actions CI/CD"}])
+
+        lines = self._skills(resume_tailor.apply_plan(document, plan))
+
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0], "Backend & Cloud: GitHub Actions CI/CD")
+        self.assertIn("Zustand", " ".join(lines))
+
+    def test_a_skills_line_may_not_gain_a_single_word(self):
+        """Resume-wide vocabulary is too loose for a skills line: a term from
+        the experience section would pass it, while reading to a recruiter as a
+        skill the candidate listed."""
+        sources = {"s1": "Languages: Python, TypeScript, SQL"}
+        checked = {"bullets": [{"text": "Languages: Python, SQL, PyTorch", "source_refs": ["s1"]}]}
+
+        errors = validate_tailored_resume(checked, sources, vocabulary(MASTER_FULL),
+                                          MASTER_FULL, subset_refs={"s1"})
+
+        self.assertTrue(any("pytorch" in error.lower() for error in errors))
+
+    def test_dropping_and_reordering_a_skills_line_is_allowed(self):
+        sources = {"s1": "Languages: Python, TypeScript, SQL"}
+        checked = {"bullets": [{"text": "Languages: SQL, Python", "source_refs": ["s1"]}]}
+
+        errors = validate_tailored_resume(checked, sources, vocabulary(MASTER_FULL),
+                                          MASTER_FULL, subset_refs={"s1"})
+
+        self.assertEqual(errors, [])
+
+    def test_a_skills_line_that_is_not_named_keeps_the_ordinary_rule(self):
+        """Only skills lines are held to the subtractive rule; an experience
+        bullet may still be rephrased into the job's own framing."""
+        sources = {"b1": "Built an LLM evaluation pipeline that judge-scores prompt variants."}
+        checked = {"bullets": [{"text": "Built an evaluation pipeline for prompt variants.",
+                                "source_refs": ["b1"]}]}
+
+        self.assertEqual(
+            validate_tailored_resume(checked, sources, vocabulary(MASTER_FULL), MASTER_FULL), [])
+
+
+class TestHeadlineAndSummaryGuards(unittest.TestCase):
+    def _terms(self):
+        return vocabulary("AI Product Engineer", "AI/ML Support Analyst")
+
+    def test_a_headline_word_from_neither_source_is_rejected(self):
+        """plan["headline"] went into the document unchecked, so rule 4 was a
+        request rather than a constraint."""
+        errors = validate_tailored_resume(
+            {"headline": "Senior HPC Engineer", "bullets": []}, {},
+            headline_terms=self._terms(),
+            expected_headline="AI Product Engineer — AI/ML Support Analyst")
+
+        self.assertTrue(any("hpc" in error.lower() for error in errors))
+
+    def test_the_current_title_joined_to_the_job_title_passes(self):
+        errors = validate_tailored_resume(
+            {"headline": "AI Product Engineer — AI/ML Support Analyst", "bullets": []}, {},
+            headline_terms=self._terms())
+
+        self.assertEqual(errors, [])
+
+    def test_a_summary_longer_than_three_sentences_is_rejected(self):
+        """"Three sentences at most" was a prompt rule with nothing behind it."""
+        summary = ("Python engineer. Builds evaluation pipelines. "
+                   "Ships production systems. Writes documentation.")
+
+        errors = validate_tailored_resume(
+            {"summary": summary, "bullets": []}, {},
+            allowed_terms=vocabulary(MASTER_FULL), master_text=MASTER_FULL)
+
+        self.assertTrue(any("sentences" in error for error in errors))
+
+    def test_an_incomplete_headline_is_rejected_even_when_its_words_are_supported(self):
+        errors = validate_tailored_resume(
+            {"headline": "AI Product Engineer", "bullets": []}, {},
+            headline_terms=self._terms(),
+            expected_headline="AI Product Engineer — AI/ML Support Analyst")
+
+        self.assertTrue(any("current title" in error.lower() for error in errors))
+
+    def test_an_unchanged_master_summary_is_rejected(self):
+        master_summary = parse_resume(MASTER_FULL)["summary"]
+
+        errors = validate_tailored_resume(
+            {"summary": master_summary, "bullets": []}, {},
+            allowed_terms=vocabulary(MASTER_FULL), master_text=MASTER_FULL,
+            master_summary=master_summary)
+
+        self.assertTrue(any("unchanged" in error.lower() for error in errors))
+
+
+class TestJdResolution(unittest.TestCase):
+    """Where the description a CV is built from is allowed to come from."""
+
+    FULL_JD = JOB["description"]
+
+    def _snapshot(self, **jd):
+        snapshot = make_snapshot(dict(JOB, description=""), "2026-08-03T12:00:00Z")
+        if jd:
+            snapshot["jd"].update(jd)
+        return snapshot
+
+    def test_the_archived_description_still_wins_and_is_still_verified(self):
+        snapshot = make_snapshot(JOB, "2026-08-03T12:00:00Z")
+
+        text, source = interactive_runner.resolve_jd(
+            snapshot, {}, time.monotonic() + 60,
+            fetch=lambda *a, **k: self.fail("no refetch when the snapshot has one"))
+
+        self.assertEqual(source, interactive_runner.JD_CAPTURED)
+        self.assertEqual(text, snapshot["jd"]["text"])
+
+    def test_a_card_the_daily_run_could_not_read_is_fetched_again_now(self):
+        """The whole point: the 07:00 run was blocked, the click at 13:00 is
+        not, and the candidate never had to type anything."""
+        snapshot = self._snapshot()
+
+        text, source = interactive_runner.resolve_jd(
+            snapshot, {}, time.monotonic() + 60, fetch=lambda *a, **k: self.FULL_JD)
+
+        self.assertEqual(source, interactive_runner.JD_REFETCHED)
+        self.assertEqual(text, self.FULL_JD)
+
+    def test_what_the_candidate_pasted_outranks_fetching(self):
+        snapshot = self._snapshot()
+
+        text, source = interactive_runner.resolve_jd(
+            snapshot, {"pasted_jd": self.FULL_JD}, time.monotonic() + 60,
+            fetch=lambda *a, **k: self.fail("a supplied description is not second-guessed"))
+
+        self.assertEqual(source, interactive_runner.JD_PASTED)
+
+    def test_a_paste_that_is_not_a_full_posting_is_refused_with_the_reason(self):
+        with self.assertRaisesRegex(ValueError, "full job description"):
+            interactive_runner.resolve_jd(self._snapshot(), {"pasted_jd": "Python role, Riyadh."},
+                                          time.monotonic() + 60)
+
+    def test_screenshots_are_the_last_resort_and_are_gated_the_same_way(self):
+        snapshot = self._snapshot()
+
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "k"}):
+            text, source = interactive_runner.resolve_jd(
+                snapshot, {"images": ["https://cdn.discordapp.test/a.png"]},
+                time.monotonic() + 60,
+                fetch=lambda *a, **k: "",
+                transcribe=lambda *a, **k: self.FULL_JD)
+
+        self.assertEqual(source, interactive_runner.JD_IMAGE)
+
+    def test_when_nothing_works_the_message_says_what_to_do_next(self):
+        """The old failure named a command that no longer existed. This one
+        names the command that does, and the posting it could not read."""
+        with self.assertRaises(ValueError) as raised:
+            interactive_runner.resolve_jd(self._snapshot(), {}, time.monotonic() + 60,
+                                          fetch=lambda *a, **k: "")
+
+        message = str(raised.exception)
+        self.assertIn("/tailor-jd", message)
+        self.assertIn(JOB["url"], message)
+
+    def test_a_tampered_archived_description_still_fails_closed(self):
+        """Recovery must not become a way around the integrity check: a
+        snapshot altered after delivery is rejected, never quietly refetched."""
+        snapshot = make_snapshot(JOB, "2026-08-03T12:00:00Z")
+        snapshot["jd"]["text"] = "A different description"
+
+        with self.assertRaisesRegex(ValueError, "digest"):
+            interactive_runner.resolve_jd(snapshot, {}, time.monotonic() + 60,
+                                          fetch=lambda *a, **k: self.FULL_JD)
+
+    def test_the_message_says_which_description_the_cv_was_built_from(self):
+        """A CV built from screenshots and one built from the archived posting
+        are not equally trustworthy, and the candidate is the one deciding
+        whether to send it."""
+        snapshot = self._snapshot()
+
+        result = run_task({"input": {"job_snapshot": snapshot}, "status": "dispatched"},
+                          fetch=lambda *a, **k: self.FULL_JD)
+
+        self.assertEqual(result["jd_source"], interactive_runner.JD_REFETCHED)
+        self.assertIn("fetched again just now", result["content"])
+        self.assertTrue(result["pdf_base64"])
 
 
 class TestTailoredFilename(unittest.TestCase):

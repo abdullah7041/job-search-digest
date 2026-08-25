@@ -44,6 +44,9 @@ jobs:
           # the variable is unset, which renders here as an empty string.
           TAILOR_MODEL: ${{ vars.TAILOR_MODEL }}
           TAILOR_FALLBACK_MODELS: ${{ vars.TAILOR_FALLBACK_MODELS }}
+          # The chain that reads a screenshotted posting. Must be multimodal.
+          VISION_MODEL: ${{ vars.VISION_MODEL }}
+          VISION_FALLBACK_MODELS: ${{ vars.VISION_FALLBACK_MODELS }}
           TASK_ID: ${{ inputs.task_id }}
         run: python interactive_runner.py
       - name: Send redacted failure alert

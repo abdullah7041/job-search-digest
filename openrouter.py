@@ -73,11 +73,17 @@ def _content_from_payload(payload: dict, model: str) -> dict:
     return json.loads(content)
 
 
-def chat_json(prompt: str, schema: dict, schema_name: str, api_key: str,
+def chat_json(prompt: str | list, schema: dict, schema_name: str, api_key: str,
               model: str, fallbacks: list[str], deadline: float,
               *, reasoning_effort: str = "low", seed: int = 7,
               provider: dict | None = None) -> dict:
     """One schema-checked answer from the model chain, or raise for the caller.
+
+    ``prompt`` is either the text of one user message, or the list of content
+    parts that message is made of — ``[{"type": "text", ...}, {"type":
+    "image_url", ...}]`` — which is how an image reaches a multimodal member of
+    the chain. Everything else is identical either way, including the schema,
+    the deadline and the no-retention routing policy.
 
     OpenRouter walks ``models`` itself when a member is missing, rate-limited or
     erroring, which a single-model call could not do: a 404 on the model name or

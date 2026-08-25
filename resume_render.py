@@ -176,7 +176,13 @@ def _story(document: dict, size: float):
         )
 
     for section in document["sections"]:
-        if not section["entries"] and not section["lines"]:
+        # A section can be nothing but its intro. LANGUAGES is exactly that --
+        # "Arabic (native) . English (professional)" is a plain line, and
+        # parse_resume files a plain line under "intro" because only a "- " line
+        # becomes a bullet. Skipping a section on entries and lines alone
+        # therefore dropped LANGUAGES out of every PDF this has ever rendered,
+        # tailored or not, including on jobs that ask for the languages.
+        if not section["entries"] and not section["lines"] and not section.get("intro"):
             continue
         story.append(Paragraph(escape(section["heading"]), heading_style))
         story.append(HRFlowable(width="100%", thickness=0.6, spaceAfter=3, spaceBefore=0))
@@ -228,7 +234,12 @@ def _trim_once(document: dict) -> bool:
         if len(entry["bullets"]) > MIN_BULLETS_PER_ENTRY:
             entry["bullets"].pop()
             return True
-    for section in document["sections"]:
+    # Late sections first. Iterating forward took a project away before a sixth
+    # certificate, and both before a skills line the job actually asked for.
+    # Within a section the last item goes, which after apply_plan's ordering is
+    # the one the job description supported least. An intro-only section holds
+    # neither entries nor lines, so nothing here can reach it.
+    for section in reversed(document["sections"]):
         if len(section["lines"]) > MIN_BULLETS_PER_ENTRY:
             section["lines"].pop()
             return True
