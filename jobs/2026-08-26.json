@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-26",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_UTV5bHd6c2NCbmkyMmFHaEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMGhDV0daS1VURTJRMloyVURsalV6SmhOVFptUjBWQmIxWkxURkozT1U5aFpVRnhTM04wWVVKR1YyRllXblJZWkVsWFJFWkVjWEEzTURWU1prTjNkMjFzUWxWVlNWRllkelZSUjJFMFIyTTBaR1ZXT1VGa1YyNXlMV3BMV21OblVqVXhORjlHU1RGMVltczFOWGRNVmxGWlkwNUhTM0IzU0VwWmFGOW9UMmxDZDFNeE0yc1NGMlJYZVU5aGN6ZEVUV0pmZFhKMVJWQjJUSFZNZVVGUkdpSkJSSE55T1daU1N6VkRUelpJVGpsWWRFTnFPR0ZvTW1FNFNXZFRZblJaT1Uxbg",
+      "captured_at": "2026-08-26T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_UTV5bHd6c2NCbmkyMmFHaEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMGhDV0daS1VURTJRMloyVURsalV6SmhOVFptUjBWQmIxWkxURkozT1U5aFpVRnhTM04wWVVKR1YyRllXblJZWkVsWFJFWkVjWEEzTURWU1prTjNkMjFzUWxWVlNWRllkelZSUjJFMFIyTTBaR1ZXT1VGa1YyNXlMV3BMV21OblVqVXhORjlHU1RGMVltczFOWGRNVmxGWlkwNUhTM0IzU0VwWmFGOW9UMmxDZDFNeE0yc1NGMlJYZVU5aGN6ZEVUV0pmZFhKMVJWQjJUSFZNZVVGUkdpSkJSSE55T1daU1N6VkRUelpJVGpsWWRFTnFPR0ZvTW1FNFNXZFRZblJaT1Uxbg",
+      "title": "AI Engineer (Model & Pipeline Deployment)",
+      "company": "Latitude",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/ai-engineer-model-pipeline-deployment--riyadh--e1cba79873c5d97781b410e0f2dad9fd0",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 88,
+      "why": "Strong fit for Python, model deployment, pipelines, and MLOps in Riyadh.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Company Description\n\nJobs for Humanity is partnering with Alrkeen to build an inclusive and just employment ecosystem. Therefore, we prioritize individuals coming from all walks of life. Company Name: Alrkeen\n\nJob Description\n\nWe are seeking an experienced Machine Learning Engineer to design, build, and deploy AI models and data pipelines that address real-world business challenges. You will partner with stakeholders to translate measurable objectives into production‑grade ML solutions, balancing performance, reliability, security, and scalability.\n\nJob Purpose\n\nOwn the end-to-end delivery of production AI/ML systems—modeling through deployment—improving accuracy and efficiency while ensuring reliable monitoring, security/compliance, and measurable impact.\n\nJob Duties and Responsibilities\n\n• Python\n\n• PyTorch or TensorFlow\n\n• Machine learning algorithms\n\n• Deep learning architectures\n\n• Data preprocessing and feature engineering\n\n• Model evaluation (AUC, F1, RMSE)\n\n• MLOps tools (Docker, CI/CD)\n\n• Cloud services (AWS/GCP/Azure)\n\n• APIs for model serving\n\n• SQL and big data tooling\n\n• Deploy and monitor models in production reliably\n\n• Optimize model performance and reduce latency\n\n• Document solutions and ensure compliance\n\n• Build scalable data pipelines for training and inference\n\nQualifications\n\nRequired Qualifications\n\n• Python\n\n• PyTorch or TensorFlow\n\n• Machine learning algorithms\n\n• Deep learning architectures\n\n• Data preprocessing and feature engineering\n\n• Model evaluation (AUC, F1, RMSE)\n\n• MLOps tools (Docker, CI/CD)\n\n• Cloud services (AWS/GCP/Azure)\n\n• APIs for model serving\n\n• SQL and big data tooling\n\n• Experience deploying ML models to production\n\n• Knowledge of reliability and security best practices\n\n• Ability to document and support compliance requirements\n\nCompany: Alrkeen",
+        "sha256": "0c7ce5cae1b6de26e1b800c5ffeebddeba66f6e2e5d6c2882a3d0a63195a2417",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_X2k5VS1KTHZkMXlPYmszSEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbTFFVmsxbE1FcHdPVkJvWnpkemJsTnFZVTFQU2tKSWNFNHpTRjkyZUdGQ1dFbzFRM1ZxUkVGVmRIZ3lWVk5zV21OVFVWQnljMk5NYm10WFVrbFJUa2QwYTNaMWMxSlRkRkZHU1RKMVpWcFpTR3RTY1RKdk9ESnlVMFZvYTFFeGRtUkRjVGROT1ZjMFYzSXpOM1ZrYzJwT1lXUm1XRXBmYms1R1RHZGZWbkJNWlZKNmNFUVNGMlJYZVU5aGN6ZEVUV0pmZFhKMVJWQjJUSFZNZVVGUkdpSkJSSE55T1daVVJtdExkR0pEVlVreGVYTndMVTk2VEc5ZlFYYzFVbFF3VVRsUg",
+      "captured_at": "2026-08-26T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_X2k5VS1KTHZkMXlPYmszSEFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbTFFVmsxbE1FcHdPVkJvWnpkemJsTnFZVTFQU2tKSWNFNHpTRjkyZUdGQ1dFbzFRM1ZxUkVGVmRIZ3lWVk5zV21OVFVWQnljMk5NYm10WFVrbFJUa2QwYTNaMWMxSlRkRkZHU1RKMVpWcFpTR3RTY1RKdk9ESnlVMFZvYTFFeGRtUkRjVGROT1ZjMFYzSXpOM1ZrYzJwT1lXUm1XRXBmYms1R1RHZGZWbkJNWlZKNmNFUVNGMlJYZVU5aGN6ZEVUV0pmZFhKMVJWQjJUSFZNZVVGUkdpSkJSSE55T1daVVJtdExkR0pEVlVreGVYTndMVTk2VEc5ZlFYYzFVbFF3VVRsUg",
+      "title": "Senior ML Engineer: GenAI, MLOps & Governed AI",
+      "company": "Infinniti",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.jooble.org/jdp/-490172326404465737",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 83,
+      "why": "Judged on incomplete description; excellent GenAI and AI governance alignment for senior IC in Riyadh.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "incomplete",
+        "text": "Infinniti is seeking a senior ML/AI professional to take applied AI from proof of concept to governed, auditable production in a client-facing context. You will own scope, build and operate systems with governance and safety considerations.\n\nYou will collaborate with clients to turn ambitious AI plans into defensible, shippable solutions, with a focus on production readiness and regulatory compliance.\n#J-18808-Ljbffr",
+        "sha256": "1614ddce591ed47160d296dd5693e094462131d3cdf5e538be1db455e488db74",
+        "completeness_failures": [
+          "requirements_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_d1lGaUthZEgwd1JBS2Q3ekFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM2MyZVdkTFNuUnNOM2hqTFdSdldEaEhVMUZKYzFoYWNYbE9Uek5DV2tGbFkzUklkWG81TURaR01HVXlWMDk0YjFkbVRWbGxSMDFvVjFaaVQwMHRiMUZXUmtOSlVXUnJiREZ5TUhScll6SnFWWE51ZVdwWFNHRmlaazk1VnpRNWNrdHRYME5IU0hRM2NUTm1SQzFHTmtrM01uVmxVamRKV2w5eE1EZFplbE5DTlhaTVVXRVNGMlJYZVU5aGN6ZEVUV0pmZFhKMVJWQjJUSFZNZVVGUkdpSkJSSE55T1daUlRra3lPWEJ0YkRGdWNqSm9VWE5aUkZJNE5ERmtjMlUzY0c1bg",
+      "captured_at": "2026-08-26T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_d1lGaUthZEgwd1JBS2Q3ekFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTM2MyZVdkTFNuUnNOM2hqTFdSdldEaEhVMUZKYzFoYWNYbE9Uek5DV2tGbFkzUklkWG81TURaR01HVXlWMDk0YjFkbVRWbGxSMDFvVjFaaVQwMHRiMUZXUmtOSlVXUnJiREZ5TUhScll6SnFWWE51ZVdwWFNHRmlaazk1VnpRNWNrdHRYME5IU0hRM2NUTm1SQzFHTmtrM01uVmxVamRKV2w5eE1EZFplbE5DTlhaTVVXRVNGMlJYZVU5aGN6ZEVUV0pmZFhKMVJWQjJUSFZNZVVGUkdpSkJSSE55T1daUlRra3lPWEJ0YkRGdWNqSm9VWE5aUkZJNE5ERmtjMlUzY0c1bg",
+      "title": "Senior Computer Vision Engineer: Retail AI",
+      "company": "Kanz",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.learn4good.com/jobs/riyadh/saudiarabia/software_development/5390469294/e/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 58,
+      "why": "Judged on teaser; computer vision and C++ focus is adjacent to LLM engineering.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Position: Senior Computer Vision Engineer: Real-Time Retail AI\n\nRime is recruiting a Senior Computer Vision Engineer to lead the design, development, and deployment of state-of-the-art computer vision models that analyze real-time video streams from CCTV sources in Saudi Arabia. You will transform daily operations by delivering proactive AI insights and monitoring capabilities.\n\nIdeal candidates have 2–4 years in computer vision with PyTorch and OpenCV, experience with YOLO and real-time optimization (TensorRT/ONNX), and strong Python and C++ skills.\n#J-18808-Ljbffr",
+        "sha256": "7df9a9c7a70dab8140368d24a0fe04ae9ee37d9510a1a8d1a07d6dcfc77e4a87",
+        "completeness_failures": [],
+        "grade": "teaser"
+      }
+    }
+  ]
+}
