@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-27",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "greenhouse:5364098008",
+      "captured_at": "2026-08-27T00:00:00Z",
+      "source": "greenhouse",
+      "source_id": "5364098008",
+      "title": "AI & System Engineer",
+      "company": "HALA",
+      "location": "Riyadh, Riyadh, Saudi Arabia",
+      "url": "https://job-boards.greenhouse.io/hala/jobs/5364098008",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 93,
+      "why": "Excellent IC fit building AI tools, workflow automations, APIs, and governance in Riyadh.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Who Are We\nHALA is a leading fintech player in the MENAP region that aims to redefine financial services and build the future bank of SMEs. HALA aims at empowering SMEs to start, run, and grow their businesses by providing them with cutting-edge financial and technological tools.\nHALA currently holds multiple entities in UAE, Saudi Arabia and Egypt (including HALA Payments and HALA Logistics) and offers solutions that enable merchants to digitize their payments as well as manage their sales and operations.\nFounded in 2017, HALA is currently licensed by the Saudi Arabian Central Bank.\nJob Summary\nThe Software/AI Engineer , Compliance Technology is responsible for designing, developing, and maintaining technology, automation, and AI-enabled solutions that enhance the effectiveness, efficiency, and governance of Compliance operations. The role translates regulatory and business requirements into scalable technical solutions and supports areas including AML, KYC, fraud prevention, regulatory reporting, risk, and governance. The position also contributes to the responsible adoption of AI through appropriate governance, risk assessment, monitoring, and human oversight.\nResponsibilities\nDesign and develop technology solutions that automate and enhance Compliance processes.\nBuild AI-powered tools to improve compliance monitoring, investigations, and regulatory reporting.\nDevelop and maintain integrations, APIs, and internal applications supporting Compliance systems.\nIdentify automation opportunities and translate compliance requirements into technical solutions.\nImplement AI, workflow automation, and RegTech solutions to improve operational efficiency.\nDevelop dashboards and analytics that support compliance decision-making and regulatory reporting.\nEnsure solutions comply with cybersecurity, data privacy, and regulatory requirements.\nCollaborate with Compliance, Technology, Risk, and Information Security teams on system enhancements.\nMaintain and optimize compliance applications, ensuring reliability, performance, and scalability.\nSupport audits and regulatory examinations by providing technical documentation and system evidence.\nResearch and recommend emerging AI and compliance technologies to drive continuous improvement.\nEstablish and maintain AI governance controls for Compliance use cases, ensuring responsible, transparent, and compliant use of AI technologies.\nConduct AI risk assessments to identify and mitigate risks related to model accuracy, bias, data privacy, security, and regulatory compliance.\nMonitor and validate AI models and automated solutions on an ongoing basis to ensure accuracy, effectiveness, reliability, and appropriate human oversight.\nEnsure data quality and governance across Compliance systems and AI solutions, including data accuracy, integrity, access controls, and auditability.\nLeverage AI and automation to support regulatory change management, including identifying regulatory updates, assessing their impact, and supporting implementation and tracking of required actions.\nWhat We Offer You\nWe believe you will love working at HALA!\nWe have an inclusive and diverse culture that encourages innovation and flexibility in remote, in-office, and hybrid work setups.\nWe offer highly competitive compensation packages, including the potential for shares.\nWe prioritize personal development and offer regular training and an annual learning stipend to tackle new challenges and grow your career in a hyper-growth environment.\nJoin a talented team of over 30 nationalities working in 7 countries and gain valuable experience in an exciting industry.\nWe offer autonomy, mentoring, and challenging goals that create incredible opportunities for both you and the company.\nYou will be given a lot of responsibility and trust. We believe that the best results come when the people responsible for a function are given the freedom to do what they think is best.\nIf you think you have what it takes to join a remarkable team #apply_now",
+        "sha256": "a5c3ddba7788970f97edbac8294f8b5a8237f2cd6c19d3192d9a0faff8955c20",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_TmRiZ0stejEzSHplUl8yRkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURVJPWTFreWVHOW1aVzlRWWpCMWFYQm1NM2RCVkV3d05Xc3dhV0Z2WW5GVU5GSnZTalpYWVcxbGVrbDNUWGRtWjB3elgzVmpSbk0yTTNwbk9GZE1SVFo2TTFjM2QzbEpNa1JXYVhkNWJucGlSMTlYYzBSdVIyWnFlWGxKTlhsMk9EWjZka2xzU0RoWVRtaHhWMFJVVDNSd01EUXpSREV3ZEdkaVZTMVFXRTl1Y1ZBelFWUVNGMjFWTFZGaGNHcEhRbk5JVm10UVNWQTVZVjluT0ZGakdpSkJSSE55T1daVFgxQnVWMVZYWHkxdFZtdDNhekJLVDFKQmVHOTFhMU5YT1hWbg",
+      "captured_at": "2026-08-27T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_TmRiZ0stejEzSHplUl8yRkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURVJPWTFreWVHOW1aVzlRWWpCMWFYQm1NM2RCVkV3d05Xc3dhV0Z2WW5GVU5GSnZTalpYWVcxbGVrbDNUWGRtWjB3elgzVmpSbk0yTTNwbk9GZE1SVFo2TTFjM2QzbEpNa1JXYVhkNWJucGlSMTlYYzBSdVIyWnFlWGxKTlhsMk9EWjZka2xzU0RoWVRtaHhWMFJVVDNSd01EUXpSREV3ZEdkaVZTMVFXRTl1Y1ZBelFWUVNGMjFWTFZGaGNHcEhRbk5JVm10UVNWQTVZVjluT0ZGakdpSkJSSE55T1daVFgxQnVWMVZYWHkxdFZtdDNhekJLVDFKQmVHOTFhMU5YT1hWbg",
+      "title": "Artificial Intelligence Engineer",
+      "company": "Raqmiyat",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.glassdoor.co.uk/job-listing/artificial-intelligence-engineer-raqmiyat-llc-JV_IC3110290_KO0,32_KE33,45.htm?jl=1010089605624",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 88,
+      "why": "Solid AI/Python IC match in Riyadh, leaning slightly toward classic ML model development.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "captured",
+        "text": "Job Information\n\n• Date Opened 04/03/2026\n\n• Job Type Full time\n\n• Job Opening Status In-progress\n\n• Work Experience 4-5 years\n\n• Industry Technology\n\n• City Riyadh\n\n• State/Province Ar Riyad\n\n• Country Saudi Arabia\n\n• Zip/Postal Code 11564\n\nAbout Us\n\nRaqmiyat is a UAE-based IT and digital transformation company specializing in consulting, staffing, and enterprise technology solutions. We empower banking, government, and enterprise clients across the Middle East to achieve their digital objectives.\n\nJob Description\n\nJob Overview:\n\nWe are looking for a motivated and innovative Artificial Intelligence Engineer with 3+ years of experience in designing, developing, and deploying AI/ML solutions. The ideal candidate should have hands-on experience in machine learning, data modeling, Python programming, and AI solution development, with the ability to transform business requirements into intelligent systems and predictive models.\n\nKey Responsibilities:\n\n•\nDesign, develop, and deploy AI and machine learning models for business use cases.\n\n•\nBuild and optimize predictive, classification, and recommendation models.\n\n•\nWork with large datasets to perform data preprocessing, feature engineering, and model training.\n\n•\nDevelop AI-driven solutions using Python and machine learning frameworks.\n\n•\nEvaluate model performance and improve accuracy through tuning and validation techniques.\n\n•\nCollaborate with stakeholders to understand business problems and translate them into AI use cases.\n\n•\nIntegrate AI models into applications, dashboards, or enterprise systems.\n\n•\nMonitor deployed models and ensure continuous performance improvement.\n\n•\nPrepare technical documentation and support ongoing enhancements.\n\nRequirements\n•\n3+ years of experience in Artificial Intelligence / Machine Learning Engineering\n\n•\nStrong proficiency in Python\n\n•\nHands-on experience with machine learning algorithms and model development\n\n•\nExperience with libraries such as TensorFlow, PyTorch, Scikit-learn, Pandas, and NumPy\n\n•\nGood understanding of data structures, statistics, and predictive analytics\n\n•\nExperience in data cleaning, feature engineering, and model evaluation\n\n•\nKnowledge of SQL and database management\n\n•\nStrong problem-solving and analytical skills",
+        "sha256": "97cb411a195af83fe81d3a38fe0d669901d85e6ba0788cd1d0a137ccc034cccd",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
