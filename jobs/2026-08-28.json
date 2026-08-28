@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-28",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_Mmk3WUtkZm05TnRqa0ZoX0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURnBtWDNGSlRXUTVVSFJWZGtOMlVIVnBMVUp4Tm5obVoxOVhNR2N6Ym1WRVVHdzJNRkV3TjJ4bVNFUkhjbEo0YXpWeVJuSXhXWHA2VnkxalFuTXllVTVLUjFFeE5WTmZZbEZJY0Y4d1NXTkhNRWRJUmpGbExXRmlSMDFoTjJGcE5FTjVRV2h2YVZkaFJ6aEZlbDkzY0dScVNtRmtWRGhtU1dwUWJ6Rk5OekoyZVVoVlprY1NGMGhMTmxKaGRYWmZUR1p4YkhGMGMxQjJTVTlLTkVGRkdpSkJSSE55T1daVWMybHNjVUkyWmxZMmJuVlZSbTF3U2tSU1gxRnNSbUkxTjJsbg",
+      "captured_at": "2026-08-28T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_Mmk3WUtkZm05TnRqa0ZoX0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURnBtWDNGSlRXUTVVSFJWZGtOMlVIVnBMVUp4Tm5obVoxOVhNR2N6Ym1WRVVHdzJNRkV3TjJ4bVNFUkhjbEo0YXpWeVJuSXhXWHA2VnkxalFuTXllVTVLUjFFeE5WTmZZbEZJY0Y4d1NXTkhNRWRJUmpGbExXRmlSMDFoTjJGcE5FTjVRV2h2YVZkaFJ6aEZlbDkzY0dScVNtRmtWRGhtU1dwUWJ6Rk5OekoyZVVoVlprY1NGMGhMTmxKaGRYWmZUR1p4YkhGMGMxQjJTVTlLTkVGRkdpSkJSSE55T1daVWMybHNjVUkyWmxZMmJuVlZSbTF3U2tSU1gxRnNSbUkxTjJsbg",
+      "title": "Senior ML Engineer – Production AI & MLOps",
+      "company": "Latitude",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.jobleads.com/sa/job/senior-ml-engineer-production-ai-mlops--riyadh--e9284f4b2c3c38a4dd4ae6f2da8d315ed",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 69,
+      "why": "Teaser posting for a Senior ML IC role in Riyadh matching production AI skills. (capped: description is a short teaser)",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Alrkeen is seeking an experienced Machine Learning Engineer to design, build, and deploy AI models and data pipelines that address real-world business challenges. You will partner with stakeholders to translate measurable objectives into production‑grade ML solutions, balancing performance, reliability, security, and scalability.\n\nOwn the end-to-end delivery of production AI/ML systems—modeling through deployment—improving accuracy and efficiency while ensuring reliable monitoring,",
+        "sha256": "d8e0da8c93f1b5814b94f6a5f75e12908a56b1d8a8b8609bea69c3693a800ce8",
+        "completeness_failures": [],
+        "grade": "teaser"
+      }
+    }
+  ]
+}
