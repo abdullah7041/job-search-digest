@@ -52,6 +52,8 @@ Run the discovery probe first:
 python digest.py --discover salla tabby mozn
 ```
 
+No machine with network egress handy? The **Discover company ATS boards** workflow (`.github/workflows/discover.yml`) runs the same probe from the Actions tab — `workflow_dispatch`, one `names` input, read-only, no secrets — and prints the same output to the job log. `digest.py`'s `CANDIDATES` block lists the employers the aggregator keeps surfacing that this list does not reach directly, which is what to feed it.
+
 It probes all five ATS APIs and prints a ready-to-paste `COMPANIES` line with the live job count. It guards itself with a known-bad control token first — if an ATS answers for nonsense, its results are reported `UNRELIABLE` rather than believed. That guard is the whole point; without it SmartRecruiters-style APIs invent companies.
 
 A miss isn't proof of absence — the probe guesses the company name as the token, so anything whose token differs (Lean is `LeanTech`) stays invisible. In that case, open the careers page and read where Apply sends you:
@@ -72,6 +74,24 @@ The job is matching, not relevance ranking, so the filter is strict before anyth
 2. **Seniority** drops junior, intern, graduate, trainee, tamheer, associate, entry — and, since 31 Jul 2026, everything above senior IC too: lead, staff, principal, head-of, director, engineering manager, team leader. The 2026-07-31 digest scored Lead/Staff roles 85–98 because seniority was only bounded from below.
 2b. **Title-vs-location conflict** drops a job whose title says it's really elsewhere ("Bangkok based", "relocation provided") even when the board's location metadata claims Saudi. Same digest delivered Agoda's Bangkok role as Riyadh because only the metadata was checked.
 3. **Title** must hit one of your target areas: engineer, software, AI/ML, data, DevOps/SRE, platform, automation, architect, product manager, solutions engineer.
+3b. **Link quality**, in two passes, both before the freshness check so a dropped posting never costs a verification request, a model call, or a line in the digest.
+
+   `prefer_employer_postings()` drops an aggregator copy of a posting this run already read from the employer's own board. The URL dedupe above cannot catch these, because the two links differ: Foodics' "Senior Data Scientist / Senior ML Engineer" arrived from Workable on 2026-08-11 as `apply.workable.com/foodics/j/E2707EDFCE/`, then from JSearch on 08-17, 08-18 and 08-19 as a `jobleads.com` link with a byte-identical title. Nothing joined them, so the paid copy went out three more times. Matching is on employer plus title, with the employer name reduced to its latin core first — JSearch returns `Zid | زد` and `Qiddiya | القدية` where the ATS returns `Zid` and `Qiddiya`.
+
+   `on_paid_relister()` then drops what is left on a host that charges to reach the apply step. JobLeads is the reason: 41 of the 178 links archived over 20 days, every one costing a subscription to act on while the employer's posting was free. Jooble, Jobrapido, NaukriGulf, beBee, Wuzzuf, learn4good and TheBigJobSite are the same wrapper without the price tag. **LinkedIn, Indeed and Glassdoor are deliberately not on that list** — they are free to act on, and LinkedIn alone is 65 of those 178 links. Replayed over the archive, the two passes remove 100 of 178 links and leave every LinkedIn, Indeed and ATS one standing.
+
+   What survives both passes still mostly links to LinkedIn, and a LinkedIn page is a login wall. So enrichment does one more thing: `jd_fetch.extract_posting()` reports the employer's own posting URL alongside the description, and `record_apply_link()` stores it as `apply_url`.
+
+   For a posting the board shipped no description for, this is free: `fetch_posting_page()` is already hopping to the employer's ATS to read the JD, and its result was simply being thrown away. That branch is not the common case, though — JSearch always ships a description, so all 171 aggregator postings archived to 2026-08-28 returned before reaching it, including the 48 that arrived as a teaser plus a relister link. `rescue_apply_link()` covers those, and it does cost **one extra GET per aggregator job**, bounded by the fresh-job count and skipped entirely for jobs read from an employer's own board. How many succeed depends on whether the page loads for a datacenter IP and names a board, which is not knowable offline.
+
+   The link is only believed if the board token agrees with the employer name (`employer_matches_token()`). `ats_reference()` matches any ATS-shaped href on the page, and a relister's "people also viewed" rail is full of them; nothing downstream would catch a wrong one, because `verify_link` confirms it open — it *is* a live posting — and the snapshot then hands it to a later "Tailor CV" click as the JD to re-read. A refused link costs one rescue; an accepted wrong one tailors the resume against another company's job.
+
+   `apply_url` is recorded *alongside* `url` rather than replacing it, on purpose. `job_identity()` keys an aggregator posting on its URL, so rewriting it would make every rescued job look new on the next run and redeliver it daily for as long as the rescue kept working. The digest line, the Discord card and the snapshot all hand over `apply_url or url`; `seen.json` keeps keying on the original.
+
+   A rescued URL is *built* from a board token and a posting id, so unlike every other link in the digest it has never been fetched when it is recorded. It is verified before being handed over, and on a definite negative the **rescue** is discarded, not the job: a 404 there is as likely to mean the URL shape was wrong as that the posting closed, and the original link was verified minutes earlier.
+
+   A paid-relister drop is *not* written to `seen.json`. Unlike the delivery floor below, it is a verdict on the link, not on the role: the same posting appearing on the employer's own board tomorrow should be delivered tomorrow.
+
 4. **Score at least 50.** `MIN_DELIVER_SCORE` is the line below which a job is not delivered at all. The tiers only ever decided which *heading* a job appeared under, so everything that cleared the hard filters was delivered no matter how poorly it scored, and the weak ones crowded out the review tier. Override it with a repository *variable* of the same name.
 
    Only a model score can send a job here. `apply_ranking` falls back to `keyword_score` whenever the ranker is missing or its answer fails validation, and those numbers are calibrated for ordering, not for a pass/fail line — dropping on them would turn a ranker outage into an empty digest with nothing anywhere saying why. A job dropped on its score is remembered like a delivered one, so tomorrow does not re-fetch, re-score and re-reject it for the next 120 days.
@@ -206,6 +226,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `worker/wrangler.jsonc` — Worker config: non-secret `vars` (Discord application/guild/channel/user ids, the GitHub repository, the Discord public key) and the D1 binding. No secret values live here.
 - `worker/test/interaction.test.js` — the Worker's Node test suite (`node --test`): signature verification, channel/user gating, snapshot hash checks, idempotent delivery claims, nonce handling.
 - `worker/package.json` — Worker has no runtime dependencies; `npm test` runs `node --test`.
+- `.github/workflows/discover.yml` — `workflow_dispatch` only. Runs `digest.py --discover` against the names you give it and prints ready-to-paste `COMPANIES` lines. Read-only, no secrets; it exists so probing a company's ATS never needs a laptop.
 - `.github/workflows/interactive.yml` — triggered by the Worker (`workflow_dispatch` with a `task_id` input) to run `interactive_runner.py` for one tailoring task.
 
 **Historical / reference**

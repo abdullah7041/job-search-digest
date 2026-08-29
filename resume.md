@@ -44,7 +44,7 @@ Production automation systems on GitHub Actions, Python, 0 SAR/month infrastruct
 - **Data & Analytics:** Power BI, advanced Excel, data modeling, customer segmentation, competitor and pricing analysis
 
 ## EDUCATION & CERTIFICATIONS
-- Diploma, Pipefitting Technology — Saudi Petroleum Services Polytechnic (SPSP), GPA 4.6/5, 2018
+- Diploma, Pipefitting Technology — Saudi Petroleum Services Polytechnic (SPSP), Dammam, Saudi Arabia, 2016 – 2018, GPA 4.6/5
 - Claude 101 — Anthropic Academy, 2026
 - AI Fluency and Prompt Engineering Frameworks — Anthropic
 - Google Data Analytics Professional Certificate — Coursera

@@ -42,7 +42,7 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import extract_jd, strip_html
+from jd_fetch import ats_reference, ats_url, extract_posting, strip_html
 from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 from openrouter import chat_json, configured_chain
@@ -265,6 +265,22 @@ TRACKING_PARAMS = {
     "utm_term", "utm_content", "utm_id", "gh_src", "src", "ref", "source",
     "trk", "originalsubdomain",
 }
+
+# Hosts that relist an employer's posting behind their own funnel. JobLeads is
+# the one that prompted this: it charges a subscription before the apply step,
+# so 41 of the 178 links archived over 20 days cost money to act on while the
+# employer's own posting was free. The rest are the same pattern without the
+# price tag -- a wrapper around a posting whose original is a better link.
+#
+# LinkedIn, Indeed and Glassdoor are deliberately NOT here. They are free to act
+# on, and LinkedIn alone is the largest single source of real Saudi postings
+# this digest sees (65 of those 178 links). This list is about paying to reach a
+# posting, not about preferring first-party links in general.
+PAID_RELISTER_HOSTS = (
+    "jobleads.com", "jooble.org", "jobrapido.com", "bebee.com",
+    "learn4good.com", "thebigjobsite.com", "naukrigulf.com",
+    "wuzzuf.net", "wzzff.com",
+)
 
 # seen.json holds two kinds of key. A job identity remembers the posting; this
 # prefix remembers a description within its employer and title context, which
@@ -706,6 +722,102 @@ def job_identity(job):
     return job.get("id") or f"url:{canonical_url(job.get('url'))}"
 
 
+def link_host(url):
+    """A posting URL's host, lowercased and without a leading 'www.'."""
+    host = urlsplit((url or "").strip()).netloc.lower()
+    host = host.rsplit("@", 1)[-1].split(":", 1)[0]  # drop credentials and port
+    return host[4:] if host.startswith("www.") else host
+
+
+def on_paid_relister(url):
+    """True when this link only reaches the posting through a paid wrapper."""
+    host = link_host(url)
+    return any(host == blocked or host.endswith("." + blocked)
+               for blocked in PAID_RELISTER_HOSTS)
+
+
+# Legal forms a board appends or omits at will. Stripped only from the end, and
+# never down to nothing, so "Co" as a company name survives.
+COMPANY_LEGAL_SUFFIXES = ("co", "ltd", "llc", "inc", "corp", "plc", "gmbh",
+                          "limited", "company", "sdn", "bhd", "jsc", "wll")
+
+
+def company_key(name):
+    """An employer name reduced to what a job board cannot decorate.
+
+    JSearch returns "Zid | زد" and "Qiddiya | القدية" where the employer's own
+    ATS returns "Zid" and "Qiddiya", and "JAL International Co. Ltd." where
+    another board would write "JAL International". The Arabic half, the
+    separator and the legal form all vary by board; the latin core does not.
+    """
+    latin = "".join(ch for ch in (name or "").split("|")[0] if ch.isascii())
+    words = re.findall(r"[a-z0-9]+", latin.casefold())
+    while len(words) > 1 and words[-1] in COMPANY_LEGAL_SUFFIXES:
+        words.pop()
+    return "".join(words)
+
+
+def employer_matches_token(company, token):
+    """True when an ATS board token plausibly belongs to THIS employer.
+
+    A board token is the employer's own slug, so it is a prefix, a suffix or
+    the whole of the name far more often than not: Foodics is `foodics`, Lean
+    is `LeanTech`, Example Labs is `examplelabs`. Containment either way is
+    therefore the test, with a three-character floor so a one-letter name
+    cannot match everything.
+
+    A wrong answer here is asymmetric, which is why the test is loose rather
+    than exact: a false negative costs one rescue and the candidate keeps the
+    link they already had, while a false positive hands over another company's
+    job. Anything the token cannot vouch for is refused.
+    """
+    name = company_key(company)
+    slug = "".join(re.findall(r"[a-z0-9]+", (token or "").casefold()))
+    if len(name) < 3 or len(slug) < 3:
+        return False
+    return name in slug or slug in name
+
+
+def posting_key(job):
+    """The employer-and-role identity two different boards agree on.
+
+    Empty when either half is missing, because a key of "::" would group every
+    incomplete card in the run into one posting.
+    """
+    company = company_key(job.get("company"))
+    title = " ".join(re.findall(r"[a-z0-9]+", (job.get("title") or "").casefold()))
+    return f"{company}::{title}" if company and title else ""
+
+
+# The sources that ARE the employer: a link from one of these is the company's
+# own posting, which is the link this digest should always prefer to hand over.
+EMPLOYER_SOURCES = frozenset(FETCHERS)
+
+
+def prefer_employer_postings(jobs):
+    """Split off aggregator copies of a posting this run read from the employer.
+
+    Returns (kept, dropped). The URL dedupe in main() cannot catch these:
+    Foodics' "Senior Data Scientist / Senior ML Engineer" arrived from Workable
+    on 2026-08-11 as apply.workable.com/foodics/j/E2707EDFCE/, then from JSearch
+    on 08-17, 08-18 and 08-19 as a jobleads.com link -- byte-identical title,
+    different URL, so nothing joined them and the paid copy went out three more
+    times. The employer's own board is the better link and this run already
+    holds it, so the relisted copy is redundant, not new.
+    """
+    employer_keys = {posting_key(job) for job in jobs
+                     if job.get("source") in EMPLOYER_SOURCES}
+    employer_keys.discard("")
+    kept, dropped = [], []
+    for job in jobs:
+        key = posting_key(job)
+        if key and key in employer_keys and job.get("source") not in EMPLOYER_SOURCES:
+            dropped.append(job)
+        else:
+            kept.append(job)
+    return kept, dropped
+
+
 def description_key(job):
     """The seen.json key for a description within one employer and role."""
     text = (job.get("description") or "").strip()
@@ -837,6 +949,10 @@ def get_description(job):
     bounded by the digest cap. Any failure returns whatever we have: tailoring
     degrades to title-only, the run never breaks."""
     if job.get("description"):
+        # The text is settled, the link is not. This return is the path every
+        # JSearch job takes, so leaving it here is what kept the apply-link
+        # rescue from ever running on the postings it exists for.
+        rescue_apply_link(job)
         return job["description"][:JD_MAX_CHARS]
     src, token = job.get("source"), job.get("token")
     try:
@@ -873,11 +989,79 @@ def fetch_posting_page(job):
     Stripping tags off the landing page closed only part of that gap, because
     the description is usually not in the body text at all: it is in the page's
     JobPosting metadata, or on the employer's own ATS that the aggregator is
-    relisting. `jd_fetch.extract_jd` tries both before falling back to the page
+    relisting. `jd_fetch.extract_posting` tries both before falling back to the page
     text this used to be, and applies the same completeness gate, so a
     bot-blocked page still scores exactly as it does today rather than on noise.
+
+    It also reports the employer's own posting URL when the page names one, and
+    that is recorded on the job here. This branch gets it for free -- the hop is
+    being made for the description anyway -- which is why the description-less
+    jobs come through here and `rescue_apply_link` exists separately for the
+    ones that pay for it.
     """
-    return extract_jd(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    record_apply_link(job, posting["employer_url"], posting["employer_token"])
+    return posting["text"]
+
+
+def record_apply_link(job, employer_url, employer_token):
+    """Accept the employer posting a page named, if it is THIS employer's.
+
+    `ats_reference` matches any ATS-shaped href on the page, and a relister's
+    "people also viewed" rail is full of them, so an unguarded rescue can hand
+    over a live posting at a different company. Nothing downstream would catch
+    it: `verify_link` confirms it open because it is a real posting, and
+    `make_snapshot` records it as the URL a later "Tailor CV" click re-reads
+    the JD from -- so the resume would be tailored against the wrong job. The
+    board token has to agree with the employer name before the link is
+    believed.
+
+    Setting `apply_url` rather than overwriting `url` is deliberate:
+    `job_identity` keys an aggregator posting on its URL, so rewriting it would
+    make every rescued job look new on the next run and redeliver it daily for
+    as long as the rescue kept working.
+    """
+    if not employer_url or canonical_url(employer_url) == canonical_url(job.get("url")):
+        return
+    if not employer_matches_token(job.get("company"), employer_token):
+        log(f"Apply link on {link_host(employer_url)} names '{employer_token}', not "
+            f"{job['company']}; keeping {link_host(job.get('url'))}")
+        return
+    job["apply_url"] = employer_url
+    log(f"Apply link rescued from {link_host(job.get('url'))} to "
+        f"{link_host(employer_url)}: {job['company']} — {job['title']}")
+
+
+def rescue_apply_link(job):
+    """Find the employer's own posting for a job that already has its text.
+
+    `fetch_posting_page` only runs when the board shipped no description, and
+    JSearch always ships one -- so the rescue reached none of the 171 aggregator
+    postings archived to 2026-08-28, including the 48 that arrived as a teaser
+    plus a relister link, which is the case it was built for. This is the same
+    lookup run for its link rather than its text.
+
+    Unlike the hop inside `fetch_posting_page` this is a NEW request: one GET
+    per aggregator job, bounded by the fresh-job count. It is skipped for jobs
+    read straight from an employer's board, whose URL is already the answer.
+    Any failure leaves the job with the link it arrived with.
+    """
+    url = job.get("url", "")
+    if not url or job.get("source") in EMPLOYER_SOURCES:
+        return
+    try:
+        response = _get(url)
+    except (requests.RequestException, ValueError) as e:
+        log(f"WARN apply-link lookup failed for {job['company']} — {job['title']}: {e}")
+        return
+    page_html = response.text if response.status_code == 200 else ""
+    reference = ats_reference(page_html, url)
+    record_apply_link(job, ats_url(reference), (reference or {}).get("token") or "")
+
+
+def apply_link(job):
+    """The link the candidate should be handed: the employer's, if we found it."""
+    return job.get("apply_url") or job.get("url", "")
 
 
 def enrich_descriptions(jobs):
@@ -1211,8 +1395,28 @@ def main():
     all_jobs = list(uniq.values())
 
     matched = [j for j in all_jobs if matches_filters(j)]
+
+    # Two link-quality passes. Both run here, before the freshness check, so a
+    # posting dropped for its link never reaches verification, the ranker or
+    # Discord -- and both run on `matched` rather than all_jobs, so a relisted
+    # copy is never dropped in favour of an employer copy the filters rejected.
+    matched, relisted_copies = prefer_employer_postings(matched)
+    for job in relisted_copies:
+        log(f"Relisted copy on {link_host(job['url'])}: {job['company']} — "
+            f"{job['title']}; this run already read it from the employer's board")
+    paid_only = [j for j in matched if on_paid_relister(j.get("url"))]
+    matched = [j for j in matched if not on_paid_relister(j.get("url"))]
+    for job in paid_only:
+        log(f"Paid relister {link_host(job['url'])}: {job['company']} — {job['title']}")
+
+    # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike
+    # the delivery floor, this is a verdict on the link, not on the role: the
+    # same posting appearing on the employer's own board tomorrow should be
+    # delivered tomorrow.
     fresh = [j for j in matched if job_identity(j) not in seen]
-    log(f"{len(all_jobs)} fetched, {len(matched)} match filter, {len(fresh)} new")
+    log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
+        f"{len(relisted_copies)} relisted copies, {len(paid_only)} paid-relister only, "
+        f"{len(fresh)} new")
 
     # Verification is evidence, not a boolean gate: a third-party site may block
     # this runner while still serving a job seeker. Only confirmed closure drops.
@@ -1240,6 +1444,28 @@ def main():
         return
 
     enrich_descriptions(fresh)
+
+    # A rescued apply link is BUILT from a token and a posting id, not copied
+    # from a page, so it has never been fetched at the point enrichment records
+    # it. Verify before handing it over -- and on a definite negative discard
+    # the rescue rather than the job: a 404 here is as likely to mean the URL
+    # shape was wrong as that the posting closed, and the aggregator link that
+    # was verified earlier is still a working way in.
+    for job in fresh:
+        if not job.get("apply_url"):
+            continue
+        status = verify_link(job["apply_url"])
+        if status == LINK_CLOSED:
+            log(f"Rescued link did not resolve, keeping the original: {job['apply_url']}")
+            job.pop("apply_url")
+        else:
+            job["link_status"] = status
+
+    # Recounted, because the loop above just rewrote the statuses it counts. The
+    # figure taken before enrichment is right for the no-new-jobs return above
+    # and stale for every save_stats below it: a card whose rescued link came
+    # back inconclusive says so in its footer, and the day's row said 0.
+    unknown_count = sum(j["link_status"] == LINK_UNKNOWN for j in fresh)
 
     # Second pass, now that the text exists: a posting relisted under a new URL
     # is still the same posting. Runs before ranking so a repeat never costs a
@@ -1336,7 +1562,7 @@ def main():
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
                 f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
-                f"  {j['why']}\n  <{j['url']}>{resume_line}"
+                f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
             )
 
     interactive_delivery_claimed = False
@@ -1416,6 +1642,24 @@ def main():
 #   SmartRecruiters as a discovery route is useless: its API answers
 #   200 {"totalFound":0} for ANY string, so it confirms companies that don't exist.
 #   13 KSA employer ids were probed, all empty.
+#
+# UNPROBED — employers the aggregator keeps surfacing that this list does not
+# reach directly, counted over the 20 snapshots archived to 2026-08-28. Every
+# one of these arrives through a relister today, which is the whole reason the
+# link-quality passes in main() exist. Probe before adding: a guessed token is
+# what the control probe above is here to stop.
+#
+#   JAL International (12)   Qualcomm (11)    QuantumBlack / McKinsey (11)
+#   exequt MENA (10)         Mindstream (8)   Pasqal (6)
+#   Advanced Analytics (5)   Qiddiya (5)      Colada (4)
+#   Infosys (4)              flynas (3)       Elm (2)
+#   HungerStation (2)        KAUST (2)        Kanz (2)        Raqmiyat (2)
+#
+# Run the "Discover company ATS boards" workflow (.github/workflows/discover.yml,
+# workflow_dispatch) with those names, or `python digest.py --discover <names>`
+# on any machine with network egress, and paste whatever it confirms into
+# COMPANIES. A confirmed account with zero open roles still goes in — that is
+# the standing precedent for the seven dormant Workable entries above.
 # ----------------------------------------------------------------------------
 
 

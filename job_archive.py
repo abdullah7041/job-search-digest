@@ -155,7 +155,10 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "title": job.get("title", ""),
         "company": job.get("company", ""),
         "location": job.get("location", ""),
-        "url": job.get("url", ""),
+        # The employer's own posting when the run found it, else the link the
+        # aggregator gave. This is the link the card offers and the one a later
+        # "Tailor CV" click re-reads the JD from, so it wants to be the source.
+        "url": job.get("apply_url") or job.get("url", ""),
         "salary": job.get("salary", ""),
         "tier": job.get("tier", "Worth reviewing"),
         "score": job.get("score", 0),

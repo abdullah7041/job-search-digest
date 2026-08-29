@@ -456,6 +456,27 @@ class TestResumeStructure(unittest.TestCase):
 
         self.assertEqual(len(PdfReader(BytesIO(render_pdf(document))).pages), 1)
 
+    def test_the_education_entry_reaches_the_pdf_with_its_place_and_dates(self):
+        """Every EXPERIENCE entry carries a city and a date range; the diploma
+        carried a bare year and no location, so every tailored CV shipped
+        without them. Tailoring never touches EDUCATION lines, so the master is
+        the only place this can be fixed -- and _trim_once can pop a section
+        line to make the page fit, which would take the fix straight back out.
+        """
+        from pypdf import PdfReader
+
+        with open("resume.md", encoding="utf-8") as handle:
+            document = parse_resume(handle.read())
+
+        text = PdfReader(BytesIO(render_pdf(document))).pages[0].extract_text()
+        # Scoped to the section: "Dammam" also appears in the CB&I role, so a
+        # whole-page search would pass on the very line shape this rejects.
+        education = " ".join(text.split()).partition("EDUCATION")[2].partition("LANGUAGES")[0]
+
+        self.assertIn("Saudi Petroleum Services Polytechnic", education)
+        self.assertIn("Dammam, Saudi Arabia", education)
+        self.assertIn("2016 – 2018", education)
+
 
 class TestEvidenceGuards(unittest.TestCase):
     def test_rejects_an_invented_framework_in_a_rewritten_bullet(self):

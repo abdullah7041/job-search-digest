@@ -326,6 +326,117 @@ class TestJobIdentity(unittest.TestCase):
         self.assertNotEqual(digest.description_key(job), digest.description_key(distinct))
 
 
+class TestEmployerLinkPreference(unittest.TestCase):
+    """Which of two links to the same posting the digest hands over."""
+
+    def test_a_board_cannot_hide_an_employer_behind_its_own_decoration(self):
+        """JSearch returns 'Zid | زد' where Workable returns 'Zid', and legal
+        forms come and go. The latin core is the half both boards agree on."""
+        self.assertEqual(digest.company_key("Zid | زد"), "zid")
+        self.assertEqual(digest.company_key("Qiddiya | القدية"), "qiddiya")
+        self.assertEqual(digest.company_key("HungerStation | هنقرستيشن"), "hungerstation")
+        self.assertEqual(digest.company_key("JAL International Co. Ltd."),
+                         digest.company_key("JAL International"))
+
+    def test_two_different_employers_do_not_collapse_onto_one_key(self):
+        self.assertNotEqual(digest.company_key("Foodics"), digest.company_key("Foodics Labs"))
+        self.assertNotEqual(digest.company_key("Lean"), digest.company_key("Lean Tech"))
+
+    def test_a_company_named_only_by_its_legal_form_survives(self):
+        """Stripping down to nothing would group it with every other empty key."""
+        self.assertEqual(digest.company_key("Co"), "co")
+
+    def test_the_foodics_case_this_was_built_for(self):
+        """Archived 2026-08-11 through 08-19: Workable and JobLeads carried the
+        identical title under different URLs, so the URL dedupe never joined
+        them and the paid copy went out three more times."""
+        employer = {"source": "workable", "company": "Foodics",
+                    "title": "Senior Data Scientist / Senior ML Engineer",
+                    "url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
+        relisted = {"source": "jsearch", "company": "Foodics",
+                    "title": "Senior Data Scientist / Senior ML Engineer",
+                    "url": "https://www.jobleads.com/sa/job/senior-data-scientist-x"}
+
+        kept, dropped = digest.prefer_employer_postings([relisted, employer])
+
+        self.assertEqual(kept, [employer])
+        self.assertEqual(dropped, [relisted])
+
+    def test_an_employer_posting_is_never_dropped_for_another_employer_posting(self):
+        """Two boards would never both be the employer, but a same-titled role
+        at one company must not eat itself."""
+        first = {"source": "workable", "company": "Foodics", "title": "Senior Engineer",
+                 "url": "https://apply.workable.com/foodics/j/A/"}
+        second = {"source": "greenhouse", "company": "Foodics", "title": "Senior Engineer",
+                  "url": "https://job-boards.greenhouse.io/foodics/jobs/1"}
+
+        kept, dropped = digest.prefer_employer_postings([first, second])
+
+        self.assertEqual(kept, [first, second])
+        self.assertEqual(dropped, [])
+
+    def test_an_aggregator_posting_with_no_employer_copy_survives(self):
+        relisted = {"source": "jsearch", "company": "Qiddiya | القدية",
+                    "title": "Senior Data Engineer",
+                    "url": "https://sa.linkedin.com/jobs/view/senior-data-engineer-1"}
+
+        kept, dropped = digest.prefer_employer_postings([relisted])
+
+        self.assertEqual(kept, [relisted])
+        self.assertEqual(dropped, [])
+
+    def test_a_card_missing_its_company_or_title_groups_with_nothing(self):
+        """A key of '::' would collapse every incomplete card in the run."""
+        employer = {"source": "workable", "company": "", "title": "",
+                    "url": "https://apply.workable.com/x/j/A/"}
+        relisted = {"source": "jsearch", "company": "", "title": "",
+                    "url": "https://www.jobleads.com/sa/job/x"}
+
+        kept, dropped = digest.prefer_employer_postings([relisted, employer])
+
+        self.assertEqual(dropped, [])
+        self.assertEqual(len(kept), 2)
+
+
+class TestPaidRelisterLinks(unittest.TestCase):
+    """JobLeads charges to reach the apply step; the employer's posting is free."""
+
+    def test_the_paid_relisters_are_recognised_however_they_are_spelled(self):
+        for url in ("https://www.jobleads.com/sa/job/senior-ml-engineer-riyadh",
+                    "https://jobleads.com/sa/job/x",
+                    "https://sa.jooble.org/jdp/-1913570090770118991",
+                    "https://sa.jobrapido.com/jobpreview/x",
+                    "https://www.naukrigulf.com/senior-data-scientist-x",
+                    "https://bebee.com/job/x",
+                    "https://sa.thebigjobsite.com/job/x",
+                    "https://WWW.JOBLEADS.COM:443/sa/job/x"):
+            with self.subTest(url=url):
+                self.assertTrue(digest.on_paid_relister(url))
+
+    def test_free_boards_and_employer_ats_hosts_are_left_alone(self):
+        """LinkedIn is 65 of the 178 archived links and is free to act on.
+        Blocking it would empty the digest to fix a different problem."""
+        for url in ("https://sa.linkedin.com/jobs/view/senior-engineer-4442",
+                    "https://sa.indeed.com/viewjob?jk=aaa",
+                    "https://www.glassdoor.co.uk/job-listing/x",
+                    "https://apply.workable.com/foodics/j/E2707EDFCE/",
+                    "https://job-boards.greenhouse.io/hala/jobs/5364098008",
+                    "https://tabby.pinpointhq.com/en/postings/d8044ef0",
+                    ""):
+            with self.subTest(url=url):
+                self.assertFalse(digest.on_paid_relister(url))
+
+    def test_a_lookalike_domain_is_not_treated_as_the_blocked_one(self):
+        """Suffix matching has to stop at a label boundary, or notjobleads.com
+        and jobleads.com.example.test would both be dropped."""
+        self.assertFalse(digest.on_paid_relister("https://notjobleads.com/job/x"))
+        self.assertFalse(digest.on_paid_relister("https://jobleads.com.example.test/job/x"))
+
+    def test_the_host_is_reported_without_www_for_the_log_line(self):
+        self.assertEqual(digest.link_host("https://www.jobleads.com/sa/job/x"), "jobleads.com")
+        self.assertEqual(digest.link_host("https://sa.jooble.org/jdp/-1"), "sa.jooble.org")
+
+
 class TestRankedExcerpt(unittest.TestCase):
     """What the ranker reads, which is what the whole score rests on."""
 
@@ -778,6 +889,194 @@ class TestJdFetch(unittest.TestCase):
             self.assertIn("Your Impact", digest.get_description(job))
 
 
+class TestApplyLinkRescue(unittest.TestCase):
+    """The link the candidate is handed, when the run found a better one.
+
+    Shares TestJdFetch's page/json helpers by construction rather than
+    inheritance: these are about the URL, not the description.
+    """
+
+    def _page(self, body, status=200):
+        response = mock.Mock()
+        response.status_code = status
+        response.text = body
+        return response
+
+    def _json(self, payload, status=200):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: payload
+        response.text = ""
+        return response
+
+    def _linkedin_page(self, href):
+        return ('<html><body><h1>Sign in to view this job</h1>'
+                f'<a href="{href}">Apply on company website</a></body></html>')
+
+    def test_a_linkedin_card_is_rescued_to_the_employers_own_posting(self):
+        """65 of the 178 archived links were LinkedIn. The hop to the employer
+        was already being made for the description and thrown away."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Example Labs",
+               "description": "", "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/senior-ml-engineer-4442"}
+        page = self._linkedin_page("https://boards.greenhouse.io/examplelabs/jobs/4412")
+
+        def get(url):
+            if "greenhouse" in url:
+                return self._json({"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"})
+            return self._page(page)
+
+        with mock.patch.object(digest, "_get", side_effect=get):
+            digest.get_description(job)
+
+        self.assertEqual(job["apply_url"],
+                         "https://job-boards.greenhouse.io/examplelabs/jobs/4412")
+        self.assertEqual(digest.apply_link(job), job["apply_url"])
+
+    def test_the_rescue_happens_even_when_the_description_came_from_elsewhere(self):
+        """A page with usable JSON-LD returns before the ATS hop is needed for
+        text. The employer's link is still worth having."""
+        job = {"id": "1", "title": "t", "company": "Example Labs", "description": "",
+               "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/x-1"}
+        page = (self._linkedin_page("https://jobs.lever.co/examplelabs/"
+                                    "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+                + '<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": FULL_JD})
+                + "</script>")
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            text = digest.get_description(job)
+
+        self.assertIn("Your Impact", text)
+        self.assertEqual(job["apply_url"],
+                         "https://jobs.lever.co/examplelabs/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+
+    def test_a_page_that_names_no_employer_board_leaves_the_link_alone(self):
+        """LinkedIn blocks datacenter IPs, so most of these fetches fail. The
+        job keeps its original link and nothing else changes."""
+        job = {"id": "1", "title": "t", "company": "c", "description": "",
+               "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/x-2"}
+
+        with mock.patch.object(digest, "_get", return_value=self._page("blocked", status=999)):
+            digest.get_description(job)
+
+        self.assertNotIn("apply_url", job)
+        self.assertEqual(digest.apply_link(job), "https://sa.linkedin.com/jobs/view/x-2")
+
+    def test_a_posting_already_on_the_employers_board_is_not_rewritten(self):
+        """The URL resolves to itself, so there is nothing to rescue and no
+        apply_url to explain in the log."""
+        job = {"id": "1", "title": "t", "company": "c", "description": "",
+               "source": "jsearch", "token": "",
+               "url": "https://job-boards.greenhouse.io/examplelabs/jobs/4412"}
+
+        def get(_url):
+            return self._json({"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"})
+
+        with mock.patch.object(digest, "_get", side_effect=get):
+            digest.get_description(job)
+
+        self.assertNotIn("apply_url", job)
+
+    def test_the_snapshot_and_the_digest_line_both_carry_the_rescued_link(self):
+        """Two delivery paths read the link independently; a rescue that only
+        reached one of them would ship a paid link on the other."""
+        job = {"id": "1", "title": "t", "company": "c", "location": "Riyadh",
+               "source": "jsearch", "description": FULL_JD, "score": 80,
+               "url": "https://sa.linkedin.com/jobs/view/x-3",
+               "apply_url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
+
+        snapshot = job_archive.make_snapshot(job, "2026-08-29T00:00:00Z")
+
+        self.assertEqual(snapshot["url"], "https://apply.workable.com/foodics/j/E2707EDFCE/")
+        self.assertEqual(digest.apply_link(job), snapshot["url"])
+
+    def test_a_link_naming_another_employer_is_refused(self):
+        """`ats_reference` matches any ATS href on the page, and a relister's
+        'people also viewed' rail is full of them. Nothing downstream catches a
+        wrong one: verify_link confirms it open because it IS a live posting,
+        and the snapshot hands it to the tailoring run as the JD to read."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Example Labs",
+               "description": "", "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/x-4"}
+        page = ('<html><body>'
+                '<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": FULL_JD})
+                + '</script><aside>People also viewed'
+                '<a href="https://jobs.lever.co/othercorp/'
+                'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee">Other role</a>'
+                '</aside></body></html>')
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            text = digest.get_description(job)
+
+        self.assertIn("Your Impact", text)  # the JD itself was still right
+        self.assertNotIn("apply_url", job)
+        self.assertEqual(digest.apply_link(job), "https://sa.linkedin.com/jobs/view/x-4")
+
+    def test_an_aggregator_job_that_already_has_its_text_is_still_rescued(self):
+        """JSearch always ships a description, so this early return is the path
+        every aggregator posting takes. The rescue reached none of the 171
+        archived ones while it lived only on the description-less branch."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Example Labs",
+               "source": "jsearch", "token": "", "description": FULL_JD,
+               "url": "https://sa.linkedin.com/jobs/view/x-5"}
+        page = self._linkedin_page("https://boards.greenhouse.io/examplelabs/jobs/4412")
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            text = digest.get_description(job)
+
+        self.assertIn("Your Impact", text)
+        self.assertEqual(job["apply_url"],
+                         "https://job-boards.greenhouse.io/examplelabs/jobs/4412")
+
+    def test_a_job_read_from_an_employers_own_board_costs_no_lookup(self):
+        """Its URL is already the answer, so the extra GET would buy nothing."""
+        job = {"id": "1", "title": "t", "company": "Foodics", "source": "workable",
+               "token": "foodics", "description": FULL_JD,
+               "url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
+
+        def boom(*_args, **_kwargs):
+            raise AssertionError("no request should be made here")
+
+        with mock.patch.object(digest, "_get", side_effect=boom):
+            digest.get_description(job)
+
+        self.assertNotIn("apply_url", job)
+
+    def test_a_board_token_is_matched_against_the_employer_it_claims(self):
+        self.assertTrue(digest.employer_matches_token("Example Labs", "examplelabs"))
+        self.assertTrue(digest.employer_matches_token("Lean", "LeanTech"))
+        self.assertTrue(digest.employer_matches_token("Qiddiya | القدية", "qiddiya"))
+        self.assertFalse(digest.employer_matches_token("Example Labs", "othercorp"))
+        # A one-letter name would otherwise be a substring of every token.
+        self.assertFalse(digest.employer_matches_token("c", "examplelabs"))
+        self.assertFalse(digest.employer_matches_token("Example Labs", ""))
+
+    def test_an_eu_hosted_greenhouse_board_keeps_its_region(self):
+        """ATS_PATTERNS matches the EU host on purpose. Rebuilding it on the
+        global one 404s, and the rescue is then thrown away in silence."""
+        reference = jd_fetch.ats_reference(
+            "", "https://job-boards.eu.greenhouse.io/tamara/jobs/4412")
+
+        self.assertEqual(jd_fetch.ats_url(reference),
+                         "https://job-boards.eu.greenhouse.io/tamara/jobs/4412")
+
+    def test_ats_url_builds_every_supported_board_and_refuses_the_rest(self):
+        build = jd_fetch.ats_url
+        self.assertEqual(build({"source": "workable", "token": "foodics", "id": "E27"}),
+                         "https://apply.workable.com/foodics/j/E27/")
+        self.assertEqual(build({"source": "pinpoint", "token": "tabby", "id": "d80"}),
+                         "https://tabby.pinpointhq.com/postings/d80")
+        self.assertEqual(build({"source": "ashby", "token": "LeanTech", "id": "abc"}),
+                         "https://jobs.ashbyhq.com/LeanTech/abc")
+        self.assertEqual(build(None), "")
+        self.assertEqual(build({"source": "taleo", "token": "x", "id": "y"}), "")
+        self.assertEqual(build({"source": "lever", "token": "", "id": "y"}), "")
+
+
 class TestDeliveryFloor(unittest.TestCase):
     def _jobs(self):
         return [
@@ -818,6 +1117,69 @@ class TestEndToEnd(unittest.TestCase):
     ENV = {"DISCORD_WEBHOOK_URL": "https://discord.test/webhook",
            "OPENROUTER_API_KEY": "test-key",
            "GITHUB_REPOSITORY": "abdullah7041/job-search-digest"}
+
+    LINKEDIN_JOB = {
+        "company": "Example Labs", "id": "jsearch_ln",
+        "title": "Senior AI Engineer", "location": "الرياض, Saudi Arabia",
+        "url": "https://sa.linkedin.com/jobs/view/senior-ai-engineer-4442",
+        "first_published": "2026-08-29", "source": "jsearch", "token": "",
+        "description": "",  # forces enrichment, which is where the rescue happens
+    }
+
+    def _linkedin_run(self, verify_statuses):
+        """One LinkedIn card whose page links out to the employer's Greenhouse."""
+        page = ('<html><body><h1>Sign in to view this job</h1>'
+                '<a href="https://boards.greenhouse.io/examplelabs/jobs/4412">'
+                'Apply on company website</a></body></html>')
+
+        def fake_get(url, *_args, **_kwargs):
+            response = mock.Mock()
+            if "greenhouse" in url:
+                response.status_code = 200
+                response.text = ""
+                response.json = lambda: {"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"}
+            else:
+                response.status_code = 200
+                response.text = page
+            return response
+
+        ranking = {"jsearch_ln": {"score": 88, "why": "Senior IC LLM role, requirements covered"}}
+        with mock.patch.object(digest, "_get", side_effect=fake_get):
+            return run_main(self.ENV, ranking, link_statuses=verify_statuses,
+                            jobs=[dict(self.LINKEDIN_JOB)])
+
+    def test_a_linkedin_card_is_delivered_as_the_employers_own_link(self):
+        """The whole point: the candidate clicks through to Greenhouse, not to
+        a login wall, and the run already had that link in hand."""
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_OPEN])
+        shutil.rmtree(work)
+        body = "\n".join(posts)
+
+        self.assertIn("https://job-boards.greenhouse.io/examplelabs/jobs/4412", body)
+        self.assertNotIn("sa.linkedin.com", body)
+
+    def test_the_days_row_counts_the_link_status_the_card_actually_shows(self):
+        """The original link verified open and the rescued one came back
+        inconclusive, so the card footer says so. The count was taken before
+        the rescue was verified, and reported 0 for the day."""
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_UNKNOWN])
+        with open(os.path.join(work, "stats.json")) as handle:
+            row = json.load(handle)[-1]
+        shutil.rmtree(work)
+
+        self.assertEqual(row["link_unknown"], 1)
+
+    def test_a_rescued_link_that_does_not_resolve_falls_back_to_the_original(self):
+        """The rescued URL is BUILT from a token and an id, so a definite
+        negative is as likely to mean the shape was wrong as that the posting
+        closed. Losing the rescue must never cost the job."""
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_CLOSED])
+        shutil.rmtree(work)
+        body = "\n".join(posts)
+
+        self.assertIn("sa.linkedin.com/jobs/view/senior-ai-engineer-4442", body)
+        self.assertNotIn("job-boards.greenhouse.io", body)
+        self.assertIn("Senior AI Engineer", body)
 
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")
