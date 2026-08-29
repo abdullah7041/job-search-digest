@@ -1054,7 +1054,19 @@ def rescue_apply_link(job):
     except (requests.RequestException, ValueError) as e:
         log(f"WARN apply-link lookup failed for {job['company']} — {job['title']}: {e}")
         return
-    page_html = response.text if response.status_code == 200 else ""
+    page_html = ""
+    if response.status_code == 200:
+        page_html = response.text
+    else:
+        # Probed live on 2026-08-29: Glassdoor, Jooble and learn4good all answer
+        # 403 to a datacenter IP, and a runner fares no better than the laptop
+        # that tried it. Without this line a blocked page and a page that simply
+        # names no board are the same silence in the log, and there is no way to
+        # tell a rescue that found nothing from one that never ran.
+        log(f"WARN apply-link page HTTP {response.status_code} for {link_host(url)}: "
+            f"{job['company']} — {job['title']}")
+    # Still worth a look with no page in hand: an aggregator URL is sometimes
+    # already an ATS posting, which ats_reference reads off the URL itself.
     reference = ats_reference(page_html, url)
     record_apply_link(job, ats_url(reference), (reference or {}).get("token") or "")
 
