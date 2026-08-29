@@ -936,7 +936,7 @@ class TestApplyLinkRescue(unittest.TestCase):
     def test_the_rescue_happens_even_when_the_description_came_from_elsewhere(self):
         """A page with usable JSON-LD returns before the ATS hop is needed for
         text. The employer's link is still worth having."""
-        job = {"id": "1", "title": "t", "company": "c", "description": "",
+        job = {"id": "1", "title": "t", "company": "Example Labs", "description": "",
                "source": "jsearch", "token": "",
                "url": "https://sa.linkedin.com/jobs/view/x-1"}
         page = (self._linkedin_page("https://jobs.lever.co/examplelabs/"
@@ -992,6 +992,77 @@ class TestApplyLinkRescue(unittest.TestCase):
 
         self.assertEqual(snapshot["url"], "https://apply.workable.com/foodics/j/E2707EDFCE/")
         self.assertEqual(digest.apply_link(job), snapshot["url"])
+
+    def test_a_link_naming_another_employer_is_refused(self):
+        """`ats_reference` matches any ATS href on the page, and a relister's
+        'people also viewed' rail is full of them. Nothing downstream catches a
+        wrong one: verify_link confirms it open because it IS a live posting,
+        and the snapshot hands it to the tailoring run as the JD to read."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Example Labs",
+               "description": "", "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/x-4"}
+        page = ('<html><body>'
+                '<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": FULL_JD})
+                + '</script><aside>People also viewed'
+                '<a href="https://jobs.lever.co/othercorp/'
+                'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee">Other role</a>'
+                '</aside></body></html>')
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            text = digest.get_description(job)
+
+        self.assertIn("Your Impact", text)  # the JD itself was still right
+        self.assertNotIn("apply_url", job)
+        self.assertEqual(digest.apply_link(job), "https://sa.linkedin.com/jobs/view/x-4")
+
+    def test_an_aggregator_job_that_already_has_its_text_is_still_rescued(self):
+        """JSearch always ships a description, so this early return is the path
+        every aggregator posting takes. The rescue reached none of the 171
+        archived ones while it lived only on the description-less branch."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Example Labs",
+               "source": "jsearch", "token": "", "description": FULL_JD,
+               "url": "https://sa.linkedin.com/jobs/view/x-5"}
+        page = self._linkedin_page("https://boards.greenhouse.io/examplelabs/jobs/4412")
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            text = digest.get_description(job)
+
+        self.assertIn("Your Impact", text)
+        self.assertEqual(job["apply_url"],
+                         "https://job-boards.greenhouse.io/examplelabs/jobs/4412")
+
+    def test_a_job_read_from_an_employers_own_board_costs_no_lookup(self):
+        """Its URL is already the answer, so the extra GET would buy nothing."""
+        job = {"id": "1", "title": "t", "company": "Foodics", "source": "workable",
+               "token": "foodics", "description": FULL_JD,
+               "url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
+
+        def boom(*_args, **_kwargs):
+            raise AssertionError("no request should be made here")
+
+        with mock.patch.object(digest, "_get", side_effect=boom):
+            digest.get_description(job)
+
+        self.assertNotIn("apply_url", job)
+
+    def test_a_board_token_is_matched_against_the_employer_it_claims(self):
+        self.assertTrue(digest.employer_matches_token("Example Labs", "examplelabs"))
+        self.assertTrue(digest.employer_matches_token("Lean", "LeanTech"))
+        self.assertTrue(digest.employer_matches_token("Qiddiya | القدية", "qiddiya"))
+        self.assertFalse(digest.employer_matches_token("Example Labs", "othercorp"))
+        # A one-letter name would otherwise be a substring of every token.
+        self.assertFalse(digest.employer_matches_token("c", "examplelabs"))
+        self.assertFalse(digest.employer_matches_token("Example Labs", ""))
+
+    def test_an_eu_hosted_greenhouse_board_keeps_its_region(self):
+        """ATS_PATTERNS matches the EU host on purpose. Rebuilding it on the
+        global one 404s, and the rescue is then thrown away in silence."""
+        reference = jd_fetch.ats_reference(
+            "", "https://job-boards.eu.greenhouse.io/tamara/jobs/4412")
+
+        self.assertEqual(jd_fetch.ats_url(reference),
+                         "https://job-boards.eu.greenhouse.io/tamara/jobs/4412")
 
     def test_ats_url_builds_every_supported_board_and_refuses_the_rest(self):
         build = jd_fetch.ats_url
@@ -1086,6 +1157,17 @@ class TestEndToEnd(unittest.TestCase):
 
         self.assertIn("https://job-boards.greenhouse.io/examplelabs/jobs/4412", body)
         self.assertNotIn("sa.linkedin.com", body)
+
+    def test_the_days_row_counts_the_link_status_the_card_actually_shows(self):
+        """The original link verified open and the rescued one came back
+        inconclusive, so the card footer says so. The count was taken before
+        the rescue was verified, and reported 0 for the day."""
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_UNKNOWN])
+        with open(os.path.join(work, "stats.json")) as handle:
+            row = json.load(handle)[-1]
+        shutil.rmtree(work)
+
+        self.assertEqual(row["link_unknown"], 1)
 
     def test_a_rescued_link_that_does_not_resolve_falls_back_to_the_original(self):
         """The rescued URL is BUILT from a token and an id, so a definite

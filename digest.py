@@ -42,7 +42,7 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import extract_posting, strip_html
+from jd_fetch import ats_reference, ats_url, extract_posting, strip_html
 from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 from openrouter import chat_json, configured_chain
@@ -757,6 +757,27 @@ def company_key(name):
     return "".join(words)
 
 
+def employer_matches_token(company, token):
+    """True when an ATS board token plausibly belongs to THIS employer.
+
+    A board token is the employer's own slug, so it is a prefix, a suffix or
+    the whole of the name far more often than not: Foodics is `foodics`, Lean
+    is `LeanTech`, Example Labs is `examplelabs`. Containment either way is
+    therefore the test, with a three-character floor so a one-letter name
+    cannot match everything.
+
+    A wrong answer here is asymmetric, which is why the test is loose rather
+    than exact: a false negative costs one rescue and the candidate keeps the
+    link they already had, while a false positive hands over another company's
+    job. Anything the token cannot vouch for is refused.
+    """
+    name = company_key(company)
+    slug = "".join(re.findall(r"[a-z0-9]+", (token or "").casefold()))
+    if len(name) < 3 or len(slug) < 3:
+        return False
+    return name in slug or slug in name
+
+
 def posting_key(job):
     """The employer-and-role identity two different boards agree on.
 
@@ -928,6 +949,10 @@ def get_description(job):
     bounded by the digest cap. Any failure returns whatever we have: tailoring
     degrades to title-only, the run never breaks."""
     if job.get("description"):
+        # The text is settled, the link is not. This return is the path every
+        # JSearch job takes, so leaving it here is what kept the apply-link
+        # rescue from ever running on the postings it exists for.
+        rescue_apply_link(job)
         return job["description"][:JD_MAX_CHARS]
     src, token = job.get("source"), job.get("token")
     try:
@@ -969,21 +994,69 @@ def fetch_posting_page(job):
     bot-blocked page still scores exactly as it does today rather than on noise.
 
     It also reports the employer's own posting URL when the page names one, and
-    that is recorded on the job here. The hop was already being made for the
-    description and its result thrown away, so the candidate was handed a
-    LinkedIn or Jooble link to a posting this run had just read straight from
-    the employer's own API. Setting `apply_url` rather than overwriting `url` is
-    deliberate: `job_identity` keys an aggregator posting on its URL, so
-    rewriting it would make every rescued job look new on the next run and
-    redeliver it daily for as long as the rescue kept working.
+    that is recorded on the job here. This branch gets it for free -- the hop is
+    being made for the description anyway -- which is why the description-less
+    jobs come through here and `rescue_apply_link` exists separately for the
+    ones that pay for it.
     """
     posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
-    employer_url = posting["employer_url"]
-    if employer_url and canonical_url(employer_url) != canonical_url(job.get("url")):
-        job["apply_url"] = employer_url
-        log(f"Apply link rescued from {link_host(job.get('url'))} to "
-            f"{link_host(employer_url)}: {job['company']} — {job['title']}")
+    record_apply_link(job, posting["employer_url"], posting["employer_token"])
     return posting["text"]
+
+
+def record_apply_link(job, employer_url, employer_token):
+    """Accept the employer posting a page named, if it is THIS employer's.
+
+    `ats_reference` matches any ATS-shaped href on the page, and a relister's
+    "people also viewed" rail is full of them, so an unguarded rescue can hand
+    over a live posting at a different company. Nothing downstream would catch
+    it: `verify_link` confirms it open because it is a real posting, and
+    `make_snapshot` records it as the URL a later "Tailor CV" click re-reads
+    the JD from -- so the resume would be tailored against the wrong job. The
+    board token has to agree with the employer name before the link is
+    believed.
+
+    Setting `apply_url` rather than overwriting `url` is deliberate:
+    `job_identity` keys an aggregator posting on its URL, so rewriting it would
+    make every rescued job look new on the next run and redeliver it daily for
+    as long as the rescue kept working.
+    """
+    if not employer_url or canonical_url(employer_url) == canonical_url(job.get("url")):
+        return
+    if not employer_matches_token(job.get("company"), employer_token):
+        log(f"Apply link on {link_host(employer_url)} names '{employer_token}', not "
+            f"{job['company']}; keeping {link_host(job.get('url'))}")
+        return
+    job["apply_url"] = employer_url
+    log(f"Apply link rescued from {link_host(job.get('url'))} to "
+        f"{link_host(employer_url)}: {job['company']} — {job['title']}")
+
+
+def rescue_apply_link(job):
+    """Find the employer's own posting for a job that already has its text.
+
+    `fetch_posting_page` only runs when the board shipped no description, and
+    JSearch always ships one -- so the rescue reached none of the 171 aggregator
+    postings archived to 2026-08-28, including the 48 that arrived as a teaser
+    plus a relister link, which is the case it was built for. This is the same
+    lookup run for its link rather than its text.
+
+    Unlike the hop inside `fetch_posting_page` this is a NEW request: one GET
+    per aggregator job, bounded by the fresh-job count. It is skipped for jobs
+    read straight from an employer's board, whose URL is already the answer.
+    Any failure leaves the job with the link it arrived with.
+    """
+    url = job.get("url", "")
+    if not url or job.get("source") in EMPLOYER_SOURCES:
+        return
+    try:
+        response = _get(url)
+    except (requests.RequestException, ValueError) as e:
+        log(f"WARN apply-link lookup failed for {job['company']} — {job['title']}: {e}")
+        return
+    page_html = response.text if response.status_code == 200 else ""
+    reference = ats_reference(page_html, url)
+    record_apply_link(job, ats_url(reference), (reference or {}).get("token") or "")
 
 
 def apply_link(job):
@@ -1387,6 +1460,12 @@ def main():
             job.pop("apply_url")
         else:
             job["link_status"] = status
+
+    # Recounted, because the loop above just rewrote the statuses it counts. The
+    # figure taken before enrichment is right for the no-new-jobs return above
+    # and stale for every save_stats below it: a card whose rescued link came
+    # back inconclusive says so in its footer, and the day's row said 0.
+    unknown_count = sum(j["link_status"] == LINK_UNKNOWN for j in fresh)
 
     # Second pass, now that the text exists: a posting relisted under a new URL
     # is still the same posting. Runs before ranking so a repeat never costs a

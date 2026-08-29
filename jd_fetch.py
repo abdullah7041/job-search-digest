@@ -126,7 +126,14 @@ def ats_reference(page_html: str, url: str) -> dict | None:
         for source, pattern in ATS_PATTERNS:
             match = pattern.search(candidate)
             if match:
-                return {"source": source, "token": match.group(1), "id": match.group(2)}
+                reference = {"source": source, "token": match.group(1), "id": match.group(2)}
+                # Greenhouse is the one board whose front end is region-split.
+                # ATS_PATTERNS matches the EU host on purpose, so the region has
+                # to survive into the reference or ats_url rebuilds an
+                # EU-hosted posting on the global host, where it 404s.
+                if ".eu.greenhouse.io" in match.group(0):
+                    reference["host"] = "job-boards.eu.greenhouse.io"
+                return reference
     return None
 
 
@@ -134,22 +141,29 @@ def ats_reference(page_html: str, url: str) -> dict | None:
 # posting URL. This is the link a candidate should be given -- an aggregator
 # card is a rendering of the posting, the employer's board is the posting.
 ATS_URL_BUILDERS = {
-    "greenhouse": "https://job-boards.greenhouse.io/{token}/jobs/{id}",
+    "greenhouse": "https://{host}/{token}/jobs/{id}",
     "lever": "https://jobs.lever.co/{token}/{id}",
     "ashby": "https://jobs.ashbyhq.com/{token}/{id}",
     "workable": "https://apply.workable.com/{token}/j/{id}/",
     "pinpoint": "https://{token}.pinpointhq.com/postings/{id}",
 }
 
+# Only Greenhouse reads {host}; the rest ignore the keyword. A reference that
+# carries no host is a board on the global front end, which is every board the
+# embed pattern matches and every non-EU one the board pattern does.
+ATS_DEFAULT_HOSTS = {"greenhouse": "job-boards.greenhouse.io"}
+
 
 def ats_url(reference: dict | None) -> str:
     """The employer's own posting URL for a reference, or "" if unbuildable."""
     if not reference:
         return ""
-    template = ATS_URL_BUILDERS.get(reference.get("source") or "")
+    source = reference.get("source") or ""
+    template = ATS_URL_BUILDERS.get(source)
     if not template or not reference.get("token") or not reference.get("id"):
         return ""
-    return template.format(token=reference["token"], id=reference["id"])
+    return template.format(token=reference["token"], id=reference["id"],
+                           host=reference.get("host") or ATS_DEFAULT_HOSTS.get(source, ""))
 
 
 def _json_or_none(response):
@@ -236,7 +250,7 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
         if log:
             log(message)
 
-    found = {"text": "", "employer_url": ""}
+    found = {"text": "", "employer_url": "", "employer_token": ""}
     if not url:
         return found
 
@@ -253,8 +267,13 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
     # Resolved up front rather than inside the description branch below, so a
     # page that publishes usable structured data still gives up its employer
     # link. Pure regex over HTML already in hand -- no request, no failure mode.
+    # `ats_reference` matches any ATS-shaped href on the page, and a relister's
+    # "people also viewed" rail is full of them, so the token is reported
+    # alongside the URL: the caller knows which employer it asked about and is
+    # the only one that can refuse a link naming a different one.
     reference = ats_reference(page_html, url)
     found["employer_url"] = ats_url(reference)
+    found["employer_token"] = (reference or {}).get("token") or ""
 
     text = jsonld_job_posting(page_html)
     if text and not jd_completeness_failures(text):
