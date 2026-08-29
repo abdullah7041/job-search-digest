@@ -130,6 +130,28 @@ def ats_reference(page_html: str, url: str) -> dict | None:
     return None
 
 
+# The inverse of ATS_PATTERNS: a reference back to the employer's canonical
+# posting URL. This is the link a candidate should be given -- an aggregator
+# card is a rendering of the posting, the employer's board is the posting.
+ATS_URL_BUILDERS = {
+    "greenhouse": "https://job-boards.greenhouse.io/{token}/jobs/{id}",
+    "lever": "https://jobs.lever.co/{token}/{id}",
+    "ashby": "https://jobs.ashbyhq.com/{token}/{id}",
+    "workable": "https://apply.workable.com/{token}/j/{id}/",
+    "pinpoint": "https://{token}.pinpointhq.com/postings/{id}",
+}
+
+
+def ats_url(reference: dict | None) -> str:
+    """The employer's own posting URL for a reference, or "" if unbuildable."""
+    if not reference:
+        return ""
+    template = ATS_URL_BUILDERS.get(reference.get("source") or "")
+    if not template or not reference.get("token") or not reference.get("id"):
+        return ""
+    return template.format(token=reference["token"], id=reference["id"])
+
+
 def _json_or_none(response):
     if response is None or response.status_code != 200:
         return None
@@ -197,20 +219,26 @@ def readable_text(page_html: str) -> str:
     return strip_html(body)
 
 
-def extract_jd(url: str, get=default_get, limit: int = JD_LIMIT, log=None) -> str:
-    """The best complete job description this URL can be made to give up.
+def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) -> dict:
+    """What one posting URL can be made to give up: {"text", "employer_url"}.
 
-    Returns "" rather than a partial one: an incomplete description scores and
-    tailors worse than no description, because everything downstream treats
-    captured text as evidence. `jd_completeness_failures` is the same gate the
+    ``text`` is the best COMPLETE job description, or "" -- an incomplete one
+    scores and tailors worse than nothing, because everything downstream treats
+    captured text as evidence. ``jd_completeness_failures`` is the same gate the
     snapshot uses, so anything returned here is tailorable.
+
+    ``employer_url`` is the employer's own posting when the page names one. It
+    costs no extra request: the ATS hop below was already being made for the
+    description and its result was simply thrown away, leaving the candidate
+    with the relister's link to a posting we had just read from the source.
     """
     def note(message):
         if log:
             log(message)
 
+    found = {"text": "", "employer_url": ""}
     if not url:
-        return ""
+        return found
 
     page_html = ""
     try:
@@ -222,29 +250,42 @@ def extract_jd(url: str, get=default_get, limit: int = JD_LIMIT, log=None) -> st
     except (requests.RequestException, ValueError) as error:
         note(f"WARN JD page fetch failed for {url}: {error}")
 
+    # Resolved up front rather than inside the description branch below, so a
+    # page that publishes usable structured data still gives up its employer
+    # link. Pure regex over HTML already in hand -- no request, no failure mode.
+    reference = ats_reference(page_html, url)
+    found["employer_url"] = ats_url(reference)
+
     text = jsonld_job_posting(page_html)
     if text and not jd_completeness_failures(text):
         note(f"JD read from structured data for {url}")
-        return text[:limit]
+        found["text"] = text[:limit]
+        return found
 
     # The relister did not publish it, but it may have linked to whoever did.
     # This runs even when the page fetch failed, because an aggregator URL is
     # often already an ATS posting. The employer's own API outranks the page
     # body: it is the posting rather than a rendering of it.
-    reference = ats_reference(page_html, url)
     if reference:
         text = ats_description(reference, get)
         if text and not jd_completeness_failures(text):
             note(f"JD read from {reference['source']} for {url}")
-            return text[:limit]
+            found["text"] = text[:limit]
+            return found
 
     text = readable_text(page_html) if page_html else ""
     if text and not jd_completeness_failures(text):
         note(f"JD read from page text for {url}")
-        return text[:limit]
+        found["text"] = text[:limit]
+        return found
 
     note(f"WARN no complete job description found at {url}")
-    return ""
+    return found
+
+
+def extract_jd(url: str, get=default_get, limit: int = JD_LIMIT, log=None) -> str:
+    """The best complete job description this URL can be made to give up."""
+    return extract_posting(url, get=get, limit=limit, log=log)["text"]
 
 
 # -------------------------------- images ------------------------------------

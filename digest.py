@@ -42,7 +42,7 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import extract_jd, strip_html
+from jd_fetch import extract_posting, strip_html
 from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 from openrouter import chat_json, configured_chain
@@ -964,11 +964,31 @@ def fetch_posting_page(job):
     Stripping tags off the landing page closed only part of that gap, because
     the description is usually not in the body text at all: it is in the page's
     JobPosting metadata, or on the employer's own ATS that the aggregator is
-    relisting. `jd_fetch.extract_jd` tries both before falling back to the page
+    relisting. `jd_fetch.extract_posting` tries both before falling back to the page
     text this used to be, and applies the same completeness gate, so a
     bot-blocked page still scores exactly as it does today rather than on noise.
+
+    It also reports the employer's own posting URL when the page names one, and
+    that is recorded on the job here. The hop was already being made for the
+    description and its result thrown away, so the candidate was handed a
+    LinkedIn or Jooble link to a posting this run had just read straight from
+    the employer's own API. Setting `apply_url` rather than overwriting `url` is
+    deliberate: `job_identity` keys an aggregator posting on its URL, so
+    rewriting it would make every rescued job look new on the next run and
+    redeliver it daily for as long as the rescue kept working.
     """
-    return extract_jd(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    employer_url = posting["employer_url"]
+    if employer_url and canonical_url(employer_url) != canonical_url(job.get("url")):
+        job["apply_url"] = employer_url
+        log(f"Apply link rescued from {link_host(job.get('url'))} to "
+            f"{link_host(employer_url)}: {job['company']} — {job['title']}")
+    return posting["text"]
+
+
+def apply_link(job):
+    """The link the candidate should be handed: the employer's, if we found it."""
+    return job.get("apply_url") or job.get("url", "")
 
 
 def enrich_descriptions(jobs):
@@ -1352,6 +1372,22 @@ def main():
 
     enrich_descriptions(fresh)
 
+    # A rescued apply link is BUILT from a token and a posting id, not copied
+    # from a page, so it has never been fetched at the point enrichment records
+    # it. Verify before handing it over -- and on a definite negative discard
+    # the rescue rather than the job: a 404 here is as likely to mean the URL
+    # shape was wrong as that the posting closed, and the aggregator link that
+    # was verified earlier is still a working way in.
+    for job in fresh:
+        if not job.get("apply_url"):
+            continue
+        status = verify_link(job["apply_url"])
+        if status == LINK_CLOSED:
+            log(f"Rescued link did not resolve, keeping the original: {job['apply_url']}")
+            job.pop("apply_url")
+        else:
+            job["link_status"] = status
+
     # Second pass, now that the text exists: a posting relisted under a new URL
     # is still the same posting. Runs before ranking so a repeat never costs a
     # model call.
@@ -1447,7 +1483,7 @@ def main():
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
                 f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
-                f"  {j['why']}\n  <{j['url']}>{resume_line}"
+                f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
             )
 
     interactive_delivery_claimed = False

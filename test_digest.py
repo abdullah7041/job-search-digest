@@ -889,6 +889,123 @@ class TestJdFetch(unittest.TestCase):
             self.assertIn("Your Impact", digest.get_description(job))
 
 
+class TestApplyLinkRescue(unittest.TestCase):
+    """The link the candidate is handed, when the run found a better one.
+
+    Shares TestJdFetch's page/json helpers by construction rather than
+    inheritance: these are about the URL, not the description.
+    """
+
+    def _page(self, body, status=200):
+        response = mock.Mock()
+        response.status_code = status
+        response.text = body
+        return response
+
+    def _json(self, payload, status=200):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: payload
+        response.text = ""
+        return response
+
+    def _linkedin_page(self, href):
+        return ('<html><body><h1>Sign in to view this job</h1>'
+                f'<a href="{href}">Apply on company website</a></body></html>')
+
+    def test_a_linkedin_card_is_rescued_to_the_employers_own_posting(self):
+        """65 of the 178 archived links were LinkedIn. The hop to the employer
+        was already being made for the description and thrown away."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Example Labs",
+               "description": "", "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/senior-ml-engineer-4442"}
+        page = self._linkedin_page("https://boards.greenhouse.io/examplelabs/jobs/4412")
+
+        def get(url):
+            if "greenhouse" in url:
+                return self._json({"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"})
+            return self._page(page)
+
+        with mock.patch.object(digest, "_get", side_effect=get):
+            digest.get_description(job)
+
+        self.assertEqual(job["apply_url"],
+                         "https://job-boards.greenhouse.io/examplelabs/jobs/4412")
+        self.assertEqual(digest.apply_link(job), job["apply_url"])
+
+    def test_the_rescue_happens_even_when_the_description_came_from_elsewhere(self):
+        """A page with usable JSON-LD returns before the ATS hop is needed for
+        text. The employer's link is still worth having."""
+        job = {"id": "1", "title": "t", "company": "c", "description": "",
+               "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/x-1"}
+        page = (self._linkedin_page("https://jobs.lever.co/examplelabs/"
+                                    "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+                + '<script type="application/ld+json">'
+                + json.dumps({"@type": "JobPosting", "description": FULL_JD})
+                + "</script>")
+
+        with mock.patch.object(digest, "_get", return_value=self._page(page)):
+            text = digest.get_description(job)
+
+        self.assertIn("Your Impact", text)
+        self.assertEqual(job["apply_url"],
+                         "https://jobs.lever.co/examplelabs/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+
+    def test_a_page_that_names_no_employer_board_leaves_the_link_alone(self):
+        """LinkedIn blocks datacenter IPs, so most of these fetches fail. The
+        job keeps its original link and nothing else changes."""
+        job = {"id": "1", "title": "t", "company": "c", "description": "",
+               "source": "jsearch", "token": "",
+               "url": "https://sa.linkedin.com/jobs/view/x-2"}
+
+        with mock.patch.object(digest, "_get", return_value=self._page("blocked", status=999)):
+            digest.get_description(job)
+
+        self.assertNotIn("apply_url", job)
+        self.assertEqual(digest.apply_link(job), "https://sa.linkedin.com/jobs/view/x-2")
+
+    def test_a_posting_already_on_the_employers_board_is_not_rewritten(self):
+        """The URL resolves to itself, so there is nothing to rescue and no
+        apply_url to explain in the log."""
+        job = {"id": "1", "title": "t", "company": "c", "description": "",
+               "source": "jsearch", "token": "",
+               "url": "https://job-boards.greenhouse.io/examplelabs/jobs/4412"}
+
+        def get(_url):
+            return self._json({"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"})
+
+        with mock.patch.object(digest, "_get", side_effect=get):
+            digest.get_description(job)
+
+        self.assertNotIn("apply_url", job)
+
+    def test_the_snapshot_and_the_digest_line_both_carry_the_rescued_link(self):
+        """Two delivery paths read the link independently; a rescue that only
+        reached one of them would ship a paid link on the other."""
+        job = {"id": "1", "title": "t", "company": "c", "location": "Riyadh",
+               "source": "jsearch", "description": FULL_JD, "score": 80,
+               "url": "https://sa.linkedin.com/jobs/view/x-3",
+               "apply_url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
+
+        snapshot = job_archive.make_snapshot(job, "2026-08-29T00:00:00Z")
+
+        self.assertEqual(snapshot["url"], "https://apply.workable.com/foodics/j/E2707EDFCE/")
+        self.assertEqual(digest.apply_link(job), snapshot["url"])
+
+    def test_ats_url_builds_every_supported_board_and_refuses_the_rest(self):
+        build = jd_fetch.ats_url
+        self.assertEqual(build({"source": "workable", "token": "foodics", "id": "E27"}),
+                         "https://apply.workable.com/foodics/j/E27/")
+        self.assertEqual(build({"source": "pinpoint", "token": "tabby", "id": "d80"}),
+                         "https://tabby.pinpointhq.com/postings/d80")
+        self.assertEqual(build({"source": "ashby", "token": "LeanTech", "id": "abc"}),
+                         "https://jobs.ashbyhq.com/LeanTech/abc")
+        self.assertEqual(build(None), "")
+        self.assertEqual(build({"source": "taleo", "token": "x", "id": "y"}), "")
+        self.assertEqual(build({"source": "lever", "token": "", "id": "y"}), "")
+
+
 class TestDeliveryFloor(unittest.TestCase):
     def _jobs(self):
         return [
@@ -929,6 +1046,58 @@ class TestEndToEnd(unittest.TestCase):
     ENV = {"DISCORD_WEBHOOK_URL": "https://discord.test/webhook",
            "OPENROUTER_API_KEY": "test-key",
            "GITHUB_REPOSITORY": "abdullah7041/job-search-digest"}
+
+    LINKEDIN_JOB = {
+        "company": "Example Labs", "id": "jsearch_ln",
+        "title": "Senior AI Engineer", "location": "الرياض, Saudi Arabia",
+        "url": "https://sa.linkedin.com/jobs/view/senior-ai-engineer-4442",
+        "first_published": "2026-08-29", "source": "jsearch", "token": "",
+        "description": "",  # forces enrichment, which is where the rescue happens
+    }
+
+    def _linkedin_run(self, verify_statuses):
+        """One LinkedIn card whose page links out to the employer's Greenhouse."""
+        page = ('<html><body><h1>Sign in to view this job</h1>'
+                '<a href="https://boards.greenhouse.io/examplelabs/jobs/4412">'
+                'Apply on company website</a></body></html>')
+
+        def fake_get(url, *_args, **_kwargs):
+            response = mock.Mock()
+            if "greenhouse" in url:
+                response.status_code = 200
+                response.text = ""
+                response.json = lambda: {"content": "&lt;p&gt;" + FULL_JD + "&lt;/p&gt;"}
+            else:
+                response.status_code = 200
+                response.text = page
+            return response
+
+        ranking = {"jsearch_ln": {"score": 88, "why": "Senior IC LLM role, requirements covered"}}
+        with mock.patch.object(digest, "_get", side_effect=fake_get):
+            return run_main(self.ENV, ranking, link_statuses=verify_statuses,
+                            jobs=[dict(self.LINKEDIN_JOB)])
+
+    def test_a_linkedin_card_is_delivered_as_the_employers_own_link(self):
+        """The whole point: the candidate clicks through to Greenhouse, not to
+        a login wall, and the run already had that link in hand."""
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_OPEN])
+        shutil.rmtree(work)
+        body = "\n".join(posts)
+
+        self.assertIn("https://job-boards.greenhouse.io/examplelabs/jobs/4412", body)
+        self.assertNotIn("sa.linkedin.com", body)
+
+    def test_a_rescued_link_that_does_not_resolve_falls_back_to_the_original(self):
+        """The rescued URL is BUILT from a token and an id, so a definite
+        negative is as likely to mean the shape was wrong as that the posting
+        closed. Losing the rescue must never cost the job."""
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_CLOSED])
+        shutil.rmtree(work)
+        body = "\n".join(posts)
+
+        self.assertIn("sa.linkedin.com/jobs/view/senior-ai-engineer-4442", body)
+        self.assertNotIn("job-boards.greenhouse.io", body)
+        self.assertIn("Senior AI Engineer", body)
 
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")
