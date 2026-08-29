@@ -326,6 +326,117 @@ class TestJobIdentity(unittest.TestCase):
         self.assertNotEqual(digest.description_key(job), digest.description_key(distinct))
 
 
+class TestEmployerLinkPreference(unittest.TestCase):
+    """Which of two links to the same posting the digest hands over."""
+
+    def test_a_board_cannot_hide_an_employer_behind_its_own_decoration(self):
+        """JSearch returns 'Zid | زد' where Workable returns 'Zid', and legal
+        forms come and go. The latin core is the half both boards agree on."""
+        self.assertEqual(digest.company_key("Zid | زد"), "zid")
+        self.assertEqual(digest.company_key("Qiddiya | القدية"), "qiddiya")
+        self.assertEqual(digest.company_key("HungerStation | هنقرستيشن"), "hungerstation")
+        self.assertEqual(digest.company_key("JAL International Co. Ltd."),
+                         digest.company_key("JAL International"))
+
+    def test_two_different_employers_do_not_collapse_onto_one_key(self):
+        self.assertNotEqual(digest.company_key("Foodics"), digest.company_key("Foodics Labs"))
+        self.assertNotEqual(digest.company_key("Lean"), digest.company_key("Lean Tech"))
+
+    def test_a_company_named_only_by_its_legal_form_survives(self):
+        """Stripping down to nothing would group it with every other empty key."""
+        self.assertEqual(digest.company_key("Co"), "co")
+
+    def test_the_foodics_case_this_was_built_for(self):
+        """Archived 2026-08-11 through 08-19: Workable and JobLeads carried the
+        identical title under different URLs, so the URL dedupe never joined
+        them and the paid copy went out three more times."""
+        employer = {"source": "workable", "company": "Foodics",
+                    "title": "Senior Data Scientist / Senior ML Engineer",
+                    "url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
+        relisted = {"source": "jsearch", "company": "Foodics",
+                    "title": "Senior Data Scientist / Senior ML Engineer",
+                    "url": "https://www.jobleads.com/sa/job/senior-data-scientist-x"}
+
+        kept, dropped = digest.prefer_employer_postings([relisted, employer])
+
+        self.assertEqual(kept, [employer])
+        self.assertEqual(dropped, [relisted])
+
+    def test_an_employer_posting_is_never_dropped_for_another_employer_posting(self):
+        """Two boards would never both be the employer, but a same-titled role
+        at one company must not eat itself."""
+        first = {"source": "workable", "company": "Foodics", "title": "Senior Engineer",
+                 "url": "https://apply.workable.com/foodics/j/A/"}
+        second = {"source": "greenhouse", "company": "Foodics", "title": "Senior Engineer",
+                  "url": "https://job-boards.greenhouse.io/foodics/jobs/1"}
+
+        kept, dropped = digest.prefer_employer_postings([first, second])
+
+        self.assertEqual(kept, [first, second])
+        self.assertEqual(dropped, [])
+
+    def test_an_aggregator_posting_with_no_employer_copy_survives(self):
+        relisted = {"source": "jsearch", "company": "Qiddiya | القدية",
+                    "title": "Senior Data Engineer",
+                    "url": "https://sa.linkedin.com/jobs/view/senior-data-engineer-1"}
+
+        kept, dropped = digest.prefer_employer_postings([relisted])
+
+        self.assertEqual(kept, [relisted])
+        self.assertEqual(dropped, [])
+
+    def test_a_card_missing_its_company_or_title_groups_with_nothing(self):
+        """A key of '::' would collapse every incomplete card in the run."""
+        employer = {"source": "workable", "company": "", "title": "",
+                    "url": "https://apply.workable.com/x/j/A/"}
+        relisted = {"source": "jsearch", "company": "", "title": "",
+                    "url": "https://www.jobleads.com/sa/job/x"}
+
+        kept, dropped = digest.prefer_employer_postings([relisted, employer])
+
+        self.assertEqual(dropped, [])
+        self.assertEqual(len(kept), 2)
+
+
+class TestPaidRelisterLinks(unittest.TestCase):
+    """JobLeads charges to reach the apply step; the employer's posting is free."""
+
+    def test_the_paid_relisters_are_recognised_however_they_are_spelled(self):
+        for url in ("https://www.jobleads.com/sa/job/senior-ml-engineer-riyadh",
+                    "https://jobleads.com/sa/job/x",
+                    "https://sa.jooble.org/jdp/-1913570090770118991",
+                    "https://sa.jobrapido.com/jobpreview/x",
+                    "https://www.naukrigulf.com/senior-data-scientist-x",
+                    "https://bebee.com/job/x",
+                    "https://sa.thebigjobsite.com/job/x",
+                    "https://WWW.JOBLEADS.COM:443/sa/job/x"):
+            with self.subTest(url=url):
+                self.assertTrue(digest.on_paid_relister(url))
+
+    def test_free_boards_and_employer_ats_hosts_are_left_alone(self):
+        """LinkedIn is 65 of the 178 archived links and is free to act on.
+        Blocking it would empty the digest to fix a different problem."""
+        for url in ("https://sa.linkedin.com/jobs/view/senior-engineer-4442",
+                    "https://sa.indeed.com/viewjob?jk=aaa",
+                    "https://www.glassdoor.co.uk/job-listing/x",
+                    "https://apply.workable.com/foodics/j/E2707EDFCE/",
+                    "https://job-boards.greenhouse.io/hala/jobs/5364098008",
+                    "https://tabby.pinpointhq.com/en/postings/d8044ef0",
+                    ""):
+            with self.subTest(url=url):
+                self.assertFalse(digest.on_paid_relister(url))
+
+    def test_a_lookalike_domain_is_not_treated_as_the_blocked_one(self):
+        """Suffix matching has to stop at a label boundary, or notjobleads.com
+        and jobleads.com.example.test would both be dropped."""
+        self.assertFalse(digest.on_paid_relister("https://notjobleads.com/job/x"))
+        self.assertFalse(digest.on_paid_relister("https://jobleads.com.example.test/job/x"))
+
+    def test_the_host_is_reported_without_www_for_the_log_line(self):
+        self.assertEqual(digest.link_host("https://www.jobleads.com/sa/job/x"), "jobleads.com")
+        self.assertEqual(digest.link_host("https://sa.jooble.org/jdp/-1"), "sa.jooble.org")
+
+
 class TestRankedExcerpt(unittest.TestCase):
     """What the ranker reads, which is what the whole score rests on."""
 
