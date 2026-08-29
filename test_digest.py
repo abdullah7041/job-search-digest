@@ -1032,6 +1032,24 @@ class TestApplyLinkRescue(unittest.TestCase):
         self.assertEqual(job["apply_url"],
                          "https://job-boards.greenhouse.io/examplelabs/jobs/4412")
 
+    def test_a_blocked_relister_page_says_so_in_the_log(self):
+        """Glassdoor, Jooble and learn4good all answered 403 to a live probe on
+        2026-08-29. A silent skip makes a rescue that found nothing look exactly
+        like one that never ran, which is the whole question when reading a run
+        log to judge whether the rescue is working."""
+        job = {"id": "1", "title": "Senior ML Engineer", "company": "Raqmiyat",
+               "source": "jsearch", "token": "", "description": FULL_JD,
+               "url": "https://www.glassdoor.co.uk/job-listing/ai-engineer-raqmiyat.htm"}
+        lines = []
+
+        with mock.patch.object(digest, "_get", return_value=self._page("denied", status=403)), \
+             mock.patch.object(digest, "log", lines.append):
+            digest.rescue_apply_link(job)
+
+        self.assertNotIn("apply_url", job)
+        self.assertTrue(any("HTTP 403" in line and "glassdoor.co.uk" in line
+                            for line in lines), lines)
+
     def test_a_job_read_from_an_employers_own_board_costs_no_lookup(self):
         """Its URL is already the answer, so the extra GET would buy nothing."""
         job = {"id": "1", "title": "t", "company": "Foodics", "source": "workable",
