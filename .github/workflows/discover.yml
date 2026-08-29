@@ -1,0 +1,56 @@
+name: Discover company ATS boards
+
+# The digest prefers a company's own board over any relister, so widening that
+# list is the highest-leverage change available to it. `digest.py --discover`
+# probes a name against every supported ATS and prints a ready-to-paste
+# COMPANIES line, but it needs network egress that a sandboxed session does not
+# have. Running it here keeps the project's "no laptop needed" property.
+#
+# Read-only: it probes public job-board APIs, touches no secret, and writes
+# nothing back. Paste confirmed hits into COMPANIES in digest.py yourself.
+
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        description: "Space-separated company names to probe, e.g. qiddiya flynas elm kaust"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discover-company-ats
+  cancel-in-progress: true
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - run: python -m pip install --require-hashes -r requirements.txt
+
+      # NAMES is read from the environment, never interpolated into the script
+      # body: a ${{ }} expression inside `run` is substituted before the shell
+      # sees it, which turns a workflow input into arbitrary shell.
+      - name: Probe every supported ATS
+        env:
+          NAMES: ${{ inputs.names }}
+        run: |
+          read -r -a probe_names <<< "$NAMES"
+          if [ "${#probe_names[@]}" -eq 0 ]; then
+            echo "No names to probe." >&2
+            exit 1
+          fi
+          python digest.py --discover "${probe_names[@]}"
