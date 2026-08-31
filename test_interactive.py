@@ -251,6 +251,21 @@ class TestInteractiveRunner(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "complete job description"):
             run_task({"input": {"job_snapshot": snapshot}, "status": "dispatched"})
 
+    def test_the_runner_serves_only_a_tailoring_task_and_says_so(self):
+        """Pins the runner's task-kind contract. run_task has no branch on
+        task["kind"] anywhere -- it always looks for input.job_snapshot, so the
+        only kind it can ever serve is "tailor". This is the contract
+        worker/src/index.js must not violate: dispatching any other task kind
+        (like "resume") spends a full Actions run and a task row on a guaranteed
+        failure. Adding a new task kind needs a handler here first; this test is
+        the reminder that stops that from shipping quietly again.
+        """
+        with self.assertRaisesRegex(ValueError, "job snapshot"):
+            run_task({
+                "kind": "resume",
+                "input": {"attachment": {"url": "https://example.test/cv.pdf", "filename": "cv.pdf"}},
+            })
+
     def test_process_task_uses_hmac_for_input_and_result_requests(self):
         secret = "callback-secret"
         task_id = "task-123"

@@ -210,7 +210,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `job_archive.py` — builds job snapshots (including the JD SHA-256), the Discord card/button payload, and writes `jobs/<date>.json`.
 - `interactive_runner.py` — runs one on-demand tailoring task: settles which job description it may tailor against (`resolve_jd`: archived and hash-verified, pasted, refetched, or read from screenshots), builds the one-page PDF, reports the result and the description's provenance back to the Worker.
 - `resume_source.py` — evidence helpers shared by resume ingestion and tailoring: splits `resume.md` into quotable source blocks and checks a tailored draft's claims against them.
-- `resume_ingest.py` — normalizes raw resume text (from a `/resume` upload) into the form `resume.md` needs, with a preview step before anything is accepted as the new master.
+- `resume_ingest.py` — normalizes raw resume text into the form `resume.md` needs, with a preview step before anything is accepted as the new master. Written and tested, but not yet called from anywhere: `/resume` currently answers with a refusal (not wired up yet), and the master resume is updated by editing and committing `resume.md` directly.
 - `test_digest.py` — offline tests for the daily pipeline (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths.
 - `test_interactive.py` — offline contract tests for the snapshot/tailoring/Worker-callback pipeline.
 - `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, and `jobs/` back.
@@ -221,7 +221,7 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 **On-demand tailoring (Cloudflare Worker)**
 
 - `worker/src/index.js` — the Worker: verifies Discord interactions, claims delivery of daily cards idempotently, creates and serves tailoring tasks, opens the paste modal, and posts the PDF back to the private channel.
-- `worker/commands.js` — the command set registered with Discord (`/resume`, `/tailor-jd`). Source of truth; `npm run register --prefix worker` applies it.
+- `worker/commands.js` — the command set registered with Discord (`/resume`, `/tailor-jd`). Source of truth; `npm run register --prefix worker` applies it. `/resume` is registered but not yet implemented: it answers with an immediate refusal rather than creating a task or dispatching a workflow.
 - `worker/schema.sql` — the D1 schema: `tasks`, `deliveries`, `delivery_claims`, `internal_nonces`, `job_snapshots`.
 - `worker/wrangler.jsonc` — Worker config: non-secret `vars` (Discord application/guild/channel/user ids, the GitHub repository, the Discord public key) and the D1 binding. No secret values live here.
 - `worker/test/interaction.test.js` — the Worker's Node test suite (`node --test`): signature verification, channel/user gating, snapshot hash checks, idempotent delivery claims, nonce handling.
