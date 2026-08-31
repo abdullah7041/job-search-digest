@@ -1513,8 +1513,12 @@ def main():
     for job in relisted_copies:
         log(f"Relisted copy on {link_host(job['url'])}: {job['company']} — "
             f"{job['title']}; this run already read it from the employer's board")
-    paid_only = [j for j in matched if on_paid_relister(j.get("url"))]
-    matched = [j for j in matched if not on_paid_relister(j.get("url"))]
+    # Judge the link the candidate is actually handed, not the one the
+    # aggregator happened to rank first. apply_link prefers apply_url, which is
+    # where both the API's free alternative and the page rescue put their result
+    # -- testing j["url"] here discarded jobs whose free link was already known.
+    paid_only = [j for j in matched if on_paid_relister(apply_link(j))]
+    matched = [j for j in matched if not on_paid_relister(apply_link(j))]
     for job in paid_only:
         log(f"Paid relister {link_host(job['url'])}: {job['company']} — {job['title']}")
 

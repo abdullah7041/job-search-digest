@@ -1431,6 +1431,42 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("job-boards.greenhouse.io", body)
         self.assertIn("Senior AI Engineer", body)
 
+    def test_a_paywalled_job_with_a_free_link_is_delivered(self):
+        """The paid-relister cut must judge the link the candidate is handed.
+
+        rescue_apply_link is patched only to keep this test off the network:
+        get_description calls it for every aggregator job regardless of any
+        recovery loop, so its call count says nothing here. That it makes no
+        second page fetch for a job that already has apply_url is a separate
+        property, tested directly in
+        test_a_job_that_already_has_a_free_link_is_not_fetched_twice.
+        """
+        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz",
+                   apply_url="https://job-boards.greenhouse.io/next/jobs/1")
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
+        with mock.patch.object(digest, "rescue_apply_link"):
+            posts, work = run_main(self.ENV, ranking, jobs=[job],
+                                   link_statuses=[digest.LINK_OPEN, digest.LINK_OPEN])
+        body = "\n".join(posts)
+        self.assertIn("job-boards.greenhouse.io/next/jobs/1", body)
+        self.assertNotIn("jobleads.com", body)
+        # Delivered means remembered: a rescued job must not return tomorrow.
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            seen = json.load(handle)
+        self.assertTrue(seen, "a delivered job must be recorded in seen.json")
+
+    def test_a_paywalled_job_with_no_free_link_is_still_dropped(self):
+        # Note: with nothing left to deliver, main() sends its quiet-day
+        # heartbeat, so `posts` is NOT empty. Assert on what it contains.
+        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz")
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
+        with mock.patch.object(digest, "rescue_apply_link"):
+            posts, work = run_main(self.ENV, ranking, jobs=[job],
+                                   link_statuses=[digest.LINK_OPEN])
+        body = "\n".join(posts)
+        self.assertNotIn("jobleads.com", body)
+        self.assertIn("no new roles today", body)
+
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")
         old_cwd = os.getcwd()
