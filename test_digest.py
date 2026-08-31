@@ -926,8 +926,17 @@ class TestBoundedFetch(unittest.TestCase):
         raw.close.assert_called_once()
 
     def test_an_oversized_page_is_truncated_rather_than_read_whole(self):
-        body = b"x" * 5000
-        raw = self._raw_response(body)
+        # A slow-drip body that never ends on its own -- ignores the chunk size
+        # bounded_get asks for and hands back small chunks forever. If the loop
+        # in bounded_get did not break once the limit was reached, this test
+        # would hang rather than fail: the generator never raises StopIteration.
+        raw = self._raw_response(b"", status=200)
+
+        def iter_content(_chunk_size):
+            while True:
+                yield b"x" * 256
+
+        raw.iter_content = iter_content
 
         with mock.patch.object(jd_fetch.requests, "get", return_value=raw):
             out = jd_fetch.bounded_get("https://x.test/page", limit=1024)
