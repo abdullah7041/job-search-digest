@@ -997,6 +997,72 @@ class TestBoundedFetch(unittest.TestCase):
             self.assertEqual(result["text"], "")
 
 
+class TestJsearchApplyLinks(unittest.TestCase):
+    """Choosing a free apply link out of whatever shape JSearch returns.
+
+    The digest calls /search-v2, whose field names are not fully verified in
+    this repository -- fetch_jsearch's docstring lists the ones checked live and
+    apply_options is not among them. These tests pin the behaviour for the
+    expected name, an alternative name, an unknown name, and absence.
+    """
+
+    def test_a_free_option_beside_a_paid_primary_is_chosen(self):
+        field, options = digest.jsearch_apply_options({
+            "job_apply_link": "https://www.jobleads.com/job/1",
+            "apply_options": [
+                {"publisher": "Jobleads", "apply_link": "https://www.jobleads.com/job/1"},
+                {"publisher": "Greenhouse", "apply_link": "https://job-boards.greenhouse.io/acme/jobs/7"},
+            ],
+        })
+        self.assertEqual(field, "apply_options")
+        self.assertEqual(len(options), 2)
+        self.assertEqual(digest.best_free_link(options),
+                         "https://job-boards.greenhouse.io/acme/jobs/7")
+
+    def test_every_option_paywalled_yields_no_link(self):
+        _, options = digest.jsearch_apply_options({
+            "apply_options": [
+                {"publisher": "Jobleads", "apply_link": "https://www.jobleads.com/job/1"},
+                {"publisher": "Jooble", "apply_link": "https://sa.jooble.org/jdp/2"},
+            ],
+        })
+        self.assertEqual(digest.best_free_link(options), "")
+
+    def test_an_unexpected_field_name_is_still_found(self):
+        # The generic scan is why this design does not depend on a field name
+        # nothing in this repository has verified against /search-v2.
+        field, options = digest.jsearch_apply_options({
+            "employer_name": "Acme",
+            "some_future_name": [
+                {"name": "Lever", "url": "https://jobs.lever.co/acme/abc"},
+            ],
+        })
+        self.assertEqual(field, "some_future_name")
+        self.assertEqual(digest.best_free_link(options), "https://jobs.lever.co/acme/abc")
+
+    def test_no_options_field_at_all_yields_nothing(self):
+        field, options = digest.jsearch_apply_options({
+            "job_apply_link": "https://www.jobleads.com/job/1",
+            "job_title": "Data Engineer",
+        })
+        self.assertEqual(field, "")
+        self.assertEqual(options, [])
+        self.assertEqual(digest.best_free_link(options), "")
+
+    def test_a_non_http_option_is_refused(self):
+        # A mailto: or javascript: entry must never become the apply link.
+        self.assertEqual(digest.best_free_link([
+            {"publisher": "X", "url": "mailto:jobs@acme.test"},
+            {"publisher": "Y", "url": "https://jobs.ashbyhq.com/acme/1"},
+        ]), "https://jobs.ashbyhq.com/acme/1")
+
+    def test_a_malformed_payload_never_raises(self):
+        for payload in (None, [], "text", {"apply_options": "not-a-list"},
+                        {"apply_options": [None, 3, "x"]}):
+            field, options = digest.jsearch_apply_options(payload)
+            self.assertEqual((field, options), ("", []))
+
+
 class TestApplyLinkRescue(unittest.TestCase):
     """The link the candidate is handed, when the run found a better one.
 

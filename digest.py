@@ -596,6 +596,80 @@ def fetch_jsearch(api_key):
     return out
 
 
+# JSearch names its alternative apply links differently across API versions, and
+# /search-v2's field list was never verified here -- fetch_jsearch's docstring
+# records only the fields checked live, and this is not one of them. Rather than
+# hardcode a guess, the known names are tried first and any list of link-bearing
+# dicts is accepted after that. An unrecognised response yields nothing and the
+# caller keeps the behaviour it has today.
+JSEARCH_APPLY_OPTION_KEYS = ("apply_options", "apply_links")
+
+_LINK_KEY_HINTS = ("link", "url")
+_PUBLISHER_KEYS = ("publisher", "name", "source", "site")
+
+
+def _apply_options_from(value):
+    """Normalise one candidate field into [{"publisher", "url"}], or []."""
+    if not isinstance(value, list):
+        return []
+    found = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        url = ""
+        for key, candidate in item.items():
+            if isinstance(candidate, str) and any(h in str(key).lower() for h in _LINK_KEY_HINTS):
+                url = candidate.strip()
+                break
+        if not url:
+            continue
+        publisher = ""
+        for key in _PUBLISHER_KEYS:
+            if isinstance(item.get(key), str):
+                publisher = item[key].strip()
+                break
+        found.append({"publisher": publisher, "url": url})
+    return found
+
+
+def jsearch_apply_options(raw_job):
+    """Every apply link one JSearch job object offers, and the field that held them.
+
+    Returns (field_name, options). The field name travels back so the run log can
+    name it once: that line is how the apply_options expectation gets confirmed
+    from a real run without a separate probe workflow.
+    """
+    if not isinstance(raw_job, dict):
+        return "", []
+    for key in JSEARCH_APPLY_OPTION_KEYS:
+        options = _apply_options_from(raw_job.get(key))
+        if options:
+            return key, options
+    for key, value in raw_job.items():
+        if key in JSEARCH_APPLY_OPTION_KEYS:
+            continue
+        options = _apply_options_from(value)
+        if options:
+            return str(key), options
+    return "", []
+
+
+def best_free_link(options):
+    """The first apply link that does not cost money to act on, or "".
+
+    Order is the publisher order JSearch returned; nothing here re-ranks by
+    quality, because the only property this needs to decide is free vs paywalled.
+    """
+    for option in options or []:
+        url = ((option or {}).get("url") or "").strip()
+        if not url.lower().startswith(("http://", "https://")):
+            continue
+        if on_paid_relister(url):
+            continue
+        return url
+    return ""
+
+
 def fetch_pinpoint(c):
     # Pinpoint job-board API: GET, no key, no pagination — one flat "data" array
     # (63 postings returned in a single response for Tabby). Verified live 23 Jul 2026.
