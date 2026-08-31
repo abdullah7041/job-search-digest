@@ -2,16 +2,10 @@
 
 from __future__ import annotations
 
-import base64
-import hashlib
-import hmac
 import json
-import time
-import uuid
-
-import requests
 
 from job_archive import job_card_payload
+from worker_client import signed_request
 
 
 def interactive_cards_payload(snapshots: list[dict], heartbeat: dict | None = None) -> dict:
@@ -37,22 +31,16 @@ def post_interactive_cards(
     *,
     heartbeat: dict | None = None,
 ) -> dict:
-    payload = json.dumps(interactive_cards_payload(snapshots, heartbeat), ensure_ascii=False).encode("utf-8")
-    path = "/internal/digest"
-    timestamp = str(int(time.time()))
-    nonce = str(uuid.uuid4())
-    canonical = f"{timestamp}\n{nonce}\nPOST\n{path}\n".encode("utf-8") + payload
-    signature = base64.b64encode(hmac.new(secret.encode("utf-8"), canonical, hashlib.sha256).digest()).decode("ascii")
-    response = requests.post(
-        worker_url.rstrip("/") + path,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "X-Job-Digest-Signature": signature,
-            "X-Job-Digest-Timestamp": timestamp,
-            "X-Job-Digest-Nonce": nonce,
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-    return response.json()
+    """Hand the day's cards to the Worker over the signed internal contract.
+
+    The signing lives in worker_client, not here. This function used to
+    hand-roll the same HMAC and sign a hardcoded "/internal/digest", while the
+    Worker verifies over the request's real pathname -- so a WORKER_URL with any
+    base path would have signed one string and been checked against another, and
+    every card delivery would have failed 401 with nothing in the logs saying
+    why. Deriving the path from the URL is worker_client's job.
+    """
+    payload = json.dumps(interactive_cards_payload(snapshots, heartbeat),
+                         ensure_ascii=False).encode("utf-8")
+    url = worker_url.rstrip("/") + "/internal/digest"
+    return signed_request("POST", url, secret, payload).json()
