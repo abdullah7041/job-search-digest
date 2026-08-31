@@ -889,6 +889,114 @@ class TestJdFetch(unittest.TestCase):
             self.assertIn("Your Impact", digest.get_description(job))
 
 
+class TestBoundedFetch(unittest.TestCase):
+    """The byte cap on third-party page reads (jd_fetch.bounded_get /
+    BoundedResponse). rescue_apply_link and verify_link hand these to URLs
+    JSearch relayed from LinkedIn, Indeed, Glassdoor and the like -- pages this
+    project does not control and cannot bound the size of any other way."""
+
+    def _raw_response(self, body: bytes, status=200, url="https://x.test/page",
+                       history=(), encoding="utf-8"):
+        """A stand-in for the requests.Response bounded_get streams from."""
+        response = mock.Mock()
+        response.status_code = status
+        response.url = url
+        response.history = list(history)
+        response.headers = {}
+        response.encoding = encoding
+        response.close = mock.Mock()
+
+        def iter_content(chunk_size):
+            for i in range(0, len(body), chunk_size):
+                yield body[i:i + chunk_size]
+
+        response.iter_content = iter_content
+        return response
+
+    def test_a_normal_page_is_returned_whole(self):
+        body = "hello job seeker".encode("utf-8")
+        raw = self._raw_response(body, status=200)
+
+        with mock.patch.object(jd_fetch.requests, "get", return_value=raw):
+            out = jd_fetch.bounded_get("https://x.test/page")
+
+        self.assertFalse(out.truncated)
+        self.assertEqual(out.text, "hello job seeker")
+        self.assertEqual(out.status_code, 200)
+        raw.close.assert_called_once()
+
+    def test_an_oversized_page_is_truncated_rather_than_read_whole(self):
+        # A slow-drip body that never ends on its own -- ignores the chunk size
+        # bounded_get asks for and hands back small chunks forever. If the loop
+        # in bounded_get did not break once the limit was reached, this test
+        # would hang rather than fail: the generator never raises StopIteration.
+        raw = self._raw_response(b"", status=200)
+
+        def iter_content(_chunk_size):
+            while True:
+                yield b"x" * 256
+
+        raw.iter_content = iter_content
+
+        with mock.patch.object(jd_fetch.requests, "get", return_value=raw):
+            out = jd_fetch.bounded_get("https://x.test/page", limit=1024)
+
+        self.assertTrue(out.truncated)
+        self.assertEqual(len(out.content), 1024)
+        self.assertEqual(len(out.text), 1024)
+        raw.close.assert_called_once()
+
+    def test_a_json_body_still_parses(self):
+        payload = {"job_id": "1", "job_title": "Engineer"}
+        raw = self._raw_response(json.dumps(payload).encode("utf-8"))
+
+        with mock.patch.object(jd_fetch.requests, "get", return_value=raw):
+            out = jd_fetch.bounded_get("https://x.test/page")
+
+        self.assertEqual(out.json(), payload)
+
+        broken = self._raw_response(b"{not valid json")
+        with mock.patch.object(jd_fetch.requests, "get", return_value=broken):
+            bad_out = jd_fetch.bounded_get("https://x.test/page")
+
+        with self.assertRaises(ValueError):
+            bad_out.json()
+
+    def test_url_and_history_survive_for_verify_link(self):
+        """verify_link reads .url and .history to detect a posting redirected
+        off its own page -- both have to come through unchanged."""
+        redirect_hop = mock.Mock()
+        raw = self._raw_response(b"ok", url="https://x.test/final-landing",
+                                  history=[redirect_hop])
+
+        with mock.patch.object(jd_fetch.requests, "get", return_value=raw):
+            out = jd_fetch.bounded_get("https://x.test/page")
+
+        self.assertEqual(out.url, "https://x.test/final-landing")
+        self.assertEqual(out.history, [redirect_hop])
+
+    def test_a_truncated_page_gives_up_a_description_or_nothing_but_never_raises(self):
+        """Simulates MAX_RESPONSE_BYTES cutting a posting page off mid-block:
+        the JobPosting JSON never closes, so it can't parse as JSON, and the
+        surrounding text is short of everything jd_completeness_failures wants.
+        extract_posting must degrade to no description, not raise."""
+        cut_off = (
+            "<html><body><h1>Senior Backend Engineer</h1>"
+            '<script type="application/ld+json">'
+            + json.dumps({"@type": "JobPosting", "description": FULL_JD})[:60]
+        )
+        raw = self._raw_response(cut_off.encode("utf-8"))
+        raw_content = cut_off.encode("utf-8")
+        bounded = jd_fetch.BoundedResponse(raw, raw_content, truncated=True)
+
+        result = jd_fetch.extract_posting("https://x.test/job", get=lambda _u: bounded)
+
+        if result["text"]:
+            self.assertEqual(job_archive.jd_completeness_failures(result["text"]), [])
+        else:
+            self.assertEqual(result["text"], "")
+
+
 class TestApplyLinkRescue(unittest.TestCase):
     """The link the candidate is handed, when the run found a better one.
 

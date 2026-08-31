@@ -35,9 +35,68 @@ USER_AGENT = "job-digest/1.0 (personal job search)"
 FETCH_TIMEOUT = 30
 JD_LIMIT = 6000
 
+# A page this project fetches is either an ATS JSON payload or a posting page
+# whose description is truncated to JD_LIMIT anyway, so nothing legitimate comes
+# close to this. The cap exists because the URLs come from an aggregator relaying
+# third-party sites: requests' timeout is per read, not per transfer, so an
+# oversized or slow-drip body is read until the 10-minute workflow timeout kills
+# the whole digest. Four megabytes is far above any real posting page.
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+
+
+class BoundedResponse:
+    """A response whose body was read only up to MAX_RESPONSE_BYTES.
+
+    Exposes exactly what this project's callers use -- status_code, text,
+    json(), url and history -- so nothing downstream changes. A truncated body
+    is not an error: a posting page cut short simply fails the completeness gate
+    the same way a bot-blocked one does, which is the fail-soft outcome the rest
+    of the pipeline is built around.
+    """
+
+    def __init__(self, response, content: bytes, truncated: bool):
+        self.status_code = response.status_code
+        self.url = response.url
+        self.history = response.history
+        self.headers = response.headers
+        self.encoding = response.encoding
+        self.content = content
+        self.truncated = truncated
+
+    @property
+    def text(self) -> str:
+        # requests would sniff an undeclared charset here; without the whole body
+        # that sniffing is unreliable, so an undeclared page is read as UTF-8 and
+        # undecodable bytes become replacement characters rather than an
+        # exception. A page whose text is mangled fails the completeness gate.
+        return self.content.decode(self.encoding or "utf-8", errors="replace")
+
+    def json(self):
+        # json.loads raises ValueError on bad input, which is what every caller
+        # already catches -- requests' own JSONDecodeError is a ValueError too.
+        return json.loads(self.text)
+
+
+def bounded_get(url, *, timeout: int = FETCH_TIMEOUT,
+                limit: int = MAX_RESPONSE_BYTES) -> BoundedResponse:
+    """GET a URL, reading at most ``limit`` bytes of its body."""
+    response = requests.get(url, headers={"User-Agent": USER_AGENT},
+                            timeout=timeout, stream=True)
+    try:
+        chunks, total = [], 0
+        for chunk in response.iter_content(64 * 1024):
+            chunks.append(chunk)
+            total += len(chunk)
+            if total >= limit:
+                break
+        body = b"".join(chunks)
+    finally:
+        response.close()
+    return BoundedResponse(response, body[:limit], total >= limit)
+
 
 def default_get(url):
-    return requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=FETCH_TIMEOUT)
+    return bounded_get(url)
 
 
 def strip_html(s):

@@ -42,7 +42,7 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import ats_reference, ats_url, extract_posting, strip_html
+from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
 from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 from openrouter import chat_json, configured_chain
@@ -336,7 +336,11 @@ PROFILE = load_profile()
 
 
 def _get(url):
-    return requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
+    # rescue_apply_link and verify_link fetch URLs the pipeline did not choose
+    # -- aggregator links to whatever third-party page JSearch relayed -- so the
+    # body is read through jd_fetch's bounded fetch instead of an unbounded GET.
+    # See jd_fetch.MAX_RESPONSE_BYTES for why.
+    return bounded_get(url, timeout=30)
 
 
 def _post(url, body):
