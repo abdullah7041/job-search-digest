@@ -1146,6 +1146,12 @@ def rescue_apply_link(job):
     url = job.get("url", "")
     if not url or job.get("source") in EMPLOYER_SOURCES:
         return
+    if job.get("apply_url"):
+        # Already holding the employer's own link, from the API's apply options
+        # or from an earlier rescue this run. get_description calls this function
+        # too, so without this guard a job rescued before the paid-relister cut
+        # pays for a second identical GET a few steps later.
+        return
     try:
         response = _get(url)
     except (requests.RequestException, ValueError) as e:
@@ -1513,6 +1519,21 @@ def main():
     for job in relisted_copies:
         log(f"Relisted copy on {link_host(job['url'])}: {job['company']} — "
             f"{job['title']}; this run already read it from the employer's board")
+    # Last chance before the cut below discards the job. This used to run inside
+    # enrich_descriptions, three steps after the drop, so the postings it exists
+    # for -- an aggregator link to a posting that lives on a free employer board
+    # -- were already gone. It runs on `matched` rather than `fresh` because the
+    # cut precedes the freshness check; the cost is bounded by the number of
+    # paywalled jobs in a run (7 on 2026-08-31).
+    api_rescued = sum(1 for j in matched if j.get("apply_url"))
+    page_rescued = 0
+    for job in matched:
+        if not on_paid_relister(apply_link(job)):
+            continue
+        rescue_apply_link(job)
+        if not on_paid_relister(apply_link(job)):
+            page_rescued += 1
+
     # Judge the link the candidate is actually handed, not the one the
     # aggregator happened to rank first. apply_link prefers apply_url, which is
     # where both the API's free alternative and the page rescue put their result

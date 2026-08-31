@@ -1467,6 +1467,34 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("jobleads.com", body)
         self.assertIn("no new roles today", body)
 
+    def test_a_paywalled_job_is_rescued_before_it_is_dropped(self):
+        """rescue_apply_link used to run inside enrich_descriptions, three steps
+        after the paid-relister cut, so the postings that most needed it were
+        already gone. It must run first now."""
+        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz")
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
+
+        def rescue(j):
+            j["apply_url"] = "https://job-boards.greenhouse.io/next/jobs/1"
+
+        with mock.patch.object(digest, "rescue_apply_link", side_effect=rescue):
+            posts, work = run_main(self.ENV, ranking, jobs=[job],
+                                   link_statuses=[digest.LINK_OPEN, digest.LINK_OPEN])
+        body = "\n".join(posts)
+        self.assertIn("job-boards.greenhouse.io/next/jobs/1", body)
+
+    def test_a_job_that_already_has_a_free_link_is_not_fetched_twice(self):
+        """rescue_apply_link is also called from get_description. Without the
+        guard, a job rescued before the cut pays for a second GET later."""
+        job = {"company": "Acme", "id": "jsearch_z", "title": "Data Engineer",
+               "location": "Riyadh, Saudi Arabia", "source": "jsearch", "token": "",
+               "url": "https://www.jobleads.com/job/1", "description": "text",
+               "apply_url": "https://job-boards.greenhouse.io/acme/jobs/7"}
+        with mock.patch.object(digest, "_get") as get:
+            digest.rescue_apply_link(job)
+        get.assert_not_called()
+        self.assertEqual(job["apply_url"], "https://job-boards.greenhouse.io/acme/jobs/7")
+
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")
         old_cwd = os.getcwd()
