@@ -1542,6 +1542,8 @@ def main():
     matched = [j for j in matched if not on_paid_relister(apply_link(j))]
     for job in paid_only:
         log(f"Paid relister {link_host(job['url'])}: {job['company']} — {job['title']}")
+    log(f"apply links: {api_rescued} from the API, {page_rescued} rescued from the page, "
+        f"{len(paid_only)} still paywalled and dropped")
 
     # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike
     # the delivery floor, this is a verdict on the link, not on the role: the

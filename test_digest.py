@@ -1495,6 +1495,20 @@ class TestEndToEnd(unittest.TestCase):
         get.assert_not_called()
         self.assertEqual(job["apply_url"], "https://job-boards.greenhouse.io/acme/jobs/7")
 
+    def test_the_run_reports_how_many_apply_links_it_recovered(self):
+        """Without this line there is no way to tell a run where the API
+        supplied free links from one where the feature is inert."""
+        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz",
+                   apply_url="https://job-boards.greenhouse.io/next/jobs/1")
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
+        with mock.patch.object(digest, "rescue_apply_link"), \
+             mock.patch.object(digest, "log") as logged:
+            run_main(self.ENV, ranking, jobs=[job],
+                     link_statuses=[digest.LINK_OPEN, digest.LINK_OPEN])
+        lines = [c.args[0] for c in logged.call_args_list if c.args]
+        self.assertTrue(any("apply links: 1 from the API" in line for line in lines),
+                        f"no apply-link summary in: {lines}")
+
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")
         old_cwd = os.getcwd()
