@@ -539,6 +539,7 @@ def fetch_jsearch(api_key):
     }
     out = []
     seen_ids = set()  # dedupe within JSearch results across queries
+    apply_field_logged = False   # the discovered field is named once per run, not per job
 
     for query in AGGREGATOR_QUERIES:
         url = (
@@ -578,7 +579,22 @@ def fetch_jsearch(api_key):
             country = COUNTRY_CODE_TO_NAME.get(country.upper(), country)
             location = ", ".join(p for p in (city, state, country) if p)
 
-            out.append({
+            # The primary link is whichever publisher JSearch ranked first, and
+            # that is frequently a paid relister -- 100 of the 174 aggregator
+            # postings archived to 2026-08-29 sit on hosts the paid-relister cut
+            # now discards. Any free alternative in the same response costs no
+            # extra request, so it is read here and recorded as apply_url.
+            # NEVER as url: job_identity keys a jsearch posting on its URL, so
+            # rewriting it would make the whole back catalogue look new.
+            apply_field, apply_options = jsearch_apply_options(j)
+            free_link = best_free_link(apply_options)
+            if apply_field and not apply_field_logged:
+                publishers = sorted({o["publisher"] for o in apply_options if o["publisher"]})
+                log(f"JSearch apply options read from {apply_field!r}"
+                    + (f" (publishers: {', '.join(publishers)[:120]})" if publishers else ""))
+                apply_field_logged = True
+
+            job = {
                 "company": (j.get("employer_name") or "Unknown").strip(),
                 "id":      "jsearch_" + jid,   # prefix avoids id collision with ATS ids
                 "title":   (j.get("job_title") or "").strip(),
@@ -587,7 +603,10 @@ def fetch_jsearch(api_key):
                 "first_published": (j.get("job_posted_at_datetime_utc") or "")[:10],
                 "source": "jsearch", "token": "",
                 "description": (j.get("job_description") or "").strip(),
-            })
+            }
+            if free_link:
+                job["apply_url"] = free_link
+            out.append(job)
             added += 1
         log(f"JSearch [{query!r}]: {len(jobs)} returned, {added} unique")
         time.sleep(0.5)  # be polite between queries

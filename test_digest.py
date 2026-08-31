@@ -1062,6 +1062,64 @@ class TestJsearchApplyLinks(unittest.TestCase):
             field, options = digest.jsearch_apply_options(payload)
             self.assertEqual((field, options), ("", []))
 
+    def test_setting_apply_url_never_changes_job_identity(self):
+        """The trap this whole design exists to avoid.
+
+        job_identity keys a jsearch posting on canonical_url(job["url"]).
+        Improving the link by writing job["url"] would re-key every affected
+        posting, making the entire back catalogue look new and redelivering it
+        daily for as long as the rescue kept working. record_apply_link's own
+        comment says so. apply_url must leave identity untouched.
+        """
+        job = {"company": "Acme", "id": "jsearch_1", "title": "Data Engineer",
+               "location": "Riyadh, Saudi Arabia", "source": "jsearch", "token": "",
+               "url": "https://www.jobleads.com/job/1", "description": "d"}
+        before = digest.job_identity(job)
+        job["apply_url"] = "https://job-boards.greenhouse.io/acme/jobs/7"
+        self.assertEqual(digest.job_identity(job), before)
+        self.assertEqual(digest.apply_link(job), "https://job-boards.greenhouse.io/acme/jobs/7")
+
+    def test_fetch_jsearch_records_the_free_link_without_moving_the_url(self):
+        payload = {"data": {"jobs": [{
+            "job_id": "abc", "job_title": "Data Engineer", "employer_name": "Acme",
+            "job_city": "Riyadh", "job_country": "SA",
+            "job_apply_link": "https://www.jobleads.com/job/1",
+            "job_description": "Build pipelines.",
+            "apply_options": [
+                {"publisher": "Jobleads", "apply_link": "https://www.jobleads.com/job/1"},
+                {"publisher": "Greenhouse", "apply_link": "https://job-boards.greenhouse.io/acme/jobs/7"},
+            ],
+        }]}}
+        response = mock.Mock()
+        response.status_code = 200
+        response.json.return_value = payload
+        with mock.patch.object(digest.requests, "get", return_value=response), \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            jobs = digest.fetch_jsearch("key")
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["url"], "https://www.jobleads.com/job/1")
+        self.assertEqual(jobs[0]["apply_url"], "https://job-boards.greenhouse.io/acme/jobs/7")
+
+    def test_fetch_jsearch_sets_no_apply_url_when_every_option_is_paywalled(self):
+        payload = {"data": {"jobs": [{
+            "job_id": "abc", "job_title": "Data Engineer", "employer_name": "Acme",
+            "job_city": "Riyadh", "job_country": "SA",
+            "job_apply_link": "https://www.jobleads.com/job/1",
+            "job_description": "Build pipelines.",
+            "apply_options": [
+                {"publisher": "Jobleads", "apply_link": "https://www.jobleads.com/job/1"},
+            ],
+        }]}}
+        response = mock.Mock()
+        response.status_code = 200
+        response.json.return_value = payload
+        with mock.patch.object(digest.requests, "get", return_value=response), \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            jobs = digest.fetch_jsearch("key")
+        self.assertEqual(jobs[0].get("apply_url"), None)
+
 
 class TestApplyLinkRescue(unittest.TestCase):
     """The link the candidate is handed, when the run found a better one.
