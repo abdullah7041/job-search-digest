@@ -24,7 +24,7 @@ from job_archive import make_snapshot, job_card_payload, prune_snapshots, write_
 from resume_render import parse_resume, render_pdf, source_refs
 from resume_source import validate_tailored_resume, vocabulary
 from resume_ingest import prepare_resume_preview
-from discord_delivery import interactive_cards_payload
+from discord_delivery import interactive_cards_payload, post_interactive_cards
 from interactive_runner import process_task, run_task
 
 
@@ -365,6 +365,58 @@ class TestWorkerClient(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(received["signed"])
+
+    def test_the_daily_card_delivery_signs_the_path_it_actually_posts_to(self):
+        """post_interactive_cards must sign the request's real path, not a
+        hardcoded one -- a WORKER_URL with any base path would otherwise sign
+        one string while the Worker verifies another, and every delivery
+        would fail 401 with nothing in the logs saying why."""
+        secret = "callback-secret"
+        received = {}
+        response_body = json.dumps({"posted": ["greenhouse:provider-42"], "existing": [], "failed": []}).encode()
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self):
+                length = int(self.headers.get("Content-Length", "0"))
+                raw = self.rfile.read(length)
+                timestamp = self.headers.get("X-Job-Digest-Timestamp", "")
+                nonce = self.headers.get("X-Job-Digest-Nonce", "")
+                canonical = f"{timestamp}\n{nonce}\nPOST\n{self.path}\n".encode() + raw
+                expected = base64.b64encode(hmac.new(secret.encode(), canonical, hashlib.sha256).digest()).decode()
+                received["signed"] = hmac.compare_digest(
+                    self.headers.get("X-Job-Digest-Signature", ""), expected
+                )
+                received["path"] = self.path
+                received["body"] = raw
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(response_body)))
+                self.end_headers()
+                self.wfile.write(response_body)
+
+            def log_message(self, _format, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            snapshot = make_snapshot(JOB, "2026-08-03T12:00:00Z")
+            # Deliberately not a bare origin: a WORKER_URL with a base path is
+            # exactly the case a hardcoded "/internal/digest" signs wrong --
+            # this URL makes the real request path "/mounted/internal/digest",
+            # which a hardcoded signer would sign over the wrong string for.
+            result = post_interactive_cards(
+                f"http://127.0.0.1:{server.server_port}/mounted", secret, [snapshot]
+            )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+        self.assertEqual(received["path"], "/mounted/internal/digest")
+        self.assertTrue(received["signed"])
+        self.assertEqual(result, json.loads(response_body))
 
 
 class TestInteractiveWorkflowWiring(unittest.TestCase):
