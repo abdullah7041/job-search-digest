@@ -514,9 +514,18 @@ async function handleInteraction(request, env, ctx) {
     }
     else if (payload.type === 5) task = await manualTaskFromModal(payload, allowed.userId);
     else if (payload.data?.name === "resume") {
-      const attachment = attachmentFrom(payload, "file");
-      if (!attachment) throw new Error("Attach a PDF to this command.");
-      task = { kind: "resume", userId: allowed.userId, input: { attachment } };
+      // The Worker can build a resume task; nothing can run one. Uploading a
+      // new master CV needs interactive_runner.run_task to accept a kind other
+      // than "tailor", and it accepts only "tailor" -- so a dispatched resume
+      // task spent a full Actions run and answered "The task has no immutable
+      // job snapshot.", which is both a failure and a description of the wrong
+      // problem. Throwing here is caught by handleInteraction's own catch: the
+      // user gets an immediate, accurate answer, and no task row, no encrypted
+      // token and no workflow dispatch are spent on it.
+      throw new Error(
+        "Uploading a new master CV is not wired up yet. Edit resume.md in the " +
+        "repository and commit it; the next tailoring run will use it."
+      );
     }
     else if (payload.data?.name === "tailor-jd") {
       task = await manualTaskFromCommand(payload, allowed.userId);

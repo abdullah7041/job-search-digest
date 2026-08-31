@@ -352,6 +352,104 @@ test("a failed GitHub dispatch reports back to the user's interaction", async ()
   }
 });
 
+// A signed /resume slash-command interaction, plus the env, execution
+// context, and a fake D1 that records every SQL string it is given -- so a
+// refusal can be proven to have written nothing, the same way buttonInteraction
+// above proves a real dispatch. The attachment is well-formed even though the
+// refused branch never reads it, so this models a genuine upload attempt.
+async function resumeCommandInteraction() {
+  const keys = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
+  const publicKey = Buffer.from(await crypto.subtle.exportKey("raw", keys.publicKey)).toString("base64");
+  const attachmentId = "attachment-1";
+  const payload = {
+    type: 2,
+    guild_id: "guild-1",
+    channel_id: "channel-1",
+    member: { user: { id: "user-1" } },
+    token: "interaction-token",
+    data: {
+      name: "resume",
+      options: [{ name: "file", type: 11, value: attachmentId }],
+      resolved: {
+        attachments: {
+          [attachmentId]: { url: "https://cdn.discordapp.test/cv.pdf", filename: "cv.pdf" },
+        },
+      },
+    },
+  };
+  const raw = JSON.stringify(payload);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const signature = await crypto.subtle.sign("Ed25519", keys.privateKey, new TextEncoder().encode(timestamp + raw));
+  const request = new Request("https://worker.test/interactions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Signature-Ed25519": hex(signature),
+      "X-Signature-Timestamp": timestamp,
+    },
+    body: raw,
+  });
+
+  const executed = [];
+  const db = {
+    prepare(sql) {
+      executed.push(sql);
+      return {
+        bind() {
+          return {
+            async first() { return null; },
+            async run() { return { meta: { changes: 1 } }; },
+          };
+        },
+      };
+    },
+  };
+
+  const backgrounded = [];
+  return {
+    request,
+    executed,
+    backgrounded,
+    ctx: { waitUntil: (promise) => backgrounded.push(promise) },
+    env: {
+      DISCORD_PUBLIC_KEY_BASE64: publicKey,
+      DISCORD_GUILD_ID: "guild-1",
+      DISCORD_CHANNEL_ID: "channel-1",
+      DISCORD_USER_ID: "user-1",
+      DISCORD_APPLICATION_ID: "app-1",
+      GITHUB_REPOSITORY: "owner/repo",
+      GITHUB_TOKEN: "placeholder-not-a-real-token",
+      TASK_ENCRYPTION_KEY: "test-encryption-key",
+      DB: db,
+    },
+  };
+}
+
+test("uploading a CV is refused before a task row or a workflow is spent", async () => {
+  const { request, env, ctx, executed, backgrounded } = await resumeCommandInteraction();
+  const originalFetch = globalThis.fetch;
+  const calledUrls = [];
+  globalThis.fetch = async (url) => {
+    calledUrls.push(String(url));
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const response = await worker.fetch(request, env, ctx);
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.type, 4);
+    assert.equal(body.data.flags, 64);
+    assert.match(body.data.content, /not wired up yet/);
+    assert.ok(!executed.some((sql) => /INSERT INTO tasks/.test(sql)), "no task row should be written");
+    assert.ok(!calledUrls.some((url) => url.includes("api.github.com")), "no workflow should be dispatched");
+    assert.equal(backgrounded.length, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("binds internal HMAC authentication to the method, path, and fresh timestamp", async () => {
   const secret = "callback-secret";
   const nonces = new Set();
