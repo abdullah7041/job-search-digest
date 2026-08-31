@@ -1608,8 +1608,15 @@ def main():
             log("FATAL interactive delivery failed and DISCORD_WEBHOOK_URL is not set")
             sys.exit(1)
         post_discord(webhook, lines)
-        if not worker_url:
-            delivered_ids = {job["id"] for job in fresh}
+        # Reaching this line means Discord accepted every chunk: post_discord
+        # exits non-zero on any status outside 200/204. The jobs are therefore
+        # delivered, whichever channel carried them, and have to be remembered.
+        # They were not, when a Worker was configured and its call raised: the
+        # webhook posted the digest, seen.json stayed empty, and the identical
+        # digest went out again the next morning -- re-fetching every
+        # description and paying for a second ranking call -- for as long as
+        # the Worker stayed unreachable.
+        delivered_ids = {job["id"] for job in fresh}
 
     for j in fresh:
         if j["id"] in delivered_ids:

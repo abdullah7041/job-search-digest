@@ -1278,6 +1278,40 @@ class TestEndToEnd(unittest.TestCase):
         save_seen.assert_called_once()
         self.assertEqual(save_seen.call_args[0][0], {})
 
+    def test_a_webhook_fallback_delivery_is_remembered_so_it_is_not_resent(self):
+        env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+
+        def worker_delivery_raises(_url, _secret, snapshots, **kwargs):
+            # A quiet-day heartbeat is not what this test is about:
+            # post_heartbeat's own Worker/webhook asymmetry is a separate,
+            # already-known finding, so let that call succeed rather than
+            # crashing the second run below.
+            if "heartbeat" in kwargs:
+                return {"posted": [], "existing": [], "in_progress": [], "retryable": [], "failed": []}
+            raise RuntimeError("worker unreachable")
+
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=worker_delivery_raises):
+            posts, work = run_main(env, ranking)
+
+            # The Worker call raised, so the digest went out over the webhook.
+            self.assertEqual(len(posts), 1)
+            with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+                seen = json.load(handle)
+            # remember() writes both a job identity key and a jd: description
+            # fingerprint per delivered job, so two jobs delivered means at
+            # least four entries. Written as >= rather than an exact count so
+            # this test does not become brittle if remember()'s shape changes.
+            self.assertGreaterEqual(len(seen), 2)
+
+            posts_again, _ = run_main(env, ranking, work=work)
+
+        # The same digest is not resent the next day: the jobs are remembered.
+        self.assertEqual(posts_again, [])
+
     def test_partial_interactive_delivery_succeeds_and_marks_only_posted_jobs_seen(self):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
         ranking = {
