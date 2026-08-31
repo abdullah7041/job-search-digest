@@ -14,7 +14,7 @@ import re
 import time
 
 from openrouter import chat_json, configured_chain
-from resume_source import unsupported_terms, validate_tailored_resume, vocabulary
+from resume_source import unsupported_facts, unsupported_terms, validate_tailored_resume, vocabulary
 
 
 # Tailoring is long-form generation under hard truth constraints, and the
@@ -272,6 +272,38 @@ def clean_gaps(plan: dict, document: dict, snapshot: dict) -> list[str]:
     return gaps[:5]
 
 
+def clean_fit_notes(plan: dict, allowed: set[str], master_text: str) -> list[str]:
+    """Keep only fit notes whose claims the resume actually supports.
+
+    The mirror of clean_gaps: a gap must name something the resume lacks, and a
+    fit note must name nothing it lacks. This was the one model output nothing
+    checked, and it is the text the candidate reads under "Why you fit" and is
+    most likely to repeat in an interview -- so an invented framework or an
+    inflated percentage here costs more than one in the PDF would.
+
+    ``allowed`` is tailor's own vocabulary -- the resume plus the target title
+    and employer -- not clean_gaps' narrower resume-only set. A fit note names
+    the role it is arguing for; checked against the resume alone, every note
+    that says the employer's name would be thrown away.
+
+    A number the resume does not contain is dropped even when the job
+    description supplied it, so a note quoting a stated requirement ("meets the
+    5+ years asked for") does not survive unless the resume states that figure.
+    That is the deliberate side of the trade: the case worth catching is a note
+    inflating one of the candidate's own metrics, and there is no way to tell
+    the two apart from the number alone.
+    """
+    notes = []
+    for note in plan.get("fit_notes", []):
+        note = re.sub(r"\s+", " ", str(note)).strip()
+        if not note:
+            continue
+        if unsupported_terms(note, allowed) or unsupported_facts(note, master_text):
+            continue
+        notes.append(note)
+    return notes[:3]
+
+
 def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str],
            master_text: str) -> tuple[dict, list[str], list[str]]:
     """Return the tailored document, its gaps and its fit notes.
@@ -309,8 +341,9 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
                                           master_summary=document["summary"])
         errors += substance_failures(plan, document)
         if not errors:
-            return apply_plan(document, plan), clean_gaps(plan, document, snapshot), \
-                [str(note) for note in plan.get("fit_notes", [])][:3]
+            return (apply_plan(document, plan),
+                    clean_gaps(plan, document, snapshot),
+                    clean_fit_notes(plan, allowed, master_text))
         last_errors = errors
         corrections = errors
 

@@ -551,6 +551,72 @@ class TestTailoringPlan(unittest.TestCase):
         self.assertEqual(len(gaps), 1)
         self.assertIn("PyTorch", gaps[0])
 
+    def test_a_fit_note_the_resume_supports_survives(self):
+        allowed = vocabulary(MASTER, "Senior AI Engineer", "Qiddiya")
+        note = "Built an LLM evaluation pipeline with production monitoring."
+        plan = _plan(fit_notes=[note])
+
+        notes = resume_tailor.clean_fit_notes(plan, allowed, MASTER)
+
+        self.assertEqual(notes, [note])
+
+    def test_a_fit_note_may_name_the_target_role_and_employer(self):
+        # clean_fit_notes must be handed tailor's own vocabulary (resume plus
+        # target title and employer), not clean_gaps' resume-only set -- the
+        # mistake this test exists to catch would silently empty "Why you fit"
+        # on every real run, since a fit note naturally names the role.
+        title, employer = "Senior AI Engineer", "Qiddiya"
+        allowed = vocabulary(MASTER, title, employer)
+        note = ("Your production LLM evaluation work maps directly to this "
+                f"{title} role at {employer}.")
+        plan = _plan(fit_notes=[note])
+
+        notes = resume_tailor.clean_fit_notes(plan, allowed, MASTER)
+
+        self.assertEqual(notes, [note])
+
+    def test_a_fit_note_naming_a_tool_the_resume_never_mentions_is_dropped(self):
+        # "Kubernetes" is verified absent from resume.md and from MASTER, and
+        # from the title and employer used below (grep -ic Kubernetes resume.md -> 0).
+        allowed = vocabulary(MASTER, "Senior AI Engineer", "Qiddiya")
+        note = "Extensive hands-on Kubernetes orchestration experience in production."
+        plan = _plan(fit_notes=[note])
+
+        notes = resume_tailor.clean_fit_notes(plan, allowed, MASTER)
+
+        self.assertEqual(notes, [])
+
+    def test_a_fit_note_inflating_a_number_is_dropped(self):
+        """A percentage the resume does not contain is dropped, even one that
+        happens to quote a job description's own stated requirement -- there
+        is no way to tell an inflated metric from a quoted requirement using
+        the number alone, and the metric is the case worth catching."""
+        allowed = vocabulary(MASTER, "Senior AI Engineer", "Qiddiya")
+        note = "Reduced processing latency by 95% in production."
+        plan = _plan(fit_notes=[note])
+
+        notes = resume_tailor.clean_fit_notes(plan, allowed, MASTER)
+
+        self.assertEqual(notes, [])
+
+    def test_fit_notes_are_capped_at_three(self):
+        allowed = vocabulary(MASTER, "Senior AI Engineer", "Qiddiya")
+        six_supported_notes = [
+            "Built an LLM evaluation pipeline with production monitoring.",
+            "Delivered weekly performance reporting for years.",
+            "Implemented credit-based monetization with guest rate limiting.",
+            "Cut expired-unit waste through quantitative analysis.",
+            "Shipped production LLM systems with real-time alerting.",
+            "Instrumented production monitoring with real-time alerting.",
+        ]
+        plan = _plan(fit_notes=six_supported_notes)
+
+        notes = resume_tailor.clean_fit_notes(plan, allowed, MASTER)
+
+        # All six survive the evidence check, so this proves the cap truncated
+        # the list rather than the check having dropped half of it.
+        self.assertEqual(notes, six_supported_notes[:3])
+
     def test_a_draft_that_keeps_almost_nothing_is_rejected_as_too_thin(self):
         document = parse_resume(MASTER)
         plan = _plan(bullets=[{"ref": "b1", "text": "Built an LLM evaluation pipeline."}])
