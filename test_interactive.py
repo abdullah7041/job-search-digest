@@ -371,6 +371,7 @@ class TestWorkerClient(unittest.TestCase):
                 received["signed"] = hmac.compare_digest(
                     self.headers.get("X-Job-Digest-Signature", ""), expected
                 )
+                received["path"] = self.path
                 received["body"] = raw
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
@@ -386,14 +387,19 @@ class TestWorkerClient(unittest.TestCase):
         thread.start()
         try:
             snapshot = make_snapshot(JOB, "2026-08-03T12:00:00Z")
+            # Deliberately not a bare origin: a WORKER_URL with a base path is
+            # exactly the case a hardcoded "/internal/digest" signs wrong --
+            # this URL makes the real request path "/mounted/internal/digest",
+            # which a hardcoded signer would sign over the wrong string for.
             result = post_interactive_cards(
-                f"http://127.0.0.1:{server.server_port}", secret, [snapshot]
+                f"http://127.0.0.1:{server.server_port}/mounted", secret, [snapshot]
             )
         finally:
             server.shutdown()
             server.server_close()
             thread.join()
 
+        self.assertEqual(received["path"], "/mounted/internal/digest")
         self.assertTrue(received["signed"])
         self.assertEqual(result, json.loads(response_body))
 
