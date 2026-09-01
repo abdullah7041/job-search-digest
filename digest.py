@@ -586,8 +586,9 @@ def fetch_jsearch(api_key):
             # extra request, so it is read here and recorded as apply_url.
             # NEVER as url: job_identity keys a jsearch posting on its URL, so
             # rewriting it would make the whole back catalogue look new.
+            company = (j.get("employer_name") or "Unknown").strip()
             apply_field, apply_options = jsearch_apply_options(j)
-            free_link = best_free_link(apply_options)
+            free_link = best_free_link(apply_options, company)
             if apply_field and not apply_field_logged:
                 publishers = sorted({o["publisher"] for o in apply_options if o["publisher"]})
                 log(f"JSearch apply options read from {apply_field!r}"
@@ -595,7 +596,7 @@ def fetch_jsearch(api_key):
                 apply_field_logged = True
 
             job = {
-                "company": (j.get("employer_name") or "Unknown").strip(),
+                "company": company,
                 "id":      "jsearch_" + jid,   # prefix avoids id collision with ATS ids
                 "title":   (j.get("job_title") or "").strip(),
                 "location": location,
@@ -604,7 +605,11 @@ def fetch_jsearch(api_key):
                 "source": "jsearch", "token": "",
                 "description": (j.get("job_description") or "").strip(),
             }
-            if free_link:
+            # An option that is simply the primary link again is not an
+            # alternative. Recording it would make `apply_url` present on nearly
+            # every posting, and `rescue_apply_link` would then have nothing
+            # left to improve for a job whose employer board is still unfound.
+            if free_link and canonical_url(free_link) != canonical_url(job["url"]):
                 job["apply_url"] = free_link
             out.append(job)
             added += 1
@@ -618,8 +623,10 @@ def fetch_jsearch(api_key):
 # JSearch names its alternative apply links differently across API versions, and
 # /search-v2's field list was never verified here -- fetch_jsearch's docstring
 # records only the fields checked live, and this is not one of them. Rather than
-# hardcode a guess, the known names are tried first and any list of link-bearing
-# dicts is accepted after that. An unrecognised response yields nothing and the
+# hardcode a guess, the known names are tried first and any OTHER field whose
+# name says it carries apply links is read after that. A field that does not say
+# so is never read, however link-shaped its contents: what comes out of here is
+# handed to the candidate. An unrecognised response yields nothing and the
 # caller keeps the behaviour it has today.
 JSEARCH_APPLY_OPTION_KEYS = ("apply_options", "apply_links")
 
@@ -664,8 +671,14 @@ def jsearch_apply_options(raw_job):
         options = _apply_options_from(raw_job.get(key))
         if options:
             return key, options
+    # Only a field that NAMES itself an apply field is read past the known keys.
+    # An unrestricted scan accepted any list of link-bearing dicts anywhere in
+    # the response -- a "people also viewed" rail, a publisher list, a promo
+    # block -- and whatever it found became the link on the card and the URL a
+    # later Tailor CV click re-reads the JD from. The name is still not
+    # hardcoded, so a future `apply_destinations` is picked up either way.
     for key, value in raw_job.items():
-        if key in JSEARCH_APPLY_OPTION_KEYS:
+        if key in JSEARCH_APPLY_OPTION_KEYS or "apply" not in str(key).lower():
             continue
         options = _apply_options_from(value)
         if options:
@@ -673,17 +686,28 @@ def jsearch_apply_options(raw_job):
     return "", []
 
 
-def best_free_link(options):
+def best_free_link(options, company=""):
     """The first apply link that does not cost money to act on, or "".
 
     Order is the publisher order JSearch returned; nothing here re-ranks by
     quality, because the only property this needs to decide is free vs paywalled.
+
+    An ATS-shaped link is held to the same test `record_apply_link` applies to
+    one read off a page: the board token has to agree with the employer name.
+    Both paths end at the same `apply_url`, and a link to another company's
+    posting is not caught downstream -- `verify_link` confirms it open because
+    it is a real posting, and the resume is then tailored against it.
     """
     for option in options or []:
         url = ((option or {}).get("url") or "").strip()
         if not url.lower().startswith(("http://", "https://")):
             continue
         if on_paid_relister(url):
+            continue
+        reference = ats_reference("", url)
+        if reference and not employer_matches_token(company, reference["token"]):
+            log(f"JSearch apply option on {link_host(url)} names "
+                f"'{reference['token']}', not {company}; ignoring it")
             continue
         return url
     return ""
@@ -1146,12 +1170,15 @@ def rescue_apply_link(job):
     url = job.get("url", "")
     if not url or job.get("source") in EMPLOYER_SOURCES:
         return
-    if job.get("apply_url"):
-        # Already holding the employer's own link, from the API's apply options
-        # or from an earlier rescue this run. get_description calls this function
-        # too, so without this guard a job rescued before the paid-relister cut
-        # pays for a second identical GET a few steps later.
+    if job.get("apply_lookup_done"):
+        # This run already made the request. get_description calls this function
+        # too, so without the guard a job rescued before the paid-relister cut
+        # pays for a second identical GET a few steps later. The guard is on the
+        # LOOKUP, not on `apply_url`: a link JSearch handed over is not the
+        # employer's board, and keying on it would skip the lookup for every
+        # aggregator posting that arrived with one -- which is most of them.
         return
+    job["apply_lookup_done"] = True
     try:
         response = _get(url)
     except (requests.RequestException, ValueError) as e:
@@ -1177,6 +1204,30 @@ def rescue_apply_link(job):
 def apply_link(job):
     """The link the candidate should be handed: the employer's, if we found it."""
     return job.get("apply_url") or job.get("url", "")
+
+
+def settle_link(job):
+    """Check the link this job would actually be delivered on, and record it.
+
+    Verification used to run on `job["url"]` while the paid-relister cut kept
+    the job on `apply_link`, so a posting could be judged on a URL the candidate
+    is never handed. It checks `apply_link` now.
+
+    A rescued `apply_url` that answers a definite 404 is discarded rather than
+    believed: it is built from a token and a posting id, so a negative is as
+    likely to mean the shape was wrong as that the posting closed. The link the
+    job arrived with is then checked in its own right, because it may never have
+    been -- and the caller has to look at it again, since it can be the paid
+    relister the cut let through only on the strength of the rescue.
+    """
+    status = verify_link(apply_link(job))
+    if status == LINK_CLOSED and job.get("apply_url"):
+        log(f"Rescued link did not resolve, keeping the original: {job['apply_url']}")
+        job.pop("apply_url")
+        status = verify_link(apply_link(job))
+    job["link_status"] = status
+    job["link_checked"] = apply_link(job)
+    return status
 
 
 def enrich_descriptions(jobs):
@@ -1525,7 +1576,11 @@ def main():
     # -- were already gone. It runs on `matched` rather than `fresh` because the
     # cut precedes the freshness check; the cost is bounded by the number of
     # paywalled jobs in a run (7 on 2026-08-31).
-    api_rescued = sum(1 for j in matched if j.get("apply_url"))
+    # Counted as recoveries, not as links: a free alternative beside a link that
+    # was never paywalled rescued nothing, and counting it made a run where the
+    # feature did no work read like a run where it did plenty.
+    api_rescued = sum(1 for j in matched
+                      if j.get("apply_url") and on_paid_relister(j.get("url")))
     page_rescued = 0
     for job in matched:
         if not on_paid_relister(apply_link(job)):
@@ -1557,12 +1612,24 @@ def main():
     # Verification is evidence, not a boolean gate: a third-party site may block
     # this runner while still serving a job seeker. Only confirmed closure drops.
     for j in fresh:
-        j["link_status"] = verify_link(j["url"])
+        settle_link(j)
+    checked = len(fresh)  # both filters below shrink `fresh`; the ratio needs this
     closed = [j for j in fresh if j["link_status"] == LINK_CLOSED]
     fresh = [j for j in fresh if j["link_status"] != LINK_CLOSED]
+    # settle_link may have dropped a rescue that did not resolve, and a job the
+    # cut above kept ONLY because that rescue was free is back on the paywalled
+    # link the cut rejected. Delivering it there is the outcome the cut exists
+    # to prevent, so the job goes with its rescue. Like every paid-relister
+    # drop it is not remembered: the same posting on a free board tomorrow is
+    # still worth delivering.
+    lost_rescue = [j for j in fresh if on_paid_relister(apply_link(j))]
+    fresh = [j for j in fresh if not on_paid_relister(apply_link(j))]
+    for job in lost_rescue:
+        log(f"Paid relister {link_host(job['url'])} again after the rescued link "
+            f"failed: {job['company']} — {job['title']}")
     unknown_count = sum(j["link_status"] == LINK_UNKNOWN for j in fresh)
     if closed:
-        log(f"{len(closed)} of {len(closed) + len(fresh)} new jobs confirmed closed")
+        log(f"{len(closed)} of {checked} new jobs confirmed closed")
 
     today = datetime.date.today().isoformat()
 
@@ -1583,19 +1650,22 @@ def main():
 
     # A rescued apply link is BUILT from a token and a posting id, not copied
     # from a page, so it has never been fetched at the point enrichment records
-    # it. Verify before handing it over -- and on a definite negative discard
-    # the rescue rather than the job: a 404 here is as likely to mean the URL
-    # shape was wrong as that the posting closed, and the aggregator link that
-    # was verified earlier is still a working way in.
+    # it. Verify before handing it over. Only a link enrichment just introduced
+    # is checked here: settle_link already looked at the one the job carried
+    # into the pass above, and re-checking it would spend a request per job to
+    # learn what `link_checked` already records.
     for job in fresh:
-        if not job.get("apply_url"):
+        if not job.get("apply_url") or job["apply_url"] == job.get("link_checked"):
             continue
-        status = verify_link(job["apply_url"])
-        if status == LINK_CLOSED:
-            log(f"Rescued link did not resolve, keeping the original: {job['apply_url']}")
-            job.pop("apply_url")
-        else:
-            job["link_status"] = status
+        settle_link(job)
+    # Same rule as after the first pass: enrichment can only have improved the
+    # link, so a job that is back on a paid relister here lost a rescue that the
+    # cut had accepted.
+    lost_late_rescue = [j for j in fresh if on_paid_relister(apply_link(j))]
+    fresh = [j for j in fresh if not on_paid_relister(apply_link(j))]
+    for job in lost_late_rescue:
+        log(f"Paid relister {link_host(job['url'])} again after the rescued link "
+            f"failed: {job['company']} — {job['title']}")
 
     # Recounted, because the loop above just rewrote the statuses it counts. The
     # figure taken before enrichment is right for the no-new-jobs return above
@@ -1618,7 +1688,9 @@ def main():
             strong=0, review=0, tailored=0, tailor_failed=0,
             relisted=len(relisted),
         )
-        log(f"All {len(relisted)} new postings were relists. Heartbeat sent.")
+        log(f"Nothing left to deliver: {len(relisted)} relists, "
+            f"{len(lost_late_rescue)} lost the rescued link enrichment found. "
+            "Heartbeat sent.")
         return
 
     ranking = rank_jobs(fresh, rank_key) if rank_key else None

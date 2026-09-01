@@ -1003,7 +1003,8 @@ class TestJsearchApplyLinks(unittest.TestCase):
     The digest calls /search-v2, whose field names are not fully verified in
     this repository -- fetch_jsearch's docstring lists the ones checked live and
     apply_options is not among them. These tests pin the behaviour for the
-    expected name, an alternative name, an unknown name, and absence.
+    expected name, an alternative name, an unrecognised name that still says it
+    carries apply links, a link list that does not, and absence.
     """
 
     def test_a_free_option_beside_a_paid_primary_is_chosen(self):
@@ -1016,8 +1017,27 @@ class TestJsearchApplyLinks(unittest.TestCase):
         })
         self.assertEqual(field, "apply_options")
         self.assertEqual(len(options), 2)
-        self.assertEqual(digest.best_free_link(options),
+        self.assertEqual(digest.best_free_link(options, "Acme"),
                          "https://job-boards.greenhouse.io/acme/jobs/7")
+
+    def test_an_ats_link_for_another_employer_is_refused(self):
+        """The same rule record_apply_link applies to a link read off a page.
+
+        Both paths write apply_url, which is the link on the card and the URL a
+        later Tailor CV click re-reads the JD from, so a posting at another
+        company would be tailored against. verify_link cannot catch it: the
+        other company's posting is genuinely open.
+        """
+        options = [{"publisher": "Greenhouse",
+                    "url": "https://job-boards.greenhouse.io/othercorp/jobs/7"}]
+        self.assertEqual(digest.best_free_link(options, "Acme"), "")
+
+    def test_a_free_link_that_is_not_an_ats_posting_is_kept(self):
+        # Only an ATS link carries a token to check. An employer careers page or
+        # another free board is accepted on the same terms as before.
+        options = [{"publisher": "Acme", "url": "https://acme.test/careers/7"}]
+        self.assertEqual(digest.best_free_link(options, "Acme"),
+                         "https://acme.test/careers/7")
 
     def test_every_option_paywalled_yields_no_link(self):
         _, options = digest.jsearch_apply_options({
@@ -1028,17 +1048,31 @@ class TestJsearchApplyLinks(unittest.TestCase):
         })
         self.assertEqual(digest.best_free_link(options), "")
 
-    def test_an_unexpected_field_name_is_still_found(self):
-        # The generic scan is why this design does not depend on a field name
-        # nothing in this repository has verified against /search-v2.
+    def test_an_unexpected_apply_field_name_is_still_found(self):
+        # The scan is why this design does not depend on a field name nothing in
+        # this repository has verified against /search-v2. It is limited to
+        # fields that name themselves apply fields; see the test below.
         field, options = digest.jsearch_apply_options({
             "employer_name": "Acme",
-            "some_future_name": [
+            "apply_destinations": [
                 {"name": "Lever", "url": "https://jobs.lever.co/acme/abc"},
             ],
         })
-        self.assertEqual(field, "some_future_name")
-        self.assertEqual(digest.best_free_link(options), "https://jobs.lever.co/acme/abc")
+        self.assertEqual(field, "apply_destinations")
+        self.assertEqual(digest.best_free_link(options, "Acme"),
+                         "https://jobs.lever.co/acme/abc")
+
+    def test_a_link_list_that_is_not_an_apply_field_is_ignored(self):
+        """An unrestricted scan took any list of link-bearing dicts anywhere in
+        the response -- a related-postings rail, a publisher list -- and handed
+        whatever it found to the candidate as the apply link."""
+        field, options = digest.jsearch_apply_options({
+            "employer_name": "Acme",
+            "related_jobs": [
+                {"name": "Othercorp", "url": "https://jobs.lever.co/othercorp/xyz"},
+            ],
+        })
+        self.assertEqual((field, options), ("", []))
 
     def test_no_options_field_at_all_yields_nothing(self):
         field, options = digest.jsearch_apply_options({
@@ -1054,7 +1088,7 @@ class TestJsearchApplyLinks(unittest.TestCase):
         self.assertEqual(digest.best_free_link([
             {"publisher": "X", "url": "mailto:jobs@acme.test"},
             {"publisher": "Y", "url": "https://jobs.ashbyhq.com/acme/1"},
-        ]), "https://jobs.ashbyhq.com/acme/1")
+        ], "Acme"), "https://jobs.ashbyhq.com/acme/1")
 
     def test_a_malformed_payload_never_raises(self):
         for payload in (None, [], "text", {"apply_options": "not-a-list"},
@@ -1422,8 +1456,15 @@ class TestEndToEnd(unittest.TestCase):
     def test_a_rescued_link_that_does_not_resolve_falls_back_to_the_original(self):
         """The rescued URL is BUILT from a token and an id, so a definite
         negative is as likely to mean the shape was wrong as that the posting
-        closed. Losing the rescue must never cost the job."""
-        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_CLOSED])
+        closed. Losing the rescue must never cost the job.
+
+        Three statuses, not two: dropping the rescue puts the job back on the
+        link it arrived with, and that link is then checked in its own right --
+        which is how a job that survived the paid-relister cut only because the
+        rescue was free gets caught before delivery.
+        """
+        posts, work = self._linkedin_run(
+            [digest.LINK_OPEN, digest.LINK_CLOSED, digest.LINK_OPEN])
         shutil.rmtree(work)
         body = "\n".join(posts)
 
@@ -1467,6 +1508,29 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("jobleads.com", body)
         self.assertIn("no new roles today", body)
 
+    def test_a_paywalled_job_whose_free_link_fails_is_not_delivered(self):
+        """Losing the rescue must not resurrect the link the cut rejected.
+
+        The cut judges apply_link, so this job survives on its free link. When
+        that link then fails verification the rescue is dropped -- and without
+        this the job would be delivered on the jobleads.com URL the cut exists
+        to discard. Like every paid-relister drop it is not remembered, so the
+        same posting on a free board tomorrow is still delivered.
+        """
+        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz",
+                   apply_url="https://job-boards.greenhouse.io/next/jobs/1")
+        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
+        with mock.patch.object(digest, "rescue_apply_link"):
+            posts, work = run_main(self.ENV, ranking, jobs=[job],
+                                   link_statuses=[digest.LINK_CLOSED, digest.LINK_OPEN])
+        body = "\n".join(posts)
+        self.assertNotIn("jobleads.com", body)
+        self.assertNotIn("job-boards.greenhouse.io", body)
+        self.assertIn("no new roles today", body)
+        path = os.path.join(work, "seen.json")
+        seen = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+        self.assertEqual(seen, {}, "a link verdict must not be remembered as a delivery")
+
     def test_a_paywalled_job_is_rescued_before_it_is_dropped(self):
         """rescue_apply_link used to run inside enrich_descriptions, three steps
         after the paid-relister cut, so the postings that most needed it were
@@ -1483,16 +1547,37 @@ class TestEndToEnd(unittest.TestCase):
         body = "\n".join(posts)
         self.assertIn("job-boards.greenhouse.io/next/jobs/1", body)
 
-    def test_a_job_that_already_has_a_free_link_is_not_fetched_twice(self):
-        """rescue_apply_link is also called from get_description. Without the
-        guard, a job rescued before the cut pays for a second GET later."""
+    def _aggregator_job(self, **extra):
         job = {"company": "Acme", "id": "jsearch_z", "title": "Data Engineer",
                "location": "Riyadh, Saudi Arabia", "source": "jsearch", "token": "",
-               "url": "https://www.jobleads.com/job/1", "description": "text",
-               "apply_url": "https://job-boards.greenhouse.io/acme/jobs/7"}
-        with mock.patch.object(digest, "_get") as get:
+               "url": "https://www.jobleads.com/job/1", "description": "text"}
+        job.update(extra)
+        return job
+
+    def test_the_apply_link_lookup_runs_once_per_run(self):
+        """rescue_apply_link is also called from get_description. Without the
+        guard, a job rescued before the cut pays for a second GET later."""
+        job = self._aggregator_job()
+        response = mock.Mock(status_code=200, text="")
+        with mock.patch.object(digest, "_get", return_value=response) as get:
             digest.rescue_apply_link(job)
-        get.assert_not_called()
+            digest.rescue_apply_link(job)
+        self.assertEqual(get.call_count, 1)
+
+    def test_a_link_jsearch_supplied_does_not_cancel_the_lookup(self):
+        """The guard is on the lookup, not on apply_url.
+
+        A link JSearch handed over is another publisher's, not the employer's
+        board. Keying the guard on apply_url skipped the lookup for every
+        aggregator posting that arrived with one -- which is most of them -- so
+        the employer's own posting was never found for any of them.
+        """
+        job = self._aggregator_job(apply_url="https://sa.jooble.org/jdp/2")
+        response = mock.Mock(status_code=200,
+                             text='<a href="https://job-boards.greenhouse.io/acme/jobs/7">Apply</a>')
+        with mock.patch.object(digest, "_get", return_value=response) as get:
+            digest.rescue_apply_link(job)
+        get.assert_called_once()
         self.assertEqual(job["apply_url"], "https://job-boards.greenhouse.io/acme/jobs/7")
 
     def test_the_run_reports_how_many_apply_links_it_recovered(self):
