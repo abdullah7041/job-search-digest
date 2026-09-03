@@ -10,6 +10,10 @@
     "source": "workable",
     "token": "dataplus"
   },
+  "democrance": {
+    "company": "Democrance",
+    "miss": "2026-09-03"
+  },
   "ernstyoungae": {
     "company": "Ernst & Young AE",
     "miss": "2026-09-03"
@@ -21,11 +25,29 @@
     "source": "workable",
     "token": "exequt"
   },
+  "infinniti": {
+    "company": "Infinniti",
+    "miss": "2026-09-03"
+  },
+  "latitude": {
+    "company": "Latitude",
+    "found": "2026-09-03",
+    "roles": 47,
+    "source": "greenhouse",
+    "token": "latitude"
+  },
   "qualcomm": {
     "company": "Qualcomm",
     "found": "2026-09-03",
     "roles": 0,
     "source": "workable",
     "token": "qualcomm"
+  },
+  "silveredgearabia": {
+    "company": "Silver Edge Arabia",
+    "found": "2026-09-03",
+    "roles": 40,
+    "source": "ashby",
+    "token": "silver"
   }
 }
