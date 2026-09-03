@@ -40,6 +40,13 @@
     "source": "workable",
     "token": "qualcomm"
   },
+  "sensys": {
+    "company": "SENSYS Inc.",
+    "found": "2026-09-03",
+    "roles": 0,
+    "source": "workable",
+    "token": "sensys"
+  },
   "silveredgearabia": {
     "company": "Silver Edge Arabia",
     "miss": "2026-09-03"
