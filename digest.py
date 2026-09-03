@@ -147,10 +147,19 @@ DEFAULT_PROFILE = {
 # JSearch (RapidAPI / Google for Jobs aggregator), endpoint /search-v2.
 # 3 queries/day = ~93 requests/month -> safely inside the free tier (200/month).
 # Endpoint + response shape + field names verified live 28 Jun 2026.
+# Measured 3 Sep 2026 by `--probe-queries`, counting results that pass this
+# file's own title and location filters: backend 6, data 6, full stack 5, ML 4,
+# software 3, "AI engineer" only 2. Backend was added and the others were not
+# because its six were all employers the digest had never seen -- FileCloud,
+# Innovationteam, PrimeGate, Democrance -- while the data query's six are mostly
+# the paid relisters that get dropped again every morning. Full stack scored
+# well but repeated two of backend's six. Every query costs 30 requests a month
+# out of 200, so a query earns its place on that number or not at all.
 AGGREGATOR_QUERIES = [
     "software engineer Saudi Arabia",
     "data engineer Riyadh",
     "machine learning engineer Saudi Arabia",
+    "backend engineer Saudi Arabia",
 ]
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
 
@@ -159,8 +168,15 @@ JSEARCH_HOST = "jsearch.p.rapidapi.com"
 # is 6.6 a day, so page two is a rationed extra rather than a free one: three
 # page-one reads plus two deep reads is 150 a month and leaves the rest for
 # probes, manual re-runs and a bad day. Override with a repository variable.
-def _request_budget(raw, default=5):
-    """The day's JSearch request allowance, never below one page per query."""
+def _request_budget(raw):
+    """The day's JSearch request allowance, never below one page per query.
+
+    The default follows the query list rather than sitting at a fixed number:
+    one page each plus two deep reads. Adding a query would otherwise silently
+    stop paying for the second pages, which are the only source measured as
+    returning nothing already seen.
+    """
+    default = len(AGGREGATOR_QUERIES) + 2
     try:
         value = int(str(raw).strip())
     except (TypeError, ValueError):
@@ -2456,13 +2472,20 @@ def probe_queries(queries, api_key):
         return {"title": (j.get("job_title") or "").strip(),
                 "location": ", ".join(p for p in (city, state, country) if p)}
 
+    # Keyed on the canonical URL, NOT job_id: JSearch mints a fresh opaque id for
+    # the same posting on every request, which is why job_identity keys this
+    # source on its URL too. Counting ids reported every query as returning ten
+    # postings no other query returned, including two that plainly shared them.
+    def key(j):
+        return canonical_url(j.get("job_apply_link") or "") or str(j.get("job_id") or "")
+
     owners = {}
     for query, jobs in pages.items():
         for j in jobs:
-            owners.setdefault(str(j.get("job_id") or ""), set()).add(query)
+            owners.setdefault(key(j), set()).add(query)
 
     for query, jobs in pages.items():
-        only = [j for j in jobs if len(owners[str(j.get("job_id") or "")]) == 1]
+        only = [j for j in jobs if len(owners[key(j)]) == 1]
         keeps = [j for j in only if matches_filters(as_job(j))]
         print(f"{query!r}: {len(jobs)} returned, {len(only)} returned by no other "
               f"query, {len(keeps)} of those pass the filters")

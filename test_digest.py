@@ -1388,6 +1388,17 @@ class TestJsearchPaging(unittest.TestCase):
         }}
         return response
 
+    def test_the_default_budget_funds_one_page_per_query_plus_two_deep_reads(self):
+        """The budget is a slice of a monthly allowance, so it has to follow the
+        query list rather than sit at a number that silently stops paying for
+        deep reads the day a query is added."""
+        self.assertEqual(digest._request_budget(None),
+                         len(digest.AGGREGATOR_QUERIES) + 2)
+
+    def test_a_budget_too_small_to_read_every_query_is_refused(self):
+        self.assertEqual(digest._request_budget("1"),
+                         len(digest.AGGREGATOR_QUERIES) + 2)
+
     def test_a_budget_that_only_covers_page_one_reads_page_one(self):
         self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 3, day=0), [])
 
