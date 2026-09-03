@@ -1154,7 +1154,9 @@ class TestJsearchApplyLinks(unittest.TestCase):
              mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
             jobs = digest.fetch_jsearch("key")
-        self.assertEqual(jobs[0].get("apply_url"), None)
+        # Refused outright now: no free alternative and a paywalled primary link
+        # is exactly the posting fetch_jsearch stopped carrying.
+        self.assertEqual(jobs, [])
 
 
 class TestApplyLinkRescue(unittest.TestCase):
@@ -1456,6 +1458,77 @@ class TestJsearchPaging(unittest.TestCase):
                         f"no quota line in: {lines}")
 
 
+class TestPaywalledPostingsAreNeverFetched(unittest.TestCase):
+    """A paywalled posting is refused at the source rather than carried and cut.
+
+    It was fetched, deduped, filtered, verified, paged into the run's counts and
+    logged one line each, only to be discarded every morning -- 11 of 48 on the
+    3 Sep 19:33 run -- and neither rescue could ever reach it: the relisters
+    answer 403 or 404 to this runner, and apply_options never carries an
+    alternative. The employer is still worth keeping, because that is what board
+    discovery converts.
+    """
+
+    def _payload(self, link, title="Senior Data Engineer", options=None):
+        job = {"job_id": "abc", "job_title": title, "employer_name": "Acme",
+               "job_city": "Riyadh", "job_country": "SA", "job_apply_link": link,
+               "employer_website": "https://acme.test",
+               "job_description": "Build pipelines."}
+        if options:
+            job["apply_options"] = options
+        return {"data": {"jobs": [job]}}
+
+    def _fetch(self, payload, paywalled=None):
+        response = mock.Mock()
+        response.status_code = 200
+        response.headers = {}
+        response.json.return_value = payload
+        with mock.patch.object(digest.requests, "get", return_value=response),              mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]),              mock.patch.object(digest.time, "sleep", lambda *_: None):
+            return digest.fetch_jsearch("key", paywalled)
+
+    def test_a_paywalled_posting_never_enters_the_run(self):
+        self.assertEqual(self._fetch(self._payload("https://www.jobleads.com/job/1")), [])
+
+    def test_a_free_posting_is_kept(self):
+        jobs = self._fetch(self._payload("https://sa.linkedin.com/jobs/view/1"))
+        self.assertEqual(len(jobs), 1)
+
+    def test_a_paywalled_posting_with_a_free_alternative_is_kept(self):
+        """The API rescue still decides this, and still runs before the drop."""
+        jobs = self._fetch(self._payload(
+            "https://www.jobleads.com/job/1",
+            options=[{"publisher": "Greenhouse",
+                      "apply_link": "https://job-boards.greenhouse.io/acme/jobs/7"}]))
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["apply_url"], "https://job-boards.greenhouse.io/acme/jobs/7")
+
+    def test_a_dropped_posting_that_matches_is_handed_to_the_caller(self):
+        paywalled = []
+        self._fetch(self._payload("https://www.jobleads.com/job/1"), paywalled)
+        self.assertEqual(len(paywalled), 1)
+        self.assertEqual(paywalled[0]["company"], "Acme")
+        self.assertEqual(paywalled[0]["employer_website"], "https://acme.test")
+
+    def test_the_refusal_is_reported_with_the_hosts_responsible(self):
+        """A silent drop reads exactly like a quiet market. The count and the
+        hosts are what say which one a thin morning was."""
+        paywalled = []
+        with mock.patch.object(digest, "log") as logged:
+            self._fetch(self._payload("https://www.jobleads.com/job/1"), paywalled)
+        lines = [c.args[0] for c in logged.call_args_list if c.args]
+        self.assertTrue(any("refused 1 paywalled" in line and "jobleads.com" in line
+                            for line in lines), f"no refusal line in: {lines}")
+
+    def test_a_dropped_posting_that_the_filters_reject_is_not(self):
+        """Board discovery costs five ATS requests an employer. Spending them on
+        a role this candidate would never be shown is the waste the filters
+        exist to prevent."""
+        paywalled = []
+        self._fetch(self._payload("https://www.jobleads.com/job/1",
+                                  title="Registered Nurse"), paywalled)
+        self.assertEqual(paywalled, [])
+
+
 class TestBoardDiscovery(unittest.TestCase):
     """Finding an employer's own board for a posting stuck behind a paid relister.
 
@@ -1622,7 +1695,7 @@ class TestBoardDiscovery(unittest.TestCase):
         payload = {"data": {"jobs": [{
             "job_id": "abc", "job_title": "Data Engineer", "employer_name": "Nabla",
             "job_city": "Riyadh", "job_country": "SA",
-            "job_apply_link": "https://www.jobleads.com/job/1",
+            "job_apply_link": "https://sa.linkedin.com/jobs/view/1",
             "employer_website": "https://nabla.com",
             "job_description": "Build pipelines.",
         }]}}
@@ -1852,68 +1925,18 @@ class TestEndToEnd(unittest.TestCase):
         seen = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
         self.assertEqual(seen, {}, "a link verdict must not be remembered as a delivery")
 
-    def test_a_paywalled_job_is_rescued_before_it_is_dropped(self):
-        """rescue_apply_link used to run inside enrich_descriptions, three steps
-        after the paid-relister cut, so the postings that most needed it were
-        already gone. It must run first now."""
+    def test_a_paywalled_job_reaching_main_from_elsewhere_is_still_refused(self):
+        """fetch_jsearch refuses these now, so main()'s cut is a last line of
+        defence rather than the main event. It still has to hold: a paywalled
+        link must never reach a card, whatever source produced it."""
         job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz")
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
-
-        def rescue(j):
-            j["apply_url"] = "https://job-boards.greenhouse.io/next/jobs/1"
-
-        with mock.patch.object(digest, "rescue_apply_link", side_effect=rescue):
+        with mock.patch.object(digest, "discover_boards", return_value=0):
             posts, work = run_main(self.ENV, ranking, jobs=[job],
-                                   link_statuses=[digest.LINK_OPEN, digest.LINK_OPEN])
+                                   link_statuses=[digest.LINK_OPEN])
         body = "\n".join(posts)
-        self.assertIn("job-boards.greenhouse.io/next/jobs/1", body)
-
-    def _aggregator_job(self, **extra):
-        job = {"company": "Acme", "id": "jsearch_z", "title": "Data Engineer",
-               "location": "Riyadh, Saudi Arabia", "source": "jsearch", "token": "",
-               "url": "https://www.jobleads.com/job/1", "description": "text"}
-        job.update(extra)
-        return job
-
-    def test_the_apply_link_lookup_runs_once_per_run(self):
-        """rescue_apply_link is also called from get_description. Without the
-        guard, a job rescued before the cut pays for a second GET later."""
-        job = self._aggregator_job()
-        response = mock.Mock(status_code=200, text="")
-        with mock.patch.object(digest, "_get", return_value=response) as get:
-            digest.rescue_apply_link(job)
-            digest.rescue_apply_link(job)
-        self.assertEqual(get.call_count, 1)
-
-    def test_a_link_jsearch_supplied_does_not_cancel_the_lookup(self):
-        """The guard is on the lookup, not on apply_url.
-
-        A link JSearch handed over is another publisher's, not the employer's
-        board. Keying the guard on apply_url skipped the lookup for every
-        aggregator posting that arrived with one -- which is most of them -- so
-        the employer's own posting was never found for any of them.
-        """
-        job = self._aggregator_job(apply_url="https://sa.jooble.org/jdp/2")
-        response = mock.Mock(status_code=200,
-                             text='<a href="https://job-boards.greenhouse.io/acme/jobs/7">Apply</a>')
-        with mock.patch.object(digest, "_get", return_value=response) as get:
-            digest.rescue_apply_link(job)
-        get.assert_called_once()
-        self.assertEqual(job["apply_url"], "https://job-boards.greenhouse.io/acme/jobs/7")
-
-    def test_the_run_reports_how_many_apply_links_it_recovered(self):
-        """Without this line there is no way to tell a run where the API
-        supplied free links from one where the feature is inert."""
-        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz",
-                   apply_url="https://job-boards.greenhouse.io/next/jobs/1")
-        ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"}}
-        with mock.patch.object(digest, "rescue_apply_link"), \
-             mock.patch.object(digest, "log") as logged:
-            run_main(self.ENV, ranking, jobs=[job],
-                     link_statuses=[digest.LINK_OPEN, digest.LINK_OPEN])
-        lines = [c.args[0] for c in logged.call_args_list if c.args]
-        self.assertTrue(any("apply links: 1 from the API" in line for line in lines),
-                        f"no apply-link summary in: {lines}")
+        self.assertNotIn("jobleads.com", body)
+        self.assertIn("no new roles today", body)
 
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")

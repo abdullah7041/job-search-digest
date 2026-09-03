@@ -549,11 +549,22 @@ def fetch_lever(c):
     return out
 
 
-def fetch_jsearch(api_key):
+def fetch_jsearch(api_key, paywalled=None):
     """
     Query JSearch (RapidAPI Google-for-Jobs aggregator) for each AGGREGATOR_QUERIES entry.
     Returns jobs in the same shape as ATS fetchers so the shared filter/rank path works.
     Skipped entirely (returns []) if api_key is absent or subscription inactive.
+
+    A posting whose apply link is on a paid relister is refused here rather than
+    carried through the run and cut later. It used to be fetched, deduped,
+    filtered, verified, counted and logged a line each before being discarded
+    every morning -- 11 of 48 on 3 Sep 2026 -- and neither rescue could reach
+    it: the relisters answer 403 or 404 to this runner, and apply_options has
+    never carried an alternative. Its EMPLOYER is still worth having, so one
+    that passes the same title and location filters the digest applies is
+    appended to `paywalled` when the caller provides a list. That is what board
+    discovery converts, and it is scoped by the filters so five ATS requests are
+    never spent on a role this candidate would not be shown.
 
     Endpoint /search-v2 (verified live 28 Jun 2026). The old /search path now 404s at the
     RapidAPI gateway ("Endpoint '/search' does not exist"). v2 nests results under
@@ -585,6 +596,7 @@ def fetch_jsearch(api_key):
     seen_ids = set()  # dedupe within JSearch results across queries
     apply_field_logged = False   # the discovered field is named once per run, not per job
     quota = {}       # last reported allowance, read off every response
+    dropped = []     # paywalled postings, refused before they enter the run
     cursors = {}     # page-one cursor per query, spent below if the budget allows
 
     def read_page(query, cursor=""):
@@ -689,6 +701,15 @@ def fetch_jsearch(api_key):
             # left to improve for a job whose employer board is still unfound.
             if free_link and canonical_url(free_link) != canonical_url(job["url"]):
                 job["apply_url"] = free_link
+
+            # Judged on the link the candidate would be handed, so the free
+            # alternative above still saves a posting whose primary link is
+            # paywalled. Nothing past this point ever sees the rest.
+            if on_paid_relister(apply_link(job)):
+                dropped.append(job)
+                if paywalled is not None and matches_filters(job):
+                    paywalled.append(job)
+                continue
             out.append(job)
             added += 1
         return added
@@ -717,6 +738,11 @@ def fetch_jsearch(api_key):
         log(f"JSearch [{query!r}] page 2: {len(jobs)} returned, {collect(jobs)} unique")
         time.sleep(0.5)
 
+    if dropped:
+        log(f"JSearch refused {len(dropped)} paywalled postings on "
+            f"{', '.join(sorted({link_host(j['url']) for j in dropped}))}"
+            + (f"; {len(paywalled)} of them matched the filters and go to board "
+               f"discovery" if paywalled else ""))
     if quota:
         log(f"JSearch quota: {quota['remaining']} of {quota['limit']} requests remaining")
     log(f"JSearch total: {len(out)} unique jobs across {len(AGGREGATOR_QUERIES)} queries")
@@ -1849,8 +1875,11 @@ def main():
 
     all_jobs = []
 
-    # Breadth: JSearch aggregator (LinkedIn/Indeed/Glassdoor/company sites via Google for Jobs)
-    all_jobs.extend(fetch_jsearch(rapidapi_key))
+    # Breadth: JSearch aggregator (LinkedIn/Indeed/Glassdoor/company sites via Google for Jobs).
+    # Paywalled postings are refused inside the fetch; the matching ones come
+    # back here so their employers can still be probed for a board of their own.
+    paywalled = []
+    all_jobs.extend(fetch_jsearch(rapidapi_key, paywalled))
 
     # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever).
     # COMPANIES is the hand-curated list; the boards after it were discovered
@@ -1878,42 +1907,21 @@ def main():
     for job in relisted_copies:
         log(f"Relisted copy on {link_host(job['url'])}: {job['company']} — "
             f"{job['title']}; this run already read it from the employer's board")
-    # Last chance before the cut below discards the job. This used to run inside
-    # enrich_descriptions, three steps after the drop, so the postings it exists
-    # for -- an aggregator link to a posting that lives on a free employer board
-    # -- were already gone. It runs on `matched` rather than `fresh` because the
-    # cut precedes the freshness check; the cost is bounded by the number of
-    # paywalled jobs in a run (7 on 2026-08-31).
-    # Counted as recoveries, not as links: a free alternative beside a link that
-    # was never paywalled rescued nothing, and counting it made a run where the
-    # feature did no work read like a run where it did plenty.
-    api_rescued = sum(1 for j in matched
-                      if j.get("apply_url") and on_paid_relister(j.get("url")))
-    page_rescued = 0
-    for job in matched:
-        if not on_paid_relister(apply_link(job)):
-            continue
-        rescue_apply_link(job)
-        if not on_paid_relister(apply_link(job)):
-            page_rescued += 1
-
-    # Judge the link the candidate is actually handed, not the one the
-    # aggregator happened to rank first. apply_link prefers apply_url, which is
-    # where both the API's free alternative and the page rescue put their result
-    # -- testing j["url"] here discarded jobs whose free link was already known.
-    paid_only = [j for j in matched if on_paid_relister(apply_link(j))]
+    # The paywalled postings never got here: fetch_jsearch refused them and
+    # handed back the ones that matched the filters. This is the last line of
+    # defence for a link that arrives paywalled from anywhere else, and it is
+    # expected to be empty.
+    still_paid = [j for j in matched if on_paid_relister(apply_link(j))]
     matched = [j for j in matched if not on_paid_relister(apply_link(j))]
-    for job in paid_only:
-        log(f"Paid relister {link_host(job['url'])}: {job['company']} — {job['title']}")
-    log(f"apply links: {api_rescued} from the API, {page_rescued} rescued from the page, "
-        f"{len(paid_only)} still paywalled and dropped")
+    for job in still_paid:
+        log(f"Paid relister past the fetch on {link_host(job['url'])}: "
+            f"{job['company']} — {job['title']}")
 
-    # Neither rescue can reach these: the relister blocks the runner and the API
-    # offers no alternative. Their employers can still be reached directly, so
-    # look for a board now and read it from the next run on. Runs before the
-    # freshness check because a paid-relister drop is never remembered -- these
-    # same employers are back tomorrow whatever happens here.
-    if discover_boards(paid_only, boards, datetime.date.today().isoformat()):
+    # Their links are unreachable, but their employers are not: a board found
+    # here is read directly from the next run on. Scoped to the postings that
+    # passed the filters, so five ATS requests are never spent on a role this
+    # candidate would not be shown.
+    if discover_boards(paywalled + still_paid, boards, datetime.date.today().isoformat()):
         save_boards(boards)
 
     # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike
@@ -1922,8 +1930,8 @@ def main():
     # delivered tomorrow.
     fresh = [j for j in matched if job_identity(j) not in seen]
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
-        f"{len(relisted_copies)} relisted copies, {len(paid_only)} paid-relister only, "
-        f"{len(fresh)} new")
+        f"{len(relisted_copies)} relisted copies, {len(paywalled)} paywalled and refused "
+        f"at the fetch, {len(fresh)} new")
 
     # Verification is evidence, not a boolean gate: a third-party site may block
     # this runner while still serving a job seeker. Only confirmed closure drops.
