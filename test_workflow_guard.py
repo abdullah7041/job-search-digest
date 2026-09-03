@@ -74,6 +74,16 @@ class WorkflowGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.artifact / "manifest.json").is_file())
 
+    def test_packages_the_discovered_board_state(self):
+        """boards.json remembers which employers have their own ATS board. It is
+        written by a run and read by the next one, so a run that discovers a
+        board and cannot persist it discovers the same board again tomorrow, for
+        the same five requests, forever."""
+        (self.root / "boards.json").write_text('{"nabla": {"source": "ashby"}}',
+                                               encoding="utf-8")
+        package_state_artifact(self.root, self.artifact, ["boards.json"])
+        self.assertTrue((self.artifact / "boards.json").exists())
+
     def test_rejects_unexpected_or_unsafe_state_paths(self):
         for path in ["resume.md", "jobs/not-a-date.json", "../seen.json", "/seen.json"]:
             with self.subTest(path=path):

@@ -1361,6 +1361,162 @@ class TestApplyLinkRescue(unittest.TestCase):
         self.assertEqual(build({"source": "lever", "token": "", "id": "y"}), "")
 
 
+class TestBoardDiscovery(unittest.TestCase):
+    """Finding an employer's own board for a posting stuck behind a paid relister.
+
+    The relisters block this runner outright -- 403 from jooble and jobrapido,
+    404 from jobleads, measured 3 Sep 2026 -- and JSearch's apply_options never
+    carries an alternative, so neither existing rescue can reach these postings.
+    What the response does carry is the employer's name and, most of the time,
+    a website. Probed against the five supported ATSs those are a route to the
+    employer that never touches the relister.
+
+    employer_website is Google's knowledge-panel guess, not a verified field:
+    it gave siccode.com for "Business Codes" and infinitiusa.com for
+    "Infinniti" on 3 Sep. So a hit is only believed when the board token agrees
+    with the employer name, which is the same test record_apply_link applies.
+    """
+
+    def _paid_job(self, company, site="", url="https://www.jobleads.com/job/1"):
+        return {"company": company, "id": "jsearch_1", "title": "Data Engineer",
+                "location": "Riyadh, Saudi Arabia", "source": "jsearch", "token": "",
+                "url": url, "employer_website": site, "description": ""}
+
+    def test_a_website_that_repeats_the_name_adds_no_candidate(self):
+        job = self._paid_job("Eram Talent", "https://www.eramtalent.com/careers")
+        self.assertEqual(digest.board_token_candidates(job), ["eramtalent", "eram"])
+
+    def test_a_website_that_differs_from_the_name_gives_a_second_candidate(self):
+        job = self._paid_job("Lean", "https://leantech.io")
+        self.assertEqual(digest.board_token_candidates(job), ["lean", "leantech"])
+
+    def test_a_job_with_no_website_still_offers_its_name(self):
+        self.assertEqual(digest.board_token_candidates(self._paid_job("Nabla")), ["nabla"])
+
+    def test_the_first_word_of_a_multi_word_employer_is_offered(self):
+        """The live probe on 3 Sep found exequt MENA on Workable under 'exequt'
+        and Silver Edge Arabia under 'silveredge'. A board token is the short
+        name, not the trading name, so the joined form alone would miss both."""
+        self.assertEqual(digest.board_token_candidates(self._paid_job("exequt MENA")),
+                         ["exequtmena", "exequt"])
+
+    def test_a_confirmed_board_is_recorded(self):
+        boards = {}
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "ashby", 15)):
+            digest.discover_boards([self._paid_job("Nabla")], boards, "2026-09-03")
+        self.assertEqual(boards["nabla"]["source"], "ashby")
+        self.assertEqual(boards["nabla"]["token"], "nabla")
+        self.assertEqual(boards["nabla"]["roles"], 15)
+        self.assertEqual(boards["nabla"]["found"], "2026-09-03")
+
+    def test_a_dormant_board_is_recorded_too(self):
+        """COMPANIES already carries seven confirmed-but-empty Workable accounts.
+        A board with no roles today is the same thing: confirmed, and worth
+        reading on the day it posts."""
+        boards = {}
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "workable", 0)):
+            digest.discover_boards([self._paid_job("exequt MENA")], boards, "2026-09-03")
+        self.assertEqual(boards["exequtmena"]["source"], "workable")
+        self.assertEqual(boards["exequtmena"]["roles"], 0)
+
+    def test_a_board_the_employer_name_cannot_vouch_for_is_refused(self):
+        """employer_website gave siccode.com for "Business Codes". Believing it
+        would put another company's postings in the digest under this name."""
+        boards = {}
+        job = self._paid_job("Business Codes", "https://siccode.com")
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (token == "siccode", 9)):
+            digest.discover_boards([job], boards, "2026-09-03")
+        self.assertNotIn("source", boards.get("businesscodes", {}))
+        self.assertEqual(boards["businesscodes"].get("miss"), "2026-09-03")
+
+    def test_a_miss_is_not_probed_again_the_next_day(self):
+        boards = {"creditninja": {"miss": "2026-09-03"}}
+        job = self._paid_job("CreditNinja")
+        with mock.patch.object(digest, "_probe") as probe:
+            digest.discover_boards([job], boards, "2026-09-04")
+        probe.assert_not_called()
+
+    def test_a_stale_miss_is_probed_again(self):
+        """A company that had no board in September may have one in December."""
+        boards = {"creditninja": {"miss": "2026-09-03"}}
+        job = self._paid_job("CreditNinja")
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "lever", 3)):
+            digest.discover_boards([job], boards, "2026-12-03")
+        self.assertEqual(boards["creditninja"]["source"], "lever")
+
+    def test_a_known_board_is_never_reprobed(self):
+        boards = {"nabla": {"source": "ashby", "token": "nabla", "roles": 15,
+                            "found": "2026-09-03"}}
+        with mock.patch.object(digest, "_probe") as probe:
+            digest.discover_boards([self._paid_job("Nabla")], boards, "2026-09-04")
+        probe.assert_not_called()
+
+    def test_the_number_of_employers_probed_in_one_run_is_capped(self):
+        """A day the aggregator floods the cut must not spend hundreds of
+        requests. The rest are probed on later runs; nothing is lost, because a
+        paid-relister drop is never remembered and comes back tomorrow."""
+        jobs = [self._paid_job(f"Company{n}") for n in range(digest.MAX_BOARD_PROBES + 4)]
+        boards = {}
+        with mock.patch.object(digest, "_probe", return_value=(False, 0)):
+            digest.discover_boards(jobs, boards, "2026-09-03")
+        self.assertEqual(len(boards), digest.MAX_BOARD_PROBES)
+
+    def test_one_employer_is_probed_once_however_many_jobs_it_has(self):
+        jobs = [self._paid_job("Nabla"), self._paid_job("Nabla")]
+        boards = {}
+        with mock.patch.object(digest, "_probe", return_value=(False, 0)) as probe:
+            digest.discover_boards(jobs, boards, "2026-09-03")
+        self.assertEqual(probe.call_count, len(digest.PROBES))
+
+    def test_confirmed_boards_come_back_shaped_like_a_COMPANIES_entry(self):
+        boards = {"nabla": {"company": "Nabla", "source": "ashby", "token": "nabla",
+                            "roles": 15, "found": "2026-09-03"},
+                  "creditninja": {"miss": "2026-09-03"}}
+        self.assertEqual(digest.confirmed_boards(boards),
+                         [{"name": "Nabla", "source": "ashby", "token": "nabla"}])
+
+    def test_a_board_already_in_COMPANIES_is_not_fetched_twice(self):
+        boards = {"salla": {"company": "Salla", "source": "workable", "token": "salla",
+                            "roles": 2, "found": "2026-09-03"}}
+        with mock.patch.object(digest, "COMPANIES",
+                               [{"name": "Salla", "source": "workable", "token": "salla"}]):
+            self.assertEqual(digest.confirmed_boards(boards), [])
+
+    def test_fetch_jsearch_records_the_employer_website(self):
+        """The field the discovery reads. 7 of 10 jobs carried one on 3 Sep."""
+        payload = {"data": {"jobs": [{
+            "job_id": "abc", "job_title": "Data Engineer", "employer_name": "Nabla",
+            "job_city": "Riyadh", "job_country": "SA",
+            "job_apply_link": "https://www.jobleads.com/job/1",
+            "employer_website": "https://nabla.com",
+            "job_description": "Build pipelines.",
+        }]}}
+        response = mock.Mock()
+        response.status_code = 200
+        response.json.return_value = payload
+        with mock.patch.object(digest.requests, "get", return_value=response), \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            jobs = digest.fetch_jsearch("key")
+        self.assertEqual(jobs[0]["employer_website"], "https://nabla.com")
+
+    def test_boards_survive_a_save_and_load(self):
+        work = tempfile.mkdtemp(prefix="digest_boards_")
+        old = os.getcwd()
+        os.chdir(work)
+        try:
+            self.assertEqual(digest.load_boards(), {})
+            digest.save_boards({"nabla": {"source": "ashby", "token": "nabla"}})
+            self.assertEqual(digest.load_boards()["nabla"]["source"], "ashby")
+        finally:
+            os.chdir(old)
+            shutil.rmtree(work)
+
+
 class TestDeliveryFloor(unittest.TestCase):
     def _jobs(self):
         return [
@@ -1507,6 +1663,39 @@ class TestEndToEnd(unittest.TestCase):
         body = "\n".join(posts)
         self.assertNotIn("jobleads.com", body)
         self.assertIn("no new roles today", body)
+
+    def test_a_dropped_employer_is_probed_and_remembered(self):
+        """The whole point: the cut discards these eight a day and never
+        remembers them, so without this they cost the same fruitless lookup
+        every morning and the employer is never found."""
+        job = dict(REAL_JOBS[1], url="https://www.jobleads.com/job/xyz",
+                   company="Nabla", employer_website="https://nabla.com")
+        with mock.patch.object(digest, "rescue_apply_link"), \
+             mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "ashby", 15)):
+            posts, work = run_main(self.ENV, {}, jobs=[job], link_statuses=[])
+        with open(os.path.join(work, "boards.json"), encoding="utf-8") as handle:
+            boards = json.load(handle)
+        self.assertEqual(boards["nabla"]["source"], "ashby")
+        self.assertEqual(boards["nabla"]["token"], "nabla")
+
+    def test_a_discovered_board_is_read_on_the_next_run(self):
+        """A board found yesterday has to actually be fetched today, or the
+        discovery is a log line and nothing more."""
+        work = tempfile.mkdtemp(prefix="digest_board_")
+        for f in ("profile.json", "resume.md"):
+            src = os.path.join(REPO, f)
+            if os.path.exists(src):
+                shutil.copy(src, work)
+        with open(os.path.join(work, "boards.json"), "w", encoding="utf-8") as handle:
+            json.dump({"nabla": {"company": "Nabla", "source": "ashby",
+                                 "token": "nabla", "roles": 15,
+                                 "found": "2026-09-03"}}, handle)
+        with mock.patch.object(digest, "fetch_company", return_value=[]) as fetch:
+            run_main(self.ENV, {}, jobs=[], link_statuses=[], work=work)
+        shutil.rmtree(work)
+        self.assertIn({"name": "Nabla", "source": "ashby", "token": "nabla"},
+                      [call.args[0] for call in fetch.call_args_list])
 
     def test_a_paywalled_job_whose_free_link_fails_is_not_delivered(self):
         """Losing the rescue must not resurrect the link the cut rejected.
