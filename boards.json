@@ -31,10 +31,7 @@
   },
   "latitude": {
     "company": "Latitude",
-    "found": "2026-09-03",
-    "roles": 47,
-    "source": "greenhouse",
-    "token": "latitude"
+    "miss": "2026-09-03"
   },
   "qualcomm": {
     "company": "Qualcomm",
@@ -45,9 +42,6 @@
   },
   "silveredgearabia": {
     "company": "Silver Edge Arabia",
-    "found": "2026-09-03",
-    "roles": 40,
-    "source": "ashby",
-    "token": "silver"
+    "miss": "2026-09-03"
   }
 }
