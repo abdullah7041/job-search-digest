@@ -2167,6 +2167,12 @@ def probe_jsearch(query, api_key):
     r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
                                    "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
     print(f"HTTP {r.status_code} for query {query!r}")
+    # RapidAPI reports the subscription's monthly allowance on every response.
+    # Reading page two of every query multiplies the daily spend, so the budget
+    # has to be a measured number rather than an assumption: exhausting it takes
+    # the aggregator down completely until the plan resets.
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
     if r.status_code != 200:
         print(f"body[:200]: {r.text[:200]}")
         return 1
@@ -2174,6 +2180,30 @@ def probe_jsearch(query, api_key):
     jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
     print(f"top-level data keys: {sorted(payload) if isinstance(payload, dict) else 'list'}")
     print(f"{len(jobs)} jobs returned\n")
+
+    # Page one is all fetch_jsearch has ever read; data.cursor is documented in
+    # its docstring and never used. Whether the cursor actually pages, and how
+    # much of page two is genuinely new, decides whether widening the fetch is
+    # worth a second request per query.
+    cursor = payload.get("cursor") if isinstance(payload, dict) else None
+    if cursor:
+        page2 = requests.get(f"{url}&cursor={requests.utils.quote(str(cursor))}",
+                             headers={"X-RapidAPI-Key": api_key,
+                                      "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
+        print(f"cursor page 2: HTTP {page2.status_code}")
+        if page2.status_code == 200:
+            more = (page2.json().get("data") or {}).get("jobs", [])
+            first = {j.get("job_id") for j in jobs}
+            fresh = [j for j in more if j.get("job_id") not in first]
+            print(f"  {len(more)} jobs, {len(fresh)} of them not on page one")
+            for j in fresh[:3]:
+                print(f"    {(j.get('employer_name') or '?')[:30]} — "
+                      f"{(j.get('job_title') or '?')[:45]}")
+        else:
+            print(f"  body[:160]: {page2.text[:160]}")
+    else:
+        print("no cursor on this response; page one is all there is")
+    print()
     if not jobs:
         return 0
 
