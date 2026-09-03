@@ -1783,8 +1783,92 @@ def discover(names):
 # ----------------------------------------------------------------------------
 
 
+# ------------------------------ JSEARCH PROBE -------------------------------
+# `python digest.py --probe-jsearch "data engineer Riyadh"` prints the SHAPE of one
+# live /search-v2 response. It exists because fetch_jsearch's docstring lists only
+# the fields this repository has actually seen, and the alternative apply links the
+# paid-relister recovery depends on are not among them: 7-8 postings a day are
+# discarded for sitting on a paid wrapper, and whether JSearch already offers a free
+# link for them has never been checked against a real payload.
+#
+# It reads. It never writes, never delivers and never touches seen.json. It prints
+# field names and link HOSTS -- never the API key, never a whole payload.
+def probe_jsearch(query, api_key):
+    """Report which fields one live JSearch job object carries, and what they link to."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    url = (f"https://{JSEARCH_HOST}/search-v2"
+           f"?query={requests.utils.quote(query)}&country=sa&date_posted=month")
+    r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                   "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
+    print(f"HTTP {r.status_code} for query {query!r}")
+    if r.status_code != 200:
+        print(f"body[:200]: {r.text[:200]}")
+        return 1
+    payload = r.json().get("data") or {}
+    jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
+    print(f"top-level data keys: {sorted(payload) if isinstance(payload, dict) else 'list'}")
+    print(f"{len(jobs)} jobs returned\n")
+    if not jobs:
+        return 0
+
+    print("job object keys (first job):")
+    for key in sorted(jobs[0]):
+        print(f"  {key}")
+    print()
+
+    # Any field holding a list of dicts with a link-ish key is a candidate for the
+    # alternative apply links. Reported by NAME so the real field can be recorded
+    # rather than guessed, whatever JSearch decided to call it.
+    rescuable = 0
+    for job in jobs[:5]:
+        primary = job.get("job_apply_link") or ""
+        paid = on_paid_relister(primary)
+        print(f"- {(job.get('employer_name') or '?')[:40]} — {(job.get('job_title') or '?')[:50]}")
+        print(f"    primary link host: {link_host(primary) or '(none)'}"
+              f"{'  [PAID RELISTER]' if paid else ''}")
+        found_any = False
+        for key, value in job.items():
+            if not isinstance(value, list):
+                continue
+            entries = [v for v in value if isinstance(v, dict)
+                       and any(isinstance(inner, str) and ("link" in str(k).lower()
+                                                           or "url" in str(k).lower())
+                               for k, inner in v.items())]
+            if not entries:
+                continue
+            found_any = True
+            print(f"    field {key!r}: {len(entries)} link-bearing entries, "
+                  f"item keys {sorted(entries[0])}")
+            free_hosts = []
+            for entry in entries:
+                link = next((v for k, v in entry.items()
+                             if isinstance(v, str) and ("link" in str(k).lower()
+                                                        or "url" in str(k).lower())), "")
+                publisher = entry.get("publisher") or entry.get("name") or "?"
+                host = link_host(link) or "(unparseable)"
+                verdict = "PAID" if on_paid_relister(link) else "free"
+                print(f"      {publisher[:24]:<24} {host:<32} {verdict}")
+                if verdict == "free":
+                    free_hosts.append(host)
+            if paid and free_hosts:
+                rescuable += 1
+        if not found_any:
+            print("    no link-bearing list field on this job")
+        print()
+
+    print(f"Of the first {min(5, len(jobs))} jobs, {rescuable} sit on a paid relister "
+          f"AND carry a free alternative in the same response.")
+    return 0
+# ----------------------------------------------------------------------------
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--discover":
         discover(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-jsearch":
+        query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
+        sys.exit(probe_jsearch(query, os.environ.get("RAPIDAPI_KEY")))
     else:
         main()
