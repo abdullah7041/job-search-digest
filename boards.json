@@ -1,0 +1,31 @@
+{
+  "creditninjakmdpartners": {
+    "company": "CreditNinja - KMD Partners, LLC",
+    "miss": "2026-09-03"
+  },
+  "dataplus": {
+    "company": "DataPlus",
+    "found": "2026-09-03",
+    "roles": 0,
+    "source": "workable",
+    "token": "dataplus"
+  },
+  "ernstyoungae": {
+    "company": "Ernst & Young AE",
+    "miss": "2026-09-03"
+  },
+  "exequtmena": {
+    "company": "exequt MENA",
+    "found": "2026-09-03",
+    "roles": 0,
+    "source": "workable",
+    "token": "exequt"
+  },
+  "qualcomm": {
+    "company": "Qualcomm",
+    "found": "2026-09-03",
+    "roles": 0,
+    "source": "workable",
+    "token": "qualcomm"
+  }
+}
