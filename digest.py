@@ -626,6 +626,11 @@ def fetch_jsearch(api_key):
                 "first_published": (j.get("job_posted_at_datetime_utc") or "")[:10],
                 "source": "jsearch", "token": "",
                 "description": (j.get("job_description") or "").strip(),
+                # Google's knowledge-panel guess at the employer's site, present
+                # on 7 of 10 jobs. Never a link the candidate is given -- it is a
+                # token candidate for the board discovery, which checks it
+                # against the employer name before believing it.
+                "employer_website": (j.get("employer_website") or "").strip(),
             }
             # An option that is simply the primary link again is not an
             # alternative. Recording it would make `apply_url` present on nearly
@@ -1432,6 +1437,132 @@ def save_seen(seen):
         json.dump(pruned, f, indent=0, sort_keys=True)
 
 
+# ---------------------- EMPLOYER BOARD DISCOVERY ----------------------------
+# The paid relisters block this runner outright -- 403 from jooble and
+# jobrapido, 404 from jobleads on the 3 Sep 2026 run -- so rescue_apply_link's
+# page hop cannot reach these postings, and JSearch's apply_options carries no
+# alternative either (probed the same day: one option per job, always the same
+# publisher as the primary link). Eight matching postings a day were being
+# discarded with no route to a free link at all.
+#
+# What the response does carry is the employer's name and, on 7 of 10 jobs, a
+# website. Probed against the five supported ATSs those reach the employer
+# without touching the relister. A confirmed board is remembered here and read
+# by fetch_company from the next run on -- at which point prefer_employer_postings
+# drops the relisted copy on its own, and the JD arrives complete instead of as
+# a teaser. Nothing about the link path changes; the posting simply arrives
+# from a better source.
+BOARDS_FILE = "boards.json"
+MAX_BOARD_PROBES = 5          # employers probed per run; the rest wait for tomorrow
+BOARD_MISS_RETRY_DAYS = 30    # a company with no board in September may have one later
+
+
+def load_boards():
+    if not os.path.exists(BOARDS_FILE):
+        return {}
+    try:
+        with open(BOARDS_FILE, encoding="utf-8") as f:
+            found = json.load(f)
+        return found if isinstance(found, dict) else {}
+    except ValueError:
+        log("WARN boards.json is corrupt, starting fresh")
+        return {}
+
+
+def save_boards(boards):
+    with open(BOARDS_FILE, "w", encoding="utf-8") as f:
+        json.dump(boards, f, indent=2, sort_keys=True, ensure_ascii=False)
+
+
+def board_token_candidates(job):
+    """The tokens this employer's own board might live under.
+
+    The name first, because it is what the digest already trusts elsewhere; then
+    its first word, because a board token is the short name and not the trading
+    one -- the live probe on 3 Sep 2026 found exequt MENA under 'exequt' and
+    Silver Edge Arabia under 'silveredge'; then the registrable label of
+    employer_website, for the employers whose token follows the domain instead.
+    """
+    candidates = []
+    name = company_key(job.get("company"))
+    if len(name) >= 3:
+        candidates.append(name)
+    words = re.findall(r"[a-z0-9]+", (job.get("company") or "").split("|")[0].casefold())
+    if words and len(words[0]) >= 3 and words[0] not in candidates:
+        candidates.append(words[0])
+    host = link_host(job.get("employer_website"))
+    label = "".join(re.findall(r"[a-z0-9]+", host.split(".")[0].casefold())) if host else ""
+    if len(label) >= 3 and label not in candidates:
+        candidates.append(label)
+    return candidates
+
+
+def _probe_employer_board(job):
+    """The first ATS board a candidate token reaches, or None."""
+    for token in board_token_candidates(job):
+        # employer_website is Google's knowledge-panel guess, not a verified
+        # field: it gave siccode.com for "Business Codes" and infinitiusa.com
+        # for "Infinniti". Checked BEFORE probing, so a token the employer name
+        # cannot vouch for costs no requests either.
+        if not employer_matches_token(job.get("company"), token):
+            continue
+        for source in PROBES:
+            found, count = _probe(source, token)
+            if found:
+                return {"source": source, "token": token, "roles": count}
+            time.sleep(0.2)  # be polite across ATSs
+    return None
+
+
+def discover_boards(jobs, boards, today):
+    """Look for an employer board behind every posting the paid cut discarded.
+
+    Records the answer either way. A miss is remembered so the same fruitless
+    five requests are not spent on the same company every morning -- these
+    postings are never written to seen.json, so they return every single day.
+    """
+    stale = (datetime.date.fromisoformat(today)
+             - datetime.timedelta(days=BOARD_MISS_RETRY_DAYS)).isoformat()
+    probed = 0
+    for job in jobs:
+        key = company_key(job.get("company"))
+        if not key:
+            continue
+        known = boards.get(key)
+        if known and (known.get("source") or known.get("miss", "") > stale):
+            continue
+        if probed >= MAX_BOARD_PROBES:
+            break
+        probed += 1
+        company = (job.get("company") or "").strip()
+        board = _probe_employer_board(job)
+        if board:
+            boards[key] = dict(board, company=company, found=today)
+            state = f"{board['roles']} open roles" if board["roles"] else "0 open roles"
+            log(f"Board found for {company}: {board['source']}/{board['token']} "
+                f"({state}); its postings arrive from the source next run")
+        else:
+            boards[key] = {"company": company, "miss": today}
+    return probed
+
+
+def confirmed_boards(boards):
+    """Every discovered board as a COMPANIES entry, minus the ones already there."""
+    already = {(c["source"], c["token"]) for c in COMPANIES}
+    out = []
+    for record in boards.values():
+        if not record.get("source"):
+            continue
+        pair = (record["source"], record["token"])
+        if pair in already:
+            continue
+        already.add(pair)
+        out.append({"name": record.get("company") or record["token"],
+                    "source": record["source"], "token": record["token"]})
+    return out
+# ----------------------------------------------------------------------------
+
+
 def load_stats():
     if not os.path.exists(STATS_FILE):
         return []
@@ -1564,6 +1695,7 @@ def main():
     rank_key = os.environ.get("OPENROUTER_API_KEY")  # optional
 
     seen = load_seen()
+    boards = load_boards()
     stats = load_stats()
     drift_warning = check_drift(stats)  # uses history only; today's row isn't recorded yet
     # Same rule: read only what previous runs committed, before today's archive
@@ -1576,8 +1708,13 @@ def main():
     # Breadth: JSearch aggregator (LinkedIn/Indeed/Glassdoor/company sites via Google for Jobs)
     all_jobs.extend(fetch_jsearch(rapidapi_key))
 
-    # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever)
-    for c in COMPANIES:
+    # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever).
+    # COMPANIES is the hand-curated list; the boards after it were discovered
+    # from employers the paid-relister cut discarded on an earlier run. Reading
+    # them here is the entire payoff of that discovery: the posting arrives from
+    # the employer with a free link and a complete JD, and
+    # prefer_employer_postings drops the relisted copy without being told.
+    for c in COMPANIES + confirmed_boards(boards):
         all_jobs.extend(fetch_company(c))
         time.sleep(0.5)
 
@@ -1626,6 +1763,14 @@ def main():
         log(f"Paid relister {link_host(job['url'])}: {job['company']} — {job['title']}")
     log(f"apply links: {api_rescued} from the API, {page_rescued} rescued from the page, "
         f"{len(paid_only)} still paywalled and dropped")
+
+    # Neither rescue can reach these: the relister blocks the runner and the API
+    # offers no alternative. Their employers can still be reached directly, so
+    # look for a board now and read it from the next run on. Runs before the
+    # freshness check because a paid-relister drop is never remembered -- these
+    # same employers are back tomorrow whatever happens here.
+    if discover_boards(paid_only, boards, datetime.date.today().isoformat()):
+        save_boards(boards)
 
     # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike
     # the delivery floor, this is a verdict on the link, not on the role: the

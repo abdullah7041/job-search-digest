@@ -92,6 +92,10 @@ The job is matching, not relevance ranking, so the filter is strict before anyth
 
    A paid-relister drop is *not* written to `seen.json`. Unlike the delivery floor below, it is a verdict on the link, not on the role: the same posting appearing on the employer's own board tomorrow should be delivered tomorrow.
 
+   Neither rescue can reach a paid relister, as of 3 Sep 2026. The relisters block this runner outright — 403 from jooble and jobrapido, 404 from jobleads — so the page hop never loads, and a live probe of JSearch's `apply_options` found exactly one entry per job, always the same publisher as the primary link, on all 20 jobs read. Eight matching postings a day were being discarded with no route to a free link at all.
+
+   So the employer is reached instead of the link. Every posting the cut discards has its employer probed against the five supported ATSs, using its name, the first word of its name, and the registrable label of JSearch's `employer_website` as token candidates. `employer_website` is Google's knowledge-panel guess rather than a verified field — it returned `siccode.com` for "Business Codes" and `infinitiusa.com` for "Infinniti" — so a candidate is only probed once `employer_matches_token()` agrees it belongs to this employer, the same test a link read off a page has to pass. A confirmed board is recorded in `boards.json` and read by `fetch_company()` from the next run on, at which point `prefer_employer_postings()` drops the relisted copy on its own and the JD arrives complete instead of as a teaser. Misses are recorded too, and not re-probed for 30 days: these postings are never written to `seen.json`, so the same employers return every single morning.
+
 4. **Score at least 50.** `MIN_DELIVER_SCORE` is the line below which a job is not delivered at all. The tiers only ever decided which *heading* a job appeared under, so everything that cleared the hard filters was delivered no matter how poorly it scored, and the weak ones crowded out the review tier. Override it with a repository *variable* of the same name.
 
    Only a model score can send a job here. `apply_ranking` falls back to `keyword_score` whenever the ranker is missing or its answer fails validation, and those numbers are calibrated for ordering, not for a pass/fail line — dropping on them would turn a ranker outage into an empty digest with nothing anywhere saying why. A job dropped on its score is remembered like a delivered one, so tomorrow does not re-fetch, re-score and re-reject it for the next 120 days.
@@ -213,10 +217,11 @@ Use [the weekly review template](docs/weekly-job-review-template.md) for a two-m
 - `resume_ingest.py` — normalizes raw resume text into the form `resume.md` needs, with a preview step before anything is accepted as the new master. Written and tested, but not yet called from anywhere: `/resume` currently answers with a refusal (not wired up yet), and the master resume is updated by editing and committing `resume.md` directly.
 - `test_digest.py` — offline tests for the daily pipeline (no network, everything mocked): the six real jobs from 2026-07-31, both scoring bugs, JD fetch, and three failure paths.
 - `test_interactive.py` — offline contract tests for the snapshot/tailoring/Worker-callback pipeline.
-- `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, and `jobs/` back.
+- `.github/workflows/digest.yml` — the cron (`0 4 * * *` = 07:00 AST). Runs the Python and Worker test suites, runs `digest.py`, then commits `seen.json`, `stats.json`, `boards.json`, and `jobs/` back.
 - `jobs/` — one `<date>.json` per digest date: full evidence (title, company, location, URL, score, tier, link status, complete JD text and its SHA-256) for every delivered job. Committed back by the workflow; same-day re-runs append, never rewrite.
 - `seen.json` — postings already delivered, keyed by `job_identity()`, plus one `jd:<sha256>` key per delivered description. Created on first run; only the workflow commits it. Entries age out after `STATE_TTL_DAYS`, which is also how the pre-2026-08-21 `jsearch_*` id keys retire on their own.
 - `stats.json` — the per-run trend (fetched/matched/new/avg-score) the drift warning reads.
+- `boards.json` — employer ATS boards discovered from postings the paid-relister cut discarded, plus the misses and the date each was probed. Read at the top of every run and appended to `COMPANIES` for the fetch loop. Committed back by the workflow like the other state files.
 
 **On-demand tailoring (Cloudflare Worker)**
 
