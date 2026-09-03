@@ -221,6 +221,12 @@ RANK_PROVIDER = {"data_collection": "deny", "require_parameters": True}
 RANK_BUDGET_SECONDS = 120
 
 MAX_JOBS_IN_DIGEST = 25
+# One employer must not be able to fill a morning on its own. Board discovery
+# works well enough that it can: Innovationteam, found 3 Sep 2026, supplied 9 of
+# that evening's 12 delivered cards from a board of 40 roles, with 7 more of its
+# postings dropped below the floor. split_tiers sorts on score alone, so without
+# this a board that posts a batch crowds every other employer out of the day.
+MAX_JOBS_PER_COMPANY = 3
 STRONG_MATCH_MIN_SCORE = 80
 
 def _score_floor(raw: str, default: int = 50) -> int:
@@ -1463,6 +1469,26 @@ def drop_below_floor(jobs):
     return kept, dropped
 
 
+def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
+    """Keep at most `limit` roles per employer, its highest scores first.
+
+    Returns (kept, deferred). The deferred ones are NOT remembered, on the same
+    reasoning as a paid-relister drop: this is a verdict on the shape of today's
+    digest, not on the role. A fourth good role at one employer is worth seeing
+    tomorrow, when the batch that buried it is no longer new.
+
+    Employers are counted by `company_key`, because a board decorating the same
+    name two ways -- "Zid" and "Zid | زد" -- would otherwise each get
+    their own allowance and defeat the cap.
+    """
+    kept, deferred, counts = [], [], {}
+    for job in sorted(jobs, key=lambda j: j.get("score", 0), reverse=True):
+        key = company_key(job.get("company")) or (job.get("company") or "")
+        counts[key] = counts.get(key, 0) + 1
+        (kept if counts[key] <= limit else deferred).append(job)
+    return kept, deferred
+
+
 def split_tiers(jobs):
     """Separate high-confidence JD-backed model matches from review candidates."""
     strong = [
@@ -2053,6 +2079,16 @@ def main():
         log(f"All {len(below_floor)} new postings scored below {MIN_DELIVER_SCORE}. Heartbeat sent.")
         return
 
+    # One employer's batch must not be the whole morning. Applied after the
+    # floor so the cap spends its three places on roles worth delivering, and
+    # before the tier split so it is the employer's best three that survive.
+    fresh, deferred = cap_per_company(fresh)
+    for job in deferred:
+        # Deliberately NOT remembered, on the same reasoning as a paid-relister
+        # drop: a verdict on the shape of today's digest, not on the role.
+        log(f"Deferred {job['company']} - {job['title']}: fit {job['score']}, "
+            f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
+
     strong, review = split_tiers(fresh)
     strong.sort(key=lambda x: x["score"], reverse=True)
     review.sort(key=lambda x: x["score"], reverse=True)
@@ -2154,7 +2190,7 @@ def main():
         link_closed=len(closed), link_unknown=unknown_count,
         strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
         delivered=len(delivered_ids), relisted=len(relisted),
-        below_floor=len(below_floor),
+        below_floor=len(below_floor), deferred=len(deferred),
     )
     log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")
     if delivery_failed:

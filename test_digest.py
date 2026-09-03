@@ -1722,6 +1722,51 @@ class TestBoardDiscovery(unittest.TestCase):
             shutil.rmtree(work)
 
 
+class TestPerCompanyCap(unittest.TestCase):
+    """One employer must not be able to fill a morning's cards on its own.
+
+    Board discovery works: Innovationteam, found on 3 Sep 2026, supplied 9 of
+    that evening's 12 delivered cards and had 7 more roles dropped below the
+    floor. split_tiers sorts on score alone and MAX_JOBS_IN_DIGEST is the only
+    cap, so a board that posts a batch crowds every other employer out.
+    """
+
+    def _jobs(self, *pairs):
+        return [{"id": f"j{i}", "company": company, "score": score,
+                 "title": f"Engineer {i}", "url": f"https://x.test/{i}"}
+                for i, (company, score) in enumerate(pairs)]
+
+    def test_only_the_best_three_of_one_employer_are_kept(self):
+        jobs = self._jobs(("Innovationteam", 95), ("Innovationteam", 88),
+                          ("Innovationteam", 84), ("Innovationteam", 82),
+                          ("Innovationteam", 68))
+        kept, deferred = digest.cap_per_company(jobs)
+        self.assertEqual([j["score"] for j in kept], [95, 88, 84])
+        self.assertEqual(sorted(j["score"] for j in deferred), [68, 82])
+
+    def test_other_employers_are_untouched(self):
+        jobs = self._jobs(("Innovationteam", 95), ("Innovationteam", 88),
+                          ("Innovationteam", 84), ("Innovationteam", 82),
+                          ("FileCloud", 52), ("Perfect Vision", 88))
+        kept, _ = digest.cap_per_company(jobs)
+        self.assertIn("FileCloud", [j["company"] for j in kept])
+        self.assertIn("Perfect Vision", [j["company"] for j in kept])
+
+    def test_an_employer_under_the_cap_defers_nothing(self):
+        kept, deferred = digest.cap_per_company(self._jobs(("Salla", 70), ("Salla", 60)))
+        self.assertEqual(len(kept), 2)
+        self.assertEqual(deferred, [])
+
+    def test_the_same_employer_named_two_ways_counts_once(self):
+        """company_key exists because boards decorate a name differently.
+        Counting the decorations separately would defeat the cap."""
+        jobs = self._jobs(("Zid", 90), ("Zid | زد", 85),
+                          ("Zid Ltd.", 80), ("Zid", 75))
+        kept, deferred = digest.cap_per_company(jobs)
+        self.assertEqual(len(kept), 3)
+        self.assertEqual([j["score"] for j in deferred], [75])
+
+
 class TestDeliveryFloor(unittest.TestCase):
     def _jobs(self):
         return [
@@ -2102,6 +2147,27 @@ class TestEndToEnd(unittest.TestCase):
         lines = [c.args[0] for c in logged.call_args_list if c.args]
         self.assertTrue(any("Discord card post failed: 503" in line for line in lines),
                         f"the failure reason was never logged: {lines}")
+
+    def test_a_deferred_role_is_not_delivered_and_not_remembered(self):
+        """Deferring is a verdict on the shape of today's digest, not on the
+        role. Remembering it would lose a good fourth role at one employer for
+        good, which is the opposite of what the cap is for."""
+        jobs = [dict(REAL_JOBS[1], id=f"jsearch_cap{i}", company="Innovationteam",
+                     title=f"Senior Backend Engineer {i}",
+                     url=f"https://jobs.example.com/cap/{i}") for i in range(4)]
+        ranking = {f"jsearch_cap{i}": {"score": 90 - i * 5,
+                                       "why": "Senior IC backend role, requirements covered"}
+                   for i in range(4)}
+        with mock.patch.object(digest, "rescue_apply_link"):
+            posts, work = run_main(self.ENV, ranking, jobs=jobs,
+                                   link_statuses=[digest.LINK_OPEN] * 4)
+        body = "\n".join(posts)
+        self.assertIn("Senior Backend Engineer 0", body)
+        self.assertNotIn("Senior Backend Engineer 3", body)
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            seen = json.load(handle)
+        self.assertNotIn("jsearch_cap3", seen,
+                         "a deferred role must come back tomorrow, not be remembered")
 
     def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
