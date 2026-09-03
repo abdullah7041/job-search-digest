@@ -97,6 +97,200 @@
         "completeness_failures": [],
         "grade": "full"
       }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5543998",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "5543998",
+      "title": "Senior Generative AI (Gen AI) Engineer",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/317856D206/",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 95,
+      "why": "Near-perfect fit for Senior GenAI engineer working on LLMs, RAG, agents, and APIs.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Senior Generative AI (GenAI) Engineer\nDescription\nInnovationTeam is a forward-thinking technology company that specializes in delivering advanced AI-driven solutions to enterprises and government organizations. We are currently seeking a highly skilled Senior Generative AI (GenAI) Engineer to join our AI team.\nAs a Senior GenAI Engineer at InnovationTeam , you will be responsible for designing, developing, and deploying large-scale generative AI solutions. You will work closely with cross-functional teams to translate business and technical requirements into robust AI systems and bring them into production.\nThis role requires deep expertise in modern AI architectures, large language models, and production-ready software engineering practices. The ideal candidate is highly motivated, detail-oriented, and capable of owning AI solutions end to end.\nAt InnovationTeam , we value innovation, collaboration, and continuous learning. We provide a flexible and inclusive work environment where your expertise is recognized and opportunities for professional growth are continuously supported.\nRole Overview\nWe are seeking a skilled AI Engineer with a strong focus on Generative AI technologies to develop, optimize, and deploy AI Agents and solutions. The role involves working on real-world use cases and data analytics problems and delivering production-ready AI systems.\nKey Responsibilities\n·       Design, develop, and optimize Generative AI solutions (LLMs, RAG systems, AI agents).\n·       Fine-tune, evaluate, and deploy large language models for enterprise use cases.\n·       Build and maintain end-to-end AI pipelines, from data ingestion to inference.\n·       Implement Retrieval-Augmented Generation (RAG) using vector databases and knowledge stores.\n·       Integrate GenAI solutions with existing systems via APIs and microservices.\n·       Optimize model performance, latency, and cost on cloud platforms (OCI, AWS, Azure, or GCP).\n·       Collaborate with product, data, and engineering teams to translate business needs into AI solutions.\n·       Ensure AI solutions follow best practices in security, governance, and responsible AI.\n·       Stay up to date with the latest developments in GenAI, LLMs, and AI tooling.\nRequired Skills & Qualifications\n·       Minimum 5 years of professional experience in AI / Machine Learning.\n·       Master’s degree in Computer Science, Software Engineering,  Artificial Intelligence, Data Science, or a related field.\n·       Proficiency in programming languages such as  python , Java , and Ruby.\n·       Strong experience with Large Language Models (LLMs) (e.g., GPT, LLaMA, Mistral, etc.).\n·       Hands-on experience with Python and AI/ML frameworks (PyTorch, TensorFlow).\n·       Solid understanding of NLP, deep learning, and transformer architectures.\n·       Experience with RAG architectures, vector databases (FAISS, OpenSearch, Pinecone, etc.).\n·       Strong software engineering skills (APIs, REST, microservices, Docker, Kubernetes).\n·       Experience deploying AI workloads on cloud platforms (OCI preferred).\n·       Excellent problem-solving and analytical skills.\n·       Excellent command of English (written and spoken).\nNice to Have\n·       Experience with GPU-based training and inference.\n·       Familiarity with MLOps / LLMOps practices.\n·       Experience in regulated or enterprise environments.\n·       Knowledge of AI governance, ethics, and compliance frameworks.\nWhat We Offer\n·       Opportunity to work on cutting-edge Generative AI projects.\n·       Collaborative, innovation-driven environment.\n·       Competitive compensation package.\n·       Access to modern AI infrastructure and cloud resources.\n·       Professional growth and learning opportunities.",
+        "sha256": "053969cd8239269afc07d521863496c8c735fbcf9b3401ecb2c15a7d044fe737",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5140041",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "5140041",
+      "title": "SR backend developers ( Microservices )",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/29D12B33E4/",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 88,
+      "why": "Solid fit for senior backend development with Python, microservices, REST APIs, and databases.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "InnovationTeam is a dynamic technology company dedicated to delivering cutting-edge solutions to diverse markets. We're on the lookout for skilled SR Backend Developers with a strong focus on Microservices architecture to become part of our talented development team.\nAt InnovationTeam, we believe in fostering innovation, teamwork, and professional growth. As a member of our team, you will have the opportunity to work in a supportive environment that encourages creativity and technical excellence.\nAs a SR Backend Developer, you will be responsible for designing and implementing robust microservices that drive our applications. You will collaborate with cross-functional teams to deliver scalable solutions while ensuring best practices in software development.\nRequirements\nRequirements:\nMinimum 5 years of experience in software development with a focus on backend technologies.\nStrong knowledge of Microservices architecture and design patterns.\nProficiency in programming languages such as Java, Python, or Node.js.\nExperience with RESTful APIs and developing scalable web services.\nFamiliarity with containerization technologies such as Docker and orchestration tools like Kubernetes.\nSolid understanding of database technologies, both SQL (PostgreSQL, MySQL) and NoSQL (MongoDB, Cassandra).\nExperience with message brokers (RabbitMQ, Kafka) and event-driven architecture.\nKnowledge of CI/CD processes and tools such as Jenkins or GitLab CI.\nStrong problem-solving skills and ability to work in a fast-paced environment.\nExcellent communication skills and ability to collaborate with team members and stakeholders.\nNice to have:\nExperience in cloud services such as AWS, Azure, or Google Cloud.\nFamiliarity with Agile methodologies and DevOps practices.\nContributions to open-source projects or technical blogs.\nMust Hold solid Microservices experience (At least two projects delivered).\nMust have developed and successfully deployed to production at least three products built on a microservices architecture (containerized, CI/CD-enabled, observability in place).\nExpectations:\nParticipate in all phases of the software development lifecycle, from requirements gathering to deployment.\nWork closely with frontend developers to integrate user-facing elements with server-side logic.\nConduct code reviews and mentor junior developers to improve their skills.\nContinuously improve existing applications by refactoring code and optimizing performance.\nStay updated with the latest industry trends and emerging technologies.\nBenefits\nPrivate Health Insurance\nWork From Home\nTraining & Development\nCompetitive Salary\nAnnual Vacation",
+        "sha256": "8f83fa755ab7f9a8840612003c5e0228cabd0db6fef4e8d3e09f78219484c72c",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:6033058",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "6033058",
+      "title": "AI Engineer",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/E00E73D422/",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 84,
+      "why": "High-match LLM and Arabic NLP engineering role, scored conservatively due to incomplete JD.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "incomplete",
+        "text": "Looking for an AI Engineer to Develop, deploy, and operate AI/LLM models across Clinets dual environment — GCP for public-cloud workloads, Humain sovereign cloud for classified data.\nRequirements\nBuild and fine-tune LLM/ML models for Arabic NLP, document classification, vision/OCR, and AIOps use cases.\nRun pre-deployment evaluation\nAccuracy baselines, regression and safety testing; evidence to justify GPU allocation.\nOptimize inference — quantization, batching, context sizing — against measured usage.\nDeploy on Humain GPUaaS: Kubernetes, GPU partitioning on B300 nodes, quotas, RBAC.\nBuild equivalent workloads on GCP (Vertex AI, GKE) with classification-based routing.\nOwn serving stack (vLLM/TGI), model versioning, CI/CD, and monitoring for latency, tokens, GPU utilization, and drift.\nEnsuring developed AI Models Complying with ZATCA data sovereignty and SDAIA requirements (AI Ethics, GenAI Guidelines, PDPL).\nBenefits\n5 years ML/AI engineering, in production LLM deployment with knowledge in\nPython, PyTorch, Hugging Face\nKubernetes in production; GPU-served inference\nGCP Vertex AI or any equivellent cloud",
+        "sha256": "178e99e89c789065801d6f95969bbcad01223c06fb98c051eb0fa3d497d74c1c",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:6026175",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "6026175",
+      "title": "Senior Product Manager",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/45FB866F4F/",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 82,
+      "why": "Strong alignment with product strategy, discovery, analytics, and Arabic market experience.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Job Overview\nWe are seeking a high-caliber Senior Product Manager to join our team in Riyadh. You will lead product discovery, strategy, and lifecycle management for large-scale digital and mobile services serving diverse users. You will turn broad business challenges into validated opportunities through beneficiary research, market intelligence, operational evidence, and strategic alignment. Working across business, UX, data, engineering, operations, legal, and compliance, you will define the product vision, prioritize the roadmap, and measure outcomes. The ideal candidate is fluent in Arabic and English and has delivered complex digital products in government, regulated, or enterprise environments.\nKey Responsibilities\n·         Product Vision & Strategy: Define and communicate the product vision, value proposition, objectives, and outcome-based roadmap aligned with organizational priorities and beneficiary needs.\n·         Product Discovery & Opportunity Validation: Structure ambiguous problems into discovery, formulate hypotheses, lead beneficiaries, stakeholder, and market research, and validate opportunities before recommending solutions.\n·         Market Benchmarking & Product Insights: Conduct focused local and global benchmarking, distinguish transferable practices from superficial feature comparisons, and turn evidence into actionable recommendations.\n·         Roadmap & Prioritization: Own and refine the roadmap and backlog, prioritize initiatives by beneficiary value, strategic alignment, feasibility, cost, risk, compliance, and expected impact.\n·         Measurement & Continuous Improvement: Define OKRs, KPIs, and baselines. monitor adoption, journey completion, drop-off, satisfaction, complaints, and service performance, and feed learning into the roadmap.\n·         Cross-Functional Leadership & Governance: Align sponsors, business, BAs, UX, data, engineering, operations, legal, cybersecurity, and compliance. facilitate decisions, document trade-offs, and maintain clear ownership and approvals.\nRequirements\nEducation: Bachelor’s degree in Business Administration, Product Management, Computer Science, Information Systems, Engineering, or a related field.\nExperience: 7+ years in digital product management, with mobile or web product ownership and 3+ years leading discovery and strategy.\n·         Product Strategy & Discovery:\no    Proven ability to define vision, value propositions, opportunity statements, business cases, and outcome-based roadmaps from ambiguous challenges.\no    Hands-on experience in user research and interviews, journey mapping, benchmarking, concept validation, prototyping, and experimentation.\no    Expertise in product prioritization methods such as RICE, WSJF, MoSCoW, or similar evidence-based frameworks.\n·         Data & Delivery Skills:\no    Ability to combine quantitative and qualitative evidence to assess adoption, conversion, journey completion, satisfaction, and service performance.\no    Experience with Jira or Azure DevOps, Confluence, Figma, and analytics or dashboard platforms.\no    Strong understanding of Agile delivery, UX, technical feasibility, APIs, integrations, non-functional requirements, and product lifecycle.\n·         Communication & Domain Knowledge:\no    Professional fluency in Arabic and English for conducting discovery and presenting recommendations in both languages.\no    Ability to influence senior stakeholders, facilitate prioritization, and align multidisciplinary teams without relying solely on formal authority.\no    Experience with government digital services, beneficiary platforms, KSA digital transformation, or regulated environments is preferred.\n·         Professional Attributes:\no    Strategic thinker who structures ambiguity, challenges assumptions, and separates evidence-based opportunities from unvalidated ideas.\no    Strong beneficiary orientation and judgment, balancing value, feasibility, viability, compliance, cost, and risk.\no    Ownership, integrity, and resilience in managing competing priorities and delivering high-quality outcomes.",
+        "sha256": "618fa99ef9e1ea64f0cf29f24abcbf1fc56cfcfbafa74f7516cbc76af64a79d6",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5631609",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "5631609",
+      "title": "Senior Front-End Engineer",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/3C64660A9B/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 68,
+      "why": "Candidate possesses React/TS skills but role requires 10+ years dedicated frontend/SSR focus.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Job Summary\nWe are seeking a highly experienced Senior Front-End Engineer with a minimum of 10 years of professional experience in modern web application development. The ideal candidate must have deep expertise in JavaScript, React, and modern front-end architectures, along with strong hands-on experience in Node.js and advanced Server-Side Rendering (SSR) implementations.\nThis role requires a strong architectural mindset and the ability to work with different template engines and rendering frameworks, as some clients require working on various server-side template engines such as Pug, EJS, Handlebars, and other rendering solutions. The candidate must be comfortable adapting to multiple frameworks and enterprise environments.\nKey Responsibilities\n·        Lead the design and development of scalable, enterprise-grade web applications using JavaScript (ES6+) and React.\n·        Architect and implement advanced Server-Side Rendering (SSR) solutions using frameworks such as Next.js or custom Node.js rendering pipelines.\n·        Work with and adapt to various template engines (e.g., Pug, EJS, Handlebars, JSX-based rendering) depending on client requirements.\n·        Design reusable, maintainable, and high-performance UI component libraries.\n·        Develop and maintain backend services using Node.js when required.\n·        Optimize rendering performance across client-side and server-side environments.\n·        Ensure SEO optimization and performance best practices in SSR-based applications.\n·        Collaborate with architects, backend teams, UI/UX designers, and stakeholders to define technical solutions.\n·        Conduct code reviews, enforce coding standards, and mentor junior developers.\n·        Participate in architectural decisions and technical roadmap planning.\nRequired Qualifications\n·        Bachelor’s degree in Computer Science, Software Engineering, or related field.\n·        Minimum 10 years of experience in front-end development.\n·        Expert-level proficiency in JavaScript (ES6+).\n·        Advanced experience with React.js and modern React ecosystem (Hooks, Context API, advanced state management).\n·        Strong hands-on experience with Node.js in full-stack or SSR environments.\n·        Deep understanding of Server-Side Rendering (SSR), hydration, caching strategies, and rendering lifecycle.\n·        Proven experience working with multiple template engines and server-side rendering frameworks.\n·        Strong understanding of REST APIs and integration with backend services.\n·        Experience in performance optimization for large-scale web applications.\nPreferred Qualifications\n·        Extensive experience with Next.js or similar SSR frameworks.\n·        Experience with TypeScript in large-scale applications.\n·        Knowledge of modern build tools (Webpack, Vite, Babel) and performance tuning.\n·        Experience in CI/CD pipelines and DevOps collaboration.\n·        Strong understanding of SEO strategies in SSR applications.\n·        Experience in enterprise or multi-client delivery environments.\n·        Experience mentoring teams and leading technical initiatives.\nKey Skills\n·        Strong architectural and problem-solving skills.\n·        Ability to work across different frameworks and template engines based on client needs.\n·        Clean, scalable, and maintainable coding practices.\n·        Strong communication and leadership skills.\n·        Ability to handle complex enterprise environments and deadlines.",
+        "sha256": "a2d35b1b71c958d4c41bd380440fe958933212ff3c2dec44b7d4c2dc1ed47f89",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5872587",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "5872587",
+      "title": "AI Engineer - Computer Vision",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/CE4356E68F/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 65,
+      "why": "Computer vision and CNN/image processing focus differs from candidate's core LLM/NLP expertise.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Remote Junior AI Engineer – Computer Vision\nLocation : Remote\nEmployment Type : Full-time (8 hours) Remotely\nExperience Level : Junior (3+ years)\nInnovationTeam is a forward-thinking technology company that delivers advanced AI and data-driven solutions across multiple industries. We are currently seeking a Junior AI Engineer – Computer Vision to join our AI engineering team.\nAs a Junior Computer Vision Engineer at InnovationTeam , you will be responsible for designing, developing, and deploying vision-based AI systems for real-world, production environments. You will work closely with cross-functional teams to build scalable image and video analytics solutions.\nThis position requires strong expertise in computer vision, deep learning, and software engineering. The ideal candidate is technically strong, self-driven, and experienced in taking AI models from research to production.\nAt InnovationTeam , we foster a culture of innovation, collaboration, and technical excellence, offering an environment where Junior engineers can make a meaningful impact.\nRole Overview\nWe are seeking a skilled AI Engineer with a strong focus on Computer Vision to develop, optimize, and deploy vision-based AI solutions. The role involves working on real-world image and video analytics problems and delivering production-ready AI systems.\nRequirements\n·       Develop and train Computer Vision models for image and video analysis.\n·       Implement solutions for object detection, image classification, segmentation, and tracking.\n·       Prepare and manage datasets, including data cleaning, labelling, and augmentation.\n·       Optimize models for GPU performance, inference speed, and scalability.\n·       Deploy AI models into production using APIs and containerized services.\n·       Integrate Computer Vision models with broader AI and analytics platforms.\n·       Collaborate with software engineers, data scientists, and product teams.\n·       Maintain documentation and ensure code quality and reproducibility.\nRequired Skills & Qualifications\n·       Minimum 2 years of hands-on experience in AI / Machine Learning/Deep learning with a focus on Computer Vision.\n·       Master’s degree in computer science, software Engineering, Artificial Intelligence, Engineering, or a related field.\n·       Strong knowledge of Computer Vision concepts and algorithms.\n·       Practical experience with CNN-based models and modern CV architectures.\n·       Proficiency in Python and common ML/CV libraries (PyTorch or TensorFlow, OpenCV).\n·       Experience with object detection and segmentation frameworks (e.g., YOLO, Detectron2).\n·       Understanding of model evaluation, metrics, and performance optimization.\n·       Experience deploying models in cloud or on-prem environments.\n·       Familiarity with Docker and basic MLOps practices.\n·       Excellent English communication skills (written and spoken).\nNice to Have\n·       Experience with video analytics or real-time inference.\n·       Exposure to Vision Transformers or multimodal AI.\n·       Experience with GPU-based training and inference.\n·       Knowledge of cloud platforms (OCI, AWS, Azure, or GCP).\n·       Background in domains such as healthcare, smart cities, or industrial AI.\nBenefits\n·       Work on practical, production-grade Computer Vision solutions.\n·       Access to GPU infrastructure and modern AI tooling.\n·       Collaborative, engineering-focused work environment.\n·       Opportunities for growth and advanced AI exposure.\n·       Competitive compensation package.",
+        "sha256": "7c719fe5cab82495cd19d8fa2618362eba164c3b8d646e5076014fc58301473b",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:6005308",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "6005308",
+      "title": "Senior Presales Solutions Architect",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/C8F2617D44/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Presales and technical proposal writing rather than hands-on IC engineering or product build.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Job Purpose\nThe Senior Presales Solutions Architect is responsible for leading the technical presales lifecycle for opportunities involving digital solutions, enterprise platforms, microservices, artificial intelligence, data, analytics, business intelligence and telecom solutions.\nThe role works closely with sales, delivery, product, architecture, finance, partners and customers to understand business needs, define suitable solution approaches, design robust technical architectures, prepare high-quality technical proposals, estimate implementation efforts and present proposed solutions to executive, business and technical stakeholders.\nThe position requires strong technical architecture capabilities, telecom industry knowledge, proposal development experience, commercial awareness, stakeholder management and customer presentation skills.\nKey Responsibilities\n1. Opportunity Qualification and Presales Planning\nReview customer opportunities, RFPs, RFIs, tenders, statements of work and business requirements.\nAssess opportunities from technical, delivery, resource, commercial and strategic perspectives.\nParticipate in Go/No-Go evaluations and provide clear technical recommendations.\nIdentify missing information, dependencies, risks, assumptions and clarification questions.\nDevelop presales response plans, technical workstreams, responsibilities and submission timelines.\nCoordinate with sales, PMO, delivery, finance, legal, cybersecurity and external partners.\nEvaluate whether each opportunity is aligned with the organization’s capabilities, technologies, resources and strategic direction.\nIdentify technical gaps and recommend suitable partners or subcontractors where required.\n2. Requirements Analysis and Solution Definition\nConduct discovery sessions and workshops with customers and internal stakeholders.\nTranslate business requirements into functional and non-functional technical requirements.\nUnderstand customer challenges, existing platforms, integration landscapes, data sources, operational processes and future objectives.\nDefine suitable use cases across digital solutions, microservices, AI, data, BI and telecom domains.\nPrioritize use cases based on value, feasibility, cost, implementation complexity and expected outcomes.\nIdentify opportunities for automation, process improvement, intelligent services, analytics and customer experience enhancement.\nEnsure requirements are clear, measurable, traceable and aligned with the proposed solution.\nPrepare requirement-traceability and compliance matrices.\nValidate requirements with business, technical, security and operational stakeholders.\n3. Digital Solution Architecture\nDesign end-to-end digital solution architectures covering enterprise portals, web applications, mobile applications, content management, workflows, integration, data, security, infrastructure and operations.\nPrepare high-level architecture, logical architecture, system-context diagrams, integration diagrams, deployment views and data-flow diagrams.\nRecommend suitable technologies, frameworks, platforms and architectural patterns.\nEnsure proposed solutions are scalable, secure, resilient, maintainable, observable and cost-effective.\nDesign solutions for cloud, on-premises, hybrid and sovereign deployment environments.\nDefine availability, performance, scalability, backup and disaster-recovery requirements.\nEnsure technical designs comply with customer architecture standards, security policies and operational requirements.\nDefine reusable components and shared technical services.\n4. Microservices and Integration Architecture\nDesign microservices-based architectures using domain-driven design, API-first principles and event-driven patterns.\nDefine service boundaries, APIs, integration contracts, data ownership and communication mechanisms.\nDesign synchronous and asynchronous integrations using REST APIs, API gateways, message brokers, event streaming and enterprise integration platforms.\nRecommend suitable containerization and orchestration approaches using Docker, Kubernetes or equivalent technologies.\nDefine requirements for service discovery, centralized configuration, secrets management, monitoring, logging, tracing and fault tolerance.\nAddress scalability, availability, performance, security and disaster-recovery requirements.\nSupport the modernization of legacy applications and monolithic systems.\nRecommend suitable CI/CD, DevSecOps and automated testing approaches.\nDefine API governance, versioning, security and lifecycle-management practices.\n5. Artificial Intelligence Solutions\nIdentify and define practical AI and generative AI use cases based on customer requirements.\nDesign AI solution architectures covering machine learning, natural language processing, computer vision, forecasting, recommendation, classification and intelligent automation.\nDefine generative AI solutions using large language models, retrieval-augmented generation, embeddings, vector databases, knowledge bases, fine-tuning and AI agents.\nDesign AI integration approaches with customer systems, databases, APIs, documents and enterprise platforms.\nDefine data preparation, model training, evaluation, deployment, monitoring and continuous-improvement approaches.\nAddress AI governance, privacy, security, explainability, bias, hallucination control and human approval requirements.\nEvaluate cloud-based, on-premises and hybrid AI deployment options.\nSupport AI demonstrations, pilots, prototypes and proof-of-concepts.\nEstimate infrastructure, storage, compute and GPU requirements for AI workloads.\nDefine measurable AI success criteria, expected business value and operational outcomes.\n6. Data and Business Intelligence Solutions\nDesign business intelligence, analytics, reporting and data-visualization solutions.\nDefine data integration and processing approaches using ETL, ELT, APIs, streaming and data pipelines.\nDesign conceptual architectures for data warehouses, data lakes, lakehouses, operational data store",
+        "sha256": "eb733445338c43f71600e75918a97754ea1aebed0414fd8b1386ee7087603b4f",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5054027",
+      "captured_at": "2026-09-03T00:00:00Z",
+      "source": "workable",
+      "source_id": "5054027",
+      "title": "Senior IAM & Backend Engineer (Keycloak + Spring Boot)",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/D4FE7892D5/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 50,
+      "why": "Requires heavy Java 17+, Spring Boot, and specialized Keycloak enterprise IAM experience.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "About the Role:\nWe’re hiring a highly skilled engineer with deep expertise in Keycloak (Red Hat SSO) and strong backend development experience using Java 17+ and Spring Boot. You will lead efforts in identity & access management, secure microservices development, and CI/CD automation across cloud-native architectures.\nWe seek someone who can code, integrate, automate, and secure modern systems with confidence.\nKey Responsibilities:\nDevelop robust and scalable Spring Boot microservices using Java 17+\nDesign and implement secure IAM strategies using Keycloak (Red Hat SSO), including:\nRealm and client configurations\nUser Management\nMulti-Factor Authentication (MFA)\nRole-based access control (RBAC)\nFederated identity providers (LDAP, Azure AD)\nProtocol mappers, custom authenticators\nToken customization (OIDC / JWT / SAML)\nIntegrate Keycloak into enterprise applications and CI/CD pipelines\nAutomate deployment processes using CI/CD tools (e.g., GitLab, Jenkins, GitHub Actions)\nDeploy and manage services in Docker/Kubernetes environments\nApply best practices in security, performance, and observability\nMust-Have Skills:\nStrong Java (17+) and Spring Boot experience\nJava Microservices architecture\nIn-depth Keycloak or Red Hat SSO experience — both hands-on and architectural\nExperience building secure REST APIs using OAuth2, OIDC, and JWT\nProven ability to design, configure, and troubleshoot Keycloak realms, clients, flows, and policies\nHands-on experience with CI/CD, Docker, and Kubernetes\nExperience integrating Keycloak with external IdPs, LDAP, social logins\nFamiliarity with Linux, Bash scripting, and infrastructure automation tools\nNice to Have:\nKnowledge of Istio, Service Mesh, or API Gateways\nBackground in securing public APIs and implementing zero-trust patterns\nExposure to Kafka, Redis, PostgreSQL, MongoDB",
+        "sha256": "06654c660b0c9966baa438d4f9d03fa771e4d374f5356ec1116bf70e61df9f80",
+        "completeness_failures": [],
+        "grade": "full"
+      }
     }
   ]
 }

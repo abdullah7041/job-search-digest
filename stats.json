@@ -489,18 +489,18 @@
 "tailored": 0
 },
 {
-"avg_score": 70.0,
-"below_floor": 0,
+"avg_score": 48.8,
+"below_floor": 7,
 "date": "2026-09-03",
-"delivered": 2,
-"fetched": 213,
+"delivered": 7,
+"fetched": 231,
 "link_closed": 0,
 "link_unknown": 0,
-"matched": 20,
-"new": 2,
+"matched": 32,
+"new": 15,
 "relisted": 0,
-"review": 1,
-"strong": 1,
+"review": 4,
+"strong": 4,
 "tailor_failed": 0,
 "tailored": 0
 }
