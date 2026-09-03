@@ -2406,9 +2406,67 @@ def probe_jsearch(query, api_key):
 # ----------------------------------------------------------------------------
 
 
+# Adding a query costs 30 requests a month out of 200 whether or not it brings
+# anything back, and the three in AGGREGATOR_QUERIES were never measured against
+# each other. This reads page one of several queries in one go and reports, per
+# query, how many postings NO other query returned and how many of those pass
+# the digest's own title and location filters -- which is the only number that
+# decides whether a query earns its place.
+def probe_queries(queries, api_key):
+    """Report what each query brings in that the others do not."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    headers = {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": JSEARCH_HOST}
+    pages = {}
+    for query in queries:
+        url = (f"https://{JSEARCH_HOST}/search-v2"
+               f"?query={requests.utils.quote(query)}&country=sa&date_posted=month")
+        r = requests.get(url, headers=headers, timeout=30)
+        if r.status_code != 200:
+            print(f"{query!r}: HTTP {r.status_code} — skipped")
+            pages[query] = []
+            continue
+        payload = r.json().get("data") or {}
+        pages[query] = payload.get("jobs", []) if isinstance(payload, dict) else payload
+        print(f"{query!r}: {len(pages[query])} returned")
+        time.sleep(0.5)
+    remaining = r.headers.get("x-ratelimit-requests-remaining")
+    print(f"quota after probe: {remaining} remaining")
+    print()
+
+    def as_job(j):
+        city = (j.get("job_city") or "").strip()
+        state = (j.get("job_state") or "").strip()
+        country = COUNTRY_CODE_TO_NAME.get((j.get("job_country") or "").strip().upper(),
+                                           (j.get("job_country") or "").strip())
+        return {"title": (j.get("job_title") or "").strip(),
+                "location": ", ".join(p for p in (city, state, country) if p)}
+
+    owners = {}
+    for query, jobs in pages.items():
+        for j in jobs:
+            owners.setdefault(str(j.get("job_id") or ""), set()).add(query)
+
+    for query, jobs in pages.items():
+        only = [j for j in jobs if len(owners[str(j.get("job_id") or "")]) == 1]
+        keeps = [j for j in only if matches_filters(as_job(j))]
+        print(f"{query!r}: {len(jobs)} returned, {len(only)} returned by no other "
+              f"query, {len(keeps)} of those pass the filters")
+        for j in keeps[:6]:
+            print(f"    {(j.get('employer_name') or '?')[:28]:<28} "
+                  f"{(j.get('job_title') or '?')[:48]}")
+        print()
+    return 0
+# ----------------------------------------------------------------------------
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--discover":
         discover(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
+        sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
+                               os.environ.get("RAPIDAPI_KEY")))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-jsearch":
         query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
         sys.exit(probe_jsearch(query, os.environ.get("RAPIDAPI_KEY")))

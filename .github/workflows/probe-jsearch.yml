@@ -19,6 +19,11 @@ on:
         required: false
         default: "data engineer Riyadh"
         type: string
+      overlap_queries:
+        description: "Semicolon-separated queries to compare instead, e.g. a;b;c"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -48,7 +53,20 @@ jobs:
       # body: a ${{ }} expression inside `run` is substituted before the shell
       # sees it, which turns a workflow input into arbitrary shell.
       - name: Read one live JSearch page and report its shape
+        if: ${{ !inputs.overlap_queries }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: python digest.py --probe-jsearch "$QUERY"
+
+      # One request per query. Splitting on ';' because a query contains spaces,
+      # and reading it from the environment rather than interpolating it into
+      # the script body, same as the input above.
+      - name: Compare what several queries each bring in
+        if: ${{ inputs.overlap_queries }}
+        env:
+          QUERIES: ${{ inputs.overlap_queries }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: |
+          IFS=';' read -r -a probe_queries <<< "$QUERIES"
+          python digest.py --probe-queries "${probe_queries[@]}"
