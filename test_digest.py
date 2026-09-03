@@ -1126,6 +1126,7 @@ class TestJsearchApplyLinks(unittest.TestCase):
         }]}}
         response = mock.Mock()
         response.status_code = 200
+        response.headers = {}   # a real response always carries them; none needed here
         response.json.return_value = payload
         with mock.patch.object(digest.requests, "get", return_value=response), \
              mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
@@ -1147,6 +1148,7 @@ class TestJsearchApplyLinks(unittest.TestCase):
         }]}}
         response = mock.Mock()
         response.status_code = 200
+        response.headers = {}   # a real response always carries them; none needed here
         response.json.return_value = payload
         with mock.patch.object(digest.requests, "get", return_value=response), \
              mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
@@ -1361,6 +1363,88 @@ class TestApplyLinkRescue(unittest.TestCase):
         self.assertEqual(build({"source": "lever", "token": "", "id": "y"}), "")
 
 
+class TestJsearchPaging(unittest.TestCase):
+    """Spending a fixed monthly request allowance across the day's queries.
+
+    Five consecutive days delivered nothing new: three queries, page one only,
+    ten results each over a 30-day window, so the same thirty postings
+    recirculated and every one was already in seen.json. A live probe on 3 Sep
+    2026 found the cursor pages and that all ten of page two were absent from
+    page one -- but also that the plan allows 200 requests a MONTH, so the
+    second page has to be rationed rather than always read.
+    """
+
+    def _page(self, ids, cursor="", remaining="150"):
+        response = mock.Mock()
+        response.status_code = 200
+        response.headers = {"x-ratelimit-requests-limit": "200",
+                            "x-ratelimit-requests-remaining": remaining}
+        response.json.return_value = {"data": {
+            "cursor": cursor,
+            "jobs": [{"job_id": i, "job_title": "Data Engineer", "employer_name": "Acme",
+                      "job_city": "Riyadh", "job_country": "SA",
+                      "job_apply_link": f"https://acme.test/{i}",
+                      "job_description": "Build pipelines."} for i in ids],
+        }}
+        return response
+
+    def test_a_budget_that_only_covers_page_one_reads_page_one(self):
+        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 3, day=0), [])
+
+    def test_spare_budget_buys_a_second_page(self):
+        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 5, day=0), ["a", "b"])
+
+    def test_the_deep_read_rotates_so_every_query_is_covered(self):
+        """Two of three queries get a second page. Fixing which two would leave
+        the third permanently shallow."""
+        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 5, day=1), ["b", "c"])
+        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 5, day=2), ["c", "a"])
+
+    def test_the_plan_never_asks_for_more_pages_than_there_are_queries(self):
+        self.assertEqual(digest.jsearch_page_plan(["a"], 5, day=0), ["a"])
+
+    def test_the_second_page_is_fetched_with_the_cursor_and_its_jobs_kept(self):
+        pages = [self._page(["1", "2"], cursor="CUR"), self._page(["3", "4"])]
+        with mock.patch.object(digest.requests, "get", side_effect=pages) as get, \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            jobs = digest.fetch_jsearch("key")
+        self.assertEqual(len(jobs), 4)
+        self.assertIn("cursor=CUR", get.call_args_list[1].args[0])
+
+    def test_a_query_with_no_cursor_is_not_asked_for_a_second_page(self):
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=[self._page(["1"])]) as get, \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            digest.fetch_jsearch("key")
+        self.assertEqual(get.call_count, 1)
+
+    def test_a_nearly_exhausted_quota_stops_the_second_page(self):
+        """The allowance is monthly. Spending the last of it on extra pages
+        would leave the digest with no aggregator at all until it resets, so
+        the deep read yields before the reserve is touched."""
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=[self._page(["1"], cursor="CUR", remaining="5")]) as get, \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            digest.fetch_jsearch("key")
+        self.assertEqual(get.call_count, 1)
+
+    def test_the_remaining_allowance_is_logged(self):
+        """200 a month is 6.6 a day. Nothing anywhere reported the balance, so
+        the first sign of exhaustion would have been an empty digest."""
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=[self._page(["1"], remaining="162")]), \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None), \
+             mock.patch.object(digest, "log") as logged:
+            digest.fetch_jsearch("key")
+        lines = [c.args[0] for c in logged.call_args_list if c.args]
+        self.assertTrue(any("162 of 200" in line for line in lines),
+                        f"no quota line in: {lines}")
+
+
 class TestBoardDiscovery(unittest.TestCase):
     """Finding an employer's own board for a posting stuck behind a paid relister.
 
@@ -1497,6 +1581,7 @@ class TestBoardDiscovery(unittest.TestCase):
         }]}}
         response = mock.Mock()
         response.status_code = 200
+        response.headers = {}   # a real response always carries them; none needed here
         response.json.return_value = payload
         with mock.patch.object(digest.requests, "get", return_value=response), \
              mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \

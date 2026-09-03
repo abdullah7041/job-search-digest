@@ -154,6 +154,25 @@ AGGREGATOR_QUERIES = [
 ]
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
 
+# The plan allows 200 requests a MONTH -- read off the response headers on
+# 3 Sep 2026, which is also the first time anything here knew the number. That
+# is 6.6 a day, so page two is a rationed extra rather than a free one: three
+# page-one reads plus two deep reads is 150 a month and leaves the rest for
+# probes, manual re-runs and a bad day. Override with a repository variable.
+def _request_budget(raw, default=5):
+    """The day's JSearch request allowance, never below one page per query."""
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return default
+    return value if value >= len(AGGREGATOR_QUERIES) else default
+
+
+JSEARCH_DAILY_REQUESTS = _request_budget(os.environ.get("JSEARCH_DAILY_REQUESTS"))
+# Never spend the last of the month on an extra page: page one is the digest's
+# whole aggregator input, and an exhausted plan takes it out until the reset.
+JSEARCH_QUOTA_RESERVE = 20
+
 # Salary floor (SAR / month). SOFT signal only. Boards almost never list salary,
 # so this NEVER rejects a posting. Benchmark 24 Jun 2026: senior eng Riyadh
 # ~25k-35k SAR/mo, AI/ML 28k-35k.
@@ -549,30 +568,46 @@ def fetch_jsearch(api_key):
     out = []
     seen_ids = set()  # dedupe within JSearch results across queries
     apply_field_logged = False   # the discovered field is named once per run, not per job
+    quota = {}       # last reported allowance, read off every response
+    cursors = {}     # page-one cursor per query, spent below if the budget allows
 
-    for query in AGGREGATOR_QUERIES:
+    def read_page(query, cursor=""):
+        """One request. Returns (jobs, cursor); any failure is ([], "") and a log line."""
         url = (
             f"https://{JSEARCH_HOST}/search-v2"
             f"?query={requests.utils.quote(query)}&country=sa&date_posted=month"
         )
+        if cursor:
+            url += f"&cursor={requests.utils.quote(str(cursor))}"
         try:
             r = requests.get(url, headers=headers, timeout=30)
         except requests.RequestException as e:
             log(f"WARN JSearch [{query!r}]: request failed: {e}")
-            continue
+            return [], ""
+        # RapidAPI reports the remaining monthly allowance on every response.
+        # Recorded on the way past so the deep read below can yield before the
+        # reserve, and so the balance reaches the run log at all.
+        if r.headers.get("x-ratelimit-requests-remaining") is not None:
+            quota["remaining"] = r.headers["x-ratelimit-requests-remaining"]
+            quota["limit"] = r.headers.get("x-ratelimit-requests-limit", "?")
         if r.status_code != 200:
             log(f"WARN JSearch [{query!r}]: HTTP {r.status_code}: {r.text[:120]}")
-            continue
+            return [], ""
         try:
             data = r.json()
         except ValueError:
             log(f"WARN JSearch [{query!r}]: non-JSON response")
-            continue
-
+            return [], ""
         # v2 shape: {"status":..,"data":{"jobs":[...],"cursor":..}}. Be defensive in case
         # a future response hands back a bare list again.
         payload = data.get("data") or {}
-        jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
+        if not isinstance(payload, dict):
+            return payload, ""
+        return payload.get("jobs", []), payload.get("cursor") or ""
+
+    def collect(jobs):
+        """Turn one page of raw JSearch objects into digest jobs. Returns how many."""
+        nonlocal apply_field_logged
         added = 0
         for j in jobs:
             jid = str(j.get("job_id") or "")
@@ -640,11 +675,58 @@ def fetch_jsearch(api_key):
                 job["apply_url"] = free_link
             out.append(job)
             added += 1
-        log(f"JSearch [{query!r}]: {len(jobs)} returned, {added} unique")
+        return added
+
+    for query in AGGREGATOR_QUERIES:
+        jobs, cursor = read_page(query)
+        cursors[query] = cursor
+        log(f"JSearch [{query!r}]: {len(jobs)} returned, {collect(jobs)} unique")
         time.sleep(0.5)  # be polite between queries
 
+    # Page one alone is thirty postings over a 30-day window, so the same
+    # thirty recirculate and every one is already in seen.json -- five straight
+    # days delivered nothing new. Page two is worth reading: probed 3 Sep 2026,
+    # all ten of it were absent from page one. It is rationed rather than always
+    # read because the plan allows 200 requests a MONTH, and it rotates so no
+    # query is permanently the shallow one.
+    for query in jsearch_page_plan(AGGREGATOR_QUERIES, JSEARCH_DAILY_REQUESTS,
+                                   datetime.date.today().toordinal()):
+        if not cursors.get(query):
+            continue
+        if _quota_below_reserve(quota):
+            log(f"JSearch quota at {quota.get('remaining')}; skipping the deep read "
+                f"so the daily page-one fetch survives to the reset")
+            break
+        jobs, _ = read_page(query, cursors[query])
+        log(f"JSearch [{query!r}] page 2: {len(jobs)} returned, {collect(jobs)} unique")
+        time.sleep(0.5)
+
+    if quota:
+        log(f"JSearch quota: {quota['remaining']} of {quota['limit']} requests remaining")
     log(f"JSearch total: {len(out)} unique jobs across {len(AGGREGATOR_QUERIES)} queries")
     return out
+
+
+def _quota_below_reserve(quota):
+    """True when the month's allowance is too thin to spend on an extra page."""
+    try:
+        return int(quota.get("remaining")) < JSEARCH_QUOTA_RESERVE
+    except (TypeError, ValueError):
+        return False
+
+
+def jsearch_page_plan(queries, budget, day):
+    """Which queries get a second page today, given the day's request budget.
+
+    The allowance is monthly, so the budget is a daily slice of it rather than
+    a per-run convenience. Whatever it does not cover rotates, so a query is
+    never permanently the one read shallowly.
+    """
+    extra = max(0, budget - len(queries))
+    if not queries or extra <= 0:
+        return []
+    start = day % len(queries)
+    return [queries[(start + i) % len(queries)] for i in range(min(extra, len(queries)))]
 
 
 # VERIFIED 3 Sep 2026: /search-v2 does return `apply_options`, a list of
