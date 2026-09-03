@@ -529,6 +529,15 @@ def fetch_jsearch(api_key):
     job_city, job_state, job_country, job_posted_at_datetime_utc. NOTE: job_city/job_state
     come back in Arabic for Saudi roles and job_country is the ISO code "SA", so we expand
     the code to "Saudi Arabia" below — otherwise the English LOCATION_INCLUDE never matches.
+
+    Full key list read off a live response by `--probe-jsearch` on 3 Sep 2026:
+    apply_options, employer_logo, employer_name, employer_reviews, employer_website,
+    job_apply_is_direct, job_apply_link, job_benefits, job_benefits_strings, job_city,
+    job_country, job_description, job_employment_type(s), job_google_link,
+    job_highlights, job_id, job_is_remote, job_latitude, job_location, job_longitude,
+    job_max_salary, job_min_salary, job_onet_job_zone, job_onet_soc, job_posted_at,
+    job_posted_at_datetime_utc, job_posted_at_timestamp, job_publisher, job_salary,
+    job_salary_period, job_salary_string, job_state, job_title, job_uid.
     """
     if not api_key:
         return []
@@ -586,6 +595,19 @@ def fetch_jsearch(api_key):
             # extra request, so it is read here and recorded as apply_url.
             # NEVER as url: job_identity keys a jsearch posting on its URL, so
             # rewriting it would make the whole back catalogue look new.
+            #
+            # MEASURED 3 Sep 2026, `--probe-jsearch` over two queries, 20 jobs:
+            # apply_options exists and is shaped as expected (apply_link,
+            # is_direct, publisher) but held exactly ONE entry on every single
+            # job, always the same publisher as job_apply_link. Not one paywalled
+            # posting carried a free alternative. So on this subscription the read
+            # below recovers nothing today and rescue_apply_link's page hop is the
+            # only route to a free link -- which is precisely why the equality
+            # check further down matters: without it every job would take
+            # apply_url = url and suppress that hop for the whole aggregator.
+            # Kept because it costs no request, and a plan or API change that
+            # starts returning real alternatives is then picked up for free; the
+            # "N from the API" figure in the run summary is what says so.
             company = (j.get("employer_name") or "Unknown").strip()
             apply_field, apply_options = jsearch_apply_options(j)
             free_link = best_free_link(apply_options, company)
@@ -620,6 +642,11 @@ def fetch_jsearch(api_key):
     return out
 
 
+# VERIFIED 3 Sep 2026: /search-v2 does return `apply_options`, a list of
+# {apply_link, is_direct, publisher}. The name-based scan below is kept anyway --
+# JSearch has renamed fields across API versions before, and the scan costs
+# nothing on a response that carries the expected name.
+#
 # JSearch names its alternative apply links differently across API versions, and
 # /search-v2's field list was never verified here -- fetch_jsearch's docstring
 # records only the fields checked live, and this is not one of them. Rather than
