@@ -25,9 +25,20 @@
     "source": "workable",
     "token": "exequt"
   },
+  "filecloud": {
+    "company": "FileCloud",
+    "miss": "2026-09-03"
+  },
   "infinniti": {
     "company": "Infinniti",
     "miss": "2026-09-03"
+  },
+  "innovationteam": {
+    "company": "Innovationteam",
+    "found": "2026-09-03",
+    "roles": 40,
+    "source": "workable",
+    "token": "innovationteam"
   },
   "latitude": {
     "company": "Latitude",
