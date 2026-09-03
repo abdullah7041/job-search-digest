@@ -1,0 +1,54 @@
+name: Probe JSearch response shape
+
+# fetch_jsearch's docstring lists only the fields this repository has verified
+# against a live /search-v2 response, and the alternative apply links the
+# paid-relister recovery depends on are not among them. 7-8 postings a day are
+# discarded for sitting on a paid wrapper; whether JSearch already hands over a
+# free link for those has never been checked against a real payload.
+#
+# This runs `digest.py --probe-jsearch`, which reads one page and prints field
+# names and link hosts. It delivers nothing, writes nothing back, and touches
+# neither seen.json nor Discord. RAPIDAPI_KEY is used the same way the daily
+# digest uses it and is never printed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Search query to probe, e.g. data engineer Riyadh"
+        required: false
+        default: "data engineer Riyadh"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: probe-jsearch
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - run: python -m pip install --require-hashes -r requirements.txt
+
+      # QUERY is read from the environment, never interpolated into the script
+      # body: a ${{ }} expression inside `run` is substituted before the shell
+      # sees it, which turns a workflow input into arbitrary shell.
+      - name: Read one live JSearch page and report its shape
+        env:
+          QUERY: ${{ inputs.query }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-jsearch "$QUERY"
