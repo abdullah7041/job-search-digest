@@ -2112,6 +2112,15 @@ def main():
                 f"Interactive delivery accepted {len(accepted_keys)} of {len(snapshots)} cards "
                 f"({len(failed)} failed)"
             )
+            # Named whatever else happened. This used to sit inside the
+            # total-failure branch below, so the common case -- one card lost
+            # among successes, 7 of 8 on 3 Sep -- printed no job and no reason.
+            # The job is correctly left out of seen.json and retried tomorrow,
+            # but a retry that keeps failing was invisible.
+            for item in failed[:5]:
+                log(f"  failed card {item.get('job_key')}: {item.get('error')}")
+            if len(failed) > 5:
+                log(f"  ...and {len(failed) - 5} more failed cards")
             # Nothing reached Discord and at least one card definitively failed.
             # Falling back to the webhook would risk double-posting the jobs the
             # Worker may still hold, so the run stays single-channel and instead
@@ -2119,8 +2128,6 @@ def main():
             if not accepted_keys and not uncertain_keys and failed:
                 delivery_failed = True
                 log(f"ERROR no job card reached Discord; {len(failed)} of {len(snapshots)} cards failed")
-                for item in failed[:5]:
-                    log(f"  failed card {item.get('job_key')}: {item.get('error')}")
         except Exception as error:
             log(f"WARN interactive Discord delivery failed: {error}; falling back to webhook")
     if not interactive_delivery_claimed:

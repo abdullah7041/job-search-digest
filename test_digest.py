@@ -2076,6 +2076,33 @@ class TestEndToEnd(unittest.TestCase):
         # One posting remembered two ways: its identity, and its description.
         self.assertEqual(len([k for k in seen if not k.startswith(digest.JD_SEEN_PREFIX)]), 1)
 
+    def test_a_card_that_fails_beside_successes_says_why(self):
+        """The 19:48 run on 3 Sep accepted 7 of 8 cards and printed nothing at
+        all about the eighth. The detail loop only ran when EVERY card failed,
+        so the common case -- one card lost among successes -- named neither the
+        job nor the reason. That job is correctly left out of seen.json and
+        retried tomorrow, but a retry that keeps failing is invisible."""
+        env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
+                   WORKER_CALLBACK_SECRET="secret")
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+        }
+
+        def partial(_url, _secret, snapshots, **_kwargs):
+            return {
+                "posted": [snapshots[0]["job_key"]],
+                "existing": [], "in_progress": [], "retryable": [],
+                "failed": [{"job_key": snapshots[1]["job_key"],
+                            "error": "Discord card post failed: 503"}],
+            }
+
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=partial),              mock.patch.object(digest, "log") as logged:
+            run_main(env, ranking)
+        lines = [c.args[0] for c in logged.call_args_list if c.args]
+        self.assertTrue(any("Discord card post failed: 503" in line for line in lines),
+                        f"the failure reason was never logged: {lines}")
+
     def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
                    "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
