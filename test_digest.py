@@ -1516,6 +1516,42 @@ class TestBoardDiscovery(unittest.TestCase):
         self.assertNotIn("source", boards.get("businesscodes", {}))
         self.assertEqual(boards["businesscodes"].get("miss"), "2026-09-03")
 
+    def test_a_board_whose_own_name_is_another_company_is_refused(self):
+        """Live on 3 Sep 2026 the first-word token 'latitude' reached a
+        greenhouse board of automotive service technicians in Pittsburgh, and
+        'silver' reached an Argentine recruiter on ashby. Containment against
+        the employer name is not enough on its own: the board has to say who it
+        belongs to."""
+        boards = {}
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "greenhouse", 47)),              mock.patch.object(digest, "board_identity", return_value="Wheelworks Auto"):
+            digest.discover_boards([self._paid_job("Latitude Systems")], boards, "2026-09-03")
+        self.assertEqual(boards["latitudesystems"].get("miss"), "2026-09-03")
+
+    def test_a_board_whose_own_name_is_this_company_is_accepted(self):
+        boards = {}
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "workable", 0)),              mock.patch.object(digest, "board_identity", return_value="exequt MENA"):
+            digest.discover_boards([self._paid_job("exequt MENA")], boards, "2026-09-03")
+        self.assertEqual(boards["exequtmena"]["source"], "workable")
+
+    def test_a_board_that_publishes_no_name_needs_the_employers_whole_name(self):
+        """Ashby's posting API reports no board name at all, so nothing can
+        corroborate a guess there. A shortened token is refused; the employer's
+        full key is not a guess."""
+        boards = {}
+        # Only the shortened token exists on ashby, which is exactly the live case.
+        short = lambda source, token: (source == "ashby" and token == "silver", 40)
+        with mock.patch.object(digest, "_probe", side_effect=short),              mock.patch.object(digest, "board_identity", return_value=""):
+            digest.discover_boards([self._paid_job("Silver Edge Arabia")], boards, "2026-09-03")
+        self.assertEqual(boards["silveredgearabia"].get("miss"), "2026-09-03")
+
+        boards = {}
+        with mock.patch.object(digest, "_probe",
+                               side_effect=lambda source, token: (source == "ashby", 40)),              mock.patch.object(digest, "board_identity", return_value=""):
+            digest.discover_boards([self._paid_job("Nabla")], boards, "2026-09-03")
+        self.assertEqual(boards["nabla"]["source"], "ashby")
+
     def test_a_miss_is_not_probed_again_the_next_day(self):
         boards = {"creditninja": {"miss": "2026-09-03"}}
         job = self._paid_job("CreditNinja")

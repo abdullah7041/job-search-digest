@@ -1579,6 +1579,49 @@ def board_token_candidates(job):
     return candidates
 
 
+# Greenhouse and Workable publish the board owner's name; Ashby's posting API
+# returns only {jobs, apiVersion}, and Lever and Pinpoint are read here for
+# postings rather than identity. Where a name exists it settles the question a
+# token guess cannot.
+BOARD_NAME_URLS = {
+    "greenhouse": "https://boards-api.greenhouse.io/v1/boards/{token}",
+    "workable": "https://apply.workable.com/api/v1/widget/accounts/{token}",
+}
+
+
+def board_identity(source, token):
+    """The name a board publishes for itself, or "" when it publishes none."""
+    url = BOARD_NAME_URLS.get(source)
+    if not url:
+        return ""
+    try:
+        response = _get(url.format(token=token))
+        if response.status_code != 200:
+            return ""
+        return str(response.json().get("name") or "").strip()
+    except (requests.RequestException, ValueError, AttributeError, TypeError):
+        return ""
+
+
+def _board_is_this_employer(job, source, token):
+    """Whether a probe hit can be believed as THIS employer's board.
+
+    A token that merely contains, or is contained by, the employer name is a
+    guess. Live on 3 Sep 2026 that guess sent 'latitude' to a greenhouse board
+    of automotive service technicians and 'silver' to an Argentine recruiter on
+    ashby, both from the first word of a longer employer name.
+
+    So the board has to corroborate it: the name it publishes for itself must
+    agree with the employer, and where it publishes none the token has to BE
+    the employer's whole key rather than a shortening of it.
+    """
+    company = job.get("company")
+    name = board_identity(source, token)
+    if name:
+        return employer_matches_token(company, name)
+    return token == company_key(company)
+
+
 def _probe_employer_board(job):
     """The first ATS board a candidate token reaches, or None."""
     for token in board_token_candidates(job):
@@ -1590,8 +1633,11 @@ def _probe_employer_board(job):
             continue
         for source in PROBES:
             found, count = _probe(source, token)
-            if found:
+            if found and _board_is_this_employer(job, source, token):
                 return {"source": source, "token": token, "roles": count}
+            if found:
+                log(f"Board {source}/{token} does not belong to "
+                    f"{job.get('company')}; ignoring it")
             time.sleep(0.2)  # be polite across ATSs
     return None
 
