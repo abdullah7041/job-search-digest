@@ -2041,12 +2041,29 @@ def probe_jsearch(query, api_key):
     # alternative apply links. Reported by NAME so the real field can be recorded
     # rather than guessed, whatever JSearch decided to call it.
     rescuable = 0
-    for job in jobs[:5]:
+    with_site = 0
+    paid_count = 0
+    paid_with_site = 0
+    for job in jobs:
         primary = job.get("job_apply_link") or ""
         paid = on_paid_relister(primary)
+        paid_count += paid
+        # The relisters block this runner (403 from jooble and jobrapido, 404 from
+        # jobleads, measured 3 Sep 2026), so the page hop cannot reach a paywalled
+        # posting at all. These two fields are the only routes to the employer that
+        # do not go through the relister, so report what they actually hold.
+        site = (job.get("employer_website") or "").strip()
+        google = (job.get("job_google_link") or "").strip()
+        if site:
+            with_site += 1
+            paid_with_site += paid
         print(f"- {(job.get('employer_name') or '?')[:40]} — {(job.get('job_title') or '?')[:50]}")
         print(f"    primary link host: {link_host(primary) or '(none)'}"
               f"{'  [PAID RELISTER]' if paid else ''}")
+        print(f"    employer_website:  {link_host(site) or (site or '(empty)')}")
+        print(f"    job_google_link:   {link_host(google) or '(empty)'}")
+        print(f"    publisher/direct:  {job.get('job_publisher') or '?'} / "
+              f"job_apply_is_direct={job.get('job_apply_is_direct')!r}")
         found_any = False
         for key, value in job.items():
             if not isinstance(value, list):
@@ -2077,7 +2094,10 @@ def probe_jsearch(query, api_key):
             print("    no link-bearing list field on this job")
         print()
 
-    print(f"Of the first {min(5, len(jobs))} jobs, {rescuable} sit on a paid relister "
+    print(f"{with_site} of {len(jobs)} jobs name an employer_website.")
+    print(f"{paid_count} sit on a paid relister; {paid_with_site} of those name a website.")
+
+    print(f"Of {len(jobs)} jobs, {rescuable} sit on a paid relister "
           f"AND carry a free alternative in the same response.")
     return 0
 # ----------------------------------------------------------------------------
