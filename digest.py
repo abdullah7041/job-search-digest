@@ -2419,19 +2419,32 @@ def probe_queries(queries, api_key):
         return 1
     headers = {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": JSEARCH_HOST}
     pages = {}
+    remaining = "?"
     for query in queries:
         url = (f"https://{JSEARCH_HOST}/search-v2"
                f"?query={requests.utils.quote(query)}&country=sa&date_posted=month")
-        r = requests.get(url, headers=headers, timeout=30)
+        pages[query] = []
+        # JSearch times out intermittently -- it dropped one of the three queries
+        # on the 19:01 digest run the same day. fetch_jsearch has always caught
+        # that per query; this has to as well, or one slow response throws away
+        # every request the probe already paid for.
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+        except requests.RequestException as e:
+            print(f"{query!r}: request failed: {e}")
+            continue
+        remaining = r.headers.get("x-ratelimit-requests-remaining", remaining)
         if r.status_code != 200:
             print(f"{query!r}: HTTP {r.status_code} — skipped")
-            pages[query] = []
             continue
-        payload = r.json().get("data") or {}
+        try:
+            payload = r.json().get("data") or {}
+        except ValueError:
+            print(f"{query!r}: non-JSON response")
+            continue
         pages[query] = payload.get("jobs", []) if isinstance(payload, dict) else payload
         print(f"{query!r}: {len(pages[query])} returned")
         time.sleep(0.5)
-    remaining = r.headers.get("x-ratelimit-requests-remaining")
     print(f"quota after probe: {remaining} remaining")
     print()
 
