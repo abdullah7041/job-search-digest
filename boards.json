@@ -3,12 +3,23 @@
     "company": "CreditNinja - KMD Partners, LLC",
     "miss": "2026-09-03"
   },
+  "crystalnetworks": {
+    "company": "Crystalnetworks",
+    "miss": "2026-09-05"
+  },
   "dataplus": {
     "company": "DataPlus",
     "found": "2026-09-03",
     "roles": 0,
     "source": "workable",
     "token": "dataplus"
+  },
+  "dataservicessaudiarabialimitedoneperson": {
+    "company": "Data Services Saudi Arabia Limited One Person Company",
+    "found": "2026-09-05",
+    "roles": 0,
+    "source": "workable",
+    "token": "data"
   },
   "democrance": {
     "company": "Democrance",
@@ -43,6 +54,17 @@
   "latitude": {
     "company": "Latitude",
     "miss": "2026-09-03"
+  },
+  "lucidmotors": {
+    "company": "Lucid Motors",
+    "found": "2026-09-05",
+    "roles": 332,
+    "source": "greenhouse",
+    "token": "lucidmotors"
+  },
+  "mllerssolutions": {
+    "company": "Müller's Solutions",
+    "miss": "2026-09-05"
   },
   "qualcomm": {
     "company": "Qualcomm",
