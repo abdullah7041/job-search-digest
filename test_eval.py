@@ -27,6 +27,7 @@ import sys
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 
+from eval.run_eval import PASS_THRESHOLD  # noqa: E402
 from eval.score import (  # noqa: E402
     INVARIANCE_TOLERANCE, band_score, grade, invariance_failures, term_present)
 
@@ -99,13 +100,31 @@ class TestGrade(unittest.TestCase):
         result = grade(self.FIXTURE, {"score": 55, "why": "Senior IC role in Riyadh."})
         self.assertEqual(result["categories"]["reason_gap"], 0.0)
 
+    def test_a_forbidden_term_in_the_reason_is_not_a_failure(self):
+        """`why` is 15 words and must_not_credit is about FRAMING, not presence:
+        "lacks data modeling" and "strong data modeling" carry the same term.
+        Grading it here punished correct answers, so it does not."""
+        result = grade(self.FIXTURE,
+                       {"score": 55, "why": "Lacks data modeling and BigQuery evidence."})
+        self.assertEqual(result["hard_failures"], [])
+        self.assertIn("must_not_credit not graded (needs 018B typed strengths)",
+                      result["notes"])
+
     def test_crediting_a_forbidden_strength_is_a_hard_failure(self):
         """The regression that put an 85 on a card: an unproven skill sold as a
-        strength. Zero regardless of how well the number scored."""
-        result = grade(self.FIXTURE,
-                       {"score": 55, "why": "Strong data modeling and BigQuery match."})
+        strength. Zero regardless of how well the number scored. Exact once the
+        claim arrives as a typed strength rather than as prose."""
+        result = grade(self.FIXTURE, {
+            "score": 55, "why": "Good match.",
+            "strengths": [{"title": "Strong data modeling experience"}]})
         self.assertEqual(result["overall"], 0.0)
         self.assertIn("forbidden_strength_credited:data modeling", result["hard_failures"])
+
+    def test_a_strength_that_is_not_forbidden_passes_the_gate(self):
+        result = grade(self.FIXTURE, {
+            "score": 55, "why": "No BigQuery.",
+            "strengths": [{"title": "Production Python and CI/CD"}]})
+        self.assertEqual(result["hard_failures"], [])
 
     def test_a_missing_score_fails_rather_than_passing_silently(self):
         result = grade(self.FIXTURE, {"why": "no score"})
@@ -129,6 +148,42 @@ class TestGrade(unittest.TestCase):
             "score": 55, "why": "No BigQuery.",
             "blockers": [{"title": "No BigQuery evidence"}]})
         self.assertEqual(result["categories"]["blockers"], 0.5)
+
+
+class TestThresholdArithmetic(unittest.TestCase):
+    """The pass threshold has to make every live category load-bearing.
+
+    Only two categories are graded until 018B ships blockers, weighted 3 and 1,
+    so a fixture can land exactly two ways: 1.0 band + 0.0 reason = 0.75, or
+    0.0 band + 1.0 reason = 0.25. Pick 0.7 as the threshold and the first one
+    passes -- which makes reason_gap decorative and lets a ranker that is
+    inflated but vague sail through inflation-listed-only-skills, the fixture
+    built to catch exactly that. This test is here because that bug was live
+    and the arithmetic is easy to reintroduce.
+    """
+
+    FIXTURE = {"id": "t", "expected": {"score_band": [0, 50],
+                                       "must_flag": ["RAG", "n8n"],
+                                       "must_not_credit": []}}
+
+    def test_in_band_but_naming_no_gap_does_not_reach_the_threshold(self):
+        result = grade(self.FIXTURE, {"score": 45, "why": "Senior IC role in Riyadh."})
+        self.assertEqual(result["overall"], 0.75)
+        self.assertLess(result["overall"], PASS_THRESHOLD)
+
+    def test_in_band_and_naming_a_gap_passes(self):
+        result = grade(self.FIXTURE, {"score": 45, "why": "No RAG evidence in experience."})
+        self.assertEqual(result["overall"], 1.0)
+        self.assertGreaterEqual(result["overall"], PASS_THRESHOLD)
+
+    def test_a_fixture_expecting_no_gaps_is_judged_on_band_alone(self):
+        """The ceiling fixture names no gaps, so reason_gap is not graded and
+        must not be counted against it."""
+        fixture = {"id": "c", "expected": {"score_band": [75, 100], "must_flag": [],
+                                           "must_not_credit": []}}
+        result = grade(fixture, {"score": 90, "why": "Near-perfect GenAI fit."})
+        self.assertNotIn("reason_gap", result["categories"])
+        self.assertGreaterEqual(result["overall"], PASS_THRESHOLD)
 
 
 class TestInvariance(unittest.TestCase):

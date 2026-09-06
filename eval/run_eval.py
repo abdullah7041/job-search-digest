@@ -40,7 +40,14 @@ import digest  # noqa: E402
 from eval.score import grade, invariance_failures  # noqa: E402
 
 FIXTURE_DIR = os.path.join(REPO, "eval", "fixtures")
-PASS_THRESHOLD = 0.7
+# 0.8, not 0.7, and the arithmetic is the reason. Only two categories are live
+# until 018B ships blockers, weighted 3 and 1, so a fixture can score exactly
+# two ways: 1.0 band + 0.0 reason = 0.75, or 0.0 band + 1.0 reason = 0.25. At a
+# 0.7 threshold the first passes, which makes reason_gap decorative and lets an
+# inflated-but-vague ranker through inflation-listed-only-skills -- the very
+# fixture meant to catch it. At 0.8 a fixture that expects gaps must both land
+# in band AND name one.
+PASS_THRESHOLD = 0.8
 
 
 def load_fixtures(only: str = "") -> list[dict]:

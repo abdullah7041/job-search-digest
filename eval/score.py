@@ -26,7 +26,9 @@ pretending:
 
 `must_not_credit` is a HARD failure, not a weighted category -- the same choice
 Watheq makes for keyword-stuffing fixtures. A run that presents an unproven
-skill as a strength has failed regardless of how well it scored elsewhere.
+skill as a strength has failed regardless of how well it scored elsewhere. It is
+graded against typed strengths, so like `blockers` it is inert until 018B; see
+the comment in `grade` for why checking it against `why` was actively wrong.
 """
 
 from __future__ import annotations
@@ -105,11 +107,29 @@ def grade(fixture: dict, result: dict) -> dict:
     else:
         notes.append("no gaps expected; reason_gap not graded")
 
-    # Hard gate. An unproven skill presented as a strength is a failure whatever
-    # the number said -- this is the regression that put an 85 on a card.
-    for term in expected.get("must_not_credit") or []:
-        if term_present(term, why):
-            hard_failures.append(f"forbidden_strength_credited:{term}")
+    # Hard gate, and it is graded against typed STRENGTHS only -- never against
+    # `why`.
+    #
+    # This started out checking `why` and was wrong. `why` is 15 words, and
+    # must_not_credit is a claim about FRAMING, not presence: "lacks data
+    # modeling" and "strong data modeling" contain the same term. Worse, the
+    # two lists legitimately overlap. The HungerStation posting requires data
+    # modeling, and resume.md carries it only in its SKILLS line -- so it is
+    # simultaneously a gap the ranker SHOULD name and a skill it must not
+    # credit. Checked against `why`, a correct answer failed the fixture.
+    #
+    # So it stays inert until 018B emits typed strengths, where a term's
+    # presence in strengths[] IS the framing and the gate becomes exact. The
+    # tight score_band is what defends these fixtures in the meantime: a ranker
+    # that credits listed-only skills scores them high and misses the band.
+    strengths = result.get("strengths")
+    if strengths is None:
+        notes.append("must_not_credit not graded (needs 018B typed strengths)")
+    else:
+        titles = " ".join(s.get("title", "") for s in strengths)
+        for term in expected.get("must_not_credit") or []:
+            if term_present(term, titles):
+                hard_failures.append(f"forbidden_strength_credited:{term}")
 
     blockers = result.get("blockers")
     if blockers is None:

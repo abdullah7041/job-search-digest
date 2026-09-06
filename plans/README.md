@@ -93,9 +93,19 @@ The set is not decorative — checked by feeding it deliberately broken rankers:
 
 | Injected failure | Fixtures passing |
 |---|---|
-| Inflation (88 for everything) | 1 of 6 — only the ceiling |
-| Over-correction (30 for everything) | 4 of 6 — the ceiling and OmniOps fail |
+| Inflation, confident (88 everywhere) | 1 of 6 — only the ceiling |
+| Inflation, vague (55, names no gap) | 0 of 6 |
+| Over-correction (30 everywhere) | 4 of 6 — the ceiling and OmniOps fail |
+| A CORRECT ranker | 6 of 6 — the row that stops this being a ratchet |
 | Benefits boilerplate moves only the noisy twin | invariance check fires, spread 35 > 8 |
+
+Building it surfaced a real defect in its own design: `must_not_credit` was
+graded against `why`, which is 15 words, so it could not tell "lacks data
+modeling" from "strong data modeling" — and the HungerStation posting requires
+data modeling while `resume.md` lists it only under `## SKILLS`, making it at
+once a gap the ranker should name and a skill it must not credit. A correct
+ranker was scoring 4 of 6. The gate now reads typed strengths and is inert until
+018B; the tight score bands defend those fixtures in the meantime.
 
 The `blockers` category is written but inert until 018B emits typed blockers,
 at which point it switches on with no code change.

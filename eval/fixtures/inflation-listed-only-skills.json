@@ -1,6 +1,6 @@
 {
   "id": "inflation-listed-only-skills",
-  "description": "The keyword-stuffing guard, aimed at this exact resume. Every requirement here appears in resume.md's ## SKILLS line and in NO ## EXPERIENCE or ## PROJECTS bullet: RAG concepts, n8n, data modeling, advanced Excel, REST APIs. Under the demonstrated-vs-listed rule ported in 018A, a term whose only home is a skills list is an unproven claim, so this must NOT score as a strong match even though a substring matcher would find every keyword. This is the fixture that catches a regression back to scoring the blurb.",
+  "description": "The keyword-stuffing guard, aimed at this exact resume. Every requirement here appears in resume.md's ## SKILLS line and in NO ## EXPERIENCE or ## PROJECTS bullet: RAG concepts, n8n, data modeling, advanced Excel, REST APIs. Under the demonstrated-vs-listed rule ported in 018A, a term whose only home is a skills list is an unproven claim, so this must NOT score as a strong match even though a substring matcher would find every keyword. This is the fixture that catches a regression back to scoring the blurb. Band tightened to 0-50: every single hard requirement here is unproven, so 'adjacent function with several gaps' should land at the bottom of the 40-69 rubric band, not the top. A wider band let a merely-vague ranker pass the fixture built to catch a confident one.",
   "source": "constructed to target resume.md's listed-only terms",
   "job": {
     "title": "Senior AI Data Engineer",
@@ -12,17 +12,19 @@
   "expected": {
     "score_band": [
       0,
-      60
+      50
     ],
     "must_flag": [
       "RAG",
-      "n8n"
+      "n8n",
+      "data modeling"
     ],
     "must_not_credit": [
       "RAG",
       "n8n",
       "data modeling",
-      "Excel"
+      "Excel",
+      "REST API"
     ]
   }
 }
