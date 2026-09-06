@@ -21,6 +21,13 @@
     "source": "workable",
     "token": "data"
   },
+  "deliveryhero": {
+    "company": "Delivery Hero",
+    "found": "2026-09-06",
+    "roles": 0,
+    "source": "workable",
+    "token": "delivery"
+  },
   "democrance": {
     "company": "Democrance",
     "miss": "2026-09-03"
@@ -40,6 +47,13 @@
     "company": "FileCloud",
     "miss": "2026-09-03"
   },
+  "hungerstation": {
+    "company": "HungerStation",
+    "found": "2026-09-06",
+    "roles": 0,
+    "source": "workable",
+    "token": "hungerstation"
+  },
   "infinniti": {
     "company": "Infinniti",
     "miss": "2026-09-03"
@@ -50,6 +64,13 @@
     "roles": 40,
     "source": "workable",
     "token": "innovationteam"
+  },
+  "joinsolutions": {
+    "company": "join solutions",
+    "found": "2026-09-06",
+    "roles": 0,
+    "source": "workable",
+    "token": "join"
   },
   "latitude": {
     "company": "Latitude",
@@ -62,9 +83,20 @@
     "source": "greenhouse",
     "token": "lucidmotors"
   },
+  "miraiarabianinternational": {
+    "company": "Mirai Arabian International Company Limited",
+    "found": "2026-09-06",
+    "roles": 0,
+    "source": "workable",
+    "token": "mirai"
+  },
   "mllerssolutions": {
     "company": "Müller's Solutions",
     "miss": "2026-09-05"
+  },
+  "otalence": {
+    "company": "OTalence",
+    "miss": "2026-09-06"
   },
   "qualcomm": {
     "company": "Qualcomm",

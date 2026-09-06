@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-06",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_YmluZzoxOTQ4NDM1NzgyLlJldHJv",
+      "captured_at": "2026-09-06T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_YmluZzoxOTQ4NDM1NzgyLlJldHJv",
+      "title": "Backend Engineer II",
+      "company": "تابي",
+      "location": "Riyadh، RIY, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/backend-engineer-ii-at-tabby-%D8%AA%D8%A7%D8%A8%D9%8A-4440511934?trk=bingjobs",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 88,
+      "why": "Solid Senior/Mid Backend IC role in KSA matching PostgreSQL, APIs, and microservices architecture.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Department: B2C Debit, Engineering\n\r\n\n\r\nEmployment Type: Full Time\n\r\n\n\r\nLocation: KSA\n\r\n\n\r\nDescription\n\r\n\n\r\nTabby creates financial freedom in the way people shop, earn and save by reshaping their relationship with money. Over 15 million users choose Tabby to stay in control of their spending and make the most out of their money.\n\r\n\n\r\nThe company’s flagship offering allows shoppers to split their payments online and in-store with no interest or fees. Over 40,000 global brands and small businesses, including Amazon, Noon, IKEA, and SHEIN use Tabby to accelerate growth and gain loyal customers by offering easy and flexible payments online and in stores.\n\r\n\n\r\nTabby generates over $10 billion in annual transaction volume for its partner brands and is the highest-rated, most-reviewed, largest, and fastest-growing FinTech in the GCC region.\n\r\n\n\r\nTabby launched in 2019 and has since raised +$1 billion in equity and debt funding from global and regional investors, and is now valued at $4,5 billion.\n\r\n\n\r\nWe’re looking for a Backend Engineer to help scale the systems behind Tabby’s core products. You’ll work on high-impact projects in a high-growth environment, alongside a world-class remote engineering team spread across 20+ countries.\n\r\n\n\r\nKey Responsibilities\n\r\n\n\r\n\r\n- Backend engineering experience, with ideally commercial experience in Golang\n- Experience building scalable, distributed systems and working with high-load architectures\n- Solid understanding of backend tools and technologies — we use PostgreSQL, Redis, Kubernetes, Google Cloud Platform, GitLab, and a microservices architecture\n- Experience integrating third-party APIs and contributing to product development\n- A passion for writing clean, testable, and maintainable code\n- A proactive mindset and the ability to work independently\n- Strong communication skills in English (B2 level or higher)\n\r\n\n\r\n\n\r\n\n\r\nJob Benefits\n\r\n\n\r\n\r\n- A working environment that gives you autonomy and responsibility from day one.\n- Participation in the company’s employee stock options program.\n- Health Insurance\n- Flexi benefits you can use for wellness, travel, or learning\n- Work alongside a high-performing, international engineering team in a global fintech unicorn",
+        "sha256": "d91cec08a5c78a9925c6af47fe0c7588f224ccdcec78249ee5077086a764b7f0",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_YmluZzotMTA2NDk1MDM3OC5SZXRybw",
+      "captured_at": "2026-09-06T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_YmluZzotMTA2NDk1MDM3OC5SZXRybw",
+      "title": "Senior Data Engineer I",
+      "company": "HungerStation  هنقرستيشن",
+      "location": "Riyadh، RIY, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-data-engineer-i-at-hungerstation-%D9%87%D9%86%D9%82%D8%B1%D8%B3%D8%AA%D9%8A%D8%B4%D9%86-4399174111?trk=bingjobs",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 85,
+      "why": "Strong senior data engineer IC role in Riyadh matching Python, SQL, and GCP skills.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "Hungerstation is part of the Delivery Hero Group, the world’s pioneering local delivery platform, our mission is to deliver an amazing experience—fast, easy, and to your door. We operate in around 65 countries worldwide. Headquartered in Berlin, Germany. Delivery Hero has been listed on the Frankfurt Stock Exchange since 2017 and is part of the MDAX stock market index.\n\r\n\n\r\nJob Description\n\r\n\n\r\nHungerStation is hiring a Senior Data Engineer I to design, build, and scale our data platform and processing frameworks that power analytics, AI-driven applications, and business intelligence across the organization.\n\r\n\n\r\nThis role sits at the core of our data ecosystem focusing on scalability, reliability, and performance of data systems.\n\r\n\n\r\nYou Will Be Working On\n\r\n\n\r\n\r\n\r\n- Design, implement, and extend scalable data platforms and architectures\n- Build and maintain high-performance data pipelines and data models using BigQuery\n- Optimize datasets and workloads for performance and cost efficiency\n- Develop analytics-ready data models, semantic layers, and governed metrics\n- Build backend services and APIs using Python or Java to support data applications\n- Contribute to AI-enabled data use cases (e.g., automated insights, conversational analytics)\n- Improve system reliability by addressing technical debt and scaling challenges\n- Implement best practices across CI/CD, testing, monitoring, and deployment automation\n- Manage and optimize cloud infrastructure supporting the data platform\n- Collaborate with cross-functional teams to ensure data quality and engineering standards\n- Ensure compliance with data governance, privacy, and security standards\n- Improve monitoring frameworks and operational resilience of the data platform\n- Support initiatives to enhance data quality, reliability, and system stability\n\r\n\n\r\n\n\r\nQualifications\n\r\n\n\r\n\r\n\r\n- 5–8 years of experience in Data Engineering or similar roles\n- Bachelor’s degree in Computer Science, Engineering, or related field\n- Master’s or relevant certifications are a plus\n- Strong experience building scalable distributed data systems\n- Hands-on with GCP (BigQuery preferred)\n- Proven experience with ETL/ELT pipelines and data modeling\n- Experience with modern data stack (Airflow, dbt, Looker)\n- Strong SQL skills and understanding of relational data systems\n- Experience with Python or Java for backend/data services\n- Familiarity with Infrastructure-as-Code (Terraform preferred)\n- Experience with CI/CD, testing, and monitoring practices\n- Exposure to AI-driven data applications or LLM integrations is a plus\n\r\n\n\r\n\n\r\nAdditional Information\n\r\n\n\r\n\r\n\r\n- We offer relocation support globally to our permanent employees.\n- Exchange ideas and meet 2000+ colleagues from different teams within Delivery Hero in our active guilds and through our global tech and product community.\n- Develop your skills with your personal educational budget for conferences and external training.\n- Access our e-learning platform LinkedIn and participate in our various in-house training programs\n- And much more…",
+        "sha256": "c852d820fb5bc843c5ddd528180bb8c32f12b0782cf87ff40349f77669a4c429",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_YmluZzoxNzA3MjM4NDAwLlJldHJv",
+      "captured_at": "2026-09-06T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_YmluZzoxNzA3MjM4NDAwLlJldHJv",
+      "title": "Cloud Machine Learning Engineer - Riyadh, KSA",
+      "company": "Qualcomm Technologies, Inc",
+      "location": "Riyadh، RIY, Saudi Arabia",
+      "url": "https://www.bayt.com/en/saudi-arabia/jobs/cloud-machine-learning-engineer-riyadh-ksa-74859868/?trk=bingjobs",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 60,
+      "why": "Riyadh role but focused on low-level C++/PyTorch accelerator compiler internals and optimization.",
+      "ranking_verified": true,
+      "link_status": "unknown",
+      "jd": {
+        "status": "captured",
+        "text": "Company:Qualcomm Middle East Information Technology Company LLC\n\r\nJob Area:Engineering Group, Engineering Group > Software Engineering\n\r\nGeneral Summary:\n\r\n\n\r\n\n\r\n\n\r\nAbout Us\n\r\n\n\r\n\n\r\nQualcomm is growing its presence in Riyadh and is hiring Data Centre Engineers to support our expanding infrastructure across the region.\n\r\n\n\r\n\n\r\nAs Saudi Arabia accelerates its digital transformation under Vision 2030, Qualcomm is investing in world‑class computing and data centre capabilities to power AI, cloud, and advanced connectivity at scale. This is a unique opportunity to work in a fast‑growing technology hub, supporting critical environments and helping shape the future of data centre operations in the Kingdom and beyond.\n\r\n\n\r\n\n\r\n\n\r\nAbout the role\n\r\n\n\r\n\n\r\nWe are looking for strong technical and analytical skills in C++/Python‑based AI development in a Linux environment. Ability to work effectively as part of a team, take ownership of assigned tasks or features, and independently drive implementation within a defined technical scope.\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nWe are looking for 2-8 years Software Engineering or related work experience\n\r\n\n\r\n\n\r\n\n\r\nKey Responsibilities will include\n\r\n\n\r\n\n\r\n\r\n- \r\nImprove and optimize key Deep Learning models on Qualcomm AI 100\n\r\n\n\r\n\n\r\n\n- \r\nBuild deep learning framework extensions for Qualcomm AI 100 in upstream open-source repositories\n\r\n\n\r\n\n\r\n\n- \r\nCollaborate and interact with internal teams to analyze and optimize training and inference for deep learning\n\r\n\n\r\n\n\r\n\n- \r\nBuild software tools and ecosystem around AI SW Stack.\n\r\n\n\r\n\n\r\n\n- \r\nWork on Triton, ExecuTorch, Inductor, TorchDynamo to build abstraction layers for inference accelerator.\n\r\n\n\r\n\n\r\n\n- \r\nOptimize workloads for both scale-up (multi-SoC) and scale-out (multi-card) systems\n\r\n\n\r\n\n\r\n\n- \r\nOptimize the entire deep learning pipeline including graph compiler integration\n\r\n\n\r\n\n\r\n\n- \r\nApply knowledge of software engineering best practices.\n\r\n\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nRequired Skills and Aptitude\n\r\n\n\r\n\n\r\n\r\n- \r\nDeep Learning experience or knowledge – LLMs, Natural Language Processing, Vision, Audio, Recommendation systems\n\r\n\n\r\n\n\r\n\n- \r\nExcellent C/C++ Or Python programming and software design skills, including debugging, performance analysis, and test design.\n\r\n\n\r\n\n\r\n\n- \r\nStrong proficiency in PyTorch and JIT\n\r\n\n\r\n\n\r\n\n- \r\nAbility to work independently on assigned problem areas, understand requirements, and drive development tasks to completion\n\r\n\n\r\n\n\r\n\n- \r\nAvid problem solver – should be able to find solutions to key engineering and domain problems.\n\r\n\n\r\n\n\r\n\n- \r\nStrong developer with a research mindset – strives to innovate.\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nPreferred Skills\n\r\n\n\r\n\n\r\n\r\n- \r\nExperiences to run workloads on large scale heterogeneous clusters is a plus\n\r\n\n\r\n\n\r\n\n- \r\nKnowledge of compiler is a plus.\n\r\n\n\r\n\n\r\n\n- \r\nHands-on experience with CUDA, CUDNN is a plus.\n\r\n\n\r\n\n\r\n\n- \r\nWell versed with open-source development practices.\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nQualifications\n\r\n\n\r\n\n\r\n\r\n- \r\nBachelor's / Masters/ PHD degree in Engineering, Machine learning/ AI, Information Systems, Computer Science, or related field.\n\r\n\n\r\n\n\r\n\n- \r\n3+ years Software Engineering or related work experience.\n\r\n\n\r\n\n\r\n\n- \r\n2+ years experience with Programming Language such as C++, Python.\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nWhat's on Offer\n\r\n\n\r\n\n\r\nApart from working with great people, we offer the below:\n\r\n\n\r\n\n\r\n\r\n- \r\nSalary including housing & transport allowance\n\r\n\n\r\n\n\r\n\n- \r\nStock (RSU's) and performance related bonus\n\r\n\n\r\n\n\r\n\n- \r\n16 weeks fully paid Maternity Leave\n\r\n\n\r\n\n\r\n\n- \r\n6 weeks fully paid Paternity Leave\n\r\n\n\r\n\n\r\n\n- \r\nEmployee stock purchase scheme\n\r\n\n\r\n\n\r\n\n- \r\nChild Education Allowance\n\r\n\n\r\n\n\r\n\n- \r\nRelocation and immigration support (if needed)\n\r\n\n\r\n\n\r\n\n- \r\nLife and Medical Insurance\n\r\n\n\r\n\n\r\n\n- \r\nLive+ Well Reimbursement for health and recreational membership fees\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nMinimum Qualifications:\n\r\n\n\r\n\n\r\n• Bachelor's degree in Engineering, Information Systems, Computer Science, or related field and 2+ years of Software Engineering or related work experience.\r\n\n\r\nOR\n\r\nMaster's degree in Engineering, Information Systems, Computer Science, or related field and 1+ year of Software Engineering or related work experience.\n\r\nOR\n\r\nPhD in Engineering, Information Systems, Computer Science, or related field.\n\r\n• 2+ years of academic or work experience with Programming Language such as C, C++, Java, Python, etc.\n\r\n\n\r\n\n\r\n\n\r\n\n\r\n*References to a particular number of years experience are for indicative purposes only. Applications from candidates with equivalent experience will be considered, provided that the candidate can demonstrate an ability to fulfill the principal duties of the role and possesses the required competencies.\n\r\n\n\r\n\n\r\n\n\r\nQualcomm is an equal opportunity employer. If you are an individual with a disability and need an accommodation during the application/hiring process, rest assured that Qualcomm is committed to providing an accessible process. You may e-mail disability-accomodations@qualcomm.com or call Qualcomm's toll-free number found here. Upon request, Qualcomm will provide reasonable accommodations to support individuals with disabilities to be able participate in the hiring process. Qualcomm is also committed to making our workplace accessible for individuals with disabilities. (Keep in mind that this email address is used to provide reasonable accommodations for individuals with disabilities. We will not respond here to requests for updates on applications or resume inquiries).\n\r\n\n\r\n\n\r\n\n\r\n\n\r\n\n\r\nQualcomm expects its employees to abide by all applicable policies and procedures, including but not limited to security and other requirements regarding protection of Company confidential information and other confidential and/or proprietary information, to the extent those requirements are permissible under applicable law.\n\r\n\n\r\n\n\r\n\n\r\nTo all Staffing and Recruiting Agencies:Our Careers Site is only for individuals seeking a job at Qualcomm. Staffing and recruiting agencies and individuals being represented",
+        "sha256": "736d1fd354c7e5f0c515b49aadc7dc5a50aa31e82fb8f65a1786c636eb640516",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5036109",
+      "captured_at": "2026-09-06T00:00:00Z",
+      "source": "workable",
+      "source_id": "5036109",
+      "title": "Integration API Developer/Consultant (APIGEE) - On-site",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/808CFD9AD8/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 50,
+      "why": "Requires heavy specialized APIGEE platform experience rather than standard backend or full-stack software development.",
+      "ranking_verified": true,
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "InnovationTeam is a forward-thinking technology company that specializes in providing innovative solutions to businesses. We are currently seeking a talented APIGEE API Developer/Consultant to join our dynamic team.\nAt InnovationTeam, we value innovation, collaboration, and continuous learning. We offer a flexible and inclusive work environment, where your contributions are valued, and opportunities for professional growth and development are provided.\nAs a APIGEE API Developer/Consultant, you will be part of our API Management Development Team. The team’s core focus will be full cycle implementation of the APIs exposed on the API Management Platform within the organization.\nRequirements\nRequirements:\nMinimum of 5 years experiences in Systems Integration including experience in API Development with hands-on experience in API Management Solutions.\nFluent English communication skills; verbal and written.\nExperience in working with API development teams on large scale projects; with hands-on experience implementing Enterprise level APIs for large scale organizations using APIGEE.\nExtensive experience with APIGEE Policies related to Security, Throttling, Data Transformation…etc .\nStrong experience and knowledge of API Securities such as Basic Auth, oAuth2 flows, SSL Mutual Authentication,...etc and its implementation on APIGEE.\nExperience with JS scripts and their usage within APIGEE.\nStrong understanding of API Design and hands on experience in designing and writing API Specs and Design Documents.\nClear understanding of the APIGEE on-premise infrastructure and components.\nClear understanding of the APIGEE Cloud infrastructure and components.\nExperience with Agile and Waterfall project methodologies.\nAbility to communicate with team leads, designers, and project managers to provide periodic status update (daily, weekly, monthly).\nDeep knowledge of RESTful APIs methodologies and Principles with strong knowledge and experience with REST, JSON and experience with SOAP, XML.\nMust have experience and clear understanding of OpenAPI (Swagger) specification.\nStrong understanding of security protocols and networking requirements related to API and Services exposure.\nWorking knowledge with DevOps, and continuous integration (CI) and continuous delivery (CD).\nPrevious experience in working with Design/Development Governance Principals and Guidelines.\nPrevious experience working with Enterprise Integration Patterns and Frameworks.\nNice to have:\nExperience with API Management Tools (APIGEE, SoftwareAG, IBM) or similar technologies.\nFamiliar with TMForums OpenAPIs or similar industry wide OpenAPI Specifications.\nFamiliar with APIGEE on-premise DevPortal.\nFamiliar with APIGEE multi-tenancy.\nFamiliar with other Google Cloud Products and Technologies.\nExpectations:\nOn-Site availability in KSA.\nWork with a team of designers and developers on internal and external APIs within the projects.\nParticipate in solution discussions with team’s Designers and Architects.\nParticipate in daily technical status meetings and provide project managers with status updates.\nSupport Project's E2E testing activities in issues related to implementation compliance with design.",
+        "sha256": "52754731d9873301bd9af03f6c2f0c3dcee6da8532acbab9ed5e8829f94569f0",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
