@@ -81,12 +81,15 @@ through 018A before being frozen, and scored 98.
   points. The number that reaches the card and decides the tier.
 - **`reason_gap`** (weight 1) — does `why` name at least one expected gap? The
   reason is capped at 15 words, so naming one is the bar.
-- **`blockers`** (weight 2) — **not graded yet.** Switches on automatically once
-  plan 018B emits typed blockers.
+- **`blockers`** (weight 2) — graded when the result carries typed blockers,
+  which `run_eval.py --check` supplies by running plan 018B's reality pass. The
+  denominator is capped at `fit_check.MAX_BLOCKERS`: a fixture may name more
+  expected gaps than the system can ever report, and scoring against the longer
+  list makes full credit unreachable.
 - **`must_not_credit`** — a **hard failure**, not a weighted category, matching
   Watheq's treatment of keyword-stuffing fixtures. Presenting an unproven skill
   as a strength fails the fixture whatever the number did. Graded against typed
-  strengths, so like `blockers` it is **inert until 018B**.
+  strengths, which `run_eval.py --check` now supplies.
 
   It first checked `why`, and that was wrong. `why` is 15 words, and this is a
   claim about *framing*, not presence: "lacks data modeling" and "strong data

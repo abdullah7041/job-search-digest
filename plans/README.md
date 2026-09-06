@@ -19,7 +19,7 @@ verdict honest.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| [018](018-ground-the-fit-score-in-resume-evidence.md) | Ground the fit score in resume evidence | P1 | M + M | — | **018A DONE** (`43cc4ce`), **gate CLEARED** 2026-09-07. **018B not started** — unblocked, awaiting the operator's go-ahead |
+| [018](018-ground-the-fit-score-in-resume-evidence.md) | Ground the fit score in resume evidence | P1 | M + M | — | **DONE**. 018A `43cc4ce`, gate cleared, 018B `770ac6d`+`df63b58`. Gold set 7/7 live with the reality pass on |
 
 ### The diagnosis, verified in code rather than asserted
 
@@ -84,6 +84,49 @@ correction is aimed at unevidenced claims, not at the candidate.
 `scripts/measure_ranker.py` was superseded by `eval/run_eval.py` before it was
 ever needed — the gold set answers the same question across seven jobs instead
 of one, so the A/B harness was never run.
+
+### 018B — built, and its first live run found the gate eating real blockers
+
+`fit_check.py` runs one call per strong-tier job. The verdict comes from a
+separately verified evidence object rather than from the number, which is the
+part of Watheq's design that matters: `verify()` re-checks every claim before it
+can move a score, and failure is asymmetric — an unverified blocker is DEMOTED
+to unclear, an unverified strength is DELETED.
+
+`cap_blocked_scores` mirrors `cap_teaser_scores`, and the pass sits between
+`cap_per_company` and `split_tiers`. That one position does three jobs at once:
+`avg_score` was taken above so drift still measures the ranker; `drop_below_floor`
+already ran so a capped job is delivered flagged and can never be dropped or
+remembered; and `split_tiers` has not run so a capped job lands in "Worth
+reviewing" rather than wearing a "Strong matches" label beside a fit 69.
+
+**Three checks specified in this plan were wrong, and each was caught by
+running the thing rather than reading it.** All three are the same mistake:
+applying a text check to text whose shape it was not built for.
+
+1. **Blocker terms checked against the resume.** Backwards. A blocker names what
+   the candidate LACKS, so its terms are absent from the resume by definition
+   and every true blocker would have been discarded. Caught before shipping;
+   flipping it back fails three tests.
+2. **Blocker terms checked against the job description.** Still wrong, and this
+   one only showed up live. `unsupported_terms` flags a capitalised word used
+   mid-sentence as a proper noun — sound for a prose bullet, meaningless for a
+   Title Case heading where every word is capital. Against the real
+   HungerStation posting it threw away all three genuine blockers on the words
+   **"Dedicated"**, **"Required"** and **"Tools"**, while all nine of their
+   evidence snippets verified. Replaced with the check that actually expresses
+   the claim: a blocker must quote the posting, because an invented requirement
+   cannot be quoted from a document that never states it.
+3. **The gold set's `blockers` category was unsatisfiable.** It scored hits
+   against the full `must_flag` list while `fit_check` emits at most three, so
+   the HungerStation fixture named 8 expected gaps and could never be told more
+   than 3 of them. Denominator now capped at what the system can emit.
+
+**Live result, reality pass on: 7/7 fixtures pass.** HungerStation reports
+*"Lacks 5-8 Years of Dedicated Data Engineering Experience; Lacks Required
+Bachelor's Degree in Relevant Field; Missing Proven Experience with Modern Data
+Stack Tools"*. The ceiling fixture still returns `high` with zero blockers, so
+the counterweight holds with 018B enabled.
 
 ### Decisions taken by the operator for 018B
 
