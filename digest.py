@@ -33,6 +33,7 @@ Profile:
 import os
 import re
 import hashlib
+import functools
 import sys
 import json
 import time
@@ -1129,9 +1130,30 @@ def drop_repeat_descriptions(jobs, seen):
     return kept, repeats
 
 
+@functools.lru_cache(maxsize=None)
+def _keyword_pattern(keyword):
+    """A keyword matches at a word start, with the suffix left free.
+
+    'agent' must still match 'Agentic' and 'data' must still match
+    'Datacentre', so there is no trailing boundary. The leading one is what
+    stops 'api' matching 'Scraping' and 'ml' matching 'AML'. Measured on the
+    91 archived titles at ab0eb45: 6 spurious hits removed, 0 real hits lost;
+    requiring both boundaries would have cost 2 real ones. See plans/017.
+
+    re.escape is required, not optional: 'full-stack', 'full stack' and
+    'forward deployed' are all live keywords holding regex metacharacters.
+    """
+    return re.compile(r"(?<![a-z0-9])" + re.escape(keyword))
+
+
+def keyword_hits(title, keywords):
+    """How many of `keywords` start a word in `title`."""
+    lowered = title.lower()
+    return sum(1 for k in keywords if _keyword_pattern(k).search(lowered))
+
+
 def keyword_score(job):
-    title = job["title"].lower()
-    hits = sum(1 for k in PROFILE["skill_keywords"] if k in title)
+    hits = keyword_hits(job["title"], PROFILE["skill_keywords"])
     return min(100, 40 + hits * 15)  # 40 base for passing filters, +15 per skill hit
 
 

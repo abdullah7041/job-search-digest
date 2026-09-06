@@ -606,6 +606,70 @@ class TestTeaserGrading(unittest.TestCase):
         self.assertIn("Heuristic", footer)
 
 
+class TestKeywordMatching(unittest.TestCase):
+    """A skill keyword matches at a word start, with the suffix left free.
+
+    The fallback matcher used a plain substring test, so "ml" fired on AML,
+    "api" on Scraping, and "ai" a second time on GenAI where "genai" had
+    already scored it. Anchoring the start removes those. Anchoring the END
+    too would remove real hits -- English builds meaning by suffix
+    (agent->agentic) and noise by prefix (scr+api+ng) -- so the trailing
+    boundary is deliberately absent and the two tests below guard it.
+
+    Measured over the 91 distinct titles in jobs/*.json at ab0eb45: the
+    word-start rule drops 6 spurious hits and 0 real ones; requiring both
+    boundaries drops 8 and destroys 2. See plans/017.
+    """
+
+    def test_a_keyword_inside_a_word_does_not_fire(self):
+        # "AML Officer" is anti-money-laundering compliance, not ML.
+        self.assertEqual(digest.keyword_hits("AML Officer", ["ml"]), 0)
+
+    def test_api_does_not_fire_on_scraping(self):
+        self.assertEqual(
+            digest.keyword_hits("Senior Data Engineer - Web Scraping", ["api"]), 0)
+
+    def test_a_keyword_still_matches_a_suffixed_word(self):
+        """Regression guard: adding a trailing boundary must fail here."""
+        self.assertEqual(digest.keyword_hits("AI Engineer - Agentic", ["agent"]), 1)
+
+    def test_a_keyword_still_matches_a_compound_word(self):
+        """The second hit a trailing boundary would destroy."""
+        self.assertEqual(digest.keyword_hits(
+            "Full Stack Machine Learning Engineer (Datacentre AI Engineering)",
+            ["data"]), 1)
+
+    def test_matching_is_case_insensitive(self):
+        self.assertEqual(digest.keyword_hits("SENIOR PYTHON ENGINEER", ["python"]), 1)
+
+    def test_a_keyword_holding_regex_metacharacters_is_matched_literally(self):
+        """full-stack, full stack and forward deployed are all live keywords."""
+        self.assertEqual(digest.keyword_hits(
+            "Senior Full-Stack Engineer", ["full-stack"]), 1)
+        self.assertEqual(digest.keyword_hits(
+            "Forward Deployed Engineer", ["forward deployed"]), 1)
+        # "." must not behave as the any-character wildcard it is in a regex.
+        self.assertEqual(digest.keyword_hits("Data Engineer", ["d.ta"]), 0)
+
+    def test_the_default_profile_keywords_get_the_same_rule(self):
+        """A fix that only helps profile.json is half a fix: DEFAULT_PROFILE
+        carries ai, ml and api too, and load_profile falls back to it whenever
+        profile.json is missing, corrupt or incomplete."""
+        defaults = digest.DEFAULT_PROFILE["skill_keywords"]
+        self.assertIn("ml", defaults)
+        self.assertEqual(digest.keyword_hits("AML Officer", defaults), 0)
+
+    def test_the_score_contract_is_unchanged(self):
+        """40 base for passing the filters, +15 per hit, capped at 100."""
+        with mock.patch.dict(digest.PROFILE, {"skill_keywords": ["python", "backend"]}):
+            self.assertEqual(digest.keyword_score({"title": "Chef"}), 40)
+            self.assertEqual(digest.keyword_score({"title": "Python Chef"}), 55)
+            self.assertEqual(digest.keyword_score({"title": "Python Backend Chef"}), 70)
+        with mock.patch.dict(digest.PROFILE, {"skill_keywords": ["k" + str(i) for i in range(9)]}):
+            self.assertEqual(digest.keyword_score({"title": " ".join(
+                "k" + str(i) for i in range(9))}), 100)
+
+
 class TestScoreInstability(unittest.TestCase):
     """The daily average cannot show one posting scoring 40 then 75."""
 
