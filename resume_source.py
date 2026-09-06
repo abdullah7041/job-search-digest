@@ -64,6 +64,50 @@ def vocabulary(*texts: str) -> set[str]:
     return words
 
 
+# A quoted snippet shorter than this overlaps almost any source by chance, so
+# it is not evidence even when it technically matches.
+MIN_SNIPPET_CHARS = 8
+
+# How much of a snippet's vocabulary must appear in its cited source before a
+# paraphrase still counts as a citation. Watheq's figure, kept for its reason:
+# models rewrite lightly around a real quote, so demanding a verbatim match
+# would throw away honest evidence, while a half would accept coincidence.
+SNIPPET_OVERLAP = 0.75
+
+
+def _snippet_text(text: str) -> str:
+    """Lowercase, drop punctuation, collapse whitespace."""
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).split())
+
+
+def snippet_supported(snippet: str, source: str) -> bool:
+    """Does `snippet` actually appear in `source`, verbatim or near enough?
+
+    The mirror of `unsupported_terms`. That asks whether a named thing is absent
+    from the resume; this asks whether a quoted snippet was really copied from
+    the text it cites. A model asserting a blocker or a strength has to point at
+    evidence, and this is what makes the pointing checkable rather than
+    decorative.
+
+    Ported from Watheq's `verifyEvidenceSnippet`
+    (netlify/lib/strategic-reality-check.js:105), which is the mechanism behind
+    its low-ceiling verdict. See plans/018.
+    """
+    text = _snippet_text(snippet)
+    if len(text) < MIN_SNIPPET_CHARS:
+        return False
+    haystack = _snippet_text(source)
+    if not haystack:
+        return False
+    if text in haystack:
+        return True
+    words = {word for word in text.split() if len(word) >= 2}
+    if not words:
+        return False
+    known = {word for word in haystack.split() if len(word) >= 2}
+    return len(words & known) / len(words) >= SNIPPET_OVERLAP
+
+
 def unsupported_facts(text: str, evidence: str) -> list[str]:
     """Numbers in a rewritten bullet that its cited source does not contain."""
     haystack = _normalise(evidence)

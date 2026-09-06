@@ -36,6 +36,7 @@ for f in ("profile.json", "resume.md"):
 os.chdir(_TMP)
 
 import digest  # noqa: E402
+import fit_check as fit_check_module  # noqa: E402
 import jd_fetch  # noqa: E402
 import job_archive  # noqa: E402
 
@@ -816,6 +817,95 @@ class TestScoreInstability(unittest.TestCase):
         self.assertEqual(job_archive.score_instability("no-such-directory"), [])
 
 
+class TestBlockedScoreCap(unittest.TestCase):
+    """A verified blocker caps the number as well as annotating the card.
+
+    Mirrors cap_teaser_scores exactly, and for the same reason: "strong match"
+    has to mean something, and a role whose stated hard requirements the resume
+    cannot evidence is not one however well the ranker liked the title.
+    See plans/018.
+    """
+
+    def _job(self, ceiling, blockers, score=88, why="Strong senior IC match in Riyadh."):
+        return {"title": "T", "company": "C", "score": score, "why": why,
+                "ranking_verified": True, "description": FULL_JD,
+                "fit_check": {"blockers": [{"title": f"b{n}"} for n in range(blockers)],
+                              "unclear": [], "strengths": [], "ceiling": ceiling, "note": ""}}
+
+    def test_a_low_ceiling_caps_the_score(self):
+        job = self._job("low", 2)
+        capped = digest.cap_blocked_scores([job])
+        self.assertEqual(capped, [job])
+        self.assertEqual(job["score"], digest.BLOCKED_SCORE_CAP)
+        self.assertIn("2 verified requirement gaps", job["why"])
+
+    def test_a_mid_ceiling_does_not_cap(self):
+        job = self._job("mid", 1)
+        self.assertEqual(digest.cap_blocked_scores([job]), [])
+        self.assertEqual(job["score"], 88)
+
+    def test_a_high_ceiling_does_not_cap(self):
+        job = self._job("high", 0)
+        self.assertEqual(digest.cap_blocked_scores([job]), [])
+        self.assertEqual(job["score"], 88)
+
+    def test_an_unchecked_job_is_never_capped(self):
+        """Silence must mean 'no verdict', never 'bad verdict'. A ranker outage
+        must not quietly demote every strong match in the digest."""
+        job = self._job("unknown", 0)
+        self.assertEqual(digest.cap_blocked_scores([job]), [])
+        self.assertEqual(job["score"], 88)
+
+    def test_a_job_with_no_check_at_all_is_never_capped(self):
+        job = self._job("low", 2)
+        del job["fit_check"]
+        self.assertEqual(digest.cap_blocked_scores([job]), [])
+        self.assertEqual(job["score"], 88)
+
+    def test_a_score_already_at_the_cap_gains_no_second_suffix(self):
+        """cap_teaser_scores runs first and appends its own reason. Two suffixes
+        on a 140-character field means the second truncation eats the first."""
+        job = self._job("low", 2, score=digest.TEASER_SCORE_CAP,
+                        why="Title fits. (capped: description is a short teaser)")
+        self.assertEqual(digest.cap_blocked_scores([job]), [])
+        self.assertEqual(job["why"].count("(capped:"), 1)
+
+    def test_the_reason_stays_within_the_field(self):
+        job = self._job("low", 3, why="x" * 138)
+        digest.cap_blocked_scores([job])
+        self.assertLessEqual(len(job["why"]), 140)
+
+
+class TestStrongPredicate(unittest.TestCase):
+    def test_is_strong_and_split_tiers_agree(self):
+        jobs = [
+            {"ranking_verified": True, "score": 85, "description": FULL_JD},
+            {"ranking_verified": True, "score": 70, "description": FULL_JD},
+            {"ranking_verified": False, "score": 95, "description": FULL_JD},
+            {"ranking_verified": True, "score": 95, "description": ""},
+        ]
+        strong, review = digest.split_tiers(jobs)
+        self.assertEqual(strong, [j for j in jobs if digest.is_strong(j)])
+        self.assertEqual(review, [j for j in jobs if not digest.is_strong(j)])
+
+    def test_duplicate_jobs_are_preserved_in_both_tiers(self):
+        """split_tiers built the review tier with `job not in strong` -- a dict
+        equality compare, O(n^2) with deep comparison. plans/README.md:296
+        flagged it and correctly judged the collapse unreachable, since
+        strength is a pure function of the dict: two equal dicts are either
+        both strong or both not. The predicate refactor makes it a `not
+        is_strong(job)` anyway, so this pins that neither tier loses a
+        duplicate."""
+        weak = {"ranking_verified": True, "score": 40, "description": FULL_JD}
+        strong_job = {"ranking_verified": True, "score": 95, "description": FULL_JD}
+
+        strong, review = digest.split_tiers([dict(weak), dict(weak)])
+        self.assertEqual((len(strong), len(review)), (0, 2))
+
+        strong, review = digest.split_tiers([dict(strong_job), dict(strong_job)])
+        self.assertEqual((len(strong), len(review)), (2, 0))
+
+
 class TestTierClassification(unittest.TestCase):
     def test_enrichment_populates_each_surviving_job(self):
         jobs = [dict(REAL_JOBS[1], description=""), dict(REAL_JOBS[4], description="")]
@@ -897,13 +987,30 @@ class TestStatsRows(unittest.TestCase):
         self.assertIn("profile may be stale", warning)
 
 
-def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None):
+def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
+             fit_checks=None):
     """Run digest.main() fully mocked; return (discord_posts, workdir).
 
     Pass `work` from a previous call to run a second day against the seen.json
     and archives the first one wrote, which is how repeat delivery is tested.
+
+    `fit_checks` maps a job title to the fit_check result the reality pass
+    should attach; anything unnamed is left unchecked, which is the default.
+
+    `digest.check_jobs` is patched unconditionally. No network escapes without
+    it either -- `digest.requests` and `openrouter.requests` are the same module
+    object, so the fake_post below already covers chat_json -- but that fake
+    returns a Discord-shaped 204 with an empty body, which chat_json would fail
+    to parse into a check on every strong job of every run. Patching keeps that
+    noise out and, more usefully, lets a test say exactly what the reality pass
+    found.
     """
     posts = []
+
+    def fake_check(jobs_to_check, resume_text, api_key, *args, **kwargs):
+        for job in jobs_to_check:
+            job["fit_check"] = (fit_checks or {}).get(
+                job["title"], fit_check_module.neutral_result("not checked in test"))
 
     def fake_post(url, json=None, timeout=None):
         posts.append(json["content"])
@@ -929,6 +1036,7 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None):
              mock.patch.object(digest, "COMPANIES", []), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "rank_jobs", return_value=ranking), \
+             mock.patch.object(digest, "check_jobs", side_effect=fake_check), \
              mock.patch.object(digest.requests, "post", side_effect=fake_post), \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
             digest.main()
@@ -2479,6 +2587,103 @@ class TestEndToEnd(unittest.TestCase):
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
         self.assertIn("url:https://example.com/e", seen)
+
+    def test_a_blocked_job_is_delivered_flagged_rather_than_dropped(self):
+        """The whole point of plan 018B, end to end.
+
+        A job the ranker loved (93) but whose stated hard requirements the
+        resume cannot evidence must still reach the reader -- capped, tiered
+        down and carrying its blockers. The complaint was "the card lied", not
+        "show me fewer jobs", and drop_below_floor has already run by the time
+        the cap lands, so a capped score can never remove a job or get it
+        remembered.
+        """
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+        }
+        blocked = {
+            "blockers": [
+                {"title": "No BigQuery or GCP evidence", "severity": "high"},
+                {"title": "No Bachelor's degree in Computer Science", "severity": "high"},
+            ],
+            "unclear": [], "strengths": [], "ceiling": "low", "note": "",
+        }
+
+        posts, work = run_main(
+            self.ENV, ranking,
+            fit_checks={"Senior Software Engineer (AI Systems)": blocked})
+
+        body = "\n".join(posts)
+        self.assertIn("Senior Software Engineer (AI Systems)", body,
+                      "a capped job must still be delivered")
+        self.assertIn(f"fit {digest.BLOCKED_SCORE_CAP}", body)
+        self.assertIn("2 verified requirement gaps", body)
+
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            seen = json.load(handle)
+        self.assertIn("url:https://example.com/b", seen,
+                      "delivered jobs are remembered normally")
+
+        # Selected by title, not by index: the jobs the ranking left out fall
+        # back to keyword_score, which can exceed a capped 69 and sort above it.
+        snapshot = self._snapshot(work, "Senior Software Engineer (AI Systems)")
+        self.assertEqual(snapshot["tier"], "Worth reviewing",
+                         "a capped job must not wear a Strong matches label")
+        self.assertEqual(snapshot["ceiling"], "low")
+        self.assertEqual(len(snapshot["blockers"]), 2)
+
+        card = job_archive.job_card_payload(snapshot)
+        self.assertIn("Low ceiling, 2 blocker(s)", card["embeds"][0]["footer"]["text"])
+        gaps = [f for f in card["embeds"][0]["fields"] if f["name"].startswith("Gaps")]
+        self.assertEqual(len(gaps), 1, "the blockers must be readable on the card")
+        self.assertIn("No BigQuery or GCP evidence", gaps[0]["value"])
+
+    def _snapshot(self, work, title):
+        path = os.path.join(work, "jobs", datetime.date.today().isoformat() + ".json")
+        with open(path, encoding="utf-8") as handle:
+            snapshots = json.load(handle)["jobs"]
+        return next(s for s in snapshots if s["title"] == title)
+
+    def test_a_high_ceiling_job_keeps_its_score_and_tier(self):
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+        }
+        clean = {"blockers": [], "unclear": [], "strengths": [],
+                 "ceiling": "high", "note": ""}
+
+        posts, work = run_main(
+            self.ENV, ranking,
+            fit_checks={"Senior Software Engineer (AI Systems)": clean})
+
+        self.assertIn("fit 93", "\n".join(posts))
+        snapshot = self._snapshot(work, "Senior Software Engineer (AI Systems)")
+        self.assertEqual(snapshot["tier"], "Strong matches")
+        self.assertEqual(snapshot["ceiling"], "high")
+        card = job_archive.job_card_payload(snapshot)
+        self.assertNotIn("Low ceiling", card["embeds"][0]["footer"]["text"])
+        self.assertEqual(len(card["embeds"][0]["fields"]), 2, "no gaps field when clean")
+
+    def test_the_drift_average_ignores_the_blocker_cap(self):
+        """avg_score is taken before the cap (digest.py:2131), so a run where
+        the reality pass capped everything must record the same average as one
+        where it capped nothing. Otherwise the reality pass would masquerade as
+        a profile drift and fire check_drift every day it did its job."""
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+        }
+        title = "Senior Software Engineer (AI Systems)"
+        blocked = {"blockers": [{"title": "No BigQuery or GCP evidence", "severity": "high"},
+                                {"title": "No Bachelor's degree", "severity": "high"}],
+                   "unclear": [], "strengths": [], "ceiling": "low", "note": ""}
+        clean = {"blockers": [], "unclear": [], "strengths": [],
+                 "ceiling": "high", "note": ""}
+
+        def average(fit_checks):
+            _, work = run_main(self.ENV, ranking, fit_checks=fit_checks)
+            with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+                return json.load(handle)[-1]["avg_score"]
+
+        self.assertEqual(average({title: blocked}), average({title: clean}))
 
     def test_the_drift_average_is_measured_before_the_floor_cuts(self):
         """check_drift compares today's average against the prior window. Taking

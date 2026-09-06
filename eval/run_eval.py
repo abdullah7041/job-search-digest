@@ -27,6 +27,7 @@ import json
 import os
 import statistics
 import sys
+import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
@@ -37,6 +38,7 @@ sys.path.insert(0, REPO)
 os.chdir(REPO)
 
 import digest  # noqa: E402
+import fit_check  # noqa: E402
 from eval.score import grade, invariance_failures  # noqa: E402
 
 FIXTURE_DIR = os.path.join(REPO, "eval", "fixtures")
@@ -62,13 +64,35 @@ def load_fixtures(only: str = "") -> list[dict]:
     return fixtures
 
 
-def rank_once(fixtures: list[dict], api_key: str) -> dict[str, dict]:
-    """One rank_jobs call over every fixture job, keyed back by fixture id."""
+def rank_once(fixtures: list[dict], api_key: str, check: bool = False) -> dict[str, dict]:
+    """One rank_jobs call over every fixture job, keyed back by fixture id.
+
+    With `check`, also runs plan 018B's reality pass per fixture and folds its
+    blockers and strengths into each result. That is what switches on the
+    scorer's `blockers` category and its `must_not_credit` gate, which are
+    inert without them. It costs one extra model call per fixture, so it is
+    opt-in rather than the default.
+    """
     by_job_id = {f["job"]["id"]: f["id"] for f in fixtures}
     ranking = digest.rank_jobs([dict(f["job"]) for f in fixtures], api_key)
     if ranking is None:
         return {}
-    return {by_job_id[k]: v for k, v in ranking.items() if k in by_job_id}
+    results = {by_job_id[k]: v for k, v in ranking.items() if k in by_job_id}
+    if not check:
+        return results
+    resume = digest.load_resume_evidence()
+    for fixture in fixtures:
+        result = results.get(fixture["id"])
+        if result is None:
+            continue
+        checked = fit_check.check_job(
+            fixture["job"], resume, api_key,
+            time.monotonic() + fit_check.CHECK_BUDGET_SECONDS,
+            digest.RANK_MODEL, digest.RANK_FALLBACKS, digest.RANK_PROVIDER)
+        result["blockers"] = checked["blockers"]
+        result["strengths"] = checked["strengths"]
+        result["ceiling"] = checked["ceiling"]
+    return results
 
 
 def main() -> int:
@@ -76,6 +100,8 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--only", default="", help="substring filter on fixture id")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument("--check", action="store_true",
+                        help="also run 018B's reality pass (one extra call per fixture)")
     args = parser.parse_args()
 
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -88,7 +114,7 @@ def main() -> int:
 
     per_run: list[dict[str, dict]] = []
     for attempt in range(1, args.runs + 1):
-        results = rank_once(fixtures, api_key)
+        results = rank_once(fixtures, api_key, check=args.check)
         if not results:
             print(f"run {attempt}: ranker returned nothing")
             continue
@@ -115,6 +141,10 @@ def main() -> int:
         print(f"      scored {scores}  (spread {spread})  expected {low}-{high}")
         print(f"      overall {overall:.2f}   {graded[-1]['categories']}")
         print(f"      why: {graded[-1]['why']}")
+        last = per_run[-1].get(fixture["id"]) or {}
+        if last.get("ceiling"):
+            titles = "; ".join(b["title"] for b in last.get("blockers") or []) or "none"
+            print(f"      ceiling {last['ceiling']} | blockers: {titles}")
         for note in graded[-1]["notes"]:
             print(f"      - {note}")
         for failure in hard:

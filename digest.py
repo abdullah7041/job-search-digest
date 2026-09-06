@@ -46,6 +46,7 @@ from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
 from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
+from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
 
 # ------------------------------- CONFIG -------------------------------------
@@ -282,6 +283,13 @@ JD_RANK_CHARS = 2000    # JD window per job inside the one ranking call
 # function, seniority mismatch, or several gaps" band, one point below the
 # strong-match line.
 TEASER_SCORE_CAP = 69
+
+# A job whose stated hard requirements the resume cannot evidence is held out of
+# the strong tier, exactly as a teaser is, and for the same reason: "strong
+# match" has to mean the evidence backed it up. Same value as TEASER_SCORE_CAP
+# because it expresses the same thing -- one point below STRONG_MATCH_MIN_SCORE
+# minus the review band. See plans/018.
+BLOCKED_SCORE_CAP = 69
 
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
@@ -1510,6 +1518,36 @@ def cap_teaser_scores(jobs):
     return capped
 
 
+def cap_blocked_scores(jobs):
+    """Hold a job with verified requirement gaps out of the strong tier.
+
+    The mirror of cap_teaser_scores. That one says the description could not
+    back the score up; this one says the description DID, and the resume could
+    not meet it. Returns the jobs it capped.
+
+    Only a `low` ceiling caps, and only a ceiling computed from evidence that
+    survived checking. `unknown` -- a check that failed, timed out, or never
+    ran -- must never cap: silence means "no verdict", not "bad verdict", or a
+    provider outage would quietly demote every strong match in the digest.
+    """
+    capped = []
+    for job in jobs:
+        check = job.get("fit_check") or {}
+        if check.get("ceiling") != "low":
+            continue
+        if job["score"] <= BLOCKED_SCORE_CAP:
+            # cap_teaser_scores may already have brought it here and appended
+            # its own reason. A second suffix on a 140-character field means the
+            # truncation eats the first one, and both caps are the same number,
+            # so there is nothing left to say about the score.
+            continue
+        blockers = len(check.get("blockers") or [])
+        job["score"] = BLOCKED_SCORE_CAP
+        job["why"] = f"{job['why']} (capped: {blockers} verified requirement gaps)"[:140]
+        capped.append(job)
+    return capped
+
+
 def remember(seen, job, today):
     """Record a posting so no later run reconsiders it.
 
@@ -1561,15 +1599,27 @@ def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
     return kept, deferred
 
 
+def is_strong(job):
+    """A high-confidence, JD-backed model match.
+
+    Extracted from split_tiers so the reality check and the tier split cannot
+    drift apart: the jobs worth spending a per-job model call on are exactly the
+    ones about to be labelled "Strong matches".
+    """
+    return bool(job["ranking_verified"]
+                and job["score"] >= STRONG_MATCH_MIN_SCORE
+                and job.get("description"))
+
+
 def split_tiers(jobs):
     """Separate high-confidence JD-backed model matches from review candidates."""
-    strong = [
-        job for job in jobs
-        if job["ranking_verified"]
-        and job["score"] >= STRONG_MATCH_MIN_SCORE
-        and bool(job.get("description"))
-    ]
-    review = [job for job in jobs if job not in strong]
+    strong = [job for job in jobs if is_strong(job)]
+    # `job not in strong` here was a dict equality compare -- O(n^2) with deep
+    # comparison. Unreachable as a defect (strength is a pure function of the
+    # dict, so two equal dicts are both strong or neither is), but refactoring
+    # the predicate out and leaving the membership test would be worse than
+    # either fixing it or not touching it. plans/README.md:296.
+    review = [job for job in jobs if not is_strong(job)]
     return strong, review
 
 
@@ -2160,6 +2210,18 @@ def main():
         # drop: a verdict on the shape of today's digest, not on the role.
         log(f"Deferred {job['company']} - {job['title']}: fit {job['score']}, "
             f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
+
+    # Between cap_per_company and split_tiers on purpose, and the position does
+    # three jobs at once. avg_score was taken above, so drift keeps measuring
+    # what it always measured. drop_below_floor already ran, so a capped score
+    # can never drop a job or get it remembered -- it is delivered, flagged.
+    # And split_tiers has not run, so a capped job lands in "Worth reviewing"
+    # on its own instead of wearing a "Strong matches" label beside a fit 69.
+    check_jobs([job for job in fresh if is_strong(job)], load_resume_evidence(),
+               rank_key, RANK_MODEL, RANK_FALLBACKS, RANK_PROVIDER, log)
+    for job in cap_blocked_scores(fresh):
+        gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
+        log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
 
     strong, review = split_tiers(fresh)
     strong.sort(key=lambda x: x["score"], reverse=True)

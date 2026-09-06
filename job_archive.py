@@ -164,6 +164,12 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "score": job.get("score", 0),
         "why": job.get("why", ""),
         "ranking_verified": bool(job.get("ranking_verified")),
+        # Additive, like the jd.grade field below: schema_version stays 1 so a
+        # same-day append to an archive written before these existed still
+        # merges. Readers must treat a missing ceiling as "unknown".
+        "ceiling": (job.get("fit_check") or {}).get("ceiling", "unknown"),
+        "blockers": [blocker.get("title", "") for blocker
+                     in ((job.get("fit_check") or {}).get("blockers") or [])][:3],
         "link_status": job.get("link_status", "unknown"),
         "jd": {
             "status": "captured" if not completeness_failures else ("missing" if not jd_text else "incomplete"),
@@ -193,15 +199,28 @@ def job_card_payload(snapshot: dict) -> dict:
         footer += " · Short teaser, not the full posting"
     if snapshot.get("link_status") == "unknown":
         footer += " · Link check inconclusive"
+    # Only a low ceiling earns a line. "mid" is the ordinary case and saying so
+    # on every card would train the reader to skip the footer, and "unknown"
+    # means the check could not run -- which must not read as a verdict.
+    blockers = snapshot.get("blockers") or []
+    if snapshot.get("ceiling") == "low":
+        footer += f" · Low ceiling, {len(blockers)} blocker(s)"
+    fields = [
+        {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
+        {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
+    ]
+    if snapshot.get("ceiling") == "low" and blockers:
+        # In a field rather than crammed into the footer: these are the whole
+        # reason the score was capped, so they have to be readable.
+        fields.append({"name": "Gaps the posting states",
+                       "value": "\n".join(f"• {title}" for title in blockers)[:1024],
+                       "inline": False})
     return {
         "embeds": [{
             "title": snapshot["title"],
             "url": snapshot["url"],
             "description": snapshot["why"],
-            "fields": [
-                {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
-                {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
-            ],
+            "fields": fields,
             "footer": {"text": footer},
         }],
         "components": [{
