@@ -36,36 +36,42 @@ anything, and treat a move inside the spread as noise.
 
 ## The fixtures
 
-| Fixture | Band | What it catches |
-|---|---|---|
-| `floor-aml-officer` | 0–39 | Wrong function entirely (compliance). Inflating this is the most dangerous regression, because `drop_below_floor` only fires below 50. |
-| `hungerstation-senior-data-engineer-i` | 35–68 | **The case this pass exists for.** Delivered at fit 85; Watheq scored it 58. Every missing qualification is stated in the posting. |
-| `hungerstation-with-benefits-boilerplate` | 35–68 | Identical requirements plus the Additional Information block, which says *"We offer relocation support globally"*. The rubric's 0–39 band names relocation, so a model reading a benefit as a location tanks a valid Riyadh role. |
-| `inflation-omniops-solution-engineer` | 40–72 | Archived at 85. Its own reason admits presales experience is "lighter" and never mentions the required CS degree. |
-| `inflation-listed-only-skills` | 0–50 | Every requirement appears in `resume.md`'s `## SKILLS` line and in **no** experience bullet. Catches a regression back to scoring the blurb. |
-| `ceiling-senior-genai-engineer` | 75–100 | **The counterweight.** 018A lowers scores by design; without a fixture that must stay high, the set would only punish optimism and an over-correction would pass clean. |
+Measured live against `google/gemini-3.7-flash` on 2026-09-07, 3 runs each.
+**Spread was 0 on every fixture** — `seed=7` with no temperature was fully
+reproducible for this set.
 
-Verified to discriminate, not assumed — by feeding the scorer deliberately
-broken rankers:
+| Fixture | Band | Scored | What it catches |
+|---|---|---|---|
+| `floor-aml-officer` | 0–39 | **0** | Wrong function entirely. Inflating it is the worst case, because `drop_below_floor` only fires under 50. |
+| `inflation-listed-only-skills` | 0–50 | **42** | Every requirement is in `resume.md`'s `## SKILLS` line and in no experience bullet. Its reason now reads *"Skills only listed; lacks demonstrated enterprise RAG…"* — the ported rule, working verbatim. |
+| **`hungerstation-senior-data-engineer-i`** | 35–68 | **45** | **The case this pass exists for.** Delivered at fit 85; Watheq scored 58. |
+| `hungerstation-with-benefits-boilerplate` | 35–68 | **45** | Identical requirements plus *"relocation support globally"*. Scored identically — the boilerplate did not move it. |
+| `inflation-genai-credentialed` | 40–72 | **48** | Archived at 95. Requires a Master's, 5 years ML, PyTorch, Docker/K8s, Java/Ruby — none evidenced. |
+| `inflation-omniops-solution-engineer` | 40–72 | **52** | Archived at 85. Its own old reason admitted presales was "lighter" and never mentioned the required CS degree. |
+| `ceiling-senior-ai-product-engineer` | 80–100 | **98** | **The counterweight.** Requirements the resume genuinely demonstrates. Proves 018A rewards evidence rather than just deducting for gaps. |
 
-| Injected ranker | Passes |
-|---|---|
-| Inflated and confident (88 everywhere, "skills align well") | **1 of 6** — only the ceiling, which is where 88 belongs |
-| Inflated but vague (55 everywhere, names no gap) | **0 of 6** |
-| Over-corrected into pessimism (30 everywhere, gaps named) | **4 of 6** — the ceiling and OmniOps fail, the two that must stay high |
-| Correct (in band, names a gap) | **6 of 6** |
-| Correct but boasting a forbidden strength (018B shape) | **3 of 6** — the hard gate bites |
-| Boilerplate moves only the noisy twin | invariance fires, spread 35 > 8 |
+### Two fixtures were wrong, and measurement is what found them
 
-The "correct" row matters as much as the first: a set no correct ranker can pass
-is not a gold set, it is a ratchet. It was 4 of 6 during development, because
-`must_not_credit` was being checked against `why` and failed a ranker for
-naming a required gap. That is the bug the Grading section below describes.
+Both were caught by the first live run, and both are recorded rather than
+quietly fixed — a gold set that gets edited until it passes is worthless.
 
-The pessimism row is the weakest of the six, and honestly so: a blanket 30 sits
-only 5 points under the HungerStation band, which the decay curve correctly
-treats as a near miss rather than a failure. The ceiling fixture is what makes
-that row bite at all.
+- **The original ceiling was not a ceiling.** `ceiling-senior-genai-engineer`
+  was a real posting archived at **95**, and its band `[75, 100]` came from that
+  number. Live, it scored **55**. Reading its Qualifications explained why: a
+  Master's in CS/AI/DS, a *minimum* of 5 years professional AI/ML,
+  PyTorch/TensorFlow, transformers, Java, Ruby, Docker and Kubernetes — the
+  resume evidences none of them. **The archived 95 was itself inflation**, so
+  the band had been calibrated against the very disease 018A cures. It is now
+  `inflation-genai-credentialed`, banded `[40, 72]` — *tighter* than before, not
+  wider.
+- **The listed-only fixture was testing the wrong path.** Its JD was 484
+  characters, which `jd_grade` calls `incomplete`, and the prompt tells the model
+  to judge those on title and function alone. It scored 65 and its reason opened
+  *"Incomplete posting"* — the demonstrated-vs-listed rule never ran. The JD is
+  now long enough to grade `full`.
+
+The replacement ceiling's band is **probed, not assumed**: that exact JD was run
+through 018A before being frozen, and scored 98.
 
 ## Grading
 

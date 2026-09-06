@@ -19,7 +19,7 @@ verdict honest.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| [018](018-ground-the-fit-score-in-resume-evidence.md) | Ground the fit score in resume evidence | P1 | M + M | — | **018A DONE**, committed `43cc4ce`. **018B BLOCKED on the gate** — see below |
+| [018](018-ground-the-fit-score-in-resume-evidence.md) | Ground the fit score in resume evidence | P1 | M + M | — | **018A DONE** (`43cc4ce`), **gate CLEARED** 2026-09-07. **018B not started** — unblocked, awaiting the operator's go-ahead |
 
 ### The diagnosis, verified in code rather than asserted
 
@@ -50,25 +50,40 @@ years of Solution Engineering / Presales / Solutions Architecture. `resume.md`
 shows a pipefitting diploma and none of those functions. The old rubric had
 nowhere to put either fact and scored it 85.
 
-### GATE — 018B is deliberately not started
+### GATE — CLEARED 2026-09-07. 018B is unblocked.
 
-018A is committed. **018B must not be built until 018A's effect is measured**,
-because 018A is what tests the pass's premise. If reading the resume does not
-move the grounding case, the premise is wrong and a verdict layer would be built
-on sand.
+The operator ran the gold set live against `google/gemini-3.7-flash`, 3 runs per
+fixture. **The premise holds, and the margin is not subtle.**
 
-`scripts/measure_ranker.py` is the harness. It scores one archived job under
-both the old and new prompts in one process, and reports whether the shift
-clears run-to-run noise. It needs a live `OPENROUTER_API_KEY`, which exists only
-as a GitHub Actions secret — **the operator has to run it:**
+| Job | Before 018A | After 018A | Watheq |
+|---|---|---|---|
+| **HungerStation, Senior Data Engineer I** | **85** | **45** | 58 |
+| OmniOps, Senior Solution Engineer | 85 | 52 | — |
+| Innovationteam, Senior GenAI Engineer | 95 | 48 | — |
+| Tabby, AML Officer | 10 | 0 | — |
+| A job the resume genuinely fits (constructed) | — | **98** | — |
 
-```
-OPENROUTER_API_KEY=sk-... python scripts/measure_ranker.py --runs 3
-```
+**Spread was 0 across all three runs on every fixture.** None of this is noise.
 
-Judge the reasons before the number: `chat_json` sends `seed=7` and no
-temperature, so a single run proves nothing, and a shift inside the spread is
-not a result. Record the outcome here before starting 018B.
+The reasons moved as much as the numbers, which was the real test — the ranker
+is reading the evidence block, not restating the title:
+
+> "Lacks Bachelor's degree, 5+ years DE experience, and required
+> distributed/GCP/Airflow data stack." — HungerStation, 45
+
+> "Skills only listed; lacks demonstrated enterprise RAG, dimensional modeling,
+> and n8n production evidence." — the listed-only fixture, 42
+
+> "Exact match for candidate's solo-built LLM production stack, evaluation
+> pipelines, and Saudi location." — the ceiling, 98
+
+That last row matters most: 018A is **not** globally pessimistic. Given a job
+whose requirements the resume actually demonstrates, it still scores 98. The
+correction is aimed at unevidenced claims, not at the candidate.
+
+`scripts/measure_ranker.py` was superseded by `eval/run_eval.py` before it was
+ever needed — the gold set answers the same question across seven jobs instead
+of one, so the A/B harness was never run.
 
 ### Decisions taken by the operator for 018B
 
@@ -99,7 +114,17 @@ The set is not decorative — checked by feeding it deliberately broken rankers:
 | A CORRECT ranker | 6 of 6 — the row that stops this being a ratchet |
 | Benefits boilerplate moves only the noisy twin | invariance check fires, spread 35 > 8 |
 
-Building it surfaced a real defect in its own design: `must_not_credit` was
+The first LIVE run then found two defects in the fixtures themselves, both
+recorded rather than quietly patched — a gold set edited until it passes is
+worthless. The original ceiling fixture was a real posting archived at 95 whose
+Qualifications demand a Master's, 5 years ML, PyTorch, Docker/K8s and Java: the
+95 was itself inflation, so its band had been calibrated against the disease
+018A cures. It is now `inflation-genai-credentialed`, banded tighter, and a
+constructed, probe-validated ceiling replaced it. The listed-only fixture's JD
+was 484 characters, which `jd_grade` calls `incomplete`, so the prompt had the
+model judge on title alone and the rule under test never ran.
+
+Building it also surfaced a defect in its own scorer: `must_not_credit` was
 graded against `why`, which is 15 words, so it could not tell "lacks data
 modeling" from "strong data modeling" — and the HungerStation posting requires
 data modeling while `resume.md` lists it only under `## SKILLS`, making it at
