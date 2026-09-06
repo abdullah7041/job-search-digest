@@ -34,6 +34,12 @@ the comment in `grade` for why checking it against `why` was actively wrong.
 from __future__ import annotations
 
 import re
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import fit_check  # noqa: E402
 
 # score_band carries three times the weight of the reason text because it is the
 # number that reaches the card, gets sorted on, and decides the tier.
@@ -137,8 +143,16 @@ def grade(fixture: dict, result: dict) -> dict:
     else:
         titles = " ".join(b.get("title", "") for b in blockers)
         hit = [t for t in must_flag if term_present(t, titles)]
-        categories["blockers"] = (len(hit) / len(must_flag)) if must_flag else 1.0
-        notes.append(f"blockers name {len(hit)}/{len(must_flag)} expected gaps")
+        # Denominator capped at what the system can physically emit. fit_check
+        # returns at most MAX_BLOCKERS, so scoring hits against a longer
+        # must_flag list makes full credit unreachable: the HungerStation
+        # fixture names 8 expected gaps and can never be told more than 3 of
+        # them. Expect the cap, not the whole list.
+        wanted = min(len(must_flag), fit_check.MAX_BLOCKERS) if must_flag else 0
+        categories["blockers"] = min(1.0, len(hit) / wanted) if wanted else 1.0
+        notes.append(f"blockers name {len(hit)} of {wanted} needed "
+                     f"({len(must_flag)} expected gaps, at most "
+                     f"{fit_check.MAX_BLOCKERS} can be reported)")
 
     total = sum(WEIGHTS[k] * v for k, v in categories.items())
     weight = sum(WEIGHTS[k] for k in categories)

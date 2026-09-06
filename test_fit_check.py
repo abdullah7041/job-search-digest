@@ -83,13 +83,35 @@ class TestBlockerVerification(unittest.TestCase):
         self.assertEqual(len(result["unclear"]), 1)
         self.assertIn("No quoted evidence", result["unclear"][0]["reason"])
 
-    def test_a_blocker_naming_something_the_posting_never_mentions_is_demoted(self):
-        """The quote checks out but the title invents a requirement."""
+    def test_a_blocker_that_never_quotes_the_posting_is_demoted(self):
+        """A blocker asserts the POSTING demands something, so it has to quote
+        the posting. Citing only the resume shows what the candidate lacks
+        without showing that anyone asked for it."""
         result = fit_check.verify(answer(blockers=[
             blocker("No Kubernetes or Terraform experience",
-                    "5+ years of experience in Data Engineering")]), JOB, RESUME)
+                    "Built and deployed the full platform solo: React 19, TypeScript",
+                    source="resume")]), JOB, RESUME)
         self.assertEqual(result["blockers"], [])
-        self.assertIn("never mentions", result["unclear"][0]["reason"])
+        self.assertIn("requires this", result["unclear"][0]["reason"])
+
+    def test_a_title_case_blocker_is_not_mistaken_for_invented_terms(self):
+        """Regression guard, measured. Plan 018 had unsupported_terms check the
+        blocker title; it flags capitalised words mid-sentence as proper nouns,
+        which is meaningless for a Title Case heading. Against the live
+        HungerStation posting it threw away all three real blockers on the words
+        "Dedicated", "Required" and "Tools" while all nine of their snippets
+        verified."""
+        titles = [
+            "Lacks 5-8 Years of Dedicated Data Engineering Experience",
+            "Lacks Required Bachelor's Degree in Relevant Field",
+            "Missing Proven Experience with Modern Data Stack Tools",
+        ]
+        raw = answer(blockers=[
+            blocker(title, "5+ years of experience in Data Engineering")
+            for title in titles])
+        result = fit_check.verify(raw, JOB, RESUME)
+        self.assertEqual(len(result["blockers"]), 3)
+        self.assertEqual(result["unclear"], [])
 
     def test_a_blocker_naming_a_requirement_absent_from_the_resume_is_kept(self):
         """THE regression guard for the direction of the term check.

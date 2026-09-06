@@ -210,15 +210,28 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
     Pure, so it is testable without a model. This is the whole mechanism; the
     prompt above only asks nicely.
 
-    Two term checks, and they point in OPPOSITE directions -- plan 018 got this
-    backwards and it is worth stating why. A blocker NAMES A REQUIREMENT, so its
-    terms must come from the job description; checking a blocker against the
-    resume's vocabulary would reject every true blocker, because a missing
-    requirement is missing from the resume by definition. A strength NAMES A
-    CAPABILITY, so its terms must come from the resume.
+    Blockers and strengths are gated DIFFERENTLY, because they assert different
+    things:
+
+    * A blocker says THE POSTING DEMANDS THIS. It must quote the posting. An
+      invented requirement cannot be quoted from a document that never states
+      it, which is the whole gate.
+    * A strength says THE CANDIDATE HAS THIS. Its evidence must check out AND
+      its named terms must exist in the resume's vocabulary, since a strength
+      is a claim about the candidate rather than about the job.
+
+    `unsupported_terms` is deliberately NOT applied to blocker titles. Plan 018
+    specified it, and it fails twice over. Pointed at the resume it rejects
+    every true blocker, because a missing requirement is missing from the resume
+    by definition. Pointed at the job description it still misfires, because it
+    flags capitalised words mid-sentence as proper nouns -- sound for a prose
+    bullet, meaningless for a Title Case heading where every word is capital.
+    Measured against the live HungerStation posting it threw away all three real
+    blockers on the words "Dedicated", "Required" and "Tools", while every one
+    of their nine evidence snippets verified. A gate with that false-positive
+    rate is worse than no gate.
     """
     jd_text = job.get("description") or ""
-    from_jd = vocabulary(jd_text, job.get("title", ""), job.get("company", ""))
     from_resume = vocabulary(resume_text, job.get("title", ""), job.get("company", ""))
 
     blockers, unclear, strengths = [], [], []
@@ -237,10 +250,12 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
         if not evidence:
             unclear.append(_as_unclear(item, "No quoted evidence survived checking."))
             continue
-        invented = unsupported_terms(title, from_jd)
-        if invented:
+        # A blocker asserts the POSTING demands something. Quoting the posting
+        # is what makes that checkable, and an invented requirement cannot be
+        # quoted from a document that never states it.
+        if not any(e["source"] == "job_description" for e in evidence):
             unclear.append(_as_unclear(
-                item, f"Names {', '.join(invented[:3])}, which the posting never mentions."))
+                item, "Nothing quoted from the posting shows it requires this."))
             continue
         blockers.append({
             "type": item.get("type") if item.get("type") in BLOCKER_TYPES else "other",
