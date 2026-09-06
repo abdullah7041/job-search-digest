@@ -41,7 +41,17 @@ import statistics
 import sys
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, REPO)
+
+# Anchor to the repo BEFORE importing digest. Two things depend on cwd and both
+# fail quietly otherwise: digest reads profile.json at import time and falls
+# back to DEFAULT_PROFILE with only a warning, and find_case globs a relative
+# jobs/*.json. Run from anywhere else, this would measure the wrong profile
+# against an empty archive and still print a confident-looking verdict.
+# plans/README.md:594-600 records the same class of bug costing an earlier
+# executor run.
+os.chdir(REPO)
 
 import digest  # noqa: E402
 from job_archive import jd_signal  # noqa: E402
@@ -96,6 +106,12 @@ def legacy_rank(jobs: list[dict], api_key: str) -> dict | None:
 
     Kept in this throwaway script rather than left behind a flag in digest.py,
     so production carries exactly one prompt.
+
+    Copied from `rank_jobs` at commit 01c9dc3, the commit immediately before
+    018A. Confirm with `git show 01c9dc3:digest.py` before trusting a
+    measurement: nothing pins this copy, so if the live rubric is edited later
+    this becomes a third prompt that is neither the old one nor the new one,
+    and the comparison silently stops meaning anything.
     """
     profile = digest.PROFILE["blurb"]
     targets = digest.PROFILE.get("target_titles")

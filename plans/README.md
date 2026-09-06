@@ -38,7 +38,11 @@ Three structural causes, none of them a matter of prompt wording:
    from `confirmedRisks.length >= 2 || riskTier === 'critical'` — never from the
    score, which is why a 58 alone cannot produce it.
 
-**The grounding case makes cause 2 concrete.** `jobs/2026-09-03.json` → OmniOps,
+**The grounding case makes cause 2 concrete — but it is a stand-in.** The role
+Watheq actually scored 58 has not been identified; the operator holds that
+output and it names the blockers. Ask for it, and pass `--company` to the
+harness if it is a different role. Until then the stand-in is
+`jobs/2026-09-03.json` → OmniOps,
 "Senior Solution Engineer", archived at **fit 85, `ranking_verified: true`**,
 5,492-character `grade=full` JD. The 2,000-character excerpt the ranker actually
 reads *opens* with a required Bachelor's in CS/IT/Software Engineering and 5+
