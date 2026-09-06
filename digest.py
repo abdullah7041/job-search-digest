@@ -1179,6 +1179,27 @@ RANK_SCHEMA = {
 }
 
 
+RESUME_EVIDENCE_CHARS = 8000
+
+
+def load_resume_evidence(path="resume.md", limit=RESUME_EVIDENCE_CHARS):
+    """The candidate's resume as scoring evidence, or "" when there is none.
+
+    Deliberately never raises. `interactive_runner._master_document` raises on
+    a missing resume because a person clicked a button and is waiting for an
+    answer; this runs unattended every morning, so a bad read has to degrade to
+    the previous blurb-only behaviour rather than take the whole digest down.
+
+    The limit is headroom against an unbounded file, not a working truncation:
+    resume.md is ~4.3 KB today.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return handle.read().strip()[:limit]
+    except OSError:
+        return ""
+
+
 def rank_jobs(jobs, api_key):
     """One call. Returns {id: {score, why}} or None on any failure (caller falls back).
 
@@ -1199,22 +1220,51 @@ def rank_jobs(jobs, api_key):
     targets = PROFILE.get("target_titles")
     if targets:
         profile += " Currently targeting: " + ", ".join(targets) + "."
+    # The blurb is a paragraph the candidate wrote about himself, so every
+    # keyword in it read as demonstrated capability. The resume goes in as
+    # separately labelled evidence now, and the blurb keeps the job it is
+    # actually good at: stating constraints and wants. See plans/018.
+    evidence = load_resume_evidence()
     listing = [
         {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"],
          "description_kind": jd_grade(j.get("description") or ""),
          "jd_excerpt": jd_signal(j.get("description") or "", JD_RANK_CHARS)}
         for j in sorted(jobs, key=lambda j: j["id"])
     ]
+    # Omitted entirely rather than sent empty: a bare
+    # <candidate_evidence></candidate_evidence> invites the model to read "no
+    # evidence" as "no capability", which would tank every score on a day the
+    # file went missing.
+    evidence_block = (
+        f"<candidate_evidence>\n{evidence}\n</candidate_evidence>\n"
+        "The evidence block is the candidate's resume. It is the only thing "
+        "here that proves capability, so judge every hard requirement against it.\n"
+        "A term whose only appearance is under ## SUMMARY or ## SKILLS is a claim, "
+        "not evidence -- anyone can type any keyword there. A term counts as "
+        "demonstrated only when a ## EXPERIENCE or ## PROJECTS entry shows the "
+        "candidate using it. A resume that lists every required tool and "
+        "demonstrates none is a weak match on skills, not a strong one.\n\n"
+    ) if evidence else ""
     prompt = (
-        f"{profile}\n\n"
+        f"{evidence_block}"
+        f"<candidate_preferences>\n{profile}\n</candidate_preferences>\n"
+        "The preferences block states what the candidate wants and the constraints "
+        "that rule a role out. It proves nothing about capability.\n\n"
         "Score each job 0-100 for fit to this candidate. Anchor every score to this rubric:\n"
         "- 90-100: senior-level INDIVIDUAL CONTRIBUTOR role in a core area (AI/LLM apps, "
         "software/backend, full-stack, data) in Saudi Arabia, and the JD's hard requirements "
-        "are clearly covered by the profile. Reserve 95+ for near-perfect matches.\n"
+        "are clearly covered by the candidate's evidence. Reserve 95+ for near-perfect matches.\n"
         "- 70-89: senior IC role in a core area with one or two real gaps against the JD.\n"
         "- 40-69: adjacent function, seniority mismatch, or several gaps.\n"
         "- 0-39: leadership/staff/principal/management track, wrong location (including a title "
         "that says based elsewhere or offers relocation), or wrong function.\n"
+        "When the posting states a hard number of years, or a required degree, "
+        "certification or licence, weigh it as a requirement in its own right rather "
+        "than folding it into the function judgement. Count years from what the "
+        "evidence block actually dates, not from a total the preferences block claims. "
+        "A stated credential the evidence does not show is a real gap and belongs in "
+        "your reason; a requirement written as 'preferred' or 'nice to have' is not a "
+        "hard one and must not be scored as a gap.\n"
         "jd_excerpt starts where the posting begins describing the job, so it is the "
         "requirements and responsibilities, not the company's recruiting copy. Score against "
         "what it states. A requirement the excerpt does not mention is unknown, not a gap: "

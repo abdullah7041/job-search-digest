@@ -505,6 +505,108 @@ class TestRankedExcerpt(unittest.TestCase):
         self.assertTrue(captured["provider"]["require_parameters"])
 
 
+class TestRankerEvidence(unittest.TestCase):
+    """What the ranker is given to score the candidate ON.
+
+    It used to be PROFILE["blurb"] alone -- a paragraph the candidate wrote
+    about himself. Watheq's match feature scored the same role 58 where this
+    digest said 85, and its anti-inflation rule names exactly why: a term whose
+    only appearance is a summary or a skills list is an unproven claim, not
+    evidence. The blurb IS a summary, so every keyword in it read as
+    demonstrated capability. The resume goes in as separately labelled
+    evidence now, and the blurb keeps the job it is actually good at -- stating
+    constraints and wants. See plans/018.
+    """
+
+    def _prompt_for(self, jobs=None):
+        captured = {}
+
+        def fake(prompt, *args, **kwargs):
+            captured["prompt"] = prompt
+            return {"scores": []}
+
+        with mock.patch.object(digest, "chat_json", side_effect=fake):
+            digest.rank_jobs(jobs or [dict(REAL_JOBS[0], description=FULL_JD)], "key")
+        return captured["prompt"]
+
+    def test_a_missing_resume_returns_empty_rather_than_raising(self):
+        """The tailoring path raises on a missing resume because a person is
+        waiting on it. The daily ranker must degrade instead of crashing."""
+        self.assertEqual(digest.load_resume_evidence("no-such-resume.md"), "")
+
+    def test_an_empty_resume_reads_as_no_evidence(self):
+        path = os.path.join(tempfile.mkdtemp(prefix="empty_resume_"), "resume.md")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("   \n\n  ")
+        self.assertEqual(digest.load_resume_evidence(path), "")
+
+    def test_the_resume_is_read_and_bounded(self):
+        path = os.path.join(tempfile.mkdtemp(prefix="big_resume_"), "resume.md")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("x" * 20000)
+        self.assertEqual(len(digest.load_resume_evidence(path, limit=8000)), 8000)
+
+    def test_the_prompt_carries_the_resume_as_a_labelled_evidence_block(self):
+        with mock.patch.object(digest, "load_resume_evidence",
+                               return_value="Built an LLM evaluation pipeline."):
+            prompt = self._prompt_for()
+        self.assertIn("<candidate_evidence>", prompt)
+        self.assertIn("Built an LLM evaluation pipeline.", prompt)
+        evidence = prompt.split("<candidate_evidence>")[1].split("</candidate_evidence>")[0]
+        self.assertIn("LLM evaluation pipeline", evidence)
+
+    def test_the_preferences_block_stays_separate_from_the_evidence(self):
+        """The blurb carries MUST BE BASED IN SAUDI ARABIA and the
+        never-managed-a-team constraint. resume.md carries neither, so the
+        blurb cannot simply be replaced by it."""
+        with mock.patch.object(digest, "load_resume_evidence", return_value="RESUME BODY"):
+            prompt = self._prompt_for()
+        self.assertIn("<candidate_preferences>", prompt)
+        preferences = prompt.split("<candidate_preferences>")[1].split(
+            "</candidate_preferences>")[0]
+        self.assertIn(digest.PROFILE["blurb"][:60], preferences)
+        self.assertNotIn("RESUME BODY", preferences)
+
+    def test_the_evidence_block_is_omitted_entirely_when_there_is_no_resume(self):
+        """An empty <candidate_evidence></candidate_evidence> invites the model
+        to read 'no evidence' as 'no capability' and would tank every score on
+        a day the file went missing."""
+        with mock.patch.object(digest, "load_resume_evidence", return_value=""):
+            prompt = self._prompt_for()
+        self.assertNotIn("<candidate_evidence>", prompt)
+        self.assertIn("<candidate_preferences>", prompt)
+
+    def test_the_prompt_says_only_the_evidence_block_proves_capability(self):
+        with mock.patch.object(digest, "load_resume_evidence", return_value="RESUME BODY"):
+            prompt = self._prompt_for().lower()
+        self.assertIn("proves nothing", prompt)
+
+    def test_a_listed_only_skill_is_not_treated_as_demonstrated(self):
+        """Ported from Watheq's keyword-inflation counter."""
+        with mock.patch.object(digest, "load_resume_evidence", return_value="RESUME BODY"):
+            prompt = self._prompt_for().lower()
+        self.assertIn("## skills", prompt)
+        self.assertIn("## experience", prompt)
+
+    def test_the_rubric_weighs_stated_years_and_credentials(self):
+        """45 of Watheq's 100 points sit in experience and education. This
+        rubric had a band for neither."""
+        prompt = self._prompt_for().lower()
+        self.assertIn("years", prompt)
+        self.assertIn("credential", prompt)
+
+    def test_the_unknown_is_not_a_gap_clause_survives(self):
+        """Load-bearing: jd_excerpt is a 2000-char window, so a requirement
+        missing from it is usually truncation, not absence from the job."""
+        prompt = self._prompt_for()
+        self.assertIn("is unknown, not a gap", prompt)
+
+    def test_the_listing_order_still_does_not_depend_on_fetch_order(self):
+        jobs = [dict(REAL_JOBS[i], description=FULL_JD) for i in range(3)]
+        self.assertEqual(self._prompt_for(jobs),
+                         self._prompt_for(list(reversed(jobs))))
+
+
 class TestTeaserGrading(unittest.TestCase):
     """An aggregator blurb clears every completeness check while evidencing
     nothing: 400 characters, 60 words, and the word 'experience'."""
