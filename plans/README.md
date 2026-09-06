@@ -4,13 +4,86 @@ This directory is the standing audit record for this repository: every plan,
 the index, findings deliberately rejected (so they are not re-audited), and
 defects found in the plans themselves during execution.
 
-**Three passes are recorded here.** Plan 017 is the current pass. Plans 012–016 are
-the pass before it, and plans 001–011 the pass before that; every one of those is
-DONE and merged, and their records are preserved below.
+**Four passes are recorded here.** Plan 018 is the current pass. Plan 017 is the
+pass before it, plans 012–016 the one before that, and plans 001–011 the first;
+their records are preserved below.
 
 ---
 
-## Current pass — 2026-09-06 (017)
+## Current pass — 2026-09-06 (018)
+
+**Written against `main` at commit `01c9dc3`.** Opened by the operator: the
+digest delivered a role at **fit 85** that Watheq's match feature scored **58**
+with a low-ceiling verdict. This pass ports the structure that makes Watheq's
+verdict honest.
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| [018](018-ground-the-fit-score-in-resume-evidence.md) | Ground the fit score in resume evidence | P1 | M + M | — | **018A DONE**, committed `43cc4ce`. **018B BLOCKED on the gate** — see below |
+
+### The diagnosis, verified in code rather than asserted
+
+Three structural causes, none of them a matter of prompt wording:
+
+1. **The ranker scored a self-marketing blurb, not a resume.** `rank_jobs` sent
+   `PROFILE["blurb"]` and never sent `resume.md`, which is read only on the
+   Tailor-CV path. Watheq's own anti-inflation clause
+   (`contracts/index.js:403`) names the failure: a term whose only appearance is
+   a summary or a skills list is an unproven claim. The blurb **is** a summary.
+2. **The rubric had no band for experience or education.** Watheq weights those
+   at 30 + 15 of 100. This prompt had no year count and no credential check
+   anywhere.
+3. **No evidence gate, no blockers, no ceiling.** `apply_ranking` validates
+   `why` for non-emptiness and nothing else. Watheq's low-ceiling copy comes
+   from `confirmedRisks.length >= 2 || riskTier === 'critical'` — never from the
+   score, which is why a 58 alone cannot produce it.
+
+**The grounding case makes cause 2 concrete.** `jobs/2026-09-03.json` → OmniOps,
+"Senior Solution Engineer", archived at **fit 85, `ranking_verified: true`**,
+5,492-character `grade=full` JD. The 2,000-character excerpt the ranker actually
+reads *opens* with a required Bachelor's in CS/IT/Software Engineering and 5+
+years of Solution Engineering / Presales / Solutions Architecture. `resume.md`
+shows a pipefitting diploma and none of those functions. The old rubric had
+nowhere to put either fact and scored it 85.
+
+### GATE — 018B is deliberately not started
+
+018A is committed. **018B must not be built until 018A's effect is measured**,
+because 018A is what tests the pass's premise. If reading the resume does not
+move the grounding case, the premise is wrong and a verdict layer would be built
+on sand.
+
+`scripts/measure_ranker.py` is the harness. It scores one archived job under
+both the old and new prompts in one process, and reports whether the shift
+clears run-to-run noise. It needs a live `OPENROUTER_API_KEY`, which exists only
+as a GitHub Actions secret — **the operator has to run it:**
+
+```
+OPENROUTER_API_KEY=sk-... python scripts/measure_ranker.py --runs 3
+```
+
+Judge the reasons before the number: `chat_json` sends `seed=7` and no
+temperature, so a single run proves nothing, and a shift inside the spread is
+not a result. Record the outcome here before starting 018B.
+
+### Decisions taken by the operator for 018B
+
+| Question | Decision |
+|---|---|
+| Score effect of blockers | Cap the score **and** add the verdict, following `cap_teaser_scores`. |
+| Which jobs get the per-job pass | Strong tier only (`ranking_verified`, score >= 80, has a JD). ~3–6/day. |
+| Capped score below the floor | Deliver it, flagged. Never dropped, never `remember()`ed. |
+| Gold-set evals | Deferred. **Risk this leaves: nothing detects inflation drift automatically.** |
+
+### Expected one-off drift warning
+
+018A lowers scores broadly, and `check_drift` warns on a >15-point drop across a
+7-day window. It will fire once. **Do not widen `DRIFT_SCORE_DROP_THRESHOLD`** —
+that disables the detector permanently to silence one expected event.
+
+---
+
+## Pass 2026-09-06 (017)
 
 **Written against `main` at commit `ab0eb45`.** Opened by the monthly job-fit
 profile refresh: the profile was re-read, and reading it surfaced a defect in
