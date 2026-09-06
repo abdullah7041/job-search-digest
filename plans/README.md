@@ -77,7 +77,35 @@ not a result. Record the outcome here before starting 018B.
 | Score effect of blockers | Cap the score **and** add the verdict, following `cap_teaser_scores`. |
 | Which jobs get the per-job pass | Strong tier only (`ranking_verified`, score >= 80, has a JD). ~3–6/day. |
 | Capped score below the floor | Deliver it, flagged. Never dropped, never `remember()`ed. |
-| Gold-set evals | Deferred. **Risk this leaves: nothing detects inflation drift automatically.** |
+| Gold-set evals | **Built** (`eval/`), not deferred — the operator asked for them once 018A landed. |
+
+### Gold set — built, and verified to discriminate
+
+`eval/` holds six frozen fixtures with expected score bands, a weighted scorer
+with a hard `must_not_credit` gate, and `test_eval.py` covering the scorer
+offline so the thing that judges the ranker is itself under test.
+
+It closes a real hole: `check_drift` compares the daily average against its own
+recent history, so a slow inflation drift moves the baseline with it and never
+fires. It catches a cliff, not a slope, and cannot say which job was wrong.
+
+The set is not decorative — checked by feeding it deliberately broken rankers:
+
+| Injected failure | Fixtures passing |
+|---|---|
+| Inflation (88 for everything) | 1 of 6 — only the ceiling |
+| Over-correction (30 for everything) | 4 of 6 — the ceiling and OmniOps fail |
+| Benefits boilerplate moves only the noisy twin | invariance check fires, spread 35 > 8 |
+
+The `blockers` category is written but inert until 018B emits typed blockers,
+at which point it switches on with no code change.
+
+**The operator identified the case**: HungerStation "Senior Data Engineer I"
+(HS). It is newer than the newest archive (`jobs/2026-09-03.json`), so its JD is
+frozen into the fixture from the operator's own paste rather than read from
+`jobs/*.json`. Every qualification the resume misses is stated outright in that
+posting: 5–8 years of Data Engineering, a CS/Engineering bachelor's,
+GCP/BigQuery, Airflow/dbt/Looker, Terraform, distributed data systems.
 
 ### Expected one-off drift warning
 

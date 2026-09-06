@@ -1,0 +1,28 @@
+{
+  "id": "inflation-listed-only-skills",
+  "description": "The keyword-stuffing guard, aimed at this exact resume. Every requirement here appears in resume.md's ## SKILLS line and in NO ## EXPERIENCE or ## PROJECTS bullet: RAG concepts, n8n, data modeling, advanced Excel, REST APIs. Under the demonstrated-vs-listed rule ported in 018A, a term whose only home is a skills list is an unproven claim, so this must NOT score as a strong match even though a substring matcher would find every keyword. This is the fixture that catches a regression back to scoring the blurb.",
+  "source": "constructed to target resume.md's listed-only terms",
+  "job": {
+    "title": "Senior AI Data Engineer",
+    "company": "Constructed",
+    "location": "Riyadh, Saudi Arabia",
+    "id": "listed-only",
+    "description": "Job Description\n\nWe are hiring a Senior AI Data Engineer in Riyadh.\n\nRequirements\n\n- Production RAG systems: chunking, embedding, retrieval evaluation and reranking, deployed and maintained at scale\n- n8n workflow automation: building and operating production automations\n- Dimensional data modeling: star schemas, slowly changing dimensions, governed semantic layers\n- Advanced Excel modelling for finance stakeholders\n- REST API design and versioning across multiple consumer teams\n"
+  },
+  "expected": {
+    "score_band": [
+      0,
+      60
+    ],
+    "must_flag": [
+      "RAG",
+      "n8n"
+    ],
+    "must_not_credit": [
+      "RAG",
+      "n8n",
+      "data modeling",
+      "Excel"
+    ]
+  }
+}

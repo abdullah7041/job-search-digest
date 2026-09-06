@@ -74,7 +74,7 @@ score. A 58 alone cannot produce that copy; two server-verified blockers can.
 | Score effect of blockers | Cap the score **and** add the verdict. `cap_teaser_scores` is the existing idiom. |
 | Which jobs get the per-job pass | Strong tier only (`ranking_verified`, score >= 80, has a JD). ~3-6/day. |
 | Capped score below the floor | Deliver it, flagged. Never dropped, never `remember()`ed. |
-| Gold-set evals | Deferred to a later pass. Recorded as the follow-up. |
+| Gold-set evals | **Built** (`eval/`) once 018A landed, at the operator's request. |
 
 ---
 
@@ -366,6 +366,10 @@ shared deadline in the style of `RANK_BUDGET_SECONDS`.
 - [ ] `avg_score` for a run equals the pre-cap average.
 - [ ] `python -m unittest test_digest.py test_interactive.py test_workflow_guard.py` -> `OK`.
 - [ ] `cd worker && npm test` -> unchanged at 44.
+- [x] Gold set exists, and is verified to discriminate rather than assumed:
+      an all-88 ranker passes 1 of 6, an all-30 ranker passes 4 of 6 and
+      fails the ceiling, and moving only the boilerplate twin trips the
+      invariance check.
 
 ## STOP conditions
 
@@ -381,10 +385,16 @@ shared deadline in the style of `RANK_BUDGET_SECONDS`.
 
 ## Explicitly out of scope
 
-- **Gold-set evals.** Watheq's `eval/match-fixtures/*.json` with expected score
-  bands and hard `mustNotCredit` gates is the right way to keep this honest over
-  time, and it is a third distinct chunk of work. **Risk this leaves: after 018
-  lands, nothing detects inflation drift automatically.**
+- ~~**Gold-set evals.**~~ **DONE** — built after 018A rather than deferred. See
+  `eval/README.md`. Six frozen fixtures (floor, ceiling, the HungerStation case,
+  the OmniOps case, a listed-only-skills guard, and a boilerplate-invariance
+  pair), a weighted scorer with a hard `must_not_credit` gate, and `test_eval.py`
+  covering the scorer offline. The `blockers` category is written but inert until
+  018B emits typed blockers, at which point it switches on with no code change.
+
+  The risk this was meant to close is closed: `check_drift` compares the daily
+  average against its own recent history, so a slow inflation drift moves the
+  baseline with it and never fires. The gold set has fixed expectations instead.
 - Re-tuning `MIN_DELIVER_SCORE`, `STRONG_MATCH_MIN_SCORE`, `TEASER_SCORE_CAP`,
   or `40 + hits * 15`.
 - Backfilling `jobs/*.json` or `stats.json`. History stays as it ran.
