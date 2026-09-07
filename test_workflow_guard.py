@@ -2,6 +2,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -162,3 +163,38 @@ class WorkflowGuardTests(unittest.TestCase):
             freshness_report(self.root / "stats.json", fresh_run, dt.date(2026, 8, 11)),
             ["stats.json has no row for the Riyadh day"],
         )
+
+
+class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
+    """Every tunable digest.py reads has to actually reach the scheduled run.
+
+    JSEARCH_DAILY_REQUESTS was read by digest.py and documented as "override with
+    a repository variable" for 100+ commits while digest.yml never passed it, so
+    the budget silently stayed at the hardcoded default. That was invisible until
+    the JSearch plan came within days of running dry (102 of 200 requests left on
+    7 Sep 2026, ~21 days to reset, 6 spent a day). A comment is not a wire.
+    """
+
+    def _run_digest_env(self):
+        import yaml
+        path = Path(__file__).with_name(".github") / "workflows" / "digest.yml"
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job in workflow["jobs"].values():
+            for step in job.get("steps") or []:
+                if step.get("name") == "Run digest":
+                    return step.get("env") or {}
+        self.fail("digest.yml has no 'Run digest' step")
+
+    def test_the_jsearch_budget_reaches_the_scheduled_run(self):
+        env = self._run_digest_env()
+        self.assertIn("JSEARCH_DAILY_REQUESTS", env)
+        self.assertIn("vars.JSEARCH_DAILY_REQUESTS", env["JSEARCH_DAILY_REQUESTS"])
+
+    def test_every_tunable_digest_reads_is_passed(self):
+        """Names read via os.environ.get in digest.py, minus the ones that are
+        secrets or set by the runner itself, must all appear in the step's env."""
+        source = Path(__file__).with_name("digest.py").read_text(encoding="utf-8")
+        read = set(re.findall(r'os\.environ\.get\(\s*"([A-Z0-9_]+)"', source))
+        env = self._run_digest_env()
+        missing = sorted(name for name in read if name not in env)
+        self.assertEqual(missing, [], f"digest.py reads {missing}, digest.yml never passes them")
