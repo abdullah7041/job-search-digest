@@ -2818,6 +2818,7 @@ def probe_active_ats(api_key, time_frame="7d", limit=10):
            f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
            f"&location={requests.utils.quote('Saudi Arabia')}"
            f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
+           f"&description_format=text"
            f"&time_frame={time_frame}&limit={limit}")
     try:
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
@@ -2845,9 +2846,16 @@ def probe_active_ats(api_key, time_frame="7d", limit=10):
     print()
     if not jobs:
         return 0
-    print("job object keys (first job):")
-    for key in sorted(jobs[0]):
-        print(f"  {key}")
+    # One row verbatim, values and all. The key list alone does not say whether
+    # description_format=text lands in "description" or "description_text",
+    # whether locations_derived holds strings or dicts, or what shape date_posted
+    # actually takes -- and fetch_active_ats guesses all three.
+    sample = dict(jobs[0])
+    for key in sorted(sample):
+        value = sample[key]
+        if isinstance(value, str) and len(value) > 160:
+            value = value[:160] + f"... ({len(sample[key])} chars)"
+        print(f"  {key} = {value!r}")
     print()
     today = datetime.date.today()
     for job in jobs:
