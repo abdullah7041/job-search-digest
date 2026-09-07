@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-07",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_YmluZzoxMTYzOTkwNzAuUmV0cm8",
+      "captured_at": "2026-09-07T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_YmluZzoxMTYzOTkwNzAuUmV0cm8",
+      "title": "Senior Machine Learning Engineer (NLP/Llms)",
+      "company": "HudHud Maps",
+      "location": "Riyadh، RIY, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-machine-learning-engineer-nlp-llms-at-hudhud-maps-4455833108?trk=bingjobs",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 65,
+      "why": "Great domain fit in Riyadh, but requires MSc/PhD and 5+ years ML/NLP experience.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "jd": {
+        "status": "captured",
+        "text": "About The Role\n\r\n\n\r\nWe are looking for a Senior Machine Learning Engineer with deep expertise in\r\nNatural Language Processing (NLP) and Large Language Models (LLMs) to join our growing team. This role requires strong research-to-production skills, combined with robust software engineering capabilities to ensure scalable, reliable systems.\n\r\n\n\r\nKey Responsibilities\n\r\n\n\r\n\r\n\r\n- Design, develop, and deploy NLP and LLM-based solutions for real-world applications.\n- Translate research papers and experimental models into production-ready systems.\n- Architect and implement scalable ML pipelines, ensuring performance and reliability.\n- Collaborate with product and engineering teams to integrate ML models into Hudhud’s platforms.\n- Conduct experiments, evaluate models, and optimize for accuracy, efficiency, and cost.\n- Stay up to date with the latest advancements in NLP, LLMs, and generative AI.\n- Guide junior engineers and contribute to building a high-performance AI team.\n\r\n\n\r\n\n\r\nQualifications & Skills\n\r\n\n\r\n\r\n- Education: MSc or PhD in Computer Science, Machine Learning, Artificial Intelligence, or related fields.\n- Experience: Minimum 5+ years of professional experience in ML/NLP, with at least 3+ years working on LLMs.\n- Core Expertise:\r\n\r\n- Strong background in NLP techniques (transformers, embeddings, sequence models).\n- Hands-on experience with LLMs (fine-tuning, prompt engineering, model evaluation).\n- Practical experience with LangChain and/or Haystack frameworks for building LLM-powered applications.\n- Solid understanding of ML system design and deployment in production environments.\n\n\r\n\n- Software Engineering Skills:\r\n\r\n- Proficiency in Python and ML frameworks (PyTorch, TensorFlow, Hugging Face).\n- Strong knowledge of software engineering principles (version control, testing, CI/CD).\n- Experience with distributed systems, APIs, and microservices.\n- Familiarity with cloud platforms (AWS, GCP, Azure) and containerization (Docker, Kubernetes).\n- Problem-Solving: Excellent analytical skills and ability to work independently in a fast-paced startup environment.\n- Preferred: Experience in Arabic NLP or multilingual LLMs is a strong plus.\n\r\n\n\r\n\n\r\nJoining Hudhud Means\n\r\n\n\r\n\r\n\r\n- Working on real-world problems with direct impact across industries in Saudi Arabia and beyond.\n- Being part of a fast-growing startup that values innovation, ownership, and bold ideas.\n- Collaborating with a team passionate about pushing the boundaries of geospatial technology.\n- Helping shape the future of customer experience through maps and location intelligence.\n\r\n\n\r\n\n\r\nWe’re not just building technology — we’re redefining how people and businesses experience the world around them.",
+        "sha256": "193219ecf129cacd059a44fd4afb47d90a1d290d5229f61d599c68a6bbfe1cb4",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
