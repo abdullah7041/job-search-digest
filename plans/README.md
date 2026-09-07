@@ -38,17 +38,22 @@ Three structural causes, none of them a matter of prompt wording:
    from `confirmedRisks.length >= 2 || riskTier === 'critical'` — never from the
    score, which is why a 58 alone cannot produce it.
 
-**The grounding case makes cause 2 concrete — but it is a stand-in.** The role
-Watheq actually scored 58 has not been identified; the operator holds that
-output and it names the blockers. Ask for it, and pass `--company` to the
-harness if it is a different role. Until then the stand-in is
-`jobs/2026-09-03.json` → OmniOps,
-"Senior Solution Engineer", archived at **fit 85, `ranking_verified: true`**,
-5,492-character `grade=full` JD. The 2,000-character excerpt the ranker actually
-reads *opens* with a required Bachelor's in CS/IT/Software Engineering and 5+
-years of Solution Engineering / Presales / Solutions Architecture. `resume.md`
-shows a pipefitting diploma and none of those functions. The old rubric had
-nowhere to put either fact and scored it 85.
+**The case is HungerStation, "Senior Data Engineer I"** — identified by the
+operator after this section was first written. It is newer than the newest
+archive (`jobs/2026-09-03.json`), so its JD is frozen into
+`eval/fixtures/hungerstation-senior-data-engineer-i.json` from the operator's
+own paste rather than read from `jobs/*.json`. Its Qualifications state 5–8
+years of Data Engineering, a CS/Engineering bachelor's, GCP/BigQuery,
+Airflow/dbt/Looker, Terraform and distributed data systems. `resume.md`
+evidences none of them.
+
+**A second case makes cause 2 concrete independently.** `jobs/2026-09-03.json` →
+OmniOps, "Senior Solution Engineer", archived at **fit 85,
+`ranking_verified: true`**, 5,492-character `grade=full` JD. The 2,000-character
+excerpt the ranker actually reads *opens* with a required Bachelor's in
+CS/IT/Software Engineering and 5+ years of Solution Engineering / Presales /
+Solutions Architecture. `resume.md` shows a pipefitting diploma and none of
+those functions. The old rubric had nowhere to put either fact and scored it 85.
 
 ### GATE — CLEARED 2026-09-07. 018B is unblocked.
 
