@@ -1647,6 +1647,12 @@ CLOSED_MARKERS = [
     "position has been closed",
 ]
 
+# LinkedIn's own markup for a closed posting. Its country subdomains localise every
+# string on the page but not the class name, so this is the only marker that holds
+# in every locale. Pinned here so a LinkedIn markup change fails a test loudly
+# rather than silently reopening the hole it closed.
+LINKEDIN_CLOSED_CLASS = "closed-job__flavor--closed"
+
 
 def verify_link(url):
     """
@@ -1691,6 +1697,17 @@ def verify_link(url):
     # touches other ATSs' pages (which legitimately lack that schema).
     if "ashbyhq.com" in final and "jobposting" not in body:
         log(f"DROP ashby posting gone (no JobPosting schema): {url}")
+        return LINK_CLOSED
+    # LinkedIn serves a closed posting in the viewer's language, so CLOSED_MARKERS
+    # never fires on the country subdomains JSearch relays for Saudi roles --
+    # sa.linkedin.com says "لم نعد نقبل طلبات التقدم", not "no longer accepting
+    # applications". Confirmed live 7 Sep 2026: the SAME posting read closed on
+    # www.linkedin.com and open on sa.linkedin.com, and link_closed had been 0 on
+    # every recorded day. The markup class is locale-independent and present on
+    # both hosts, so match on that instead of on any English text. Scoped to the
+    # host so no other board is judged by LinkedIn's class names.
+    if link_host(final).endswith("linkedin.com") and LINKEDIN_CLOSED_CLASS in body:
+        log(f"DROP linkedin posting closed: {url}")
         return LINK_CLOSED
     for m in CLOSED_MARKERS:
         if m in body:

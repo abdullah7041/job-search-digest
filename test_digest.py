@@ -164,6 +164,43 @@ class TestLinkEvidence(unittest.TestCase):
             )
         self.assertEqual(digest.verify_link(""), digest.LINK_CLOSED)
 
+    # LinkedIn's country subdomains (sa.linkedin.com, the host JSearch relays for
+    # Saudi roles) serve the posting in the local language, so the English strings
+    # in CLOSED_MARKERS never appear on a closed Saudi posting -- it reads
+    # "لم نعد نقبل طلبات التقدم". Verified live 7 Sep 2026 against
+    # sa.linkedin.com/jobs/view/...-4455833108, a posting LinkedIn had closed:
+    # verify_link called it open. The markup class is the same in every locale.
+    LINKEDIN_CLOSED_FIXTURE = (
+        '<figure class="closed-job">'
+        '<figcaption class="closed-job__flavor--closed">'
+        'لم نعد نقبل طلبات التقدم</figcaption></figure>'
+    )
+
+    def test_a_closed_linkedin_posting_in_another_language_is_closed(self):
+        """The English marker is absent; only the markup class says it's dead."""
+        url = "https://sa.linkedin.com/jobs/view/full-stack-developer-at-perfect-vision-4458712297"
+        body = self.LINKEDIN_CLOSED_FIXTURE
+        for marker in digest.CLOSED_MARKERS:
+            self.assertNotIn(marker, body.lower())
+        with mock.patch.object(digest, "_get", return_value=self._response(200, url=url, text=body)):
+            self.assertEqual(digest.verify_link(url), digest.LINK_CLOSED)
+
+    def test_an_open_linkedin_posting_stays_open(self):
+        """The class is absent on a live posting, so nothing here drops it."""
+        url = "https://sa.linkedin.com/jobs/view/senior-solution-engineer-at-omniops-4454605146"
+        body = '<div class="jobs-apply">قدم الآن</div>'
+        with mock.patch.object(digest, "_get", return_value=self._response(200, url=url, text=body)):
+            self.assertEqual(digest.verify_link(url), digest.LINK_OPEN)
+
+    def test_the_linkedin_closed_class_is_scoped_to_linkedin(self):
+        """Another host using a similar class name is not judged by this gate."""
+        url = "https://careers.example.com/job/123"
+        with mock.patch.object(
+            digest, "_get",
+            return_value=self._response(200, url=url, text=self.LINKEDIN_CLOSED_FIXTURE),
+        ):
+            self.assertEqual(digest.verify_link(url), digest.LINK_OPEN)
+
 
 class TestGetDescription(unittest.TestCase):
     def _resp(self, payload):
