@@ -2937,13 +2937,38 @@ def probe_bayt(api_key, days_old="7", scan_pages="10"):
             value = value[:140] + f"... ({len(rows[0][key])} chars)"
         print(f"  {key} = {value!r}")
     print()
-    for row in rows[:25]:
-        title = str(row.get("title") or row.get("jobTitle") or "?")[:46]
-        org = str(row.get("company") or row.get("employer")
-                  or row.get("companyName") or "?")[:26]
-        posted = str(row.get("postedDate") or row.get("datePosted")
-                     or row.get("postDate") or "?")[:19]
-        print(f"- [{posted:19}] {org:26} {title}")
+    # Volume is not the question -- relevance is. Bayt carries the whole Saudi
+    # market, most of it retail, construction and admin, so what matters is how
+    # many rows survive the filters this digest already applies. Shaped the way
+    # a fetcher would shape them, then judged by matches_filters itself.
+    shaped = []
+    for row in rows:
+        company = row.get("company")
+        if isinstance(company, dict):
+            company = company.get("name") or ""
+        shaped.append({
+            "company": str(company or ""),
+            "title": str(row.get("title") or "").strip(),
+            "location": str(row.get("locationFormatted")
+                            or row.get("location") or ""),
+            "url": row.get("url") or "",
+            "first_published": str(row.get("postedAt") or "")[:10],
+            "source": "bayt", "token": "",
+            "description": str(row.get("summaryEn")
+                               or row.get("descriptionSnippet") or ""),
+            "days_old": row.get("daysOld"),
+            "aggregated": row.get("isAggregated"),
+        })
+    kept = [j for j in shaped if matches_filters(j)]
+    native = sum(1 for j in kept if j.get("aggregated") is False)
+    print(f"{len(kept)} of {len(shaped)} rows pass this digest's own filters "
+          f"({native} of those posted natively on Bayt)")
+    print()
+    for job in kept[:30]:
+        age = job.get("days_old")
+        age = f"{age}d" if isinstance(age, int) else "?"
+        tag = "native" if job.get("aggregated") is False else "aggr"
+        print(f"- [{age:>4} {tag:6}] {job['company'][:26]:26} {job['title'][:46]}")
     return 0
 
 
