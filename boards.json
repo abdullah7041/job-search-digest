@@ -1,4 +1,15 @@
 {
+  "adree": {
+    "company": "Adree",
+    "found": "2026-09-07",
+    "roles": 7,
+    "source": "workable",
+    "token": "adree"
+  },
+  "anonymous": {
+    "company": "Anonymous",
+    "miss": "2026-09-07"
+  },
   "creditninjakmdpartners": {
     "company": "CreditNinja - KMD Partners, LLC",
     "miss": "2026-09-03"
@@ -32,6 +43,10 @@
     "company": "Democrance",
     "miss": "2026-09-03"
   },
+  "ernstyoungadvisoryservices": {
+    "company": "Ernst & Young Advisory Services Sdn Bhd",
+    "miss": "2026-09-07"
+  },
   "ernstyoungae": {
     "company": "Ernst & Young AE",
     "miss": "2026-09-03"
@@ -42,6 +57,10 @@
     "roles": 0,
     "source": "workable",
     "token": "exequt"
+  },
+  "ey": {
+    "company": "EY",
+    "miss": "2026-09-07"
   },
   "filecloud": {
     "company": "FileCloud",
@@ -144,5 +163,12 @@
   "supportfinity": {
     "company": "SupportFinity™",
     "miss": "2026-09-07"
+  },
+  "trueai": {
+    "company": "true ai",
+    "found": "2026-09-07",
+    "roles": 0,
+    "source": "workable",
+    "token": "trueai"
   }
 }

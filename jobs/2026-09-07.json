@@ -27,6 +27,120 @@
         "completeness_failures": [],
         "grade": "full"
       }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9OGNmM2Y4NTUzYTBmZDVhMDtjYz1zYQ==",
+      "captured_at": "2026-09-07T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9OGNmM2Y4NTUzYTBmZDVhMDtjYz1zYQ==",
+      "title": "Forward Deployed AI Engineer",
+      "company": "Consulum",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://consulum.bamboohr.com/careers/37",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 69,
+      "why": "Strong fit for Riyadh-based agentic AI, LLMs, RAG, and n8n product engineering. (capped: 1 verified requirement gaps)",
+      "ranking_verified": true,
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Degree in CS or Related Discipline"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-07",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "ABOUT CONSULUM\n\nConsulum are the leading intelligence-led strategy and communications firm. We design and activate evidence-led programmes to deliver targeted outcomes for governments and businesses. Rooted in the MENA region and powered by the Stagwell Global Network, we bring deep insight, cutting-edge tools, and creative firepower to every challenge.\n\nWe combine unrivalled experience with proprietary research capabilities to generate the clarity leaders need to cut through complexity, act with precision, and deliver meaningful impact. Our vision is to set the global benchmark for how strategy and communications is used to deliver real-world outcomes.\n\nAs part of a global network, we are linked to more than 13,000 colleagues across 40+ countries, each bringing expertise in communications, research, digital, advertising, transformation, and AI-powered tools. This connection gives us additional tools, insights, and capability to set the industry standard.\n\nABOUT THE ROLE\n\nConsulum is seeking an entrepreneurial Forward Deployed AI Engineer to work at the\n\nintersection of AI engineering, product ownership, consulting and client delivery. The role\n\ntranslates client and internal business challenges into secure, practical and scalable agentic AI products, and owns solutions from initial discovery and product definition through prototyping, deployment, adoption and continuous improvement. Beyond individual client work, the role helps shape Consulum's emerging AI product portfolio by identifying repeatable use cases, developing reusable components and turning successful client solutions into scalable products and offerings.\n\nLOCATION\n\nRiyadh, Saudia Arabia, with travel to client sites as required\n\nREPORTING TO : Head of AI.\n\nKEY RESPONSIBILITIES\n\nWork directly with consulting teams, clients and internal stakeholders to understand business challenges, user needs and opportunities for AI-enabled products.\nOwn assigned AI solutions across the product lifecycle, including discovery, requirements definition, prototyping, testing, deployment, and adoption.\nTranslate open-ended business problems into clear product requirements, user stories, technical specifications and delivery roadmaps.\nDesign, build and deploy agentic AI applications using LLMs, RAG, workflow automation tools such as n8n, APIs and client data sources.\nSupport client demonstrations, workshops, pilots, implementation, documentation, training and adoption, including presentations to senior government stakeholders.\nIdentify opportunities to convert bespoke client solutions into reusable modules, accelerators and scalable Consulum products.\nWork with the Head of AI to shape product roadmaps, prioritise new capabilities and evaluate technical and commercial opportunities;\nMaintain strong standards around security, data privacy, AI governance, evaluation and production reliability.\n\nSKILLS AND ATTRIBUTES\n\n Essential Skills\n\nEducation: Bachelor's or master's degree in software engineering, computer science, artificial intelligence or a related discipline.\nAI & Technical Capability: hands-on experience building and deploying AI solutions using Python, LLMs, RAG, APIs, agentic workflows, and automation tools such as LangChain, LlamaIndex, MCP, n8n or equivalent platforms. Skilled in prompt engineering and AI evaluation; quick to learn and experiment with emerging AI technologies.\nProduct Ownership: proven end – to- end ownership of a digital or AI solution from discovery and requirements through prototyping, testing, deployment, adoption and post-launch iteration — including at least one product taken from concept to successful delivery.\nProblem Solving: strong structured and logical thinking; able to translate ambiguous client or business challenges into practical, scalable AI solutions and clear technical requirements. Entrepreneurial product mindset balancing user needs, feasibility, and commercial value while moving quickly from ambiguity to action, and experimenting with emerging AI.\nClient Delivery & Communication: confident working directly with clients and senior stakeholders; able to demonstrate solutions, facilitate workshops and explain complex technical concepts clearly to non-technical audiences.\nProject & Stakeholder Management: ability to structure and manage AI projects, coordinate with consulting teams, technical stakeholders and clients, and deliver effectively against agreed priorities and timelines.\nLanguage: Excellent written and spoken business English and Arabic\n\n Preferred skills\n\nExperience working with Saudi government or enterprise clients\nBetween 1–3 years of experience building software, automation, data or applied AI solutions.\n\n Attributes\n\nLeadership: the ability to develop relationships of influence with clients and colleagues.\nCan-do: being resourceful, proactive, positive and problem-solving.\nResilience and stamina: the ability to handle diverse clients and a demanding workload\nDevelopment-orientation: curiosity and the desire to learn, grow and progress\n\nOUR VALUES\n\nOur values drive our culture. We want every person at Consulum to make an impact, to grow and to be surrounded by people they respect and admire.\n\nSolve What Matters\n\nWe solve the right problem, not just the brief.\n\nChallenge With Purpose\n\nIntelligent, constructive challenge — for clients and ourselves.\n\nBuild Together\n\nOne team, shared development, collective wins.\n\nWHY JOIN CONSULUM\n\nWork for a purpose-driven organisation seeking to improve the positive performance and impact of corporates and governments.\nBe part of a high-performance culture defined by the pursuit of excellence, collaboration and a focus on professional development.\nContribute to the development of the business.\nProgress with a clear and achievable path to promotion.",
+        "sha256": "6c2dfa7957fb50f6b3c1816de9517c39c5b7dad87d9cde48ff656c062117bc1d",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2350772374",
+      "captured_at": "2026-09-07T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2350772374",
+      "title": "Data Engineer",
+      "company": "Telgani | Rent a car",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/data-engineer-at-telgani-rent-a-car-4461890661",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 60,
+      "why": "Relevant Python and SQL data pipeline role, but missing cloud DW experience.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-07",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Key Responsibilities:\nBuild and maintain ETL/ELT data pipelines\nDevelop and optimize databases and data workflows\nEnsure data quality, accuracy, and reliability\nIntegrate data from multiple systems and sources\nSupport analytics, reporting, and BI requirements\nCollaborate with engineering and business teams\nRequirements:\nExperience in data engineering or data pipeline development\nStrong knowledge of SQL and relational databases\nExperience with Python for data processing and automation\nFamiliarity with data warehouses and ETL/ELT tools\nExperience with cloud platforms such as AWS, Azure, or Google Cloud\nStrong problem-solving and analytical skills",
+        "sha256": "8cfb97647b8e716ada7c536bf53d1a08fa31592e37a0b88807ec84c2aff996d6",
+        "completeness_failures": [],
+        "grade": "teaser"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2350650747",
+      "captured_at": "2026-09-07T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2350650747",
+      "title": "Software Engineer - Full Stack",
+      "company": "Moyasar Financial Company",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/d2LmHHqAKSA2Vm6bHemoGr/software-engineer---full-stack-in-riyadh-at-moyasar-financial-company",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Full-stack software role centered around Ruby on Rails, Sidekiq, and a CS degree.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-07",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "We are looking for a Software Engineer – Full Stack to join Moyasar’s Engineering team and contribute to building and improving our payment products and systems.\nYou will work across the full application stack, with Ruby on Rails as our core framework, developing backend services, APIs, web applications, and user-facing features. You will work with technologies including Ruby on Rails, PostgreSQL, Redis, and Sidekiq to build reliable and scalable solutions.\nThe ideal candidate is a hands-on engineer who enjoys solving problems, writing clean and maintainable code, and collaborating with other engineers, Product, and Design to deliver high-quality features.\nKey Responsibilities\nDesign, develop, test, and maintain full-stack applications and features across Moyasar’s products. \nBuild and maintain backend services and APIs using Ruby on Rails. \nDevelop and improve frontend features and user-facing web applications. \nDesign, build, maintain, and integrate RESTful APIs. \nWork with PostgreSQL to design data models and write efficient database queries. \nUse Redis and Sidekiq for caching, background processing, and asynchronous jobs. \nWrite clean, efficient, maintainable, and well-documented code. \nWrite and maintain automated tests, including unit and integration tests. \nParticipate actively in code reviews and technical discussions. \nTroubleshoot and resolve bugs, application issues, and performance problems. \nContribute to improving application performance, reliability, scalability, and security. \nCollaborate with Product, Design, and other engineers to understand requirements and deliver new features. \nParticipate in technical planning, estimation, and Agile development processes. \nDocument technical processes, system changes, and important development decisions. \nContribute to continuous improvement of engineering standards and development practices. \nStay current with relevant technologies and software engineering practices.\nBachelor’s degree in Computer Science, Software Engineering, Information Technology, or a related field. \n2+ years of professional software engineering experience. \nProfessional experience with Ruby and Ruby on Rails. \nExperience developing full-stack web applications. \nGood understanding of MVC architecture and software engineering principles. \nExperience designing, developing, and consuming RESTful APIs. \nGood knowledge of PostgreSQL and relational database concepts. \nExperience with Redis. \nExperience with background job processing using Sidekiq. \nExperience with frontend web development. \nExperience with Git and version-control workflows. \nExperience writing automated tests. \nGood understanding of clean code principles and maintainable software architecture. \nUnderstanding of application performance, scalability, and security. \nStrong debugging, analytical, and problem-solving skills. \nGood communication and collaboration skills. \nAbility to work effectively with both technical and non-technical team members. \nGood command of English. \nExperience in fintech, payments, banking, or high-volume transactional systems is a plus.",
+        "sha256": "cfd292e728904c97896994dbaad48a995184487121478d48ec2a8ed1e14b3d20",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9M2RlYjg5NzAwOTlhMDdhNDtjYz1zYQ==",
+      "captured_at": "2026-09-07T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9M2RlYjg5NzAwOTlhMDdhNDtjYz1zYQ==",
+      "title": "Software Engineer - Full Stack",
+      "company": "",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://apply.workable.com/j/5BEC7C0BD3",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Full-stack web role requiring Ruby on Rails and Sidekiq background processing.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-07",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "We are looking for a Software Engineer – Full Stack to join Moyasar’s Engineering team and contribute to building and improving our payment products and systems.\n\nYou will work across the full application stack, with Ruby on Rails as our core framework, developing backend services, APIs, web applications, and user-facing features. You will work with technologies including Ruby on Rails, PostgreSQL, Redis, and Sidekiq to build reliable and scalable solutions.\n\nThe ideal candidate is a hands-on engineer who enjoys solving problems, writing clean and maintainable code, and collaborating with other engineers, Product, and Design to deliver high-quality features.\n\nKey Responsibilities\nDesign, develop, test, and maintain full-stack applications and features across Moyasar’s products.\nBuild and maintain backend services and APIs using Ruby on Rails.\nDevelop and improve frontend features and user-facing web applications.\nDesign, build, maintain, and integrate RESTful APIs.\nWork with PostgreSQL to design data models and write efficient database queries.\nUse Redis and Sidekiq for caching, background processing, and asynchronous jobs.\nWrite clean, efficient, maintainable, and well-documented code.\nWrite and maintain automated tests, including unit and integration tests.\nParticipate actively in code reviews and technical discussions.\nTroubleshoot and resolve bugs, application issues, and performance problems.\nContribute to improving application performance, reliability, scalability, and security.\nCollaborate with Product, Design, and other engineers to understand requirements and deliver new features.\nParticipate in technical planning, estimation, and Agile development processes.\nDocument technical processes, system changes, and important development decisions.\nContribute to continuous improvement of engineering standards and development practices.\nStay current with relevant technologies and software engineering practices.\n\nRequirements\n\nBachelor’s degree in Computer Science, Software Engineering, Information Technology, or a related field.\n2+ years of professional software engineering experience.\nProfessional experience with Ruby and Ruby on Rails.\nExperience developing full-stack web applications.\nGood understanding of MVC architecture and software engineering principles.\nExperience designing, developing, and consuming RESTful APIs.\nGood knowledge of PostgreSQL and relational database concepts.\nExperience with Redis.\nExperience with background job processing using Sidekiq.\nExperience with frontend web development.\nExperience with Git and version-control workflows.\nExperience writing automated tests.\nGood understanding of clean code principles and maintainable software architecture.\nUnderstanding of application performance, scalability, and security.\nStrong debugging, analytical, and problem-solving skills.\nGood communication and collaboration skills.\nAbility to work effectively with both technical and non-technical team members.\nGood command of English.\nExperience in fintech, payments, banking, or high-volume transactional systems is a plus.",
+        "sha256": "768b382e4f95b6b6cdfaf96de7cf14119976cfd8e354a92c91ea775391141c41",
+        "completeness_failures": [],
+        "grade": "full"
+      }
     }
   ]
 }
