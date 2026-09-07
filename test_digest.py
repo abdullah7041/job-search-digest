@@ -3402,3 +3402,57 @@ class TestFetchLinkedin(unittest.TestCase):
         self.assertIn("date_posted_gte=", url)
         self.assertIn("description_format=text", url)
         self.assertIn("Saudi", requests_unquote(url))
+
+
+class TestNonSoftwareEngineeringIsRefused(unittest.TestCase):
+    """"Engineer" and "architect" are not software words in Saudi Arabia.
+
+    Bayt exposed this on 7 Sep 2026. Of 177 Saudi postings inside a week, 33
+    passed these filters -- and they were Structural Design Engineer,
+    Architectural Engineer, Firefighting Engineer, Civil & Transportation
+    Engineer, HSE Engineer, Fire Protection Supervisor, Bridge Inspector. The
+    Saudi market runs on construction and industry, so a title filter built
+    around the bare words matches that market far more often than software.
+
+    It had gone unnoticed because LOCATION_INCLUDE and the ranker sit
+    downstream and quietly absorbed it, at the cost of a model call per role.
+    """
+
+    CONSTRUCTION = [
+        "Structural Design Engineer", "Architectural Engineer", "Architect",
+        "Civil Engineer", "Sr Civil & Transportation Engineer",
+        "Firefighting Engineer", "Fire Protection Supervisor / Electrical Engineer",
+        "Mechanical Design Engineer - SolidWorks", "HSE Engineer | MEP",
+        "Electrical Engineer", "Maintenance Engineer", "Bridge Inspector",
+        "Steel Structure Estimation Engineer", "Pricing & Estimation Engineer (Fit-Out)",
+        "Senior Planning Engineer", "Biomedical Engineer",
+        "Architectural Designer", "Project Sales Engineer", "Sales Engineer",
+    ]
+
+    SOFTWARE = [
+        "Senior Backend Engineer", "Software Engineer - Full Stack",
+        "Machine Learning Engineer", "Data Engineer", "Senior Data Scientist",
+        "DevOps Consultant", "Site Reliability Engineer", "MLOps Engineer",
+        "Cloud Solutions Architect", "Solutions Architect - Data and AI",
+        "Software Architect", "Platform Engineer", "Senior AI Engineer",
+        "Tableau Developer", "ROS / ROS2 Developer (Software Engineer)",
+        "Embedded Firmware Engineer", "Backend Developer (Golang)",
+        "Fortinet Network Engineer", "QA Engineer", "Automation Engineer",
+    ]
+
+    def _job(self, title):
+        return {"company": "Acme", "title": title,
+                "location": "Riyadh, Saudi Arabia",
+                "url": "https://example.com/1", "source": "bayt"}
+
+    def test_construction_and_industrial_titles_are_refused(self):
+        for title in self.CONSTRUCTION:
+            with self.subTest(title=title):
+                self.assertFalse(digest.matches_filters(self._job(title)),
+                                 f"{title!r} should not reach a software digest")
+
+    def test_software_titles_still_pass(self):
+        for title in self.SOFTWARE:
+            with self.subTest(title=title):
+                self.assertTrue(digest.matches_filters(self._job(title)),
+                                f"{title!r} must still reach the digest")

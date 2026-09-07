@@ -110,8 +110,32 @@ TITLE_INCLUDE = [
     "engineer", "developer", "software", "backend", "back-end", "frontend",
     "front-end", "full stack", "fullstack", "full-stack", "ai ", " ai",
     "ml ", " ml", "machine learning", "data scien", "data engineer", "mlops",
-    "devops", "sre", "site reliability", "platform", "automation", "architect",
+    "devops", "sre", "site reliability", "platform", "automation",
+    # NOT the bare word "architect": in Saudi Arabia that is a building
+    # architect far more often than a software one. Name the software ones.
+    "solutions architect", "software architect", "data architect",
+    "cloud architect", "enterprise architect", "technical architect",
+    "security architect",
     "product manager", "technical product", "head of engineering", "solutions engineer",
+]
+
+# "Engineer" is not a software word here. Of 177 Saudi postings Bayt returned
+# inside a week on 7 Sep 2026, 33 passed these filters -- and they were
+# Structural Design, Architectural, Firefighting, Civil & Transportation, HSE,
+# Mechanical Design, Electrical, Maintenance and Estimation engineers. Saudi
+# Arabia runs on construction and industry, so a filter built on the bare word
+# matches that market far more often than this candidate's.
+#
+# It went unnoticed because LOCATION_INCLUDE and the ranker sit downstream and
+# absorbed it -- at the cost of a model call per irrelevant role.
+TITLE_EXCLUDE_DISCIPLINE = [
+    "civil", "structural", "structure", "architectural", "mechanical",
+    "electrical", "firefighting", "fire protection", "hvac", "mep ", " mep",
+    "hse", "biomedical", "chemical", "petroleum", "drilling", "geotechnical",
+    "surveyor", "quantity survey", "landscape", "interior", "irrigation",
+    "arboriculture", "agriculture", "piping", "welding", "metallurg",
+    "instrumentation", "marine", "mining", "estimation", "maintenance",
+    "planning engineer", "sales engineer", "bridge", "construction",
 ]
 
 # Seniority filter: drop anything junior AND anything above senior IC.
@@ -1194,6 +1218,8 @@ def matches_filters(job):
     if location_conflict(job["title"]):
         return False
     if any(k in title for k in TITLE_EXCLUDE):
+        return False
+    if any(k in title for k in TITLE_EXCLUDE_DISCIPLINE):
         return False
     if not any(k in title for k in TITLE_INCLUDE):
         return False
