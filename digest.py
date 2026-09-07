@@ -1889,6 +1889,40 @@ def discover_boards(jobs, boards, today):
     return probed
 
 
+def board_discovery_seeds(paywalled, still_paid, matched):
+    """The postings worth spending a board probe on, best candidate first.
+
+    Discovery used to be seeded only from what the paid-relister cut discarded,
+    which meant it only ever asked about employers whose links happened to sit
+    on jobleads or jooble. By 7 Sep 2026 that had produced a ledger of Qualcomm,
+    Lucid Motors, Delivery Hero and FileCloud -- 8 of the 10 boards found had
+    ZERO open roles -- because a paid relister carries global postings that have
+    nothing to do with hiring in Saudi. No amount of tuning the probe fixes a
+    seed list that never contained a Saudi employer.
+
+    A card that passed the filters is the opposite kind of evidence: a real
+    Saudi role this candidate would be shown, relayed by an aggregator that has
+    no employer board behind it yet. Its employer is precisely who to ask.
+
+    Refused postings still come first. Only MAX_BOARD_PROBES run in a day, and
+    finding a board for a posting the cut threw away recovers a role that would
+    otherwise never be delivered, while an aggregator card was delivered anyway
+    and only stands to get a better link tomorrow.
+    """
+    seen_keys = set()
+    out = []
+    for job in list(paywalled) + list(still_paid) + list(matched):
+        # An employer-sourced job came FROM the board, so there is nothing to find.
+        if job.get("source") in EMPLOYER_SOURCES:
+            continue
+        key = company_key(job.get("company"))
+        if not key or key in seen_keys:
+            continue
+        seen_keys.add(key)
+        out.append(job)
+    return out
+
+
 def confirmed_boards(boards):
     """Every discovered board as a COMPANIES entry, minus the ones already there."""
     already = {(c["source"], c["token"]) for c in COMPANIES}
@@ -2094,7 +2128,8 @@ def main():
     # here is read directly from the next run on. Scoped to the postings that
     # passed the filters, so five ATS requests are never spent on a role this
     # candidate would not be shown.
-    if discover_boards(paywalled + still_paid, boards, datetime.date.today().isoformat()):
+    if discover_boards(board_discovery_seeds(paywalled, still_paid, matched),
+                       boards, datetime.date.today().isoformat()):
         save_boards(boards)
 
     # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike

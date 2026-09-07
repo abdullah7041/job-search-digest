@@ -17,6 +17,7 @@ Covers:
 
 import os
 import sys
+import contextlib
 import json
 import datetime
 import shutil
@@ -1042,8 +1043,15 @@ class TestStatsRows(unittest.TestCase):
 LAST_CHECK_CALL = {}
 
 
+def _board_probe_stub(probe_boards):
+    """No-network stand-in for the board probe, unless a test asked for the real one."""
+    if probe_boards:
+        return contextlib.nullcontext()
+    return mock.patch.object(digest, "_probe_employer_board", return_value=None)
+
+
 def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
-             fit_checks=None):
+             fit_checks=None, probe_boards=False):
     """Run digest.main() fully mocked; return (discord_posts, workdir).
 
     Pass `work` from a previous call to run a second day against the seen.json
@@ -1059,6 +1067,15 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
     to parse into a check on every strong job of every run. Patching keeps that
     noise out and, more usefully, lets a test say exactly what the reality pass
     found.
+
+    `_probe_employer_board` is stubbed out for a blunter reason: it is the one
+    call here that reaches the network with requests.get rather than
+    requests.post, so nothing above covers it. Board discovery is seeded from
+    matched postings, which every one of these runs has, so leaving it live sent
+    five real requests to Greenhouse, Ashby, Workable, Lever and Pinpoint per
+    test -- 45 seconds of suite time became six minutes, and every result
+    depended on those APIs being up. Pass probe_boards=True to exercise the real
+    discovery path, having patched the `_probe` underneath it.
     """
     posts = []
 
@@ -1099,7 +1116,7 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
              mock.patch.object(digest, "COMPANIES", []), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "rank_jobs", return_value=ranking), \
-             mock.patch.object(digest, "check_jobs", side_effect=fake_check), \
+             mock.patch.object(digest, "check_jobs", side_effect=fake_check),              _board_probe_stub(probe_boards), \
              mock.patch.object(digest.requests, "post", side_effect=fake_post), \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
             digest.main()
@@ -2260,7 +2277,8 @@ class TestEndToEnd(unittest.TestCase):
         with mock.patch.object(digest, "rescue_apply_link"), \
              mock.patch.object(digest, "_probe",
                                side_effect=lambda source, token: (source == "ashby", 15)):
-            posts, work = run_main(self.ENV, {}, jobs=[job], link_statuses=[])
+            posts, work = run_main(self.ENV, {}, jobs=[job], link_statuses=[],
+                                   probe_boards=True)
         with open(os.path.join(work, "boards.json"), encoding="utf-8") as handle:
             boards = json.load(handle)
         self.assertEqual(boards["nabla"]["source"], "ashby")
@@ -2797,3 +2815,53 @@ class TestEndToEnd(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestBoardDiscoverySeeds(unittest.TestCase):
+    """Which postings are worth spending a board probe on.
+
+    Discovery was seeded only from postings the paid-relister cut discarded, so
+    it only ever asked about employers whose links sat on jobleads and jooble.
+    By 7 Sep 2026 that had produced a ledger of Qualcomm, Lucid Motors, Delivery
+    Hero and FileCloud -- 8 of 10 boards found with ZERO open roles -- because a
+    paid relister carries global postings that have nothing to do with hiring in
+    Saudi. Tuning the probe cannot fix a seed list that never contained a Saudi
+    employer in the first place.
+
+    A card that passed the filters is the opposite: it is a real Saudi role this
+    candidate would be shown. Its employer is exactly who should be asked.
+    """
+
+    def _job(self, company, source, url):
+        return {"company": company, "title": "Backend Engineer",
+                "source": source, "url": url}
+
+    def test_a_delivered_aggregator_card_seeds_a_probe(self):
+        matched = [self._job("Tabby", "jsearch", "https://sa.linkedin.com/jobs/view/x-1")]
+        seeds = digest.board_discovery_seeds([], [], matched)
+        self.assertEqual([j["company"] for j in seeds], ["Tabby"])
+
+    def test_an_employer_sourced_card_is_not_probed(self):
+        """Its board is already known -- that is where the job came from."""
+        matched = [self._job("Foodics", "workable", "https://apply.workable.com/foodics/j/A/")]
+        self.assertEqual(digest.board_discovery_seeds([], [], matched), [])
+
+    def test_paywalled_postings_keep_their_priority(self):
+        """Only MAX_BOARD_PROBES run a day. A refused posting is pure gain to
+        rescue; an aggregator card was already delivered, so it can wait."""
+        paywalled = [self._job("Refused", "jsearch", "https://jobleads.com/1")]
+        matched = [self._job("Delivered", "jsearch", "https://sa.linkedin.com/jobs/view/x-1")]
+        seeds = digest.board_discovery_seeds(paywalled, [], matched)
+        self.assertEqual([j["company"] for j in seeds], ["Refused", "Delivered"])
+
+    def test_one_employer_is_offered_once(self):
+        """Five probes a day, so a company with three open roles must not eat
+        three of them for the same answer."""
+        matched = [self._job("Tabby", "jsearch", "https://sa.linkedin.com/jobs/view/x-1"),
+                   self._job("Tabby | تابي", "jsearch", "https://sa.linkedin.com/jobs/view/x-2")]
+        seeds = digest.board_discovery_seeds([], [], matched)
+        self.assertEqual(len(seeds), 1)
+
+    def test_a_company_with_no_usable_name_is_skipped(self):
+        matched = [self._job("", "jsearch", "https://sa.linkedin.com/jobs/view/x-1")]
+        self.assertEqual(digest.board_discovery_seeds([], [], matched), [])
