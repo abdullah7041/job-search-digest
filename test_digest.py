@@ -42,34 +42,42 @@ import jd_fetch  # noqa: E402
 import job_archive  # noqa: E402
 
 
+# Postings carry a date RELATIVE TO TODAY, not the literal 2026-07-30 the
+# original digest recorded. MAX_JOB_AGE_DAYS drops anything older than a week,
+# so a hardcoded date turns every end-to-end test into a time bomb that passes
+# until the fixture ages past the cutoff and then fails for a reason that has
+# nothing to do with the behaviour under test.
+RECENT = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+
+
 # The six jobs exactly as the 2026-07-31 digest delivered them (JSearch source,
 # Arabic city + expanded country, old Gemini fit scores in comments).
 REAL_JOBS = [
     {"company": "intelmatix", "id": "jsearch_a", "title": "Lead AI Engineer",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/a",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Lead our AI engineering team."},                      # old fit 98
     {"company": "Next", "id": "jsearch_b", "title": "Senior Software Engineer (AI Systems)",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/b",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Build production LLM systems, RAG pipelines, prompt engineering, Python."},  # old fit 95
     {"company": "Qualcomm", "id": "jsearch_c",
      "title": "Machine Learning Engineer, Staff level (Datacentre AI Engineering) - Riyadh, KSA",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/c",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Staff-level ML engineering."},                        # old fit 92
     {"company": "Riyad Bank", "id": "jsearch_d", "title": "Data Engineering Team Leader",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/d",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Lead the data engineering team."},                    # old fit 85
     {"company": "Datamatics Technologies", "id": "jsearch_e", "title": "Senior Data Architect",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/e",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Design data architecture, SQL, cloud."},              # old fit 80
     {"company": "Agoda", "id": "jsearch_f",
      "title": "Staff Data Engineer - PPC Bidding (Bangkok based, relocation provided)",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/f",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Bangkok-based role, relocation provided."},           # old fit 60
 ]
 
@@ -2166,7 +2174,7 @@ class TestEndToEnd(unittest.TestCase):
         "company": "Example Labs", "id": "jsearch_ln",
         "title": "Senior AI Engineer", "location": "الرياض, Saudi Arabia",
         "url": "https://sa.linkedin.com/jobs/view/senior-ai-engineer-4442",
-        "first_published": "2026-08-29", "source": "jsearch", "token": "",
+        "first_published": RECENT, "source": "jsearch", "token": "",
         "description": "",  # forces enrichment, which is where the rescue happens
     }
 
@@ -3095,3 +3103,23 @@ class TestPostingAgeLabel(unittest.TestCase):
         self.assertEqual(digest.age_label(1), "posted yesterday")
         self.assertEqual(digest.age_label(4), "posted 4 days ago")
         self.assertEqual(digest.age_label(None), "posting date unknown")
+
+
+class TestTheCardStatesThePostingAge(unittest.TestCase):
+    def test_a_delivered_card_says_how_old_the_posting_is(self):
+        ranking = {"jsearch_a": {"score": 88, "why": "Senior IC role, requirements covered"}}
+        posts, work = run_main(TestEndToEnd.ENV, ranking,
+                               jobs=[dict(REAL_JOBS[0], title="Senior AI Engineer")],
+                               link_statuses=[digest.LINK_OPEN])
+        shutil.rmtree(work, ignore_errors=True)
+        self.assertIn("posted yesterday", "\n".join(posts))
+
+    def test_an_undated_card_says_the_date_is_unknown(self):
+        """Pinpoint publishes no date. The card must not imply the cutoff was
+        enforced on a posting whose age nobody knows."""
+        job = dict(REAL_JOBS[0], title="Senior AI Engineer", first_published="")
+        ranking = {"jsearch_a": {"score": 88, "why": "Senior IC role, requirements covered"}}
+        posts, work = run_main(TestEndToEnd.ENV, ranking, jobs=[job],
+                               link_statuses=[digest.LINK_OPEN])
+        shutil.rmtree(work, ignore_errors=True)
+        self.assertIn("posting date unknown", "\n".join(posts))

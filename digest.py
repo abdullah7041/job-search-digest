@@ -431,7 +431,11 @@ def fetch_greenhouse(c):
             "title": (j.get("title") or "").strip(),
             "location": ((j.get("location") or {}).get("name") or "").strip(),
             "url": j.get("absolute_url") or "",
-            "first_published": j.get("first_published") or j.get("updated_at") or "",
+            # NOT `or updated_at`. Once the age gate reads this field, a role
+            # posted six months ago and edited yesterday would pass a 7-day
+            # cutoff as fresh -- worse than an undated posting, which at least
+            # says so on the card. A real publication date or nothing.
+            "first_published": j.get("first_published") or "",
             "source": "greenhouse", "token": c["token"],
             "description": "",  # fetched on demand for delivered jobs only
         })
@@ -2286,9 +2290,21 @@ def main():
     # same posting appearing on the employer's own board tomorrow should be
     # delivered tomorrow.
     fresh = [j for j in matched if job_identity(j) not in seen]
+
+    # Age before liveness, because this costs no network and settle_link spends
+    # a request per job. Deliberately NOT written to seen.json: the check is
+    # free to repeat, and a posting dropped for age today must still be
+    # deliverable if a source later reports a corrected, newer date for it.
+    # An undated posting stays and is labelled rather than dropped.
+    fresh, stale = split_by_age(fresh, MAX_JOB_AGE_DAYS)
+    for job in stale:
+        log(f"DROP older than {MAX_JOB_AGE_DAYS}d ({job['age_days']}d): "
+            f"{job['company']} — {job['title']}")
+    undated = sum(1 for j in fresh if j.get("age_days") is None)
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
         f"{len(relisted_copies)} relisted copies, {len(paywalled)} paywalled and refused "
-        f"at the fetch, {len(fresh)} new")
+        f"at the fetch, {len(stale)} older than {MAX_JOB_AGE_DAYS}d, "
+        f"{len(fresh)} new ({undated} undated)")
 
     # Verification is evidence, not a boolean gate: a third-party site may block
     # this runner while still serving a job seeker. Only confirmed closure drops.
@@ -2322,6 +2338,7 @@ def main():
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
         )
         log("No new matching jobs. Heartbeat sent.")
@@ -2366,6 +2383,7 @@ def main():
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
             relisted=len(relisted),
         )
@@ -2408,6 +2426,7 @@ def main():
         save_stats(
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
             relisted=len(relisted), below_floor=len(below_floor),
         )
@@ -2470,7 +2489,11 @@ def main():
             # Only Pinpoint publishes structured pay today; everything else omits it.
             pay = f" · {j['salary']}" if j.get("salary") else ""
             resume_line = ""
-            flags = []
+            # Age leads the flags. The digest is asked for roles posted within a
+            # week, so how old a posting is belongs on the card next to the
+            # claim -- and an undated one has to say so rather than let the
+            # reader assume the cutoff was enforced on it.
+            flags = [age_label(j.get("age_days"))]
             if j.get("link_status") == LINK_UNKNOWN:
                 flags.append("link check inconclusive")
             if not j.get("description"):
@@ -2541,6 +2564,7 @@ def main():
     save_stats(
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
         strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
         delivered=len(delivered_ids), relisted=len(relisted),
         below_floor=len(below_floor), deferred=len(deferred),
