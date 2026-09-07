@@ -24,6 +24,11 @@ on:
         required: false
         default: ""
         type: string
+      freshness_query:
+        description: "Query to age-check across every date_posted value (3 requests)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -52,8 +57,17 @@ jobs:
       # QUERY is read from the environment, never interpolated into the script
       # body: a ${{ }} expression inside `run` is substituted before the shell
       # sees it, which turns a workflow input into arbitrary shell.
+      # Three requests: the same query under each date_posted value, reporting the
+      # age spread of what comes back. Answers whether the filter narrows anything.
+      - name: Age-check one query across every date_posted value
+        if: ${{ inputs.freshness_query }}
+        env:
+          QUERY: ${{ inputs.freshness_query }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-freshness "$QUERY"
+
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}

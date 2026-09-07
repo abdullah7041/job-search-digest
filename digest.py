@@ -2511,6 +2511,52 @@ def discover(names):
 # ----------------------------------------------------------------------------
 
 
+# ---------------------------- FRESHNESS PROBE -------------------------------
+# `python digest.py --probe-freshness "software engineer Saudi Arabia"` asks the
+# SAME query once per date_posted value and reports the age spread of what comes
+# back. It exists because the first --probe-jsearch run with age reporting (7 Sep
+# 2026) returned 10/10 jobs dated 32-159 days old under date_posted=month: either
+# the filter is ignored on /search-v2, or it means something other than posting
+# age. A posting-age gate cannot be designed without knowing which.
+#
+# It reads. It never writes, never delivers and never touches seen.json.
+def probe_freshness(query, api_key):
+    """Report the age spread JSearch returns for each date_posted value."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    today = datetime.date.today()
+    for window in ("week", "month", "all"):
+        url = (f"https://{JSEARCH_HOST}/search-v2"
+               f"?query={requests.utils.quote(query)}&country=sa&date_posted={window}")
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
+        remaining = r.headers.get("x-ratelimit-requests-remaining", "?")
+        if r.status_code != 200:
+            print(f"date_posted={window}: HTTP {r.status_code} {r.text[:120]}")
+            continue
+        payload = r.json().get("data") or {}
+        jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
+        ages = []
+        undated = 0
+        for job in jobs:
+            raw = (job.get("job_posted_at_datetime_utc") or "")[:10]
+            try:
+                ages.append((today - datetime.date.fromisoformat(raw)).days)
+            except ValueError:
+                undated += 1
+        ages.sort()
+        spread = (f"min {ages[0]}, median {ages[len(ages) // 2]}, max {ages[-1]}"
+                  if ages else "no parseable dates")
+        within = sum(1 for a in ages if a <= 7)
+        print(f"date_posted={window:6} -> {len(jobs)} jobs, {undated} undated, "
+              f"age days: {spread}, within 7 days: {within}/{len(ages)} "
+              f"[quota left {remaining}]")
+        time.sleep(0.5)
+    return 0
+# ----------------------------------------------------------------------------
+
+
 # ------------------------------ JSEARCH PROBE -------------------------------
 # `python digest.py --probe-jsearch "data engineer Riyadh"` prints the SHAPE of one
 # live /search-v2 response. It exists because fetch_jsearch's docstring lists only
@@ -2748,6 +2794,9 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
         sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
                                os.environ.get("RAPIDAPI_KEY")))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-freshness":
+        query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
+        sys.exit(probe_freshness(query, os.environ.get("RAPIDAPI_KEY")))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-jsearch":
         query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
         sys.exit(probe_jsearch(query, os.environ.get("RAPIDAPI_KEY")))
