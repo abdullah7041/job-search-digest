@@ -2912,6 +2912,18 @@ def probe_bayt(api_key, days_old="7", scan_pages="10"):
                 or payload.get("data") or [])
     else:
         rows = payload
+    # The envelope nests: data is itself an object holding the rows beside its
+    # own metadata. Walk one level rather than assume, and say what was found.
+    if isinstance(rows, dict):
+        print(f"data keys: {sorted(rows)}")
+        for key, value in rows.items():
+            if isinstance(value, list) and value and isinstance(value[0], dict):
+                print(f"rows live under data[{key!r}]")
+                rows = value
+                break
+        else:
+            print("no list of objects under data; nothing to shape")
+            return 0
     print(f"{len(rows)} rows returned")
     print()
     if not rows:
