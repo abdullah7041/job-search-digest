@@ -3123,3 +3123,55 @@ class TestTheCardStatesThePostingAge(unittest.TestCase):
                                link_statuses=[digest.LINK_OPEN])
         shutil.rmtree(work, ignore_errors=True)
         self.assertIn("posting date unknown", "\n".join(posts))
+
+
+class TestActiveAtsRealRowShape(unittest.TestCase):
+    """One row exactly as the API returned it, 7 Sep 2026.
+
+    The field names in fetch_active_ats were guesses read off a key list, and a
+    wrong one fails silently: description in the wrong field empties the JD of
+    every job from the source, and the card degrades to "title-only assessment"
+    without anything erroring. Pinned verbatim so a rename fails loudly.
+    """
+
+    ROW = {
+        "id": 2350650747,                              # an int, not a string
+        "title": "Software Engineer - Full Stack",
+        "organization": "Moyasar Financial Company",
+        "url": ("https://jobs.workable.com/view/d2LmHHqAKSA2Vm6bHemoGr/"
+                "software-engineer---full-stack-in-riyadh-at-moyasar-financial-company"),
+        "source": "workable",
+        "source_type": "ats",
+        "date_posted": "2026-09-07T10:16:12.629",      # sub-second, no timezone
+        "date_created": "2026-09-07T10:33:29.40768",
+        "date_valid_through": None,
+        "salary": None,
+        "locations_derived": ["Riyadh, Riyadh Region, Saudi Arabia"],
+        "description_text": "We are looking for a Software Engineer - Full Stack.",
+    }
+
+    def test_the_real_row_shapes_into_a_complete_job(self):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [self.ROW]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            job = digest.fetch_active_ats("key")[0]
+        self.assertEqual(job["id"], "2350650747")
+        self.assertEqual(job["first_published"], "2026-09-07")
+        self.assertEqual(job["location"], "Riyadh, Riyadh Region, Saudi Arabia")
+        self.assertEqual(job["description"], "We are looking for a Software Engineer - Full Stack.")
+        self.assertEqual(job["company"], "Moyasar Financial Company")
+
+    def test_the_shaped_job_passes_the_pipeline_filters(self):
+        """Shaping it correctly is not enough; LOCATION_INCLUDE and
+        TITLE_INCLUDE have to accept what the shaping produced."""
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [self.ROW]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            job = digest.fetch_active_ats("key")[0]
+        self.assertTrue(digest.matches_filters(job))
