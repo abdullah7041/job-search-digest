@@ -2982,7 +2982,7 @@ class TestFetchActiveAts(unittest.TestCase):
         the reset, which is the failure this whole change exists to prevent."""
         with mock.patch.object(digest.requests, "get") as get:
             jobs = digest.fetch_active_ats(
-                "key", quota={"jobs_remaining": digest.ACTIVE_ATS_JOBS_RESERVE - 1})
+                "key", quota={"jobs_remaining": digest.FREE_TIER["active_ats"]["reserve_jobs"] - 1})
         self.assertEqual(jobs, [])
         get.assert_not_called()
 
@@ -3045,7 +3045,7 @@ class TestApiQuotasSurviveTheRun(unittest.TestCase):
 
     def test_the_reserve_is_honoured_across_runs(self):
         digest.save_api_quotas(
-            {"active_ats": {"jobs_remaining": digest.ACTIVE_ATS_JOBS_RESERVE - 1}})
+            {"active_ats": {"jobs_remaining": digest.FREE_TIER["active_ats"]["reserve_jobs"] - 1}})
         quotas = digest.load_api_quotas()
         with mock.patch.object(digest.requests, "get") as get:
             self.assertEqual(
@@ -3056,7 +3056,7 @@ class TestApiQuotasSurviveTheRun(unittest.TestCase):
         """The failure a shared counter would cause: the ATS feed near its cap
         silencing LinkedIn, which has its own untouched allowance."""
         digest.save_api_quotas(
-            {"active_ats": {"jobs_remaining": digest.ACTIVE_ATS_JOBS_RESERVE - 1},
+            {"active_ats": {"jobs_remaining": digest.FREE_TIER["active_ats"]["reserve_jobs"] - 1},
              "linkedin_api": {"jobs_remaining": 240}})
         quotas = digest.load_api_quotas()
         response = mock.Mock()
@@ -3456,3 +3456,97 @@ class TestNonSoftwareEngineeringIsRefused(unittest.TestCase):
             with self.subTest(title=title):
                 self.assertTrue(digest.matches_filters(self._job(title)),
                                 f"{title!r} must still reach the digest")
+
+
+class TestFreeTierBudget(unittest.TestCase):
+    """Every paid feed here runs on a free plan with hard monthly caps.
+
+    Active Jobs DB and the LinkedIn feed allow 250 jobs and 25 requests a
+    month each; the Indeed feed allows 50 requests. All of them are metered
+    separately, all of them are smaller than a daily run over a 30-day month,
+    and exhausting one takes that source out until the plan resets.
+    """
+
+    def test_a_feed_with_room_is_spent(self):
+        self.assertFalse(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 20, "jobs_remaining": 200}))
+
+    def test_a_feed_near_its_request_cap_is_held_back(self):
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 1, "jobs_remaining": 200}))
+
+    def test_a_feed_near_its_job_cap_is_held_back(self):
+        """Two separate hard limits; either one can end the month."""
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 20, "jobs_remaining": 5}))
+
+    def test_an_unknown_allowance_is_spent_rather_than_assumed_empty(self):
+        """First run, or a lost state file. Assuming empty would disable the
+        only sources that can answer "posted this week"."""
+        self.assertFalse(digest.out_of_allowance("active_ats", {}))
+
+    def test_a_held_back_feed_wakes_up_after_the_plan_resets(self):
+        """The bug this exists to prevent: a feed stops once it is under its
+        reserve, so it never calls again, so it never learns the plan reset --
+        and stays off permanently. The reset instant is recorded when the
+        headers report it, and a quota past that instant counts as unknown.
+        """
+        past = digest.time.time() - 60
+        self.assertFalse(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 0, "reset_at": past}))
+
+    def test_it_stays_held_back_before_the_reset(self):
+        future = digest.time.time() + 3600
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 0, "reset_at": future}))
+
+    def test_each_feed_is_measured_against_its_own_plan(self):
+        """The Indeed feed allows 50 requests where the others allow 25, so a
+        single shared reserve would either waste one plan or overrun another."""
+        self.assertIn("indeed", digest.FREE_TIER)
+        self.assertIn("active_ats", digest.FREE_TIER)
+        self.assertIn("linkedin_api", digest.FREE_TIER)
+        # 25 a month does not cover a 30-day month at one call a day; 50 does.
+        # That difference is exactly why the reserve is per feed rather than one
+        # shared number.
+        self.assertEqual(digest.FREE_TIER["active_ats"]["requests"], 25)
+        self.assertEqual(digest.FREE_TIER["linkedin_api"]["requests"], 25)
+        self.assertEqual(digest.FREE_TIER["indeed"]["requests"], 50)
+        for feed, plan in digest.FREE_TIER.items():
+            with self.subTest(feed=feed):
+                self.assertLess(plan["reserve_requests"], plan["requests"],
+                                f"{feed} reserves its whole plan")
+
+    def test_an_unknown_feed_is_never_silently_unlimited(self):
+        self.assertTrue(digest.out_of_allowance("not_a_feed", {}))
+
+
+class TestQuotaResetIsRecorded(unittest.TestCase):
+    """RapidAPI reports seconds-until-reset, which is only meaningful at the
+    moment it is read. Stored as an absolute instant so a later run can tell
+    whether the plan has since rolled over."""
+
+    def _response(self, headers):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: []
+        response.text = ""
+        response.headers = headers
+        return response
+
+    def test_seconds_until_reset_becomes_an_instant(self):
+        quota = {}
+        before = digest.time.time()
+        headers = {"x-ratelimit-requests-remaining": "24",
+                   "x-ratelimit-requests-reset": "86400"}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response(headers)):
+            digest.fetch_active_ats("key", quota=quota)
+        self.assertGreaterEqual(quota["reset_at"], before + 86400)
+
+    def test_a_missing_reset_header_is_not_fatal(self):
+        quota = {}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response({})):
+            digest.fetch_active_ats("key", quota=quota)
+        self.assertNotIn("reset_at", quota)

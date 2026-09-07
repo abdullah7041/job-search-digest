@@ -980,10 +980,56 @@ def pinpoint_salary(j):
 ACTIVE_ATS_EXCLUDE_ORGS = ("Jobgether",)
 EXCLUDED_ORGS_PARAM = ",".join(ACTIVE_ATS_EXCLUDE_ORGS)
 
-# Never spend the last of the monthly job allowance. Both caps are hard and
-# neither resets early; exhausting the jobs cap takes the only source that can
-# answer "posted this week" out until the reset.
-ACTIVE_ATS_JOBS_RESERVE = 30
+# What each feed's FREE plan actually allows in a month, and how much of it to
+# keep back. Every one of these is smaller than a daily run over a 30-day month,
+# so none of them can simply be spent as it arrives:
+#
+#   Active Jobs DB   250 jobs, 25 requests   (two separate hard caps)
+#   LinkedIn feed    250 jobs, 25 requests   (same vendor, metered separately)
+#   Indeed feed       50 requests            (no job cap published)
+#   JSearch          200 requests            (rationed by JSEARCH_DAILY_REQUESTS)
+#
+# The reserve is what stays unspent so a manual re-run or a probe does not take
+# a source out for the rest of the month. Values are floors, not budgets: the
+# real spend is one request per feed per run.
+FREE_TIER = {
+    "active_ats":   {"requests": 25, "jobs": 250, "reserve_requests": 3, "reserve_jobs": 30},
+    "linkedin_api": {"requests": 25, "jobs": 250, "reserve_requests": 3, "reserve_jobs": 30},
+    "indeed":       {"requests": 50, "jobs": None, "reserve_requests": 5, "reserve_jobs": None},
+}
+
+
+def out_of_allowance(feed, quota):
+    """True when this feed should sit today's run out.
+
+    Unknown reads as available, never as empty: a first run or a lost state
+    file would otherwise disable the only sources that can answer "posted this
+    week", permanently, on no evidence at all.
+
+    A feed under its reserve stops calling -- which means it stops learning,
+    including that the plan has rolled over. Left there it would stay off for
+    good. RapidAPI reports seconds-until-reset, stored as an absolute instant
+    when it arrives, so a quota past that instant counts as unknown again.
+    """
+    plan = FREE_TIER.get(feed)
+    if plan is None:
+        # An unnamed feed has no known plan, so nothing here can say it is safe
+        # to spend. Refusing is the conservative direction.
+        log(f"WARN {feed}: no free-tier plan recorded; not spending")
+        return True
+    reset_at = quota.get("reset_at")
+    if isinstance(reset_at, (int, float)) and time.time() >= reset_at:
+        return False
+    for counter, floor in (("requests_remaining", plan["reserve_requests"]),
+                           ("jobs_remaining", plan["reserve_jobs"])):
+        if floor is None:
+            continue
+        remaining = quota.get(counter)
+        if isinstance(remaining, int) and remaining < floor:
+            log(f"{feed}: {remaining} {counter.split('_')[0]} left this month, "
+                f"below the {floor} reserve; skipping")
+            return True
+    return False
 
 # The allowance has to be known BEFORE the request that would exceed it, and the
 # headers only arrive on a response -- so what one run learned is written down
@@ -1090,6 +1136,26 @@ def _age_window(max_age_days):
     return days, (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
 
 
+def _record_quota(quota, headers):
+    """Copy what the response says about the plan into the run's state.
+
+    The reset header is seconds-until-reset, which means nothing once the run
+    has ended, so it is stored as an absolute instant instead. That is what
+    lets a feed held back under its reserve start again after the rollover
+    rather than staying off for good.
+    """
+    for header, field in (("x-ratelimit-jobs-remaining", "jobs_remaining"),
+                          ("x-ratelimit-requests-remaining", "requests_remaining")):
+        try:
+            quota[field] = int(headers[header])
+        except (KeyError, TypeError, ValueError):
+            pass
+    try:
+        quota["reset_at"] = time.time() + int(headers["x-ratelimit-requests-reset"])
+    except (KeyError, TypeError, ValueError):
+        pass
+
+
 def _fetch_fantastic(name, host, path, query, source, api_key, quota):
     """One page from a Fantastic.jobs feed, shaped into this pipeline's job dict.
 
@@ -1105,10 +1171,7 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota):
     if not api_key:
         return []
     quota = quota if quota is not None else {}
-    remaining = quota.get("jobs_remaining")
-    if isinstance(remaining, int) and remaining < ACTIVE_ATS_JOBS_RESERVE:
-        log(name + ": " + str(remaining) + " jobs left this month, below the "
-            + str(ACTIVE_ATS_JOBS_RESERVE) + " reserve; skipping")
+    if out_of_allowance(source, quota):
         return []
     url = "https://" + host + path + query
     try:
@@ -1117,12 +1180,7 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota):
     except requests.RequestException as e:
         log("WARN " + name + ": request failed: " + str(e))
         return []
-    for header, field in (("x-ratelimit-jobs-remaining", "jobs_remaining"),
-                          ("x-ratelimit-requests-remaining", "requests_remaining")):
-        try:
-            quota[field] = int(r.headers[header])
-        except (KeyError, TypeError, ValueError):
-            pass
+    _record_quota(quota, r.headers)
     if r.status_code != 200:
         log("WARN " + name + ": HTTP " + str(r.status_code) + ": " + r.text[:120])
         return []
