@@ -24,6 +24,31 @@ on:
         required: false
         default: ""
         type: string
+      freshness_query:
+        description: "Query to age-check across every date_posted value (3 requests)"
+        required: false
+        default: ""
+        type: string
+      active_ats:
+        description: "Probe Active Jobs DB for Saudi ATS roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
+      linkedin:
+        description: "Probe the LinkedIn feed for Saudi roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
+      bayt:
+        description: "Probe Bayt for Saudi roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
+      indeed:
+        description: "Probe the Indeed feed for Saudi roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -52,8 +77,50 @@ jobs:
       # QUERY is read from the environment, never interpolated into the script
       # body: a ${{ }} expression inside `run` is substituted before the shell
       # sees it, which turns a workflow input into arbitrary shell.
+      # Three requests: the same query under each date_posted value, reporting the
+      # age spread of what comes back. Answers whether the filter narrows anything.
+      - name: Age-check one query across every date_posted value
+        if: ${{ inputs.freshness_query }}
+        env:
+          QUERY: ${{ inputs.freshness_query }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-freshness "$QUERY"
+
+      # A different API on the same RapidAPI account, so no new secret. A 403 here
+      # means the key is not subscribed to it, which is an account action for the
+      # operator rather than something this probe can do.
+      - name: Ask Active Jobs DB what Saudi ATS roles exist this week
+        if: ${{ inputs.active_ats }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-active-ats
+
+      # A separate API on the same RapidAPI account, so a separate free
+      # allowance and no new secret. 403 means the key is not subscribed to it.
+      - name: Ask the LinkedIn feed what Saudi roles exist this week
+        if: ${{ inputs.linkedin }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-linkedin
+
+      # A different vendor from the two Fantastic.jobs feeds, so a different
+      # response shape -- the row is printed verbatim rather than assumed.
+      - name: Ask Bayt what Saudi roles exist this week
+        if: ${{ inputs.bayt }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-bayt
+
+      # Indeed reaches employers none of the other feeds do. Its datePosted
+      # shares a name with JSearch's and nothing more, so it is measured.
+      - name: Ask the Indeed feed what Saudi roles exist this week
+        if: ${{ inputs.indeed }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-indeed
+
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin && !inputs.bayt && !inputs.indeed }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}

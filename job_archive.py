@@ -171,6 +171,12 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "blockers": [blocker.get("title", "") for blocker
                      in ((job.get("fit_check") or {}).get("blockers") or [])][:3],
         "link_status": job.get("link_status", "unknown"),
+        # Additive. first_published was written by every fetcher and dropped
+        # here, so no archived run could answer how old its cards were -- which
+        # is exactly the question asked after a month-old posting was delivered
+        # on 7 Sep 2026. age_days is None when the source published no date.
+        "first_published": job.get("first_published", ""),
+        "age_days": job.get("age_days"),
         "jd": {
             "status": "captured" if not completeness_failures else ("missing" if not jd_text else "incomplete"),
             "text": jd_text,

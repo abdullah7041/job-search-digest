@@ -17,6 +17,7 @@ Covers:
 
 import os
 import sys
+import contextlib
 import json
 import datetime
 import shutil
@@ -41,34 +42,42 @@ import jd_fetch  # noqa: E402
 import job_archive  # noqa: E402
 
 
+# Postings carry a date RELATIVE TO TODAY, not the literal 2026-07-30 the
+# original digest recorded. MAX_JOB_AGE_DAYS drops anything older than a week,
+# so a hardcoded date turns every end-to-end test into a time bomb that passes
+# until the fixture ages past the cutoff and then fails for a reason that has
+# nothing to do with the behaviour under test.
+RECENT = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+
+
 # The six jobs exactly as the 2026-07-31 digest delivered them (JSearch source,
 # Arabic city + expanded country, old Gemini fit scores in comments).
 REAL_JOBS = [
     {"company": "intelmatix", "id": "jsearch_a", "title": "Lead AI Engineer",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/a",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Lead our AI engineering team."},                      # old fit 98
     {"company": "Next", "id": "jsearch_b", "title": "Senior Software Engineer (AI Systems)",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/b",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Build production LLM systems, RAG pipelines, prompt engineering, Python."},  # old fit 95
     {"company": "Qualcomm", "id": "jsearch_c",
      "title": "Machine Learning Engineer, Staff level (Datacentre AI Engineering) - Riyadh, KSA",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/c",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Staff-level ML engineering."},                        # old fit 92
     {"company": "Riyad Bank", "id": "jsearch_d", "title": "Data Engineering Team Leader",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/d",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Lead the data engineering team."},                    # old fit 85
     {"company": "Datamatics Technologies", "id": "jsearch_e", "title": "Senior Data Architect",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/e",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Design data architecture, SQL, cloud."},              # old fit 80
     {"company": "Agoda", "id": "jsearch_f",
      "title": "Staff Data Engineer - PPC Bidding (Bangkok based, relocation provided)",
      "location": "الرياض, Saudi Arabia", "url": "https://example.com/f",
-     "first_published": "2026-07-30", "source": "jsearch", "token": "",
+     "first_published": RECENT, "source": "jsearch", "token": "",
      "description": "Bangkok-based role, relocation provided."},           # old fit 60
 ]
 
@@ -163,6 +172,43 @@ class TestLinkEvidence(unittest.TestCase):
                 digest.verify_link("https://example.com/job/123"), digest.LINK_OPEN
             )
         self.assertEqual(digest.verify_link(""), digest.LINK_CLOSED)
+
+    # LinkedIn's country subdomains (sa.linkedin.com, the host JSearch relays for
+    # Saudi roles) serve the posting in the local language, so the English strings
+    # in CLOSED_MARKERS never appear on a closed Saudi posting -- it reads
+    # "لم نعد نقبل طلبات التقدم". Verified live 7 Sep 2026 against
+    # sa.linkedin.com/jobs/view/...-4455833108, a posting LinkedIn had closed:
+    # verify_link called it open. The markup class is the same in every locale.
+    LINKEDIN_CLOSED_FIXTURE = (
+        '<figure class="closed-job">'
+        '<figcaption class="closed-job__flavor--closed">'
+        'لم نعد نقبل طلبات التقدم</figcaption></figure>'
+    )
+
+    def test_a_closed_linkedin_posting_in_another_language_is_closed(self):
+        """The English marker is absent; only the markup class says it's dead."""
+        url = "https://sa.linkedin.com/jobs/view/full-stack-developer-at-perfect-vision-4458712297"
+        body = self.LINKEDIN_CLOSED_FIXTURE
+        for marker in digest.CLOSED_MARKERS:
+            self.assertNotIn(marker, body.lower())
+        with mock.patch.object(digest, "_get", return_value=self._response(200, url=url, text=body)):
+            self.assertEqual(digest.verify_link(url), digest.LINK_CLOSED)
+
+    def test_an_open_linkedin_posting_stays_open(self):
+        """The class is absent on a live posting, so nothing here drops it."""
+        url = "https://sa.linkedin.com/jobs/view/senior-solution-engineer-at-omniops-4454605146"
+        body = '<div class="jobs-apply">قدم الآن</div>'
+        with mock.patch.object(digest, "_get", return_value=self._response(200, url=url, text=body)):
+            self.assertEqual(digest.verify_link(url), digest.LINK_OPEN)
+
+    def test_the_linkedin_closed_class_is_scoped_to_linkedin(self):
+        """Another host using a similar class name is not judged by this gate."""
+        url = "https://careers.example.com/job/123"
+        with mock.patch.object(
+            digest, "_get",
+            return_value=self._response(200, url=url, text=self.LINKEDIN_CLOSED_FIXTURE),
+        ):
+            self.assertEqual(digest.verify_link(url), digest.LINK_OPEN)
 
 
 class TestGetDescription(unittest.TestCase):
@@ -1005,8 +1051,15 @@ class TestStatsRows(unittest.TestCase):
 LAST_CHECK_CALL = {}
 
 
+def _board_probe_stub(probe_boards):
+    """No-network stand-in for the board probe, unless a test asked for the real one."""
+    if probe_boards:
+        return contextlib.nullcontext()
+    return mock.patch.object(digest, "_probe_employer_board", return_value=None)
+
+
 def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
-             fit_checks=None):
+             fit_checks=None, probe_boards=False):
     """Run digest.main() fully mocked; return (discord_posts, workdir).
 
     Pass `work` from a previous call to run a second day against the seen.json
@@ -1022,6 +1075,15 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
     to parse into a check on every strong job of every run. Patching keeps that
     noise out and, more usefully, lets a test say exactly what the reality pass
     found.
+
+    `_probe_employer_board` is stubbed out for a blunter reason: it is the one
+    call here that reaches the network with requests.get rather than
+    requests.post, so nothing above covers it. Board discovery is seeded from
+    matched postings, which every one of these runs has, so leaving it live sent
+    five real requests to Greenhouse, Ashby, Workable, Lever and Pinpoint per
+    test -- 45 seconds of suite time became six minutes, and every result
+    depended on those APIs being up. Pass probe_boards=True to exercise the real
+    discovery path, having patched the `_probe` underneath it.
     """
     posts = []
 
@@ -1062,7 +1124,7 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
              mock.patch.object(digest, "COMPANIES", []), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "rank_jobs", return_value=ranking), \
-             mock.patch.object(digest, "check_jobs", side_effect=fake_check), \
+             mock.patch.object(digest, "check_jobs", side_effect=fake_check),              _board_probe_stub(probe_boards), \
              mock.patch.object(digest.requests, "post", side_effect=fake_post), \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
             digest.main()
@@ -2112,7 +2174,7 @@ class TestEndToEnd(unittest.TestCase):
         "company": "Example Labs", "id": "jsearch_ln",
         "title": "Senior AI Engineer", "location": "الرياض, Saudi Arabia",
         "url": "https://sa.linkedin.com/jobs/view/senior-ai-engineer-4442",
-        "first_published": "2026-08-29", "source": "jsearch", "token": "",
+        "first_published": RECENT, "source": "jsearch", "token": "",
         "description": "",  # forces enrichment, which is where the rescue happens
     }
 
@@ -2223,7 +2285,8 @@ class TestEndToEnd(unittest.TestCase):
         with mock.patch.object(digest, "rescue_apply_link"), \
              mock.patch.object(digest, "_probe",
                                side_effect=lambda source, token: (source == "ashby", 15)):
-            posts, work = run_main(self.ENV, {}, jobs=[job], link_statuses=[])
+            posts, work = run_main(self.ENV, {}, jobs=[job], link_statuses=[],
+                                   probe_boards=True)
         with open(os.path.join(work, "boards.json"), encoding="utf-8") as handle:
             boards = json.load(handle)
         self.assertEqual(boards["nabla"]["source"], "ashby")
@@ -2760,3 +2823,830 @@ class TestEndToEnd(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestBoardDiscoverySeeds(unittest.TestCase):
+    """Which postings are worth spending a board probe on.
+
+    Discovery was seeded only from postings the paid-relister cut discarded, so
+    it only ever asked about employers whose links sat on jobleads and jooble.
+    By 7 Sep 2026 that had produced a ledger of Qualcomm, Lucid Motors, Delivery
+    Hero and FileCloud -- 8 of 10 boards found with ZERO open roles -- because a
+    paid relister carries global postings that have nothing to do with hiring in
+    Saudi. Tuning the probe cannot fix a seed list that never contained a Saudi
+    employer in the first place.
+
+    A card that passed the filters is the opposite: it is a real Saudi role this
+    candidate would be shown. Its employer is exactly who should be asked.
+    """
+
+    def _job(self, company, source, url):
+        return {"company": company, "title": "Backend Engineer",
+                "source": source, "url": url}
+
+    def test_a_delivered_aggregator_card_seeds_a_probe(self):
+        matched = [self._job("Tabby", "jsearch", "https://sa.linkedin.com/jobs/view/x-1")]
+        seeds = digest.board_discovery_seeds([], [], matched)
+        self.assertEqual([j["company"] for j in seeds], ["Tabby"])
+
+    def test_an_employer_sourced_card_is_not_probed(self):
+        """Its board is already known -- that is where the job came from."""
+        matched = [self._job("Foodics", "workable", "https://apply.workable.com/foodics/j/A/")]
+        self.assertEqual(digest.board_discovery_seeds([], [], matched), [])
+
+    def test_paywalled_postings_keep_their_priority(self):
+        """Only MAX_BOARD_PROBES run a day. A refused posting is pure gain to
+        rescue; an aggregator card was already delivered, so it can wait."""
+        paywalled = [self._job("Refused", "jsearch", "https://jobleads.com/1")]
+        matched = [self._job("Delivered", "jsearch", "https://sa.linkedin.com/jobs/view/x-1")]
+        seeds = digest.board_discovery_seeds(paywalled, [], matched)
+        self.assertEqual([j["company"] for j in seeds], ["Refused", "Delivered"])
+
+    def test_one_employer_is_offered_once(self):
+        """Five probes a day, so a company with three open roles must not eat
+        three of them for the same answer."""
+        matched = [self._job("Tabby", "jsearch", "https://sa.linkedin.com/jobs/view/x-1"),
+                   self._job("Tabby | تابي", "jsearch", "https://sa.linkedin.com/jobs/view/x-2")]
+        seeds = digest.board_discovery_seeds([], [], matched)
+        self.assertEqual(len(seeds), 1)
+
+    def test_a_company_with_no_usable_name_is_skipped(self):
+        matched = [self._job("", "jsearch", "https://sa.linkedin.com/jobs/view/x-1")]
+        self.assertEqual(digest.board_discovery_seeds([], [], matched), [])
+
+
+def requests_unquote(text):
+    from urllib.parse import unquote
+    return unquote(text)
+
+
+class TestFetchActiveAts(unittest.TestCase):
+    """The ATS feed that replaced the aggregator as the fresh source.
+
+    Measured 7 Sep 2026, same day, same country, same seniority band:
+    JSearch returned ZERO jobs at date_posted=week and a corpus aged 18-159
+    days; Active Jobs DB returned ten technical roles aged 0-1 days, every one
+    of them on the employer's own ATS. That gap is the whole reason this exists.
+
+    The free plan allows 250 JOBS and 25 REQUESTS a month -- two separate hard
+    limits -- so every row this fetcher accepts is spent allowance.
+    """
+
+    ROW = {
+        "id": "ats-1",
+        "title": "Software Engineer - Full Stack",
+        "organization": "Moyasar Financial Company",
+        "url": "https://jobs.workable.com/view/abc/software-engineer",
+        "source": "workable",
+        "date_posted": "2026-09-07T06:00:00",
+        "date_created": "2026-09-07T08:00:00",
+        "locations_derived": ["Riyadh, Saudi Arabia"],
+        "description_text": "Build payment APIs in Python.",
+    }
+
+    def _response(self, rows, status=200, headers=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: rows
+        response.text = ""
+        response.headers = headers or {"x-ratelimit-jobs-remaining": "220",
+                                       "x-ratelimit-requests-remaining": "22"}
+        return response
+
+    def test_a_row_becomes_a_job_the_rest_of_the_pipeline_understands(self):
+        with mock.patch.object(digest.requests, "get", return_value=self._response([self.ROW])):
+            jobs = digest.fetch_active_ats("key")
+        self.assertEqual(len(jobs), 1)
+        job = jobs[0]
+        self.assertEqual(job["company"], "Moyasar Financial Company")
+        self.assertEqual(job["title"], "Software Engineer - Full Stack")
+        self.assertEqual(job["source"], "active_ats")
+        self.assertEqual(job["first_published"], "2026-09-07")
+        self.assertIn("Saudi Arabia", job["location"])
+        self.assertEqual(job["description"], "Build payment APIs in Python.")
+
+    def test_the_posting_date_is_the_one_the_age_gate_reads(self):
+        """date_created is when Fantastic.jobs indexed the row; date_posted is
+        when the employer published it. Gating on the wrong clock would let a
+        long-live posting indexed today pass as posted today."""
+        row = dict(self.ROW, date_posted="2026-09-01T06:00:00",
+                   date_created="2026-09-07T08:00:00")
+        with mock.patch.object(digest.requests, "get", return_value=self._response([row])):
+            jobs = digest.fetch_active_ats("key")
+        self.assertEqual(jobs[0]["first_published"], "2026-09-01")
+
+    def test_a_row_this_source_is_the_employer_for_is_preferred_over_linkedin(self):
+        """prefer_employer_postings drops the aggregator copy only for sources
+        that ARE the employer. An ATS row read through this feed still comes
+        from the employer's own board, so it has to count as one."""
+        self.assertIn("active_ats", digest.EMPLOYER_SOURCES)
+
+    def test_a_relister_posting_through_an_ats_is_refused(self):
+        """Jobgether posts other companies' roles through Lever, so the host is
+        jobs.lever.co and PAID_RELISTER_HOSTS never sees it. Three of ten rows
+        in the 7 Sep probe were Jobgether. Left in, EMPLOYER_SOURCES would make
+        prefer_employer_postings favour it over the real employer's link."""
+        row = dict(self.ROW, organization="Jobgether", id="ats-2")
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([row, self.ROW])):
+            jobs = digest.fetch_active_ats("key")
+        self.assertEqual([j["company"] for j in jobs], ["Moyasar Financial Company"])
+
+    def test_no_key_spends_nothing(self):
+        with mock.patch.object(digest.requests, "get") as get:
+            self.assertEqual(digest.fetch_active_ats(""), [])
+        get.assert_not_called()
+
+    def test_a_failed_request_is_survivable(self):
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=digest.requests.Timeout("slow")):
+            self.assertEqual(digest.fetch_active_ats("key"), [])
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([], status=429)):
+            self.assertEqual(digest.fetch_active_ats("key"), [])
+
+    def test_the_monthly_job_allowance_is_read_off_the_response(self):
+        """Both caps are hard and neither resets early. A static day-count
+        assumes every request returns a full page; the header is the truth."""
+        quota = {}
+        headers = {"x-ratelimit-jobs-remaining": "31",
+                   "x-ratelimit-requests-remaining": "3"}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW], headers=headers)):
+            digest.fetch_active_ats("key", quota=quota)
+        self.assertEqual(quota["jobs_remaining"], 31)
+        self.assertEqual(quota["requests_remaining"], 3)
+
+    def test_the_last_of_the_monthly_allowance_is_never_spent(self):
+        """Running the jobs cap to zero takes the only fresh source out until
+        the reset, which is the failure this whole change exists to prevent."""
+        with mock.patch.object(digest.requests, "get") as get:
+            jobs = digest.fetch_active_ats(
+                "key", quota={"jobs_remaining": digest.FREE_TIER["active_ats"]["reserve_jobs"] - 1})
+        self.assertEqual(jobs, [])
+        get.assert_not_called()
+
+    def test_the_request_asks_the_api_to_do_the_filtering(self):
+        """Every row the server filters out is allowance not spent."""
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([])) as get:
+            digest.fetch_active_ats("key")
+        url = get.call_args[0][0]
+        self.assertIn("date_posted_gte=", url)
+        self.assertIn("description_format=text", url)
+        self.assertIn("title_advanced=", url)
+        self.assertIn("Saudi", requests_unquote(url))
+
+
+class TestApiQuotasSurviveTheRun(unittest.TestCase):
+    """The monthly allowance has to be known BEFORE the request that exceeds it.
+
+    Both caps are hard, both reset monthly, and the headers only arrive on a
+    response -- so what one run learned has to reach the next. Keyed by feed
+    because RapidAPI meters PER API: one shared counter would make each feed's
+    reserve fire on the other's spending.
+    """
+
+    def setUp(self):
+        self.work = tempfile.mkdtemp(prefix="digest_quota_")
+        self.old = os.getcwd()
+        os.chdir(self.work)
+
+    def tearDown(self):
+        os.chdir(self.old)
+        shutil.rmtree(self.work, ignore_errors=True)
+
+    def test_a_missing_file_reads_as_no_knowledge_rather_than_no_allowance(self):
+        """First run of all, and the first run after the file is lost. Assuming
+        zero would disable the only fresh sources permanently."""
+        self.assertEqual(digest.load_api_quotas(), {})
+
+    def test_what_one_run_learned_reaches_the_next(self):
+        digest.save_api_quotas({"active_ats": {"jobs_remaining": 90},
+                                "linkedin_api": {"jobs_remaining": 200}})
+        self.assertEqual(digest.load_api_quotas(),
+                         {"active_ats": {"jobs_remaining": 90},
+                          "linkedin_api": {"jobs_remaining": 200}})
+
+    def test_a_corrupt_file_does_not_stop_the_digest(self):
+        with open(digest.ACTIVE_ATS_STATE_FILE, "w") as handle:
+            handle.write("{not json")
+        self.assertEqual(digest.load_api_quotas(), {})
+
+    def test_a_file_written_before_there_were_two_feeds_still_counts(self):
+        """The file started as one feed's counters at the top level. Reading it
+        as an empty mapping would silently hand that feed a full allowance it
+        does not have."""
+        with open(digest.ACTIVE_ATS_STATE_FILE, "w") as handle:
+            json.dump({"jobs_remaining": 40, "requests_remaining": 4}, handle)
+        self.assertEqual(digest.load_api_quotas(),
+                         {"active_ats": {"jobs_remaining": 40,
+                                         "requests_remaining": 4}})
+
+    def test_the_reserve_is_honoured_across_runs(self):
+        digest.save_api_quotas(
+            {"active_ats": {"jobs_remaining": digest.FREE_TIER["active_ats"]["reserve_jobs"] - 1}})
+        quotas = digest.load_api_quotas()
+        with mock.patch.object(digest.requests, "get") as get:
+            self.assertEqual(
+                digest.fetch_active_ats("key", quotas["active_ats"]), [])
+        get.assert_not_called()
+
+    def test_one_feed_running_low_does_not_stop_the_other(self):
+        """The failure a shared counter would cause: the ATS feed near its cap
+        silencing LinkedIn, which has its own untouched allowance."""
+        digest.save_api_quotas(
+            {"active_ats": {"jobs_remaining": digest.FREE_TIER["active_ats"]["reserve_jobs"] - 1},
+             "linkedin_api": {"jobs_remaining": 240}})
+        quotas = digest.load_api_quotas()
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [TestFetchLinkedin.ROW]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            jobs = digest.fetch_linkedin("key", quotas["linkedin_api"])
+        self.assertEqual(len(jobs), 1)
+
+
+class TestPostingAge(unittest.TestCase):
+    """The cutoff the operator asked for: nothing older than a week.
+
+    first_published was written by every fetcher and read by NOTHING until now
+    (digest.py said so outright), so "freshness" meant only "not delivered
+    before". A posting could be four months old and count as new the first time
+    it was seen. That is how a closed HudHud Maps role from a month earlier
+    reached the 7 Sep digest.
+
+    Undated postings are KEPT and flagged, not dropped: Pinpoint publishes no
+    date at all and Greenhouse only sometimes, so dropping would silently
+    remove those employers entirely.
+    """
+
+    def _job(self, first_published, **kw):
+        return dict({"company": "Acme", "title": "Backend Engineer",
+                     "source": "active_ats", "url": "https://acme.test/1",
+                     "first_published": first_published}, **kw)
+
+    def test_a_posting_inside_the_window_is_kept(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("2026-09-05")], 7, today)
+        self.assertEqual(len(fresh), 1)
+        self.assertEqual(stale, [])
+
+    def test_a_posting_older_than_the_window_is_dropped(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("2026-08-07")], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_boundary_day_is_inside_the_window(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, _ = digest.split_by_age([self._job("2026-08-31")], 7, today)
+        self.assertEqual(len(fresh), 1)
+
+    def test_an_undated_posting_is_kept_and_marked(self):
+        """Pinpoint publishes no date. Dropping would remove Tabby entirely."""
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("", source="pinpoint")], 7, today)
+        self.assertEqual(stale, [])
+        self.assertEqual(len(fresh), 1)
+        self.assertIsNone(fresh[0]["age_days"])
+
+    def test_an_unparseable_date_is_treated_as_undated_not_as_stale(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("not-a-date")], 7, today)
+        self.assertEqual(stale, [])
+        self.assertIsNone(fresh[0]["age_days"])
+
+    def test_the_age_is_recorded_so_the_card_can_show_it(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, _ = digest.split_by_age([self._job("2026-09-04")], 7, today)
+        self.assertEqual(fresh[0]["age_days"], 3)
+
+    def test_a_future_date_is_not_negative_age(self):
+        """Timezones and ingestion delay can put a posting a few hours ahead."""
+        today = datetime.date(2026, 9, 7)
+        fresh, _ = digest.split_by_age([self._job("2026-09-08")], 7, today)
+        self.assertEqual(fresh[0]["age_days"], 0)
+
+
+class TestPostingAgeLabel(unittest.TestCase):
+    def test_the_label_says_what_is_known(self):
+        self.assertEqual(digest.age_label(0), "posted today")
+        self.assertEqual(digest.age_label(1), "posted yesterday")
+        self.assertEqual(digest.age_label(4), "posted 4 days ago")
+        self.assertEqual(digest.age_label(None), "posting date unknown")
+
+
+class TestTheCardStatesThePostingAge(unittest.TestCase):
+    def test_a_delivered_card_says_how_old_the_posting_is(self):
+        ranking = {"jsearch_a": {"score": 88, "why": "Senior IC role, requirements covered"}}
+        posts, work = run_main(TestEndToEnd.ENV, ranking,
+                               jobs=[dict(REAL_JOBS[0], title="Senior AI Engineer")],
+                               link_statuses=[digest.LINK_OPEN])
+        shutil.rmtree(work, ignore_errors=True)
+        self.assertIn("posted yesterday", "\n".join(posts))
+
+    def test_an_undated_card_says_the_date_is_unknown(self):
+        """Pinpoint publishes no date. The card must not imply the cutoff was
+        enforced on a posting whose age nobody knows."""
+        job = dict(REAL_JOBS[0], title="Senior AI Engineer", first_published="")
+        ranking = {"jsearch_a": {"score": 88, "why": "Senior IC role, requirements covered"}}
+        posts, work = run_main(TestEndToEnd.ENV, ranking, jobs=[job],
+                               link_statuses=[digest.LINK_OPEN])
+        shutil.rmtree(work, ignore_errors=True)
+        self.assertIn("posting date unknown", "\n".join(posts))
+
+
+class TestActiveAtsRealRowShape(unittest.TestCase):
+    """One row exactly as the API returned it, 7 Sep 2026.
+
+    The field names in fetch_active_ats were guesses read off a key list, and a
+    wrong one fails silently: description in the wrong field empties the JD of
+    every job from the source, and the card degrades to "title-only assessment"
+    without anything erroring. Pinned verbatim so a rename fails loudly.
+    """
+
+    ROW = {
+        "id": 2350650747,                              # an int, not a string
+        "title": "Software Engineer - Full Stack",
+        "organization": "Moyasar Financial Company",
+        "url": ("https://jobs.workable.com/view/d2LmHHqAKSA2Vm6bHemoGr/"
+                "software-engineer---full-stack-in-riyadh-at-moyasar-financial-company"),
+        "source": "workable",
+        "source_type": "ats",
+        "date_posted": "2026-09-07T10:16:12.629",      # sub-second, no timezone
+        "date_created": "2026-09-07T10:33:29.40768",
+        "date_valid_through": None,
+        "salary": None,
+        "locations_derived": ["Riyadh, Riyadh Region, Saudi Arabia"],
+        "description_text": "We are looking for a Software Engineer - Full Stack.",
+    }
+
+    def test_the_real_row_shapes_into_a_complete_job(self):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [self.ROW]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            job = digest.fetch_active_ats("key")[0]
+        self.assertEqual(job["id"], "2350650747")
+        self.assertEqual(job["first_published"], "2026-09-07")
+        self.assertEqual(job["location"], "Riyadh, Riyadh Region, Saudi Arabia")
+        self.assertEqual(job["description"], "We are looking for a Software Engineer - Full Stack.")
+        self.assertEqual(job["company"], "Moyasar Financial Company")
+
+    def test_the_shaped_job_passes_the_pipeline_filters(self):
+        """Shaping it correctly is not enough; LOCATION_INCLUDE and
+        TITLE_INCLUDE have to accept what the shaping produced."""
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [self.ROW]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            job = digest.fetch_active_ats("key")[0]
+        self.assertTrue(digest.matches_filters(job))
+
+
+class TestTheAgeGateSparesEmployerBoards(unittest.TestCase):
+    """Age is a proxy for "probably dead". True of an aggregator, false of a board.
+
+    An employer's own ATS lists only roles it is still hiring for and removes
+    them when it stops, so a 60-day-old Greenhouse posting is 60 days of a real
+    open vacancy. An aggregator index keeps serving a posting long after the
+    employer pulled it -- which is the whole reason a closed HudHud Maps role
+    reached the 7 Sep digest.
+
+    Measured live 7 Sep 2026 across the 169 postings on the directly-fetched
+    boards: 14 were 7 days old or less, 37 were 8-30 days, 73 were over 30 days
+    and 45 (all Tabby, via Pinpoint) carried no date at all. Gating them on age
+    would have discarded 73 open vacancies to solve a problem those boards do
+    not have. Liveness carries them instead: verify_link already drops a pulled
+    posting, and fetch_workable and fetch_ashby skip unpublished ones at fetch.
+    """
+
+    def _job(self, source, first_published):
+        return {"company": "Careem", "title": "Backend Engineer", "source": source,
+                "url": "https://boards.greenhouse.io/careem/jobs/1",
+                "first_published": first_published}
+
+    def test_an_old_posting_on_the_employers_own_board_is_kept(self):
+        today = datetime.date(2026, 9, 7)
+        for source in ("greenhouse", "ashby", "workable", "lever", "pinpoint"):
+            with self.subTest(source=source):
+                fresh, stale = digest.split_by_age(
+                    [self._job(source, "2026-06-01")], 7, today)
+                self.assertEqual(stale, [], f"{source} should not be age-gated")
+                self.assertEqual(fresh[0]["age_days"], 98)
+
+    def test_an_old_aggregator_posting_is_still_dropped(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("jsearch", "2026-06-01")], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_ats_feed_is_gated_because_it_is_an_index_not_a_board(self):
+        """active_ats rows ARE employer postings, but they are read from a
+        third-party index of them, so the index decides what it still shows."""
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("active_ats", "2026-06-01")], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_exempt_posting_still_reports_its_real_age(self):
+        """Exempt from the cutoff, not from the truth: the card still says how
+        old it is, so nothing implies a week-old posting that is not one."""
+        today = datetime.date(2026, 9, 7)
+        fresh, _ = digest.split_by_age([self._job("greenhouse", "2026-08-01")], 7, today)
+        self.assertEqual(digest.age_label(fresh[0]["age_days"]), "posted 37 days ago")
+
+
+class TestDirectBoardSourcesStaysHonest(unittest.TestCase):
+    def test_it_names_exactly_the_per_company_fetchers(self):
+        """DIRECT_BOARD_SOURCES is written out by hand because it is defined
+        above FETCHERS. Adding a fetcher without adding it here would silently
+        age-gate a real employer board."""
+        self.assertEqual(digest.DIRECT_BOARD_SOURCES, frozenset(digest.FETCHERS))
+
+    def test_the_ats_index_is_an_employer_source_but_not_a_direct_board(self):
+        self.assertIn("active_ats", digest.EMPLOYER_SOURCES)
+        self.assertNotIn("active_ats", digest.DIRECT_BOARD_SOURCES)
+
+
+class TestActiveAtsExpiry(unittest.TestCase):
+    """date_valid_through is the index saying the posting has expired.
+
+    Free -- it arrives on a row already paid for -- and liveness is what
+    actually failed on 7 Sep. Often None (it was on the row sampled that day),
+    so this only ever adds a drop, never keeps something verify_link would cut.
+    """
+
+    def _fetch(self, row):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [row]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            return digest.fetch_active_ats("key")
+
+    BASE = dict(TestActiveAtsRealRowShape.ROW)
+
+    def test_an_expired_posting_is_refused(self):
+        yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+        self.assertEqual(self._fetch(dict(self.BASE, date_valid_through=yesterday)), [])
+
+    def test_a_posting_valid_in_the_future_is_kept(self):
+        later = (datetime.date.today() + datetime.timedelta(days=30)).isoformat()
+        self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through=later))), 1)
+
+    def test_no_expiry_is_not_an_expiry(self):
+        self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through=None))), 1)
+
+    def test_an_unparseable_expiry_is_ignored_rather_than_trusted(self):
+        self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through="soon"))), 1)
+
+
+class TestFetchLinkedin(unittest.TestCase):
+    """LinkedIn as its own feed rather than relayed through Google for Jobs.
+
+    Probed 7 Sep 2026: ten rows, every one posted that day, nine of the ten
+    genuinely technical -- Tableau Developer at TCS, ROS2 and Embedded Firmware
+    at Atwad, Data Science at stc, Backend Golang. JSearch, asked for the same
+    country the same day, returned zero rows inside a week.
+
+    Same vendor and row shape as Active Jobs DB, so the shaping is shared. Its
+    allowance is separate: RapidAPI meters per API.
+    """
+
+    ROW = {
+        "id": 2351033857,
+        "title": "Tableau Developer",
+        "organization": "Tata Consultancy Services",
+        "url": "https://sa.linkedin.com/jobs/view/tableau-developer-at-tata-consultancy-services-4462958816",
+        "source": "linkedin",
+        "date_posted": "2026-09-07T16:40:23",
+        "date_valid_through": None,
+        "locations_derived": ["Riyadh, Riyadh Region, Saudi Arabia"],
+        "description_text": "Tata Consultancy Services is hiring a Tableau Developer.",
+    }
+
+    def _response(self, rows, status=200, headers=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: rows
+        response.text = ""
+        response.headers = headers or {}
+        return response
+
+    def test_a_row_shapes_the_same_way_the_ats_feed_does(self):
+        with mock.patch.object(digest.requests, "get", return_value=self._response([self.ROW])):
+            job = digest.fetch_linkedin("key")[0]
+        self.assertEqual(job["company"], "Tata Consultancy Services")
+        self.assertEqual(job["title"], "Tableau Developer")
+        self.assertEqual(job["source"], "linkedin_api")
+        self.assertEqual(job["first_published"], "2026-09-07")
+        self.assertIn("Saudi Arabia", job["location"])
+        self.assertTrue(job["description"])
+
+    def test_it_is_not_treated_as_the_employers_own_posting(self):
+        """An ATS row IS the employer's posting; a LinkedIn row is a relay of
+        it. prefer_employer_postings must keep favouring the real board."""
+        self.assertNotIn("linkedin_api", digest.EMPLOYER_SOURCES)
+        self.assertNotIn("linkedin_api", digest.DIRECT_BOARD_SOURCES)
+
+    def test_it_is_age_gated(self):
+        today = datetime.date(2026, 9, 7)
+        job = {"source": "linkedin_api", "first_published": "2026-06-01"}
+        fresh, stale = digest.split_by_age([job], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_relister_exclusion_is_shared_with_the_ats_feed(self):
+        """Jobgether appeared twice in the 7 Sep LinkedIn probe, same as in the
+        ATS probe. One list, not two that drift apart."""
+        row = dict(self.ROW, organization="Jobgether", id=99)
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([row, self.ROW])):
+            jobs = digest.fetch_linkedin("key")
+        self.assertEqual([j["company"] for j in jobs], ["Tata Consultancy Services"])
+
+    def test_it_keeps_its_own_allowance(self):
+        """Separate API, separate meter. Sharing one counter would make each
+        feed's reserve fire on the other's spending."""
+        quota = {}
+        headers = {"x-ratelimit-jobs-remaining": "240",
+                   "x-ratelimit-requests-remaining": "24"}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW], headers=headers)):
+            digest.fetch_linkedin("key", quota=quota)
+        self.assertEqual(quota["jobs_remaining"], 240)
+
+    def test_no_key_and_a_failed_request_are_both_survivable(self):
+        self.assertEqual(digest.fetch_linkedin(""), [])
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=digest.requests.Timeout("slow")):
+            self.assertEqual(digest.fetch_linkedin("key"), [])
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([], status=429)):
+            self.assertEqual(digest.fetch_linkedin("key"), [])
+
+    def test_the_request_narrows_on_saudi_arabia_and_a_date(self):
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([])) as get:
+            digest.fetch_linkedin("key")
+        url = get.call_args[0][0]
+        self.assertIn("date_posted_gte=", url)
+        self.assertIn("description_format=text", url)
+        self.assertIn("Saudi", requests_unquote(url))
+
+
+class TestNonSoftwareEngineeringIsRefused(unittest.TestCase):
+    """"Engineer" and "architect" are not software words in Saudi Arabia.
+
+    Bayt exposed this on 7 Sep 2026. Of 177 Saudi postings inside a week, 33
+    passed these filters -- and they were Structural Design Engineer,
+    Architectural Engineer, Firefighting Engineer, Civil & Transportation
+    Engineer, HSE Engineer, Fire Protection Supervisor, Bridge Inspector. The
+    Saudi market runs on construction and industry, so a title filter built
+    around the bare words matches that market far more often than software.
+
+    It had gone unnoticed because LOCATION_INCLUDE and the ranker sit
+    downstream and quietly absorbed it, at the cost of a model call per role.
+    """
+
+    CONSTRUCTION = [
+        "Structural Design Engineer", "Architectural Engineer", "Architect",
+        "Civil Engineer", "Sr Civil & Transportation Engineer",
+        "Firefighting Engineer", "Fire Protection Supervisor / Electrical Engineer",
+        "Mechanical Design Engineer - SolidWorks", "HSE Engineer | MEP",
+        "Electrical Engineer", "Maintenance Engineer", "Bridge Inspector",
+        "Steel Structure Estimation Engineer", "Pricing & Estimation Engineer (Fit-Out)",
+        "Senior Planning Engineer", "Biomedical Engineer",
+        "Architectural Designer", "Project Sales Engineer", "Sales Engineer",
+    ]
+
+    SOFTWARE = [
+        "Senior Backend Engineer", "Software Engineer - Full Stack",
+        "Machine Learning Engineer", "Data Engineer", "Senior Data Scientist",
+        "DevOps Consultant", "Site Reliability Engineer", "MLOps Engineer",
+        "Cloud Solutions Architect", "Solutions Architect - Data and AI",
+        "Software Architect", "Platform Engineer", "Senior AI Engineer",
+        "Tableau Developer", "ROS / ROS2 Developer (Software Engineer)",
+        "Embedded Firmware Engineer", "Backend Developer (Golang)",
+        "Fortinet Network Engineer", "QA Engineer", "Automation Engineer",
+    ]
+
+    def _job(self, title):
+        return {"company": "Acme", "title": title,
+                "location": "Riyadh, Saudi Arabia",
+                "url": "https://example.com/1", "source": "bayt"}
+
+    def test_construction_and_industrial_titles_are_refused(self):
+        for title in self.CONSTRUCTION:
+            with self.subTest(title=title):
+                self.assertFalse(digest.matches_filters(self._job(title)),
+                                 f"{title!r} should not reach a software digest")
+
+    def test_software_titles_still_pass(self):
+        for title in self.SOFTWARE:
+            with self.subTest(title=title):
+                self.assertTrue(digest.matches_filters(self._job(title)),
+                                f"{title!r} must still reach the digest")
+
+
+class TestFreeTierBudget(unittest.TestCase):
+    """Every paid feed here runs on a free plan with hard monthly caps.
+
+    Active Jobs DB and the LinkedIn feed allow 250 jobs and 25 requests a
+    month each; the Indeed feed allows 50 requests. All of them are metered
+    separately, all of them are smaller than a daily run over a 30-day month,
+    and exhausting one takes that source out until the plan resets.
+    """
+
+    def test_a_feed_with_room_is_spent(self):
+        self.assertFalse(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 20, "jobs_remaining": 200}))
+
+    def test_a_feed_near_its_request_cap_is_held_back(self):
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 1, "jobs_remaining": 200}))
+
+    def test_a_feed_near_its_job_cap_is_held_back(self):
+        """Two separate hard limits; either one can end the month."""
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 20, "jobs_remaining": 5}))
+
+    def test_an_unknown_allowance_is_spent_rather_than_assumed_empty(self):
+        """First run, or a lost state file. Assuming empty would disable the
+        only sources that can answer "posted this week"."""
+        self.assertFalse(digest.out_of_allowance("active_ats", {}))
+
+    def test_a_held_back_feed_wakes_up_after_the_plan_resets(self):
+        """The bug this exists to prevent: a feed stops once it is under its
+        reserve, so it never calls again, so it never learns the plan reset --
+        and stays off permanently. The reset instant is recorded when the
+        headers report it, and a quota past that instant counts as unknown.
+        """
+        past = digest.time.time() - 60
+        self.assertFalse(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 0, "reset_at": past}))
+
+    def test_it_stays_held_back_before_the_reset(self):
+        future = digest.time.time() + 3600
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 0, "reset_at": future}))
+
+    def test_each_feed_is_measured_against_its_own_plan(self):
+        """The Indeed feed allows 50 requests where the others allow 25, so a
+        single shared reserve would either waste one plan or overrun another."""
+        self.assertIn("indeed", digest.FREE_TIER)
+        self.assertIn("active_ats", digest.FREE_TIER)
+        self.assertIn("linkedin_api", digest.FREE_TIER)
+        # 25 a month does not cover a 30-day month at one call a day; 50 does.
+        # That difference is exactly why the reserve is per feed rather than one
+        # shared number.
+        self.assertEqual(digest.FREE_TIER["active_ats"]["requests"], 25)
+        self.assertEqual(digest.FREE_TIER["linkedin_api"]["requests"], 25)
+        self.assertEqual(digest.FREE_TIER["indeed"]["requests"], 50)
+        for feed, plan in digest.FREE_TIER.items():
+            with self.subTest(feed=feed):
+                self.assertLess(plan["reserve_requests"], plan["requests"],
+                                f"{feed} reserves its whole plan")
+
+    def test_an_unknown_feed_is_never_silently_unlimited(self):
+        self.assertTrue(digest.out_of_allowance("not_a_feed", {}))
+
+
+class TestQuotaResetIsRecorded(unittest.TestCase):
+    """RapidAPI reports seconds-until-reset, which is only meaningful at the
+    moment it is read. Stored as an absolute instant so a later run can tell
+    whether the plan has since rolled over."""
+
+    def _response(self, headers):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: []
+        response.text = ""
+        response.headers = headers
+        return response
+
+    def test_seconds_until_reset_becomes_an_instant(self):
+        quota = {}
+        before = digest.time.time()
+        headers = {"x-ratelimit-requests-remaining": "24",
+                   "x-ratelimit-requests-reset": "86400"}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response(headers)):
+            digest.fetch_active_ats("key", quota=quota)
+        self.assertGreaterEqual(quota["reset_at"], before + 86400)
+
+    def test_a_missing_reset_header_is_not_fatal(self):
+        quota = {}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response({})):
+            digest.fetch_active_ats("key", quota=quota)
+        self.assertNotIn("reset_at", quota)
+
+
+class TestFetchIndeed(unittest.TestCase):
+    """Indeed, which no other feed here reaches.
+
+    One row exactly as the API returned it on 7 Sep 2026. Probed the same day:
+    20 rows, 8 passing these filters, 7 of those 8 published within a week --
+    and Saudi employers the ATS feeds do not carry, Rasan and Consulum among
+    them.
+
+    Two things this endpoint does NOT have, both confirmed live: any working
+    server-side date filter (it answered "Parameter 'datePosted' is unknown"),
+    and a single date field. It returns two clocks that disagreed by 76 days on
+    the first row sampled.
+    """
+
+    ROW = {
+        "id": "aWQ9MTQyZjUxMjJiYWI2MjBmMDtjYz1zYQ==",
+        "title": "Software Engineer - Full Stack",
+        "company": {"name": "rasan", "image": "", "addresses": []},
+        "applyUrl": "https://careers.tameeni.com/jobs/7957785-engineer",
+        "location": {"country": "المملكة العربية السعودية",
+                     "countryCode": "SA", "location": "Riyadh"},
+        # Epoch MILLISECONDS. Published 2026-09-06, indexed 2026-09-07.
+        "datePublishedTimestamp": 1788652800000,
+        "dateOnIndeedTimestamp": 1788801159024,
+        "description": "Build payment integrations.",
+    }
+
+    def _response(self, rows, status=200, headers=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: {"data": rows}
+        response.text = ""
+        response.headers = headers or {}
+        return response
+
+    def test_a_row_becomes_a_job_the_pipeline_understands(self):
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW])):
+            job = digest.fetch_indeed("key")[0]
+        self.assertEqual(job["company"], "rasan")
+        self.assertEqual(job["title"], "Software Engineer - Full Stack")
+        self.assertEqual(job["source"], "indeed")
+        self.assertIn("Riyadh", job["location"])
+        self.assertEqual(job["url"], "https://careers.tameeni.com/jobs/7957785-engineer")
+        self.assertEqual(job["description"], "Build payment integrations.")
+
+    def test_the_date_is_when_the_employer_published_not_when_indeed_noticed(self):
+        """The two clocks disagreed by 76 days on the first row probed. An
+        index date only says a scraper saw an old posting today, so reading it
+        would let a months-old role pass a seven-day cutoff as same-day."""
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW])):
+            job = digest.fetch_indeed("key")[0]
+        self.assertEqual(job["first_published"], "2026-09-06")
+
+    def test_a_row_with_no_publish_date_is_undated_rather_than_todays(self):
+        """Falling back to the index date would silently relabel it as fresh."""
+        row = dict(self.ROW)
+        del row["datePublishedTimestamp"]
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([row])):
+            job = digest.fetch_indeed("key")[0]
+        self.assertEqual(job["first_published"], "")
+
+    def test_it_is_age_gated_and_is_not_an_employer_source(self):
+        self.assertNotIn("indeed", digest.EMPLOYER_SOURCES)
+        self.assertNotIn("indeed", digest.DIRECT_BOARD_SOURCES)
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age(
+            [{"source": "indeed", "first_published": "2026-06-01"}], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_it_respects_its_own_free_plan(self):
+        with mock.patch.object(digest.requests, "get") as get:
+            jobs = digest.fetch_indeed(
+                "key",
+                quota={"requests_remaining":
+                       digest.FREE_TIER["indeed"]["reserve_requests"] - 1,
+                       "reset_at": digest.time.time() + 3600})
+        self.assertEqual(jobs, [])
+        get.assert_not_called()
+
+    def test_no_key_and_failures_are_survivable(self):
+        self.assertEqual(digest.fetch_indeed(""), [])
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=digest.requests.Timeout("slow")):
+            self.assertEqual(digest.fetch_indeed("key"), [])
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([], status=429)):
+            self.assertEqual(digest.fetch_indeed("key"), [])
+
+    def test_the_request_names_the_country_the_api_demanded(self):
+        """It answered 400 MISSING_OR_PARAMETER without countryCode."""
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([])) as get:
+            digest.fetch_indeed("key")
+        self.assertIn("countryCode=sa", get.call_args[0][0])

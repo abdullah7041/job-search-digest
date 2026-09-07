@@ -110,8 +110,32 @@ TITLE_INCLUDE = [
     "engineer", "developer", "software", "backend", "back-end", "frontend",
     "front-end", "full stack", "fullstack", "full-stack", "ai ", " ai",
     "ml ", " ml", "machine learning", "data scien", "data engineer", "mlops",
-    "devops", "sre", "site reliability", "platform", "automation", "architect",
+    "devops", "sre", "site reliability", "platform", "automation",
+    # NOT the bare word "architect": in Saudi Arabia that is a building
+    # architect far more often than a software one. Name the software ones.
+    "solutions architect", "software architect", "data architect",
+    "cloud architect", "enterprise architect", "technical architect",
+    "security architect",
     "product manager", "technical product", "head of engineering", "solutions engineer",
+]
+
+# "Engineer" is not a software word here. Of 177 Saudi postings Bayt returned
+# inside a week on 7 Sep 2026, 33 passed these filters -- and they were
+# Structural Design, Architectural, Firefighting, Civil & Transportation, HSE,
+# Mechanical Design, Electrical, Maintenance and Estimation engineers. Saudi
+# Arabia runs on construction and industry, so a filter built on the bare word
+# matches that market far more often than this candidate's.
+#
+# It went unnoticed because LOCATION_INCLUDE and the ranker sit downstream and
+# absorbed it -- at the cost of a model call per irrelevant role.
+TITLE_EXCLUDE_DISCIPLINE = [
+    "civil", "structural", "structure", "architectural", "mechanical",
+    "electrical", "firefighting", "fire protection", "hvac", "mep ", " mep",
+    "hse", "biomedical", "chemical", "petroleum", "drilling", "geotechnical",
+    "surveyor", "quantity survey", "landscape", "interior", "irrigation",
+    "arboriculture", "agriculture", "piping", "welding", "metallurg",
+    "instrumentation", "marine", "mining", "estimation", "maintenance",
+    "planning engineer", "sales engineer", "bridge", "construction",
 ]
 
 # Seniority filter: drop anything junior AND anything above senior IC.
@@ -431,7 +455,11 @@ def fetch_greenhouse(c):
             "title": (j.get("title") or "").strip(),
             "location": ((j.get("location") or {}).get("name") or "").strip(),
             "url": j.get("absolute_url") or "",
-            "first_published": j.get("first_published") or j.get("updated_at") or "",
+            # NOT `or updated_at`. Once the age gate reads this field, a role
+            # posted six months ago and edited yesterday would pass a 7-day
+            # cutoff as fresh -- worse than an undated posting, which at least
+            # says so on the card. A real publication date or nothing.
+            "first_published": j.get("first_published") or "",
             "source": "greenhouse", "token": c["token"],
             "description": "",  # fetched on demand for delivered jobs only
         })
@@ -943,6 +971,366 @@ def pinpoint_salary(j):
     return f"{nums} {cur}/{freq}".strip().rstrip("/")
 
 
+# Relisters that post OTHER companies' roles through a real ATS. The host is
+# jobs.lever.co, so PAID_RELISTER_HOSTS never sees them and, worse, the source
+# reads as an employer ATS -- which would make prefer_employer_postings favour
+# the relisted copy over the employer's own link. Three of the ten rows in the
+# first filtered probe (7 Sep 2026) were Jobgether. Refused server-side so they
+# do not cost monthly allowance either.
+ACTIVE_ATS_EXCLUDE_ORGS = ("Jobgether",)
+EXCLUDED_ORGS_PARAM = ",".join(ACTIVE_ATS_EXCLUDE_ORGS)
+
+# What each feed's FREE plan actually allows in a month, and how much of it to
+# keep back. Every one of these is smaller than a daily run over a 30-day month,
+# so none of them can simply be spent as it arrives:
+#
+#   Active Jobs DB   250 jobs, 25 requests   (two separate hard caps)
+#   LinkedIn feed    250 jobs, 25 requests   (same vendor, metered separately)
+#   Indeed feed       50 requests            (no job cap published)
+#   JSearch          200 requests            (rationed by JSEARCH_DAILY_REQUESTS)
+#
+# The reserve is what stays unspent so a manual re-run or a probe does not take
+# a source out for the rest of the month. Values are floors, not budgets: the
+# real spend is one request per feed per run.
+FREE_TIER = {
+    "active_ats":   {"requests": 25, "jobs": 250, "reserve_requests": 3, "reserve_jobs": 30},
+    "linkedin_api": {"requests": 25, "jobs": 250, "reserve_requests": 3, "reserve_jobs": 30},
+    "indeed":       {"requests": 50, "jobs": None, "reserve_requests": 5, "reserve_jobs": None},
+}
+
+
+def out_of_allowance(feed, quota):
+    """True when this feed should sit today's run out.
+
+    Unknown reads as available, never as empty: a first run or a lost state
+    file would otherwise disable the only sources that can answer "posted this
+    week", permanently, on no evidence at all.
+
+    A feed under its reserve stops calling -- which means it stops learning,
+    including that the plan has rolled over. Left there it would stay off for
+    good. RapidAPI reports seconds-until-reset, stored as an absolute instant
+    when it arrives, so a quota past that instant counts as unknown again.
+    """
+    plan = FREE_TIER.get(feed)
+    if plan is None:
+        # An unnamed feed has no known plan, so nothing here can say it is safe
+        # to spend. Refusing is the conservative direction.
+        log(f"WARN {feed}: no free-tier plan recorded; not spending")
+        return True
+    reset_at = quota.get("reset_at")
+    if isinstance(reset_at, (int, float)) and time.time() >= reset_at:
+        return False
+    for counter, floor in (("requests_remaining", plan["reserve_requests"]),
+                           ("jobs_remaining", plan["reserve_jobs"])):
+        if floor is None:
+            continue
+        remaining = quota.get(counter)
+        if isinstance(remaining, int) and remaining < floor:
+            log(f"{feed}: {remaining} {counter.split('_')[0]} left this month, "
+                f"below the {floor} reserve; skipping")
+            return True
+    return False
+
+# The allowance has to be known BEFORE the request that would exceed it, and the
+# headers only arrive on a response -- so what one run learned is written down
+# for the next. Its own file rather than a stats.json row: stats rows are pruned
+# on a TTL and a run can end at any of four save_stats call sites, while this has
+# to survive both.
+ACTIVE_ATS_STATE_FILE = "active_ats.json"
+ACTIVE_ATS_PAGE = 10
+
+
+def load_api_quotas():
+    """Last known monthly allowance per feed. Unreadable reads as no knowledge.
+
+    Never as no allowance: assuming zero would disable the sources that can
+    answer "posted this week", permanently, on nothing more than a lost file.
+
+    Keyed by feed because RapidAPI meters PER API -- one shared counter would
+    make each feed's reserve fire on the other's spending.
+    """
+    if not os.path.exists(ACTIVE_ATS_STATE_FILE):
+        return {}
+    try:
+        with open(ACTIVE_ATS_STATE_FILE) as handle:
+            quotas = json.load(handle)
+    except (OSError, ValueError) as e:
+        log(f"WARN API quota state unreadable ({e}); treating it as unknown")
+        return {}
+    if not isinstance(quotas, dict):
+        return {}
+    # The file started as a single feed's quota, before there were two. An old
+    # one holds that feed's counters at the top level; read it as such rather
+    # than discarding a still-valid allowance.
+    if "jobs_remaining" in quotas or "requests_remaining" in quotas:
+        return {"active_ats": quotas}
+    return {k: v for k, v in quotas.items() if isinstance(v, dict)}
+
+
+def save_api_quotas(quotas):
+    if not quotas:
+        return
+    with open(ACTIVE_ATS_STATE_FILE, "w") as handle:
+        json.dump(quotas, handle, indent=0, sort_keys=True)
+
+
+def fetch_active_ats(api_key, quota=None, max_age_days=None):
+    """Read one page of Saudi technical roles from the employers' own ATSs.
+
+    Measured 7 Sep 2026, same day and same country: JSearch returned ZERO jobs
+    at date_posted=week and a corpus aged 18-159 days, while this feed returned
+    ten technical roles aged 0-1 days, every one on the employer's own board.
+    That is the entire reason it exists -- the aggregator cannot answer "posted
+    this week" at all, which is what the digest is asked for.
+    """
+    days, since = _age_window(max_age_days)
+    query = ("?source=" + requests.utils.quote(ACTIVE_ATS_SOURCES)
+             + "&location=" + requests.utils.quote("Saudi Arabia")
+             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
+             + "&date_posted_gte=" + since + "T00:00:00"
+             + "&time_frame=" + str(days) + "d"
+             + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
+    return _fetch_fantastic("Active ATS", ACTIVE_ATS_HOST, "/active-ats", query,
+                            "active_ats", api_key, quota)
+
+
+def fetch_linkedin(api_key, quota=None, max_age_days=None):
+    """Read one page of Saudi technical roles as LinkedIn itself lists them.
+
+    Probed 7 Sep 2026: ten rows, all posted that day, nine of them genuinely
+    technical -- Tableau Developer at TCS, ROS2 and Embedded Firmware at Atwad,
+    Data Science at stc, Backend Golang. JSearch, asked for the same country on
+    the same day, returned nothing at all inside a week. This is the same
+    LinkedIn the digest already delivers, minus the staleness of reaching it
+    through Google for Jobs.
+
+    Its rows are relays, not the employer's own posting, so this source stays
+    OUT of EMPLOYER_SOURCES: prefer_employer_postings must keep favouring a real
+    board when both have the role.
+
+    Three of the ten probe rows were Morocco despite location=Saudi Arabia, so
+    location_conflict is what catches the leak; it already exists for exactly
+    this.
+    """
+    days, since = _age_window(max_age_days)
+    query = ("?location=" + requests.utils.quote("Saudi Arabia")
+             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
+             + "&date_posted_gte=" + since + "T00:00:00"
+             + "&time_frame=" + str(days) + "d"
+             + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
+    return _fetch_fantastic("LinkedIn", LINKEDIN_API_HOST, "/active-jb", query,
+                            "linkedin_api", api_key, quota)
+
+
+def _age_window(max_age_days):
+    """The cutoff as both a bucket and an exact date.
+
+    time_frame is required and cuts on INDEXED time, while the age gate reads
+    date_posted -- so a row can sit inside the window and outside the gate.
+    Sending date_posted_gte too means the server has already applied the same
+    cut the gate will.
+    """
+    days = max_age_days if isinstance(max_age_days, int) and max_age_days > 0 else 7
+    return days, (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+
+
+# Indeed, which nothing else in this stack reaches. A separate endpoint per
+# platform rather than one blended index.
+INDEED_HOST = "jobs-api14.p.rapidapi.com"
+
+
+# What this feed is asked for. Indeed has no taxonomy filter here and no
+# working date filter, so the query carries the terms and everything else is
+# judged locally.
+INDEED_QUERY = "software engineer"
+
+
+def fetch_indeed(api_key, quota=None, max_age_days=None):
+    """Read one page of Saudi roles from Indeed, which no other feed reaches.
+
+    Probed 7 Sep 2026: 20 rows, 8 passing the filters, 7 of those published
+    within a week, and Saudi employers the ATS feeds do not carry -- Rasan and
+    Consulum among them.
+
+    Two things this endpoint does not give, both confirmed live rather than
+    assumed. There is no server-side date filter: it answered "Parameter
+    'datePosted' is unknown and was ignored", so `max_age_days` cannot be
+    pushed to the server and split_by_age does the whole job. And there is no
+    single date -- it returns the employer's publish time and Indeed's own
+    index time, which disagreed by 76 days on the first row sampled.
+
+    Fail-soft like every other fetcher: any error is [] and a log line.
+    """
+    if not api_key:
+        return []
+    quota = quota if quota is not None else {}
+    if out_of_allowance("indeed", quota):
+        return []
+    url = ("https://" + INDEED_HOST + "/v2/indeed/search"
+           + "?query=" + requests.utils.quote(INDEED_QUERY)
+           + "&location=" + requests.utils.quote("Saudi Arabia")
+           + "&countryCode=sa")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": INDEED_HOST}, timeout=30)
+    except requests.RequestException as e:
+        log("WARN Indeed: request failed: " + str(e))
+        return []
+    _record_quota(quota, r.headers)
+    if r.status_code != 200:
+        log("WARN Indeed: HTTP " + str(r.status_code) + ": " + r.text[:120])
+        return []
+    try:
+        payload = r.json()
+    except ValueError:
+        log("WARN Indeed: non-JSON response")
+        return []
+    rows = payload.get("data") if isinstance(payload, dict) else payload
+    out = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        company = row.get("company")
+        if isinstance(company, dict):
+            company = company.get("name")
+        where = row.get("location")
+        if isinstance(where, dict):
+            where = ", ".join(str(v) for v in
+                              (where.get("location"), where.get("country")) if v)
+        out.append({
+            "company": str(company or "").strip(),
+            "id": str(row.get("id") or ""),
+            "title": str(row.get("title") or "").strip(),
+            "location": str(where or "").strip(),
+            "url": row.get("applyUrl") or "",
+            # The EMPLOYER's clock. dateOnIndeedTimestamp is when Indeed
+            # noticed the posting, which for the first row probed was today
+            # against a publish date in June -- reading it would let a
+            # months-old role pass a seven-day cutoff as same-day. No date at
+            # all is better than the wrong one: split_by_age keeps an undated
+            # posting and the card says the date is unknown.
+            "first_published": _epoch_ms_date(row.get("datePublishedTimestamp")),
+            "source": "indeed", "token": "",
+            "description": str(row.get("description") or "").strip(),
+        })
+    log("Indeed: " + str(len(out)) + " jobs ("
+        + str(quota.get("requests_remaining", "?")) + " requests left this month)")
+    return out
+
+
+def _epoch_ms_date(stamp):
+    """An epoch-milliseconds timestamp as an ISO date, or "" when unusable."""
+    if not isinstance(stamp, (int, float)):
+        return ""
+    try:
+        return datetime.datetime.fromtimestamp(
+            stamp / 1000, datetime.timezone.utc).date().isoformat()
+    except (ValueError, OverflowError, OSError):
+        return ""
+
+
+def _record_quota(quota, headers):
+    """Copy what the response says about the plan into the run's state.
+
+    The reset header is seconds-until-reset, which means nothing once the run
+    has ended, so it is stored as an absolute instant instead. That is what
+    lets a feed held back under its reserve start again after the rollover
+    rather than staying off for good.
+    """
+    for header, field in (("x-ratelimit-jobs-remaining", "jobs_remaining"),
+                          ("x-ratelimit-requests-remaining", "requests_remaining")):
+        try:
+            quota[field] = int(headers[header])
+        except (KeyError, TypeError, ValueError):
+            pass
+    try:
+        quota["reset_at"] = time.time() + int(headers["x-ratelimit-requests-reset"])
+    except (KeyError, TypeError, ValueError):
+        pass
+
+
+def _fetch_fantastic(name, host, path, query, source, api_key, quota):
+    """One page from a Fantastic.jobs feed, shaped into this pipeline's job dict.
+
+    Both feeds share a vendor, a row shape and a plan: 250 JOBS and 25 REQUESTS
+    a month, two separate hard limits, metered PER API. So the filtering runs
+    server-side -- every row the API rejects is allowance kept -- and each feed
+    carries its own `quota`, read and updated in place the way fetch_jsearch
+    tracks its headers. Sharing one counter would make each feed's reserve fire
+    on the other's spending.
+
+    Fail-soft like every other fetcher: any error is [] and a log line.
+    """
+    if not api_key:
+        return []
+    quota = quota if quota is not None else {}
+    if out_of_allowance(source, quota):
+        return []
+    url = "https://" + host + path + query
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": host}, timeout=30)
+    except requests.RequestException as e:
+        log("WARN " + name + ": request failed: " + str(e))
+        return []
+    _record_quota(quota, r.headers)
+    if r.status_code != 200:
+        log("WARN " + name + ": HTTP " + str(r.status_code) + ": " + r.text[:120])
+        return []
+    try:
+        rows = r.json()
+    except ValueError:
+        log("WARN " + name + ": non-JSON response")
+        return []
+    if isinstance(rows, dict):
+        rows = rows.get("data") or rows.get("jobs") or []
+    refused = {org.casefold() for org in ACTIVE_ATS_EXCLUDE_ORGS}
+    out = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        company = (row.get("organization") or "").strip()
+        # exclude_organization is exact and case-sensitive on their side, so a
+        # spelling they treat as different still reaches us. Refuse it here too.
+        if company.casefold() in refused:
+            continue
+        # The index saying the posting has expired. Free -- it arrives on a row
+        # already paid for -- and liveness is exactly what failed on 7 Sep.
+        # Usually absent, so this only ever adds a drop; an unparseable value is
+        # ignored rather than trusted, because guessing "expired" wrong hides a
+        # live role.
+        expires = str(row.get("date_valid_through") or "")[:10]
+        if expires:
+            try:
+                if datetime.date.fromisoformat(expires) < datetime.date.today():
+                    log("DROP expired " + expires + ": " + company
+                        + " - " + str(row.get("title")))
+                    continue
+            except ValueError:
+                pass
+        locations = row.get("locations_derived") or []
+        if not isinstance(locations, list):
+            locations = [locations]
+        out.append({
+            "company": company,
+            "id": str(row.get("id") or ""),
+            "title": (row.get("title") or "").strip(),
+            "location": ", ".join(str(part) for part in locations if part),
+            "url": row.get("url") or "",
+            # date_posted is when the employer published; date_created is when
+            # Fantastic.jobs indexed it. The gate reads the employer's clock.
+            "first_published": str(row.get("date_posted") or "")[:10],
+            "source": source, "token": "",
+            "description": (row.get("description_text") or "").strip(),
+        })
+    log(name + ": " + str(len(out)) + " jobs ("
+        + str(quota.get("jobs_remaining", "?")) + " jobs, "
+        + str(quota.get("requests_remaining", "?")) + " requests left this month)")
+    return out
+
+
 FETCHERS = {
     "greenhouse": fetch_greenhouse,
     "ashby": fetch_ashby,
@@ -983,6 +1371,8 @@ def matches_filters(job):
     if location_conflict(job["title"]):
         return False
     if any(k in title for k in TITLE_EXCLUDE):
+        return False
+    if any(k in title for k in TITLE_EXCLUDE_DISCIPLINE):
         return False
     if not any(k in title for k in TITLE_INCLUDE):
         return False
@@ -1083,7 +1473,10 @@ def posting_key(job):
 
 # The sources that ARE the employer: a link from one of these is the company's
 # own posting, which is the link this digest should always prefer to hand over.
-EMPLOYER_SOURCES = frozenset(FETCHERS)
+# active_ats is not in FETCHERS -- it is one feed, not a per-company board -- but
+# every row it returns IS the employer's own ATS posting, so it belongs to the
+# set prefer_employer_postings favours over an aggregator relay.
+EMPLOYER_SOURCES = frozenset(FETCHERS) | {"active_ats"}
 
 
 def prefer_employer_postings(jobs):
@@ -1647,6 +2040,12 @@ CLOSED_MARKERS = [
     "position has been closed",
 ]
 
+# LinkedIn's own markup for a closed posting. Its country subdomains localise every
+# string on the page but not the class name, so this is the only marker that holds
+# in every locale. Pinned here so a LinkedIn markup change fails a test loudly
+# rather than silently reopening the hole it closed.
+LINKEDIN_CLOSED_CLASS = "closed-job__flavor--closed"
+
 
 def verify_link(url):
     """
@@ -1691,6 +2090,17 @@ def verify_link(url):
     # touches other ATSs' pages (which legitimately lack that schema).
     if "ashbyhq.com" in final and "jobposting" not in body:
         log(f"DROP ashby posting gone (no JobPosting schema): {url}")
+        return LINK_CLOSED
+    # LinkedIn serves a closed posting in the viewer's language, so CLOSED_MARKERS
+    # never fires on the country subdomains JSearch relays for Saudi roles --
+    # sa.linkedin.com says "لم نعد نقبل طلبات التقدم", not "no longer accepting
+    # applications". Confirmed live 7 Sep 2026: the SAME posting read closed on
+    # www.linkedin.com and open on sa.linkedin.com, and link_closed had been 0 on
+    # every recorded day. The markup class is locale-independent and present on
+    # both hosts, so match on that instead of on any English text. Scoped to the
+    # host so no other board is judged by LinkedIn's class names.
+    if link_host(final).endswith("linkedin.com") and LINKEDIN_CLOSED_CLASS in body:
+        log(f"DROP linkedin posting closed: {url}")
         return LINK_CLOSED
     for m in CLOSED_MARKERS:
         if m in body:
@@ -1872,6 +2282,40 @@ def discover_boards(jobs, boards, today):
     return probed
 
 
+def board_discovery_seeds(paywalled, still_paid, matched):
+    """The postings worth spending a board probe on, best candidate first.
+
+    Discovery used to be seeded only from what the paid-relister cut discarded,
+    which meant it only ever asked about employers whose links happened to sit
+    on jobleads or jooble. By 7 Sep 2026 that had produced a ledger of Qualcomm,
+    Lucid Motors, Delivery Hero and FileCloud -- 8 of the 10 boards found had
+    ZERO open roles -- because a paid relister carries global postings that have
+    nothing to do with hiring in Saudi. No amount of tuning the probe fixes a
+    seed list that never contained a Saudi employer.
+
+    A card that passed the filters is the opposite kind of evidence: a real
+    Saudi role this candidate would be shown, relayed by an aggregator that has
+    no employer board behind it yet. Its employer is precisely who to ask.
+
+    Refused postings still come first. Only MAX_BOARD_PROBES run in a day, and
+    finding a board for a posting the cut threw away recovers a role that would
+    otherwise never be delivered, while an aggregator card was delivered anyway
+    and only stands to get a better link tomorrow.
+    """
+    seen_keys = set()
+    out = []
+    for job in list(paywalled) + list(still_paid) + list(matched):
+        # An employer-sourced job came FROM the board, so there is nothing to find.
+        if job.get("source") in EMPLOYER_SOURCES:
+            continue
+        key = company_key(job.get("company"))
+        if not key or key in seen_keys:
+            continue
+        seen_keys.add(key)
+        out.append(job)
+    return out
+
+
 def confirmed_boards(boards):
     """Every discovered board as a COMPANIES entry, minus the ones already there."""
     already = {(c["source"], c["token"]) for c in COMPANIES}
@@ -2037,6 +2481,21 @@ def main():
     paywalled = []
     all_jobs.extend(fetch_jsearch(rapidapi_key, paywalled))
 
+    # Freshness: the two feeds that can actually answer "posted this week".
+    # Measured 7 Sep 2026 against the same country on the same day, JSearch
+    # returned ZERO rows inside a week and a corpus aged 18-159 days. The ATS
+    # feed returned ten technical roles aged 0-1 days, all on employer boards;
+    # the LinkedIn feed returned ten more, all posted that day, nine of them
+    # technical. Their allowances are small, hard and metered per API, so each
+    # carries its own counter in state rather than a shared assumption.
+    quotas = load_api_quotas()
+    for feed, fetch in (("active_ats", fetch_active_ats),
+                        ("linkedin_api", fetch_linkedin),
+                        ("indeed", fetch_indeed)):
+        quota = quotas.setdefault(feed, {})
+        all_jobs.extend(fetch(rapidapi_key, quota, MAX_JOB_AGE_DAYS))
+    save_api_quotas(quotas)
+
     # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever).
     # COMPANIES is the hand-curated list; the boards after it were discovered
     # from employers the paid-relister cut discarded on an earlier run. Reading
@@ -2077,7 +2536,8 @@ def main():
     # here is read directly from the next run on. Scoped to the postings that
     # passed the filters, so five ATS requests are never spent on a role this
     # candidate would not be shown.
-    if discover_boards(paywalled + still_paid, boards, datetime.date.today().isoformat()):
+    if discover_boards(board_discovery_seeds(paywalled, still_paid, matched),
+                       boards, datetime.date.today().isoformat()):
         save_boards(boards)
 
     # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike
@@ -2085,9 +2545,21 @@ def main():
     # same posting appearing on the employer's own board tomorrow should be
     # delivered tomorrow.
     fresh = [j for j in matched if job_identity(j) not in seen]
+
+    # Age before liveness, because this costs no network and settle_link spends
+    # a request per job. Deliberately NOT written to seen.json: the check is
+    # free to repeat, and a posting dropped for age today must still be
+    # deliverable if a source later reports a corrected, newer date for it.
+    # An undated posting stays and is labelled rather than dropped.
+    fresh, stale = split_by_age(fresh, MAX_JOB_AGE_DAYS)
+    for job in stale:
+        log(f"DROP older than {MAX_JOB_AGE_DAYS}d ({job['age_days']}d): "
+            f"{job['company']} — {job['title']}")
+    undated = sum(1 for j in fresh if j.get("age_days") is None)
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
         f"{len(relisted_copies)} relisted copies, {len(paywalled)} paywalled and refused "
-        f"at the fetch, {len(fresh)} new")
+        f"at the fetch, {len(stale)} older than {MAX_JOB_AGE_DAYS}d, "
+        f"{len(fresh)} new ({undated} undated)")
 
     # Verification is evidence, not a boolean gate: a third-party site may block
     # this runner while still serving a job seeker. Only confirmed closure drops.
@@ -2121,6 +2593,7 @@ def main():
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
         )
         log("No new matching jobs. Heartbeat sent.")
@@ -2165,6 +2638,7 @@ def main():
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
             relisted=len(relisted),
         )
@@ -2207,6 +2681,7 @@ def main():
         save_stats(
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
             relisted=len(relisted), below_floor=len(below_floor),
         )
@@ -2269,7 +2744,11 @@ def main():
             # Only Pinpoint publishes structured pay today; everything else omits it.
             pay = f" · {j['salary']}" if j.get("salary") else ""
             resume_line = ""
-            flags = []
+            # Age leads the flags. The digest is asked for roles posted within a
+            # week, so how old a posting is belongs on the card next to the
+            # claim -- and an undated one has to say so rather than let the
+            # reader assume the cutoff was enforced on it.
+            flags = [age_label(j.get("age_days"))]
             if j.get("link_status") == LINK_UNKNOWN:
                 flags.append("link check inconclusive")
             if not j.get("description"):
@@ -2340,6 +2819,7 @@ def main():
     save_stats(
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
         strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
         delivered=len(delivered_ids), relisted=len(relisted),
         below_floor=len(below_floor), deferred=len(deferred),
@@ -2494,6 +2974,489 @@ def discover(names):
 # ----------------------------------------------------------------------------
 
 
+# --------------------------- ACTIVE ATS PROBE -------------------------------
+# `python digest.py --probe-active-ats` reads one page of Active Jobs DB, an
+# ATS-sourced feed on the same RapidAPI account, and reports what it holds for
+# Saudi Arabia within a week. It exists because --probe-freshness established
+# (7 Sep 2026, two unrelated queries) that JSearch returns ZERO jobs under
+# date_posted=week and 18-159 day old postings under date_posted=month, so the
+# aggregator this digest is built on cannot answer "posted within a week" at all.
+#
+# Whether a replacement is worth building depends entirely on its real Saudi
+# yield, which no amount of reading the vendor's docs will tell us.
+#
+# It reads. It never writes, never delivers and never touches seen.json.
+# Nothing older than this reaches the digest. first_published was written by
+# every fetcher and read by NOTHING before this, so "fresh" meant only "not
+# delivered before" -- a four-month-old posting counted as new the first time it
+# was seen, which is how a closed HudHud Maps role from a month earlier reached
+# the 7 Sep 2026 digest. Overridable, because the achievable cutoff depends
+# entirely on what the sources can supply.
+def _max_job_age(raw):
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return 7
+    return value if value > 0 else 7
+
+
+MAX_JOB_AGE_DAYS = _max_job_age(os.environ.get("MAX_JOB_AGE_DAYS"))
+
+# The boards this digest reads per company, as opposed to any index OF those
+# boards. Defined here rather than from FETCHERS because FETCHERS is built
+# further down; the two are asserted equal in the tests.
+DIRECT_BOARD_SOURCES = frozenset(
+    {"greenhouse", "ashby", "workable", "lever", "pinpoint"})
+
+
+def split_by_age(jobs, max_age_days, today=None):
+    """Split postings into (fresh, stale) and record each one's age in days.
+
+    Age is a proxy for "probably dead". That holds for an index and not for a
+    board: an aggregator keeps serving a posting long after the employer pulled
+    it, which is how a closed HudHud Maps role reached the 7 Sep 2026 digest,
+    while an employer's own ATS lists only what it is still hiring for. So a
+    posting read directly from a company board is exempt -- measured live that
+    day, gating the 169 postings on those boards would have discarded 73 open
+    vacancies to solve a problem they do not have. Liveness carries them
+    instead: verify_link drops a pulled posting, and fetch_workable and
+    fetch_ashby skip unpublished ones at the fetch.
+
+    Exempt from the cutoff, never from the truth -- every posting still records
+    its real age, so the card cannot imply a freshness it does not have.
+
+    An undated posting is FRESH, not stale. Pinpoint publishes no date at all
+    and Greenhouse only sometimes, so dropping the undated would quietly remove
+    those employers from the digest entirely. The card says the date is unknown
+    instead, which is the honest version of what is known.
+    """
+    today = today or datetime.date.today()
+    fresh, stale = [], []
+    for job in jobs:
+        raw = str(job.get("first_published") or "")[:10]
+        try:
+            age = (today - datetime.date.fromisoformat(raw)).days
+        except ValueError:
+            job["age_days"] = None
+            fresh.append(job)
+            continue
+        # Ingestion delay and timezones can put a posting a few hours ahead.
+        job["age_days"] = max(age, 0)
+        too_old = job["age_days"] > max_age_days
+        (stale if too_old and job.get("source") not in DIRECT_BOARD_SOURCES
+         else fresh).append(job)
+    return fresh, stale
+
+
+def age_label(age_days):
+    """How the card states a posting's age, including when it has none."""
+    if age_days is None:
+        return "posting date unknown"
+    if age_days == 0:
+        return "posted today"
+    if age_days == 1:
+        return "posted yesterday"
+    return f"posted {age_days} days ago"
+
+
+ACTIVE_ATS_HOST = "active-jobs-db.p.rapidapi.com"
+
+# The ATS platforms worth asking for: every source this digest already fetches
+# directly, plus the large enterprise systems no public board API covers.
+ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
+                      "workday,smartrecruiters,icims,oraclecloud,successfactors")
+
+
+# TITLE_INCLUDE as a Boolean the API can evaluate, so the tech filter runs
+# server-side and the free plan's 250-jobs-a-month allowance is not spent on
+# hotel and retail postings. Chained with <-> where a term is a phrase.
+# Deliberately NOT the bare word "engineer". TITLE_INCLUDE can afford it because
+# LOCATION_INCLUDE, TITLE_EXCLUDE and the ranker all sit downstream of it for
+# free. Here every row costs allowance: the first filtered probe (7 Sep 2026)
+# spent 8 of 10 rows on civil, mechanical, electrical, irrigation and
+# arboriculture engineers. Name the software disciplines instead.
+ACTIVE_ATS_TITLE = (
+    "software | developer | backend | 'back end' | frontend | 'front end' | "
+    "'full stack' | fullstack | 'machine learning' | 'data scien':* | "
+    "'data engineer' | 'ai engineer' | 'ml engineer' | mlops | devops | sre | "
+    "'site reliability' | 'platform engineer' | 'cloud engineer' | "
+    "'solutions engineer' | 'solutions architect' | 'software architect' | "
+    "'data architect' | 'automation engineer' | 'qa engineer' | 'test engineer'"
+)
+
+
+# LinkedIn as its own feed rather than relayed through Google for Jobs. Same
+# vendor and the same parameter model as Active Jobs DB, on a SEPARATE free
+# allowance -- RapidAPI meters per API, so subscribing to both doubles what the
+# free tier supplies. There is no source= here: every row is LinkedIn.
+#
+# LinkedIn is not the problem the paid-relister cut was solving. digest.py:319
+# records it as the largest single source of real Saudi postings this digest
+# sees, 65 of 178. What failed on 7 Sep 2026 was STALE, DEAD LinkedIn relayed
+# through an index that could not filter by date -- and prefer_employer_postings
+# already demotes a LinkedIn row whenever the employer's own board has the role.
+LINKEDIN_API_HOST = "linkedin-job-search-api.p.rapidapi.com"
+
+# Bayt is the largest Saudi-native board and this digest has barely seen it:
+# bayt.com appeared ONCE across 196 archived postings, because Google for Jobs
+# indexes it thinly for Saudi queries. A different vendor again -- not
+# Fantastic.jobs -- so a different response shape and its own probe.
+#
+# Its free allowance is 25 requests a DAY rather than a month, which is 30x
+# either Fantastic.jobs feed, and days_old takes an exact integer against the
+# posting timestamp rather than a bucketed window.
+#
+# Not Bayt's own API: a third party scrapes Bayt and resells it here. That is
+# the same legal basis as the Apify scrapers, with a storefront on top.
+BAYT_HOST = "bayt-com.p.rapidapi.com"
+
+
+# Indeed, which nothing else in this stack reaches. A different vendor again,
+# with a separate endpoint per platform rather than one blended index -- so its
+# datePosted is not the same machinery as JSearch's, even though the parameter
+# shares a name. That name is a warning, not a promise: date_posted=week is
+# exactly what returned zero rows on JSearch, so this gets measured before it
+# gets a fetcher.
+def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
+    """Report what the Indeed feed holds for Saudi Arabia inside a week."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    url = ("https://" + INDEED_HOST + "/v2/indeed/search"
+           + "?query=" + requests.utils.quote(query)
+           + "&location=" + requests.utils.quote(location)
+           + "&countryCode=sa&remoteOnly=false")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": INDEED_HOST}, timeout=30)
+    except requests.RequestException as e:
+        print(f"request failed: {e}")
+        return 1
+    print(f"HTTP {r.status_code} for query={query!r}, location={location!r}")
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
+    if r.status_code != 200:
+        # It names the parameter it wanted and warns about ones it did not
+        # recognise, which is cheaper to read than guessing across requests.
+        print(f"body[:900]: {r.text[:900]}")
+        return 1
+    try:
+        payload = r.json()
+    except ValueError:
+        print(f"non-JSON response: {r.text[:200]}")
+        return 1
+    rows = payload
+    if isinstance(payload, dict):
+        print(f"top-level keys: {sorted(payload)}")
+        for note in (payload.get("warnings") or []):
+            print(f"  WARNING from API: {note}")
+        for key in ("jobs", "data", "results", "items"):
+            if isinstance(payload.get(key), list):
+                print(f"rows live under {key!r}")
+                rows = payload[key]
+                break
+        else:
+            rows = []
+    print(f"{len(rows)} rows returned")
+    print()
+    if not rows:
+        return 0
+    print("first row, verbatim:")
+    for key in sorted(rows[0]):
+        value = rows[0][key]
+        if isinstance(value, str) and len(value) > 140:
+            value = value[:140] + f"... ({len(rows[0][key])} chars)"
+        print(f"  {key} = {value!r}")
+    print()
+    # Two clocks, and they disagree by months: datePublishedTimestamp is when the
+    # employer published, dateOnIndeedTimestamp is when Indeed indexed it. Both
+    # are epoch MILLISECONDS. Report the employer's clock, because that is the
+    # one the digest promises against -- an index date says only that a scraper
+    # noticed an old posting today.
+    today = datetime.date.today()
+
+    def _age(row, field):
+        stamp = row.get(field)
+        if not isinstance(stamp, (int, float)):
+            return None
+        try:
+            when = datetime.datetime.utcfromtimestamp(stamp / 1000).date()
+        except (ValueError, OverflowError, OSError):
+            return None
+        return (today - when).days
+
+    shaped = []
+    for row in rows:
+        company = row.get("company")
+        if isinstance(company, dict):
+            company = company.get("name")
+        where = row.get("location")
+        if isinstance(where, dict):
+            where = ", ".join(str(v) for v in
+                              (where.get("location"), where.get("country")) if v)
+        shaped.append({
+            "company": str(company or ""),
+            "title": str(row.get("title") or "").strip(),
+            "location": str(where or ""),
+            "url": row.get("applyUrl") or "",
+            "source": "indeed", "token": "",
+            "description": str(row.get("description") or ""),
+            "published_age": _age(row, "datePublishedTimestamp"),
+            "indexed_age": _age(row, "dateOnIndeedTimestamp"),
+        })
+    kept = [j for j in shaped if matches_filters(j)]
+    ages = sorted(j["published_age"] for j in kept
+                  if isinstance(j["published_age"], int))
+    within = sum(1 for a in ages if a <= 7)
+    print(f"{len(kept)} of {len(shaped)} rows pass this digest's own filters")
+    if ages:
+        print(f"published age of those: min {ages[0]}, median "
+              f"{ages[len(ages) // 2]}, max {ages[-1]}; within 7 days: "
+              f"{within}/{len(ages)}")
+    print()
+    for job in kept[:25]:
+        pub = job["published_age"]
+        idx = job["indexed_age"]
+        pub = f"{pub}d" if isinstance(pub, int) else "?"
+        idx = f"{idx}d" if isinstance(idx, int) else "?"
+        print(f"- [pub {pub:>5} / seen {idx:>4}] {job['company'][:22]:22} "
+              f"{job['title'][:44]}")
+    return 0
+
+
+def probe_bayt(api_key, days_old="7", scan_pages="10"):
+    """Report what Bayt holds for Saudi Arabia inside a posting-age cutoff.
+
+    days_old and keyword are POST-filters on this API: they scan scan_pages
+    pages of 30 rather than the whole index, so the request narrows on country
+    first and the response reports how much was actually scanned.
+    """
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    url = (f"https://{BAYT_HOST}/job-search"
+           f"?country=sa&days_old={days_old}&scan_pages={scan_pages}"
+           f"&page=1&language=en")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": BAYT_HOST}, timeout=30)
+    except requests.RequestException as e:
+        print(f"request failed: {e}")
+        return 1
+    print(f"HTTP {r.status_code} for country=sa, days_old={days_old}")
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
+    if r.status_code != 200:
+        # 403 means the key is not subscribed; subscribing is the operator's call.
+        print(f"body[:300]: {r.text[:300]}")
+        return 1
+    try:
+        payload = r.json()
+    except ValueError:
+        print(f"non-JSON response: {r.text[:200]}")
+        return 1
+    if isinstance(payload, dict):
+        print(f"top-level keys: {sorted(payload)}")
+        # How much of the index the post-filter actually looked at. Without this
+        # a small result is ambiguous: few fresh Saudi jobs, or a short scan.
+        if payload.get("postFilter"):
+            print(f"postFilter: {payload['postFilter']}")
+        if payload.get("count") is not None:
+            print(f"count (pre-post-filter): {payload['count']}")
+        rows = (payload.get("jobs") or payload.get("results")
+                or payload.get("data") or [])
+    else:
+        rows = payload
+    # The envelope nests: data is itself an object holding the rows beside its
+    # own metadata. Walk one level rather than assume, and say what was found.
+    if isinstance(rows, dict):
+        print(f"data keys: {sorted(rows)}")
+        for key, value in rows.items():
+            if isinstance(value, list) and value and isinstance(value[0], dict):
+                print(f"rows live under data[{key!r}]")
+                rows = value
+                break
+        else:
+            print("no list of objects under data; nothing to shape")
+            return 0
+    print(f"{len(rows)} rows returned")
+    print()
+    if not rows:
+        return 0
+    # Verbatim, because the field names decide what a fetcher would read and
+    # guessing them wrong fails silently -- the lesson from description_text.
+    print("first row, verbatim:")
+    for key in sorted(rows[0]):
+        value = rows[0][key]
+        if isinstance(value, str) and len(value) > 140:
+            value = value[:140] + f"... ({len(rows[0][key])} chars)"
+        print(f"  {key} = {value!r}")
+    print()
+    # Volume is not the question -- relevance is. Bayt carries the whole Saudi
+    # market, most of it retail, construction and admin, so what matters is how
+    # many rows survive the filters this digest already applies. Shaped the way
+    # a fetcher would shape them, then judged by matches_filters itself.
+    shaped = []
+    for row in rows:
+        company = row.get("company")
+        if isinstance(company, dict):
+            company = company.get("name") or ""
+        shaped.append({
+            "company": str(company or ""),
+            "title": str(row.get("title") or "").strip(),
+            "location": str(row.get("locationFormatted")
+                            or row.get("location") or ""),
+            "url": row.get("url") or "",
+            "first_published": str(row.get("postedAt") or "")[:10],
+            "source": "bayt", "token": "",
+            "description": str(row.get("summaryEn")
+                               or row.get("descriptionSnippet") or ""),
+            "days_old": row.get("daysOld"),
+            "aggregated": row.get("isAggregated"),
+        })
+    kept = [j for j in shaped if matches_filters(j)]
+    native = sum(1 for j in kept if j.get("aggregated") is False)
+    print(f"{len(kept)} of {len(shaped)} rows pass this digest's own filters "
+          f"({native} of those posted natively on Bayt)")
+    print()
+    for job in kept[:30]:
+        age = job.get("days_old")
+        age = f"{age}d" if isinstance(age, int) else "?"
+        tag = "native" if job.get("aggregated") is False else "aggr"
+        print(f"- [{age:>4} {tag:6}] {job['company'][:26]:26} {job['title'][:46]}")
+    return 0
+
+
+def probe_linkedin(api_key, time_frame="7d", limit=10):
+    """Report what the LinkedIn feed holds for Saudi Arabia inside one window."""
+    url = (f"https://{LINKEDIN_API_HOST}/active-jb"
+           f"?location={requests.utils.quote('Saudi Arabia')}"
+           f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
+           f"&description_format=text"
+           f"&time_frame={time_frame}&limit={limit}")
+    return _probe_fantastic("LinkedIn Job Search", url, api_key, time_frame, limit)
+
+
+def probe_active_ats(api_key, time_frame="7d", limit=10):
+    """Report what Active Jobs DB holds for Saudi Arabia inside one time window."""
+    url = (f"https://{ACTIVE_ATS_HOST}/active-ats"
+           f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
+           f"&location={requests.utils.quote('Saudi Arabia')}"
+           f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
+           f"&description_format=text"
+           f"&time_frame={time_frame}&limit={limit}")
+    return _probe_fantastic("Active Jobs DB", url, api_key, time_frame, limit)
+
+
+def _probe_fantastic(name, url, api_key, time_frame, limit):
+    """One page from a Fantastic.jobs feed, reported by age and by employer.
+
+    Both feeds answer the only question that matters here -- how old is what
+    you actually get back -- and both meter jobs as well as requests, so the
+    probe reads one small page and prints one row verbatim.
+    """
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    print(f"--- {name} ---")
+    host = url.split("//", 1)[1].split("/", 1)[0]
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": host}, timeout=30)
+    except requests.RequestException as e:
+        print(f"request failed: {e}")
+        return 1
+    print(f"HTTP {r.status_code} for time_frame={time_frame}, limit={limit}")
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
+    if r.status_code != 200:
+        # A 403 here means the key is not subscribed to this API. Subscribing is
+        # an account action for the operator, not something this probe can do.
+        print(f"body[:300]: {r.text[:300]}")
+        return 1
+    try:
+        jobs = r.json()
+    except ValueError:
+        print(f"non-JSON response: {r.text[:200]}")
+        return 1
+    if isinstance(jobs, dict):
+        print(f"top-level keys: {sorted(jobs)}")
+        jobs = jobs.get("data") or jobs.get("jobs") or []
+    print(f"{len(jobs)} jobs returned")
+    print()
+    if not jobs:
+        return 0
+    # One row verbatim, values and all. The key list alone does not say whether
+    # description_format=text lands in "description" or "description_text",
+    # whether locations_derived holds strings or dicts, or what shape date_posted
+    # actually takes -- and fetch_active_ats guesses all three.
+    sample = dict(jobs[0])
+    for key in sorted(sample):
+        value = sample[key]
+        if isinstance(value, str) and len(value) > 160:
+            value = value[:160] + f"... ({len(sample[key])} chars)"
+        print(f"  {key} = {value!r}")
+    print()
+    today = datetime.date.today()
+    for job in jobs:
+        raw = str(job.get("date_posted") or job.get("date_created") or "")[:10]
+        try:
+            age = f"{(today - datetime.date.fromisoformat(raw)).days}d"
+        except ValueError:
+            age = "?"
+        print(f"- [{age:>4}] {str(job.get('organization') or '?')[:28]:28} "
+              f"{str(job.get('title') or '?')[:44]:44} "
+              f"{link_host(str(job.get('url') or '')) or '(no url)'}")
+    return 0
+# ----------------------------------------------------------------------------
+
+
+# ---------------------------- FRESHNESS PROBE -------------------------------
+# `python digest.py --probe-freshness "software engineer Saudi Arabia"` asks the
+# SAME query once per date_posted value and reports the age spread of what comes
+# back. It exists because the first --probe-jsearch run with age reporting (7 Sep
+# 2026) returned 10/10 jobs dated 32-159 days old under date_posted=month: either
+# the filter is ignored on /search-v2, or it means something other than posting
+# age. A posting-age gate cannot be designed without knowing which.
+#
+# It reads. It never writes, never delivers and never touches seen.json.
+def probe_freshness(query, api_key):
+    """Report the age spread JSearch returns for each date_posted value."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    today = datetime.date.today()
+    for window in ("week", "month", "all"):
+        url = (f"https://{JSEARCH_HOST}/search-v2"
+               f"?query={requests.utils.quote(query)}&country=sa&date_posted={window}")
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
+        remaining = r.headers.get("x-ratelimit-requests-remaining", "?")
+        if r.status_code != 200:
+            print(f"date_posted={window}: HTTP {r.status_code} {r.text[:120]}")
+            continue
+        payload = r.json().get("data") or {}
+        jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
+        ages = []
+        undated = 0
+        for job in jobs:
+            raw = (job.get("job_posted_at_datetime_utc") or "")[:10]
+            try:
+                ages.append((today - datetime.date.fromisoformat(raw)).days)
+            except ValueError:
+                undated += 1
+        ages.sort()
+        spread = (f"min {ages[0]}, median {ages[len(ages) // 2]}, max {ages[-1]}"
+                  if ages else "no parseable dates")
+        within = sum(1 for a in ages if a <= 7)
+        print(f"date_posted={window:6} -> {len(jobs)} jobs, {undated} undated, "
+              f"age days: {spread}, within 7 days: {within}/{len(ages)} "
+              f"[quota left {remaining}]")
+        time.sleep(0.5)
+    return 0
+# ----------------------------------------------------------------------------
+
+
 # ------------------------------ JSEARCH PROBE -------------------------------
 # `python digest.py --probe-jsearch "data engineer Riyadh"` prints the SHAPE of one
 # live /search-v2 response. It exists because fetch_jsearch's docstring lists only
@@ -2557,6 +3520,31 @@ def probe_jsearch(query, api_key):
     print("job object keys (first job):")
     for key in sorted(jobs[0]):
         print(f"  {key}")
+    print()
+    # A posting-age gate is only as good as the date it reads. fetch_jsearch maps
+    # job_posted_at_datetime_utc into first_published, and the key is listed in the
+    # docstring -- but a key being PRESENT is not the same as it being POPULATED,
+    # and make_snapshot drops first_published, so no archived run can answer this
+    # after the fact. Report the real coverage and the actual ages: a gate over a
+    # mostly-empty field would flag nearly every card "date unknown" and still ship
+    # month-old roles.
+    dated = [j for j in jobs if (j.get("job_posted_at_datetime_utc") or "").strip()]
+    print(f"job_posted_at_datetime_utc populated: {len(dated)}/{len(jobs)} jobs")
+    if dated:
+        today = datetime.date.today()
+        ages = []
+        for job in dated:
+            raw = (job.get("job_posted_at_datetime_utc") or "")[:10]
+            try:
+                ages.append((today - datetime.date.fromisoformat(raw)).days)
+            except ValueError:
+                print(f"  UNPARSEABLE date: {raw!r}")
+        if ages:
+            ages.sort()
+            within = sum(1 for a in ages if a <= 7)
+            print(f"  age in days: min {ages[0]}, median {ages[len(ages) // 2]}, "
+                  f"max {ages[-1]}")
+            print(f"  within 7 days: {within}/{len(ages)}")
     print()
 
     # Any field holding a list of dicts with a link-ish key is a candidate for the
@@ -2706,6 +3694,19 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
         sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
                                os.environ.get("RAPIDAPI_KEY")))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-indeed":
+        sys.exit(probe_indeed(os.environ.get("RAPIDAPI_KEY"), *(sys.argv[2:4] or [])))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-bayt":
+        sys.exit(probe_bayt(os.environ.get("RAPIDAPI_KEY"), *(sys.argv[2:4] or [])))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-linkedin":
+        sys.exit(probe_linkedin(os.environ.get("RAPIDAPI_KEY"),
+                                *(sys.argv[2:3] or [])))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-active-ats":
+        sys.exit(probe_active_ats(os.environ.get("RAPIDAPI_KEY"),
+                                  *(sys.argv[2:3] or [])))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-freshness":
+        query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
+        sys.exit(probe_freshness(query, os.environ.get("RAPIDAPI_KEY")))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-jsearch":
         query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
         sys.exit(probe_jsearch(query, os.environ.get("RAPIDAPI_KEY")))

@@ -22,7 +22,8 @@ def _safe_state_path(value: str) -> str:
     normalized = path.as_posix()
     if not normalized or path.is_absolute() or ".." in path.parts:
         raise ValueError(f"unsafe state path: {value}")
-    if normalized in {"seen.json", "stats.json", "boards.json"} or _JOB_SNAPSHOT.fullmatch(normalized):
+    if normalized in {"seen.json", "stats.json", "boards.json",
+                      "active_ats.json"} or _JOB_SNAPSHOT.fullmatch(normalized):
         return normalized
     raise ValueError(f"unexpected state path: {value}")
 
@@ -134,7 +135,7 @@ def freshness_report(stats_path: Path, latest_run: dict[str, object], day: dt.da
 def _changed_state_paths(root: Path) -> list[str]:
     result = subprocess.run(
         ["git", "status", "--porcelain", "--untracked-files=all", "--",
-         "seen.json", "stats.json", "boards.json", "jobs"],
+         "seen.json", "stats.json", "boards.json", "active_ats.json", "jobs"],
         cwd=root,
         check=True,
         capture_output=True,

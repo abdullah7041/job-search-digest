@@ -1,7 +1,9 @@
 import datetime as dt
 import hashlib
+import inspect
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -162,3 +164,64 @@ class WorkflowGuardTests(unittest.TestCase):
             freshness_report(self.root / "stats.json", fresh_run, dt.date(2026, 8, 11)),
             ["stats.json has no row for the Riyadh day"],
         )
+
+
+class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
+    """Every tunable digest.py reads has to actually reach the scheduled run.
+
+    JSEARCH_DAILY_REQUESTS was read by digest.py and documented as "override
+    with a repository variable" for 100+ commits while digest.yml never passed
+    it, so the budget silently stayed at the hardcoded default. That was
+    invisible until the JSearch plan came within days of running dry. A comment
+    is not a wire.
+
+    Read as text rather than parsed as YAML: PyYAML is not in the pinned
+    requirements, and adding a dependency to the daily run to assert something
+    about a config file is a worse trade than a substring check.
+    """
+
+    def _digest_workflow(self):
+        path = Path(__file__).with_name(".github") / "workflows" / "digest.yml"
+        return path.read_text(encoding="utf-8")
+
+    def test_the_jsearch_budget_reaches_the_scheduled_run(self):
+        self.assertIn("JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}",
+                      self._digest_workflow())
+
+    def test_every_tunable_digest_reads_is_passed(self):
+        """Names read via os.environ.get in digest.py, which are either secrets
+        or repository variables, must all be handed to the run."""
+        source = Path(__file__).with_name("digest.py").read_text(encoding="utf-8")
+        read = set(re.findall(r'os\.environ\.get\(\s*"([A-Z0-9_]+)"', source))
+        # Set by the runner itself, never by the workflow author.
+        read -= {"GITHUB_REPOSITORY"}
+        workflow = self._digest_workflow()
+        missing = sorted(name for name in read if f"{name}: ${{{{" not in workflow)
+        self.assertEqual(missing, [],
+                         f"digest.py reads {missing}, digest.yml never passes them")
+
+
+class TestActiveAtsStateIsPersisted(unittest.TestCase):
+    """A state file the run writes but the workflow never commits is amnesia.
+
+    The Active Jobs DB allowance is 250 jobs and 25 requests a MONTH, both hard.
+    If the file recording what is left never survives the run, every morning
+    starts believing it has a full allowance and the reserve protects nothing.
+    """
+
+    def test_the_guard_accepts_the_file_into_the_state_artifact(self):
+        from workflow_guard import _safe_state_path
+        self.assertEqual(_safe_state_path("active_ats.json"), "active_ats.json")
+
+    def test_the_run_that_writes_it_can_hand_it_between_jobs(self):
+        """execute writes it, persist-state commits it, and the artifact is the
+        only thing that crosses between them."""
+        from workflow_guard import _changed_state_paths
+        self.assertIn("active_ats.json", inspect.getsource(_changed_state_paths))
+
+    def test_the_workflow_commits_it(self):
+        path = Path(__file__).with_name(".github") / "workflows" / "digest.yml"
+        text = path.read_text(encoding="utf-8")
+        add = [ln for ln in text.splitlines() if "git add --" in ln]
+        self.assertTrue(add, "digest.yml no longer has a git add line")
+        self.assertIn("active_ats.json", add[0])
