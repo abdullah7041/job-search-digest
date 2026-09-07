@@ -2566,6 +2566,16 @@ ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
                       "workday,smartrecruiters,icims,oraclecloud,successfactors")
 
 
+# TITLE_INCLUDE as a Boolean the API can evaluate, so the tech filter runs
+# server-side and the free plan's 250-jobs-a-month allowance is not spent on
+# hotel and retail postings. Chained with <-> where a term is a phrase.
+ACTIVE_ATS_TITLE = (
+    "engineer | developer | software | backend | frontend | 'full stack' | "
+    "'machine learning' | 'data scien':* | mlops | devops | sre | "
+    "'site reliability' | platform | automation | architect"
+)
+
+
 def probe_active_ats(api_key, time_frame="7d", limit=10):
     """Report what Active Jobs DB holds for Saudi Arabia inside one time window."""
     if not api_key:
@@ -2574,6 +2584,7 @@ def probe_active_ats(api_key, time_frame="7d", limit=10):
     url = (f"https://{ACTIVE_ATS_HOST}/active-ats"
            f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
            f"&location={requests.utils.quote('Saudi Arabia')}"
+           f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
            f"&time_frame={time_frame}&limit={limit}")
     try:
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
