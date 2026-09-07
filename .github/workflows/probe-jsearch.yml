@@ -29,6 +29,11 @@ on:
         required: false
         default: ""
         type: string
+      active_ats:
+        description: "Probe Active Jobs DB for Saudi ATS roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -66,8 +71,17 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: python digest.py --probe-freshness "$QUERY"
 
+      # A different API on the same RapidAPI account, so no new secret. A 403 here
+      # means the key is not subscribed to it, which is an account action for the
+      # operator rather than something this probe can do.
+      - name: Ask Active Jobs DB what Saudi ATS roles exist this week
+        if: ${{ inputs.active_ats }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-active-ats
+
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries && !inputs.freshness_query }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}

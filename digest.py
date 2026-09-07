@@ -2511,6 +2511,79 @@ def discover(names):
 # ----------------------------------------------------------------------------
 
 
+# --------------------------- ACTIVE ATS PROBE -------------------------------
+# `python digest.py --probe-active-ats` reads one page of Active Jobs DB, an
+# ATS-sourced feed on the same RapidAPI account, and reports what it holds for
+# Saudi Arabia within a week. It exists because --probe-freshness established
+# (7 Sep 2026, two unrelated queries) that JSearch returns ZERO jobs under
+# date_posted=week and 18-159 day old postings under date_posted=month, so the
+# aggregator this digest is built on cannot answer "posted within a week" at all.
+#
+# Whether a replacement is worth building depends entirely on its real Saudi
+# yield, which no amount of reading the vendor's docs will tell us.
+#
+# It reads. It never writes, never delivers and never touches seen.json.
+ACTIVE_ATS_HOST = "active-jobs-db.p.rapidapi.com"
+
+# The ATS platforms worth asking for: every source this digest already fetches
+# directly, plus the large enterprise systems no public board API covers.
+ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
+                      "workday,smartrecruiters,icims,oraclecloud,successfactors")
+
+
+def probe_active_ats(api_key, time_frame="7d", limit=10):
+    """Report what Active Jobs DB holds for Saudi Arabia inside one time window."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    url = (f"https://{ACTIVE_ATS_HOST}/active-ats"
+           f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
+           f"&location={requests.utils.quote('Saudi Arabia')}"
+           f"&time_frame={time_frame}&limit={limit}")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": ACTIVE_ATS_HOST}, timeout=30)
+    except requests.RequestException as e:
+        print(f"request failed: {e}")
+        return 1
+    print(f"HTTP {r.status_code} for time_frame={time_frame}, limit={limit}")
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
+    if r.status_code != 200:
+        # A 403 here means the key is not subscribed to this API. Subscribing is
+        # an account action for the operator, not something this probe can do.
+        print(f"body[:300]: {r.text[:300]}")
+        return 1
+    try:
+        jobs = r.json()
+    except ValueError:
+        print(f"non-JSON response: {r.text[:200]}")
+        return 1
+    if isinstance(jobs, dict):
+        print(f"top-level keys: {sorted(jobs)}")
+        jobs = jobs.get("data") or jobs.get("jobs") or []
+    print(f"{len(jobs)} jobs returned")
+    print()
+    if not jobs:
+        return 0
+    print("job object keys (first job):")
+    for key in sorted(jobs[0]):
+        print(f"  {key}")
+    print()
+    today = datetime.date.today()
+    for job in jobs:
+        raw = str(job.get("date_posted") or job.get("date_created") or "")[:10]
+        try:
+            age = f"{(today - datetime.date.fromisoformat(raw)).days}d"
+        except ValueError:
+            age = "?"
+        print(f"- [{age:>4}] {str(job.get('organization') or '?')[:28]:28} "
+              f"{str(job.get('title') or '?')[:44]:44} "
+              f"{link_host(str(job.get('url') or '')) or '(no url)'}")
+    return 0
+# ----------------------------------------------------------------------------
+
+
 # ---------------------------- FRESHNESS PROBE -------------------------------
 # `python digest.py --probe-freshness "software engineer Saudi Arabia"` asks the
 # SAME query once per date_posted value and reports the age spread of what comes
@@ -2794,6 +2867,9 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
         sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
                                os.environ.get("RAPIDAPI_KEY")))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-active-ats":
+        sys.exit(probe_active_ats(os.environ.get("RAPIDAPI_KEY"),
+                                  *(sys.argv[2:3] or [])))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-freshness":
         query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
         sys.exit(probe_freshness(query, os.environ.get("RAPIDAPI_KEY")))
