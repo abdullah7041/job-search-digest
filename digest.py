@@ -2855,6 +2855,85 @@ ACTIVE_ATS_TITLE = (
 # already demotes a LinkedIn row whenever the employer's own board has the role.
 LINKEDIN_API_HOST = "linkedin-job-search-api.p.rapidapi.com"
 
+# Bayt is the largest Saudi-native board and this digest has barely seen it:
+# bayt.com appeared ONCE across 196 archived postings, because Google for Jobs
+# indexes it thinly for Saudi queries. A different vendor again -- not
+# Fantastic.jobs -- so a different response shape and its own probe.
+#
+# Its free allowance is 25 requests a DAY rather than a month, which is 30x
+# either Fantastic.jobs feed, and days_old takes an exact integer against the
+# posting timestamp rather than a bucketed window.
+#
+# Not Bayt's own API: a third party scrapes Bayt and resells it here. That is
+# the same legal basis as the Apify scrapers, with a storefront on top.
+BAYT_HOST = "bayt-com.p.rapidapi.com"
+
+
+def probe_bayt(api_key, days_old="7", scan_pages="10"):
+    """Report what Bayt holds for Saudi Arabia inside a posting-age cutoff.
+
+    days_old and keyword are POST-filters on this API: they scan scan_pages
+    pages of 30 rather than the whole index, so the request narrows on country
+    first and the response reports how much was actually scanned.
+    """
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    url = (f"https://{BAYT_HOST}/job-search"
+           f"?country=sa&days_old={days_old}&scan_pages={scan_pages}"
+           f"&page=1&language=en")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": BAYT_HOST}, timeout=30)
+    except requests.RequestException as e:
+        print(f"request failed: {e}")
+        return 1
+    print(f"HTTP {r.status_code} for country=sa, days_old={days_old}")
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
+    if r.status_code != 200:
+        # 403 means the key is not subscribed; subscribing is the operator's call.
+        print(f"body[:300]: {r.text[:300]}")
+        return 1
+    try:
+        payload = r.json()
+    except ValueError:
+        print(f"non-JSON response: {r.text[:200]}")
+        return 1
+    if isinstance(payload, dict):
+        print(f"top-level keys: {sorted(payload)}")
+        # How much of the index the post-filter actually looked at. Without this
+        # a small result is ambiguous: few fresh Saudi jobs, or a short scan.
+        if payload.get("postFilter"):
+            print(f"postFilter: {payload['postFilter']}")
+        if payload.get("count") is not None:
+            print(f"count (pre-post-filter): {payload['count']}")
+        rows = (payload.get("jobs") or payload.get("results")
+                or payload.get("data") or [])
+    else:
+        rows = payload
+    print(f"{len(rows)} rows returned")
+    print()
+    if not rows:
+        return 0
+    # Verbatim, because the field names decide what a fetcher would read and
+    # guessing them wrong fails silently -- the lesson from description_text.
+    print("first row, verbatim:")
+    for key in sorted(rows[0]):
+        value = rows[0][key]
+        if isinstance(value, str) and len(value) > 140:
+            value = value[:140] + f"... ({len(rows[0][key])} chars)"
+        print(f"  {key} = {value!r}")
+    print()
+    for row in rows[:25]:
+        title = str(row.get("title") or row.get("jobTitle") or "?")[:46]
+        org = str(row.get("company") or row.get("employer")
+                  or row.get("companyName") or "?")[:26]
+        posted = str(row.get("postedDate") or row.get("datePosted")
+                     or row.get("postDate") or "?")[:19]
+        print(f"- [{posted:19}] {org:26} {title}")
+    return 0
+
 
 def probe_linkedin(api_key, time_frame="7d", limit=10):
     """Report what the LinkedIn feed holds for Saudi Arabia inside one window."""
@@ -3223,6 +3302,8 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
         sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
                                os.environ.get("RAPIDAPI_KEY")))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-bayt":
+        sys.exit(probe_bayt(os.environ.get("RAPIDAPI_KEY"), *(sys.argv[2:4] or [])))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-linkedin":
         sys.exit(probe_linkedin(os.environ.get("RAPIDAPI_KEY"),
                                 *(sys.argv[2:3] or [])))

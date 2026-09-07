@@ -39,6 +39,11 @@ on:
         required: false
         default: false
         type: boolean
+      bayt:
+        description: "Probe Bayt for Saudi roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -93,8 +98,16 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: python digest.py --probe-linkedin
 
+      # A different vendor from the two Fantastic.jobs feeds, so a different
+      # response shape -- the row is printed verbatim rather than assumed.
+      - name: Ask Bayt what Saudi roles exist this week
+        if: ${{ inputs.bayt }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-bayt
+
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin && !inputs.bayt }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
