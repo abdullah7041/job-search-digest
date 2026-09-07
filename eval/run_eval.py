@@ -42,13 +42,17 @@ import fit_check  # noqa: E402
 from eval.score import grade, invariance_failures  # noqa: E402
 
 FIXTURE_DIR = os.path.join(REPO, "eval", "fixtures")
-# 0.8, not 0.7, and the arithmetic is the reason. Only two categories are live
-# until 018B ships blockers, weighted 3 and 1, so a fixture can score exactly
-# two ways: 1.0 band + 0.0 reason = 0.75, or 0.0 band + 1.0 reason = 0.25. At a
-# 0.7 threshold the first passes, which makes reason_gap decorative and lets an
-# inflated-but-vague ranker through inflation-listed-only-skills -- the very
-# fixture meant to catch it. At 0.8 a fixture that expects gaps must both land
-# in band AND name one.
+# 0.8 was chosen when only two categories were live (band 3, reason 1), where a
+# fixture could land exactly two ways -- 0.75 in band naming no gap, or 0.25
+# naming a gap out of band -- so 0.7 would have made reason_gap decorative and
+# let an inflated-but-vague ranker through the fixture built to catch it.
+#
+# With --check that arithmetic changes: blockers (weight 2) joins, and in band
+# with correct blockers but a vague `why` scores 5/6 = 0.833, which passes. So
+# under --check the threshold no longer forces `why` to name a gap; the blockers
+# carry it instead. Defensible -- typed blockers are strictly better evidence
+# than fifteen words of prose -- but it is a real loosening, recorded here
+# rather than left to be rediscovered.
 PASS_THRESHOLD = 0.8
 
 
@@ -140,7 +144,8 @@ def main() -> int:
         print(f"{'PASS' if ok else 'FAIL'}  {fixture['id']}")
         print(f"      scored {scores}  (spread {spread})  expected {low}-{high}")
         print(f"      overall {overall:.2f}   {graded[-1]['categories']}")
-        print(f"      why: {graded[-1]['why']}")
+        # .get: grade()'s early return for a non-int score omits `why`.
+        print(f"      why: {graded[-1].get('why', '')}")
         last = per_run[-1].get(fixture["id"]) or {}
         if last.get("ceiling"):
             titles = "; ".join(b["title"] for b in last.get("blockers") or []) or "none"
@@ -156,13 +161,17 @@ def main() -> int:
     invariance = invariance_failures(fixtures, per_run[-1])
     for failure in invariance:
         print(f"INVARIANCE FAIL: {failure}")
-    failed += len(invariance)
 
+    # Counted separately, not folded into `failed`. An invariance failure is a
+    # property of a GROUP, not of a fixture, so adding it to the fixture tally
+    # printed "6/7 fixtures pass" on a run where all seven fixtures passed.
     print(f"\n=== {len(fixtures) - failed}/{len(fixtures)} fixtures pass "
           f"(threshold {PASS_THRESHOLD}) ===")
+    if invariance:
+        print(f"=== {len(invariance)} invariance group(s) failed ===")
     if args.json:
         print(json.dumps({"fixtures": report, "invariance": invariance}, indent=2))
-    return 1 if failed else 0
+    return 1 if (failed or invariance) else 0
 
 
 if __name__ == "__main__":

@@ -1208,7 +1208,7 @@ def load_resume_evidence(path="resume.md", limit=RESUME_EVIDENCE_CHARS):
         return ""
 
 
-def rank_jobs(jobs, api_key):
+def rank_jobs(jobs, api_key, evidence=None):
     """One call. Returns {id: {score, why}} or None on any failure (caller falls back).
 
     The 2026-07-31 digest handed Lead/Staff roles 92-98 because the old prompt
@@ -1232,7 +1232,7 @@ def rank_jobs(jobs, api_key):
     # keyword in it read as demonstrated capability. The resume goes in as
     # separately labelled evidence now, and the blurb keeps the job it is
     # actually good at: stating constraints and wants. See plans/018.
-    evidence = load_resume_evidence()
+    evidence = load_resume_evidence() if evidence is None else evidence
     listing = [
         {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"],
          "description_kind": jd_grade(j.get("description") or ""),
@@ -1513,7 +1513,9 @@ def cap_teaser_scores(jobs):
         if job["score"] <= TEASER_SCORE_CAP:
             continue
         job["score"] = TEASER_SCORE_CAP
-        job["why"] = f"{job['why']} (capped: description is a short teaser)"[:140]
+        # Same reason as cap_blocked_scores: trim the reason, keep the suffix.
+        suffix = " (capped: description is a short teaser)"
+        job["why"] = job["why"][:140 - len(suffix)].rstrip() + suffix
         capped.append(job)
     return capped
 
@@ -1536,14 +1538,20 @@ def cap_blocked_scores(jobs):
         if check.get("ceiling") != "low":
             continue
         if job["score"] <= BLOCKED_SCORE_CAP:
-            # cap_teaser_scores may already have brought it here and appended
-            # its own reason. A second suffix on a 140-character field means the
-            # truncation eats the first one, and both caps are the same number,
-            # so there is nothing left to say about the score.
+            # Belt and braces rather than a live hazard: cap_teaser_scores runs
+            # far upstream, so a teaser-capped job sits at 69, is_strong needs
+            # 80, and it never gets a fit_check at all -- the ceiling guard
+            # above already returned. Kept so the two caps stay composable if
+            # either ever moves.
             continue
         blockers = len(check.get("blockers") or [])
         job["score"] = BLOCKED_SCORE_CAP
-        job["why"] = f"{job['why']} (capped: {blockers} verified requirement gaps)"[:140]
+        # Trim the reason, not the suffix. apply_ranking already truncates `why`
+        # to exactly 140, so appending and slicing the result silently ate the
+        # explanation on a full-length reason -- leaving a card that reads
+        # "fit 69" with a reason written for an 88 and nothing saying why.
+        suffix = f" (capped: {blockers} verified requirement gaps)"
+        job["why"] = job["why"][:140 - len(suffix)].rstrip() + suffix
         capped.append(job)
     return capped
 
@@ -2165,7 +2173,11 @@ def main():
             "Heartbeat sent.")
         return
 
-    ranking = rank_jobs(fresh, rank_key) if rank_key else None
+    # Read once and passed to both passes, so "the ranker and the reality check
+    # scored the same evidence" is a property of the code rather than of two
+    # reads happening to agree.
+    evidence = load_resume_evidence()
+    ranking = rank_jobs(fresh, rank_key, evidence) if rank_key else None
     if rank_key and ranking is None:
         log("Ranker unavailable, using keyword scoring for this run")
     apply_ranking(fresh, ranking)
@@ -2213,11 +2225,13 @@ def main():
 
     # Between cap_per_company and split_tiers on purpose, and the position does
     # three jobs at once. avg_score was taken above, so drift keeps measuring
-    # what it always measured. drop_below_floor already ran, so a capped score
-    # can never drop a job or get it remembered -- it is delivered, flagged.
-    # And split_tiers has not run, so a capped job lands in "Worth reviewing"
-    # on its own instead of wearing a "Strong matches" label beside a fit 69.
-    check_jobs([job for job in fresh if is_strong(job)], load_resume_evidence(),
+    # what it always measured. drop_below_floor already ran, so the cap can
+    # never CAUSE a job to be dropped or remembered as below-floor -- a capped
+    # job is delivered, flagged, and then remembered like any other delivery,
+    # which is what stops it being re-fetched and re-capped every morning. And
+    # split_tiers has not run, so a capped job lands in "Worth reviewing" on its
+    # own instead of wearing a "Strong matches" label beside a fit 69.
+    check_jobs([job for job in fresh if is_strong(job)], evidence,
                rank_key, RANK_MODEL, RANK_FALLBACKS, RANK_PROVIDER, log)
     for job in cap_blocked_scores(fresh):
         gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
@@ -2260,6 +2274,10 @@ def main():
                 flags.append("link check inconclusive")
             if not j.get("description"):
                 flags.append("title-only assessment")
+            check = j.get("fit_check") or {}
+            if check.get("ceiling") == "low":
+                gaps = "; ".join(b["title"] for b in check.get("blockers") or [])
+                flags.append(f"low ceiling - {gaps}" if gaps else "low ceiling")
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(

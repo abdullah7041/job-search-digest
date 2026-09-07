@@ -40,6 +40,10 @@ BLOCKER_TYPES = [
     "education_certification_gap",
     "location_work_authorization",
     "role_scope_mismatch",
+    # A required skill the resume only LISTS, never demonstrates. Watheq carries
+    # this type and it is exactly the case 018A's demonstrated-vs-listed rule
+    # exists for, so it earns its place rather than collapsing into "other".
+    "evidence_quality",
     "other",
 ]
 
@@ -49,9 +53,19 @@ SEVERITIES = ["medium", "high", "critical"]
 # runs 3-6 on a normal day; this bounds a board-discovery day that floods it.
 MAX_CHECKED_JOBS = 10
 
-# Shared across every job's call, in the style of RANK_BUDGET_SECONDS. The daily
-# run has a ten-minute workflow timeout it shares with every fetch.
-CHECK_BUDGET_SECONDS = 180
+# Shared across every job's call, in the style of RANK_BUDGET_SECONDS.
+#
+# The arithmetic matters. digest.yml gives the execute job timeout-minutes: 10,
+# and that wall is NOT graceful -- it kills the run before state persistence, so
+# seen.json never records what was delivered and tomorrow re-delivers it. This
+# deadline IS graceful: jobs past it keep a neutral result and simply go
+# unchecked. So the budget is set to lose checks rather than lose the digest.
+#
+# 120 + 120 leaves six of the ten minutes for fetching, JD enrichment, link
+# verification and delivery. At 180 it was five, which is too thin a margin for
+# a step whose duration depends on how many third-party pages need fetching.
+# Revisit with real wall times from a live run before raising it.
+CHECK_BUDGET_SECONDS = 120
 
 JD_CHECK_CHARS = 4000
 RESUME_CHECK_CHARS = 8000
@@ -279,6 +293,11 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
                           "evidence": evidence})
 
     blockers = blockers[:MAX_BLOCKERS]
+    # `unclear` is diagnostic today: nothing outside this module reads it, and
+    # it reaches neither the snapshot nor the card. The demotion still does real
+    # work -- a demoted blocker stops counting toward ceiling_band -- so this is
+    # a record of what was rejected, not a feature. If it is ever surfaced, note
+    # that this truncation drops model-supplied items before demoted ones.
     return {"blockers": blockers, "unclear": unclear[:MAX_BLOCKERS],
             "strengths": strengths[:MAX_STRENGTHS],
             "ceiling": ceiling_band(blockers), "note": ""}

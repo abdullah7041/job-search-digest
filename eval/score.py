@@ -21,8 +21,9 @@ pretending:
   score_band  (w3)  ALWAYS gradeable. The anti-inflation core.
   reason_gap  (w1)  Weak but real: does `why` name at least one expected gap?
                     15 words cannot name six, so one is the bar.
-  blockers    (w2)  SKIPPED until plan 018B emits typed blockers. When a result
-                    carries them, they are graded and the weight switches on.
+  blockers    (w2)  Graded when the result carries typed blockers, which
+                    `run_eval.py --check` supplies from plan 018B's reality
+                    pass. Skipped, not failed, when it does not.
 
 `must_not_credit` is a HARD failure, not a weighted category -- the same choice
 Watheq makes for keyword-stuffing fixtures. A run that presents an unproven
@@ -130,7 +131,7 @@ def grade(fixture: dict, result: dict) -> dict:
     # that credits listed-only skills scores them high and misses the band.
     strengths = result.get("strengths")
     if strengths is None:
-        notes.append("must_not_credit not graded (needs 018B typed strengths)")
+        notes.append("must_not_credit not graded (this result carries no strengths; pass --check)")
     else:
         titles = " ".join(s.get("title", "") for s in strengths)
         for term in expected.get("must_not_credit") or []:
@@ -139,7 +140,7 @@ def grade(fixture: dict, result: dict) -> dict:
 
     blockers = result.get("blockers")
     if blockers is None:
-        notes.append("blockers not graded (018B not shipped)")
+        notes.append("blockers not graded (this result carries none; pass --check to run the reality pass)")
     else:
         titles = " ".join(b.get("title", "") for b in blockers)
         hit = [t for t in must_flag if term_present(t, titles)]

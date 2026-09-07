@@ -615,6 +615,51 @@ class TestSnippetSupport(unittest.TestCase):
         self.assertFalse(snippet_supported("judge-scores prompt", ""))
         self.assertFalse(snippet_supported("judge-scores prompt", None))
 
+    def test_a_fabricated_requirement_wrapped_in_real_vocabulary_is_rejected(self):
+        """The regression guard for the snippet gate's threshold.
+
+        Removing unsupported_terms from blocker titles left snippet_supported
+        carrying the whole weight. `words` is a set filtered only by length, so
+        stopwords count as much as the term that carries the claim -- and this
+        snippet scored 0.800 against the real HungerStation posting, which
+        mentions neither Kubernetes nor Terraform nor "required". Eight
+        surrounding words carried it past a 0.75 bar. At 0.85 it is rejected.
+        """
+        # Read the REAL posting rather than an approximation. A hand-written
+        # stand-in of this JD scored the snippet at 0.60, which passes at 0.75
+        # as well as at 0.85 -- the test would have been decorative.
+        fixture = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "eval", "fixtures", "hungerstation-senior-data-engineer-i.json")
+        with open(fixture, encoding="utf-8") as handle:
+            jd = json.load(handle)["job"]["description"]
+        # Kubernetes is the fabrication. Terraform IS in the posting, and that
+        # is the point: real surrounding vocabulary is what carries an invented
+        # requirement over a 0.75 bar.
+        self.assertNotIn("kubernetes", jd.lower())
+        self.assertIn("terraform", jd.lower())
+        self.assertFalse(snippet_supported(
+            "Experience with Kubernetes and Terraform is required for this role", jd))
+
+    def test_a_two_word_generic_quote_is_too_thin_to_be_evidence(self):
+        """"Strong SQL" really does occur in a posting that says "Strong SQL
+        skills", but two generic words do not show the posting REQUIRES
+        anything. Every snippet the live run produced was 55+ characters."""
+        self.assertFalse(snippet_supported("Strong SQL", "Strong SQL skills required"))
+
+    def test_the_live_run_snippets_all_still_verify(self):
+        """The seven snippets the first live HungerStation check produced. Every
+        one matched verbatim, so tightening the overlap constant must not touch
+        them -- this is the sample the threshold was chosen against."""
+        jd = ("- 5-8 years of experience in Data Engineering or similar roles. "
+              "- Bachelor's degree in Computer Science, Engineering, or related field. "
+              "- Experience with modern data stack (Airflow, dbt, Looker)")
+        for snippet in ("5-8 years of experience in Data Engineering or similar roles",
+                        "Bachelor's degree in Computer Science, Engineering, or related field",
+                        "Experience with modern data stack (Airflow, dbt, Looker)"):
+            with self.subTest(snippet=snippet[:40]):
+                self.assertTrue(snippet_supported(snippet, jd))
+
     def test_overlap_below_the_bar_is_rejected(self):
         """One shared word out of five is coincidence, not a citation."""
         self.assertFalse(snippet_supported(

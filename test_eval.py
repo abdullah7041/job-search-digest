@@ -107,8 +107,8 @@ class TestGrade(unittest.TestCase):
         result = grade(self.FIXTURE,
                        {"score": 55, "why": "Lacks data modeling and BigQuery evidence."})
         self.assertEqual(result["hard_failures"], [])
-        self.assertIn("must_not_credit not graded (needs 018B typed strengths)",
-                      result["notes"])
+        self.assertTrue(any("must_not_credit not graded" in n
+                                            for n in result["notes"]))
 
     def test_crediting_a_forbidden_strength_is_a_hard_failure(self):
         """The regression that put an 85 on a card: an unproven skill sold as a
@@ -131,10 +131,10 @@ class TestGrade(unittest.TestCase):
         self.assertEqual(result["overall"], 0.0)
         self.assertIn("no_score_returned", result["hard_failures"])
 
-    def test_blockers_are_not_graded_until_018b_emits_them(self):
+    def test_blockers_are_skipped_when_the_result_carries_none(self):
         result = grade(self.FIXTURE, {"score": 55, "why": "No BigQuery."})
         self.assertNotIn("blockers", result["categories"])
-        self.assertIn("blockers not graded (018B not shipped)", result["notes"])
+        self.assertIn("blockers not graded", result["notes"][-1])
 
     def test_blockers_are_graded_once_present(self):
         result = grade(self.FIXTURE, {

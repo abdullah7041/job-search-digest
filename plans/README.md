@@ -96,9 +96,10 @@ to unclear, an unverified strength is DELETED.
 `cap_blocked_scores` mirrors `cap_teaser_scores`, and the pass sits between
 `cap_per_company` and `split_tiers`. That one position does three jobs at once:
 `avg_score` was taken above so drift still measures the ranker; `drop_below_floor`
-already ran so a capped job is delivered flagged and can never be dropped or
-remembered; and `split_tiers` has not run so a capped job lands in "Worth
-reviewing" rather than wearing a "Strong matches" label beside a fit 69.
+already ran so the cap can never *cause* a drop, and the job is delivered flagged
+then remembered like any delivery; and `split_tiers` has not run so a capped job
+lands in "Worth reviewing" rather than wearing a "Strong matches" label beside a
+fit 69.
 
 **Three checks specified in this plan were wrong, and each was caught by
 running the thing rather than reading it.** All three are the same mistake:
@@ -134,7 +135,7 @@ the counterweight holds with 018B enabled.
 |---|---|
 | Score effect of blockers | Cap the score **and** add the verdict, following `cap_teaser_scores`. |
 | Which jobs get the per-job pass | Strong tier only (`ranking_verified`, score >= 80, has a JD). ~3–6/day. |
-| Capped score below the floor | Deliver it, flagged. Never dropped, never `remember()`ed. |
+| Capped score below the floor | Deliver it, flagged. The cap cannot *cause* a drop; the job is delivered and then remembered like any delivery. |
 | Gold-set evals | **Built** (`eval/`), not deferred — the operator asked for them once 018A landed. |
 
 ### Gold set — built, and verified to discriminate

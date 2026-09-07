@@ -113,13 +113,22 @@ Groups sharing an `invariance_group` must land within 8 points of each other.
 Same idea as Watheq's `BAND_CROSS_TOLERANCE`: identical requirements should
 score identically, but seed-only reproducibility means a small spread is noise.
 
-## What this cannot grade today
+## Two modes, and what each can grade
 
-Watheq grades `strongMatches` / `missingKeywords` arrays
-(`eval/match-score.mjs`). This ranker returns `{score, why}` and nothing else,
-so those arrays do not exist to grade. The `blockers` category is the slot
-018B fills; until then the set leans on the band, which is the part that
-actually reaches the reader.
+Without `--check` the runner sees only `{score, why}`, so `blockers` and
+`must_not_credit` are skipped and the verdict rests on `score_band` plus
+`reason_gap`. That is the cheap mode: one model call for the whole set.
+
+With `--check` it also runs plan 018B's reality pass, one extra call per
+fixture, and both dormant categories switch on. Use it when changing
+`fit_check.py` or the evidence gate; the cheap mode is enough for a prompt or
+rubric change.
+
+Note the threshold interaction, documented at `run_eval.py`'s `PASS_THRESHOLD`:
+under `--check`, in-band with correct blockers and a vague `why` scores 0.833
+and passes, so `--check` no longer forces the reason to name a gap. Typed
+blockers are better evidence than fifteen words of prose, but it is a real
+loosening.
 
 ## Adding a fixture
 

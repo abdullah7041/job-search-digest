@@ -64,15 +64,30 @@ def vocabulary(*texts: str) -> set[str]:
     return words
 
 
-# A quoted snippet shorter than this overlaps almost any source by chance, so
-# it is not evidence even when it technically matches.
-MIN_SNIPPET_CHARS = 8
+# A quoted snippet shorter than this is too thin to prove anything. "Strong SQL"
+# normalises to 10 characters and really does occur in a posting that says
+# "Strong SQL skills" -- but two generic words are not evidence that the posting
+# REQUIRES something. Every snippet the live HungerStation run produced was 55
+# characters or longer, so this rejects the thin ones without touching real work.
+MIN_SNIPPET_CHARS = 20
 
 # How much of a snippet's vocabulary must appear in its cited source before a
-# paraphrase still counts as a citation. Watheq's figure, kept for its reason:
-# models rewrite lightly around a real quote, so demanding a verbatim match
-# would throw away honest evidence, while a half would accept coincidence.
-SNIPPET_OVERLAP = 0.75
+# paraphrase still counts as a citation. Models rewrite lightly around a real
+# quote, so demanding a verbatim match would throw away honest evidence.
+#
+# 0.85, not Watheq's 0.75, and the difference is measured rather than taste.
+# `words` is a set filtered only by length, so stopwords count as much as the
+# one term that carries the claim -- which lets a fabricated requirement ride in
+# on real surrounding vocabulary. Against the live HungerStation posting:
+#
+#   "Experience with Kubernetes and Terraform is required for this role"  0.800
+#
+# Neither "Kubernetes" nor "required" appears in that posting; the eight
+# surrounding words carry it past 0.75 alone. At 0.85 it is rejected. Every one
+# of the seven snippets that live run actually produced matched VERBATIM, so the
+# constant does not touch them, and the single genuine paraphrase measured 0.875
+# and survives. 0.90 would kill that paraphrase.
+SNIPPET_OVERLAP = 0.85
 
 
 def _snippet_text(text: str) -> str:

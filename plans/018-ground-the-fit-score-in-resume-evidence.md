@@ -73,7 +73,7 @@ score. A 58 alone cannot produce that copy; two server-verified blockers can.
 |---|---|
 | Score effect of blockers | Cap the score **and** add the verdict. `cap_teaser_scores` is the existing idiom. |
 | Which jobs get the per-job pass | Strong tier only (`ranking_verified`, score >= 80, has a JD). ~3-6/day. |
-| Capped score below the floor | Deliver it, flagged. Never dropped, never `remember()`ed. |
+| Capped score below the floor | Deliver it, flagged. The cap runs after `drop_below_floor`, so it can never *cause* a drop; the job is then delivered and remembered like any other delivery. |
 | Gold-set evals | **Built** (`eval/`) once 018A landed, at the operator's request. |
 
 ---
@@ -314,9 +314,11 @@ Insert **after `cap_per_company` (`digest.py:2085-2090`), before `split_tiers`
   pass mutating scores above that line would silently change what drift
   measures.
 - **`drop_below_floor` ran at `digest.py:2061`**, also upstream. A capped score
-  therefore *cannot* drop a job or get it `remember()`ed — "deliver it, flagged"
-  falls out of the pipeline order for free, with no new branch in
-  `drop_below_floor`.
+  therefore cannot *cause* a job to be dropped or remembered as below-floor —
+  "deliver it, flagged" falls out of the pipeline order for free, with no new
+  branch in `drop_below_floor`. The job IS still remembered afterwards, like
+  every delivery, which is what stops it being re-fetched and re-capped every
+  morning.
 - **`split_tiers` has not run yet.** A capped job lands in "Worth reviewing" on
   its own, instead of carrying a `Strong matches` label next to `fit 69`.
 

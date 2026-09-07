@@ -870,10 +870,24 @@ class TestBlockedScoreCap(unittest.TestCase):
         self.assertEqual(digest.cap_blocked_scores([job]), [])
         self.assertEqual(job["why"].count("(capped:"), 1)
 
-    def test_the_reason_stays_within_the_field(self):
-        job = self._job("low", 3, why="x" * 138)
+    def test_the_cap_reason_survives_a_full_length_why(self):
+        """apply_ranking truncates `why` to exactly 140, so appending the suffix
+        and slicing the result used to eat the explanation entirely: the card
+        read "fit 69" with a reason written for an 88 and nothing saying why.
+        Trim the reason, keep the suffix."""
+        job = self._job("low", 3, why="x" * 140)
         digest.cap_blocked_scores([job])
         self.assertLessEqual(len(job["why"]), 140)
+        self.assertTrue(job["why"].endswith("(capped: 3 verified requirement gaps)"),
+                        f"suffix lost: {job['why'][-50:]!r}")
+
+    def test_the_teaser_cap_reason_also_survives(self):
+        job = {"title": "T", "company": "C", "score": 90, "why": "y" * 140,
+               "ranking_verified": True, "description": TEASER_JD}
+        digest.cap_teaser_scores([job])
+        self.assertLessEqual(len(job["why"]), 140)
+        self.assertTrue(job["why"].endswith("(capped: description is a short teaser)"),
+                        f"suffix lost: {job['why'][-50:]!r}")
 
 
 class TestStrongPredicate(unittest.TestCase):
@@ -987,6 +1001,10 @@ class TestStatsRows(unittest.TestCase):
         self.assertIn("profile may be stale", warning)
 
 
+# What the last run_main() passed to check_jobs. See fake_check below.
+LAST_CHECK_CALL = {}
+
+
 def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
              fit_checks=None):
     """Run digest.main() fully mocked; return (discord_posts, workdir).
@@ -1008,6 +1026,14 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
     posts = []
 
     def fake_check(jobs_to_check, resume_text, api_key, *args, **kwargs):
+        # Recorded, not discarded. Without this nothing pins WHICH jobs get a
+        # paid call: a call site changed to check_jobs(fresh, ...) would leave
+        # every test green while the daily run made one model call per delivered
+        # job instead of per strong-tier job.
+        LAST_CHECK_CALL.clear()
+        LAST_CHECK_CALL.update(titles=[j["title"] for j in jobs_to_check],
+                               resume_chars=len(resume_text or ""),
+                               api_key=api_key)
         for job in jobs_to_check:
             job["fit_check"] = (fit_checks or {}).get(
                 job["title"], fit_check_module.neutral_result("not checked in test"))
@@ -2643,6 +2669,23 @@ class TestEndToEnd(unittest.TestCase):
         with open(path, encoding="utf-8") as handle:
             snapshots = json.load(handle)["jobs"]
         return next(s for s in snapshots if s["title"] == title)
+
+    def test_only_strong_tier_jobs_get_the_paid_reality_check(self):
+        """One model call per checked job, so WHICH jobs are checked is a cost
+        control, not a detail. is_strong requires a verified score >= 80 with a
+        real JD; everything else must be left alone."""
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_a": {"score": 55, "why": "Lead title, seniority above target"},
+        }
+
+        run_main(self.ENV, ranking)
+
+        self.assertEqual(LAST_CHECK_CALL["titles"],
+                         ["Senior Software Engineer (AI Systems)"],
+                         "only the verified 80+ job with a JD should be checked")
+        self.assertGreater(LAST_CHECK_CALL["resume_chars"], 0,
+                           "the check must receive resume evidence to check against")
 
     def test_a_high_ceiling_job_keeps_its_score_and_tier(self):
         ranking = {
