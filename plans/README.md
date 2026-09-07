@@ -129,6 +129,47 @@ Bachelor's Degree in Relevant Field; Missing Proven Experience with Modern Data
 Stack Tools"*. The ceiling fixture still returns `high` with zero blockers, so
 the counterweight holds with 018B enabled.
 
+### Code review — 2026-09-07
+
+Dispatched over `ab0eb45..3c9f751`. **No Critical findings. Five Important, all
+fixed** (`69aebf2`), plus the cheap Minors.
+
+The one that mattered: removing `unsupported_terms` from blocker titles left
+`snippet_supported` carrying the entire gate, and at Watheq's 0.75 it verified a
+fabricated requirement against the real HungerStation posting — *"Experience
+with Kubernetes and Terraform is required for this role"* scores **0.800** on a
+posting that never says Kubernetes, because `words` is a set filtered only by
+length so eight stopwords carry it over the bar. Raised to **0.85** and
+`MIN_SNIPPET_CHARS` to **20**, both chosen against the snippets the live run
+actually produced: all seven matched verbatim so the constant does not touch
+them, the one genuine paraphrase measured 0.875 and survives, and 0.90 would
+have killed it.
+
+Also fixed: "never `remember()`ed" was simply false (a capped job is remembered
+like every delivery — what the pipeline position guarantees is that the cap
+cannot *cause* a drop); 018D's webhook flag had never been implemented; a `why`
+at its 140-character budget silently lost the whole cap suffix; and
+`run_main`'s fake check discarded its arguments, so nothing pinned which jobs
+get a paid call.
+
+### The one mistake this pass kept making
+
+Four separate defects, one root cause: **a text check applied to text whose
+SHAPE it was not built for.** Worth stating because none was caught by reading.
+
+| Check | Written for | Applied to | Result |
+|---|---|---|---|
+| `must_not_credit` | typed strengths | a 15-word `why` | "lacks X" and "strong X" indistinguishable |
+| `unsupported_terms` | prose bullets (sentence case) | Title Case blocker headings | 3 of 3 real blockers destroyed on "Dedicated", "Required", "Tools" |
+| `must_flag` on the floor fixture | the 15-word `why` | blocker titles | correct blockers failed for not saying "compliance" |
+| a fixture JD | a full posting | 484 chars, graded `incomplete` | the rule under test never ran |
+
+The habit that catches these: before trusting any gate, ask what shape of text
+it will actually see, then run it against real model output. Two of the four
+survived a full offline suite and only died on a live run.
+
+**Live, reality pass on: 7/7 fixtures pass.**
+
 ### Decisions taken by the operator for 018B
 
 | Question | Decision |

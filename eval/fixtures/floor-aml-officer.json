@@ -1,6 +1,6 @@
 {
   "id": "floor-aml-officer",
-  "description": "The floor test. An anti-money-laundering compliance role: wrong function outright. A regression that inflates this fixture is the most dangerous kind, because nothing downstream would catch it -- drop_below_floor only fires below 50.",
+  "description": "The floor test. An anti-money-laundering compliance role: wrong function outright. A regression that inflates this fixture is the most dangerous kind, because nothing downstream would catch it -- drop_below_floor only fires below 50. must_flag was [\"compliance\"], which was written for the 15-word `why` and reused unchanged against blocker titles. The live check named the gaps correctly -- AML and financial crime, a Bachelor's degree, KYC and transaction monitoring -- and not one used the literal word \"compliance\", so a correct answer failed. Now [\"AML\", \"degree\"]: more specific than the word it replaced, present in both output shapes, and no weaker as a guard (a ranker that scores this role high still fails on the band, and one that reports no blockers still fails that category).",
   "source": "jobs\\2026-08-21.json (archived score 10)",
   "job": {
     "id": "floor-aml-officer",
@@ -15,7 +15,8 @@
       39
     ],
     "must_flag": [
-      "compliance"
+      "AML",
+      "degree"
     ],
     "must_not_credit": []
   }
