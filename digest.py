@@ -2843,20 +2843,55 @@ ACTIVE_ATS_TITLE = (
 )
 
 
+# LinkedIn as its own feed rather than relayed through Google for Jobs. Same
+# vendor and the same parameter model as Active Jobs DB, on a SEPARATE free
+# allowance -- RapidAPI meters per API, so subscribing to both doubles what the
+# free tier supplies. There is no source= here: every row is LinkedIn.
+#
+# LinkedIn is not the problem the paid-relister cut was solving. digest.py:319
+# records it as the largest single source of real Saudi postings this digest
+# sees, 65 of 178. What failed on 7 Sep 2026 was STALE, DEAD LinkedIn relayed
+# through an index that could not filter by date -- and prefer_employer_postings
+# already demotes a LinkedIn row whenever the employer's own board has the role.
+LINKEDIN_API_HOST = "linkedin-job-search-api.p.rapidapi.com"
+
+
+def probe_linkedin(api_key, time_frame="7d", limit=10):
+    """Report what the LinkedIn feed holds for Saudi Arabia inside one window."""
+    url = (f"https://{LINKEDIN_API_HOST}/active-jb"
+           f"?location={requests.utils.quote('Saudi Arabia')}"
+           f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
+           f"&description_format=text"
+           f"&time_frame={time_frame}&limit={limit}")
+    return _probe_fantastic("LinkedIn Job Search", url, api_key, time_frame, limit)
+
+
 def probe_active_ats(api_key, time_frame="7d", limit=10):
     """Report what Active Jobs DB holds for Saudi Arabia inside one time window."""
-    if not api_key:
-        print("RAPIDAPI_KEY is not set; nothing to probe.")
-        return 1
     url = (f"https://{ACTIVE_ATS_HOST}/active-ats"
            f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
            f"&location={requests.utils.quote('Saudi Arabia')}"
            f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
            f"&description_format=text"
            f"&time_frame={time_frame}&limit={limit}")
+    return _probe_fantastic("Active Jobs DB", url, api_key, time_frame, limit)
+
+
+def _probe_fantastic(name, url, api_key, time_frame, limit):
+    """One page from a Fantastic.jobs feed, reported by age and by employer.
+
+    Both feeds answer the only question that matters here -- how old is what
+    you actually get back -- and both meter jobs as well as requests, so the
+    probe reads one small page and prints one row verbatim.
+    """
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    print(f"--- {name} ---")
+    host = url.split("//", 1)[1].split("/", 1)[0]
     try:
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
-                                       "X-RapidAPI-Host": ACTIVE_ATS_HOST}, timeout=30)
+                                       "X-RapidAPI-Host": host}, timeout=30)
     except requests.RequestException as e:
         print(f"request failed: {e}")
         return 1
@@ -3188,6 +3223,9 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
         sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
                                os.environ.get("RAPIDAPI_KEY")))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-linkedin":
+        sys.exit(probe_linkedin(os.environ.get("RAPIDAPI_KEY"),
+                                *(sys.argv[2:3] or [])))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-active-ats":
         sys.exit(probe_active_ats(os.environ.get("RAPIDAPI_KEY"),
                                   *(sys.argv[2:3] or [])))

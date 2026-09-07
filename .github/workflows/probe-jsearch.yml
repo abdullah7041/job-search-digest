@@ -34,6 +34,11 @@ on:
         required: false
         default: false
         type: boolean
+      linkedin:
+        description: "Probe the LinkedIn feed for Saudi roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -80,8 +85,16 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: python digest.py --probe-active-ats
 
+      # A separate API on the same RapidAPI account, so a separate free
+      # allowance and no new secret. 403 means the key is not subscribed to it.
+      - name: Ask the LinkedIn feed what Saudi roles exist this week
+        if: ${{ inputs.linkedin }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-linkedin
+
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
