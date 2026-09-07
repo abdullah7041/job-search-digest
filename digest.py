@@ -2575,6 +2575,31 @@ def probe_jsearch(query, api_key):
     for key in sorted(jobs[0]):
         print(f"  {key}")
     print()
+    # A posting-age gate is only as good as the date it reads. fetch_jsearch maps
+    # job_posted_at_datetime_utc into first_published, and the key is listed in the
+    # docstring -- but a key being PRESENT is not the same as it being POPULATED,
+    # and make_snapshot drops first_published, so no archived run can answer this
+    # after the fact. Report the real coverage and the actual ages: a gate over a
+    # mostly-empty field would flag nearly every card "date unknown" and still ship
+    # month-old roles.
+    dated = [j for j in jobs if (j.get("job_posted_at_datetime_utc") or "").strip()]
+    print(f"job_posted_at_datetime_utc populated: {len(dated)}/{len(jobs)} jobs")
+    if dated:
+        today = datetime.date.today()
+        ages = []
+        for job in dated:
+            raw = (job.get("job_posted_at_datetime_utc") or "")[:10]
+            try:
+                ages.append((today - datetime.date.fromisoformat(raw)).days)
+            except ValueError:
+                print(f"  UNPARSEABLE date: {raw!r}")
+        if ages:
+            ages.sort()
+            within = sum(1 for a in ages if a <= 7)
+            print(f"  age in days: min {ages[0]}, median {ages[len(ages) // 2]}, "
+                  f"max {ages[-1]}")
+            print(f"  within 7 days: {within}/{len(ages)}")
+    print()
 
     # Any field holding a list of dicts with a link-ish key is a candidate for the
     # alternative apply links. Reported by NAME so the real field can be recorded
