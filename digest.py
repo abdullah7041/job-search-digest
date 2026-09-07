@@ -3015,6 +3015,76 @@ LINKEDIN_API_HOST = "linkedin-job-search-api.p.rapidapi.com"
 BAYT_HOST = "bayt-com.p.rapidapi.com"
 
 
+# Indeed, which nothing else in this stack reaches. A different vendor again,
+# with a separate endpoint per platform rather than one blended index -- so its
+# datePosted is not the same machinery as JSearch's, even though the parameter
+# shares a name. That name is a warning, not a promise: date_posted=week is
+# exactly what returned zero rows on JSearch, so this gets measured before it
+# gets a fetcher.
+INDEED_HOST = "jobs-api14.p.rapidapi.com"
+
+
+def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
+    """Report what the Indeed feed holds for Saudi Arabia inside a week."""
+    if not api_key:
+        print("RAPIDAPI_KEY is not set; nothing to probe.")
+        return 1
+    url = ("https://" + INDEED_HOST + "/v2/indeed/search"
+           + "?query=" + requests.utils.quote(query)
+           + "&location=" + requests.utils.quote(location)
+           + "&datePosted=week&remoteOnly=false")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": INDEED_HOST}, timeout=30)
+    except requests.RequestException as e:
+        print(f"request failed: {e}")
+        return 1
+    print(f"HTTP {r.status_code} for query={query!r}, location={location!r}")
+    quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
+    print(f"quota headers: {quota or '(none reported)'}")
+    if r.status_code != 200:
+        print(f"body[:300]: {r.text[:300]}")
+        return 1
+    try:
+        payload = r.json()
+    except ValueError:
+        print(f"non-JSON response: {r.text[:200]}")
+        return 1
+    rows = payload
+    if isinstance(payload, dict):
+        print(f"top-level keys: {sorted(payload)}")
+        for key in ("jobs", "data", "results", "items"):
+            if isinstance(payload.get(key), list):
+                print(f"rows live under {key!r}")
+                rows = payload[key]
+                break
+        else:
+            rows = []
+    print(f"{len(rows)} rows returned")
+    print()
+    if not rows:
+        return 0
+    print("first row, verbatim:")
+    for key in sorted(rows[0]):
+        value = rows[0][key]
+        if isinstance(value, str) and len(value) > 140:
+            value = value[:140] + f"... ({len(rows[0][key])} chars)"
+        print(f"  {key} = {value!r}")
+    print()
+    # Whether the rows are actually fresh is the only question that matters,
+    # and it cannot be read off the parameter name -- JSearch accepted the same
+    # one and returned a 159-day corpus.
+    for row in rows[:20]:
+        title = str(row.get("title") or "?")[:44]
+        company = row.get("company")
+        if isinstance(company, dict):
+            company = company.get("name")
+        posted = str(row.get("datePosted") or row.get("date")
+                     or row.get("postedAt") or "?")[:24]
+        print(f"- [{posted:24}] {str(company or '?')[:24]:24} {title}")
+    return 0
+
+
 def probe_bayt(api_key, days_old="7", scan_pages="10"):
     """Report what Bayt holds for Saudi Arabia inside a posting-age cutoff.
 
@@ -3485,6 +3555,8 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-queries":
         sys.exit(probe_queries([q.strip() for q in sys.argv[2:] if q.strip()],
                                os.environ.get("RAPIDAPI_KEY")))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--probe-indeed":
+        sys.exit(probe_indeed(os.environ.get("RAPIDAPI_KEY"), *(sys.argv[2:4] or [])))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-bayt":
         sys.exit(probe_bayt(os.environ.get("RAPIDAPI_KEY"), *(sys.argv[2:4] or [])))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-linkedin":

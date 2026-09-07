@@ -44,6 +44,11 @@ on:
         required: false
         default: false
         type: boolean
+      indeed:
+        description: "Probe the Indeed feed for Saudi roles instead (1 request)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -106,8 +111,16 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: python digest.py --probe-bayt
 
+      # Indeed reaches employers none of the other feeds do. Its datePosted
+      # shares a name with JSearch's and nothing more, so it is measured.
+      - name: Ask the Indeed feed what Saudi roles exist this week
+        if: ${{ inputs.indeed }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python digest.py --probe-indeed
+
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin && !inputs.bayt }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin && !inputs.bayt && !inputs.indeed }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
