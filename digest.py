@@ -3032,7 +3032,7 @@ def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
     url = ("https://" + INDEED_HOST + "/v2/indeed/search"
            + "?query=" + requests.utils.quote(query)
            + "&location=" + requests.utils.quote(location)
-           + "&datePosted=week&remoteOnly=false")
+           + "&countryCode=sa&remoteOnly=false")
     try:
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
                                        "X-RapidAPI-Host": INDEED_HOST}, timeout=30)
@@ -3043,7 +3043,9 @@ def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
     quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
     print(f"quota headers: {quota or '(none reported)'}")
     if r.status_code != 200:
-        print(f"body[:300]: {r.text[:300]}")
+        # It names the parameter it wanted and warns about ones it did not
+        # recognise, which is cheaper to read than guessing across requests.
+        print(f"body[:900]: {r.text[:900]}")
         return 1
     try:
         payload = r.json()
@@ -3053,6 +3055,8 @@ def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
     rows = payload
     if isinstance(payload, dict):
         print(f"top-level keys: {sorted(payload)}")
+        for note in (payload.get("warnings") or []):
+            print(f"  WARNING from API: {note}")
         for key in ("jobs", "data", "results", "items"):
             if isinstance(payload.get(key), list):
                 print(f"rows live under {key!r}")
