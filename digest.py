@@ -1136,6 +1136,101 @@ def _age_window(max_age_days):
     return days, (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
 
 
+# Indeed, which nothing else in this stack reaches. A separate endpoint per
+# platform rather than one blended index.
+INDEED_HOST = "jobs-api14.p.rapidapi.com"
+
+
+# What this feed is asked for. Indeed has no taxonomy filter here and no
+# working date filter, so the query carries the terms and everything else is
+# judged locally.
+INDEED_QUERY = "software engineer"
+
+
+def fetch_indeed(api_key, quota=None, max_age_days=None):
+    """Read one page of Saudi roles from Indeed, which no other feed reaches.
+
+    Probed 7 Sep 2026: 20 rows, 8 passing the filters, 7 of those published
+    within a week, and Saudi employers the ATS feeds do not carry -- Rasan and
+    Consulum among them.
+
+    Two things this endpoint does not give, both confirmed live rather than
+    assumed. There is no server-side date filter: it answered "Parameter
+    'datePosted' is unknown and was ignored", so `max_age_days` cannot be
+    pushed to the server and split_by_age does the whole job. And there is no
+    single date -- it returns the employer's publish time and Indeed's own
+    index time, which disagreed by 76 days on the first row sampled.
+
+    Fail-soft like every other fetcher: any error is [] and a log line.
+    """
+    if not api_key:
+        return []
+    quota = quota if quota is not None else {}
+    if out_of_allowance("indeed", quota):
+        return []
+    url = ("https://" + INDEED_HOST + "/v2/indeed/search"
+           + "?query=" + requests.utils.quote(INDEED_QUERY)
+           + "&location=" + requests.utils.quote("Saudi Arabia")
+           + "&countryCode=sa")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": INDEED_HOST}, timeout=30)
+    except requests.RequestException as e:
+        log("WARN Indeed: request failed: " + str(e))
+        return []
+    _record_quota(quota, r.headers)
+    if r.status_code != 200:
+        log("WARN Indeed: HTTP " + str(r.status_code) + ": " + r.text[:120])
+        return []
+    try:
+        payload = r.json()
+    except ValueError:
+        log("WARN Indeed: non-JSON response")
+        return []
+    rows = payload.get("data") if isinstance(payload, dict) else payload
+    out = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        company = row.get("company")
+        if isinstance(company, dict):
+            company = company.get("name")
+        where = row.get("location")
+        if isinstance(where, dict):
+            where = ", ".join(str(v) for v in
+                              (where.get("location"), where.get("country")) if v)
+        out.append({
+            "company": str(company or "").strip(),
+            "id": str(row.get("id") or ""),
+            "title": str(row.get("title") or "").strip(),
+            "location": str(where or "").strip(),
+            "url": row.get("applyUrl") or "",
+            # The EMPLOYER's clock. dateOnIndeedTimestamp is when Indeed
+            # noticed the posting, which for the first row probed was today
+            # against a publish date in June -- reading it would let a
+            # months-old role pass a seven-day cutoff as same-day. No date at
+            # all is better than the wrong one: split_by_age keeps an undated
+            # posting and the card says the date is unknown.
+            "first_published": _epoch_ms_date(row.get("datePublishedTimestamp")),
+            "source": "indeed", "token": "",
+            "description": str(row.get("description") or "").strip(),
+        })
+    log("Indeed: " + str(len(out)) + " jobs ("
+        + str(quota.get("requests_remaining", "?")) + " requests left this month)")
+    return out
+
+
+def _epoch_ms_date(stamp):
+    """An epoch-milliseconds timestamp as an ISO date, or "" when unusable."""
+    if not isinstance(stamp, (int, float)):
+        return ""
+    try:
+        return datetime.datetime.fromtimestamp(
+            stamp / 1000, datetime.timezone.utc).date().isoformat()
+    except (ValueError, OverflowError, OSError):
+        return ""
+
+
 def _record_quota(quota, headers):
     """Copy what the response says about the plan into the run's state.
 
@@ -2395,7 +2490,8 @@ def main():
     # carries its own counter in state rather than a shared assumption.
     quotas = load_api_quotas()
     for feed, fetch in (("active_ats", fetch_active_ats),
-                        ("linkedin_api", fetch_linkedin)):
+                        ("linkedin_api", fetch_linkedin),
+                        ("indeed", fetch_indeed)):
         quota = quotas.setdefault(feed, {})
         all_jobs.extend(fetch(rapidapi_key, quota, MAX_JOB_AGE_DAYS))
     save_api_quotas(quotas)
@@ -3021,9 +3117,6 @@ BAYT_HOST = "bayt-com.p.rapidapi.com"
 # shares a name. That name is a warning, not a promise: date_posted=week is
 # exactly what returned zero rows on JSearch, so this gets measured before it
 # gets a fetcher.
-INDEED_HOST = "jobs-api14.p.rapidapi.com"
-
-
 def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
     """Report what the Indeed feed holds for Saudi Arabia inside a week."""
     if not api_key:

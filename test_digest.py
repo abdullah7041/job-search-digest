@@ -3550,3 +3550,103 @@ class TestQuotaResetIsRecorded(unittest.TestCase):
                                return_value=self._response({})):
             digest.fetch_active_ats("key", quota=quota)
         self.assertNotIn("reset_at", quota)
+
+
+class TestFetchIndeed(unittest.TestCase):
+    """Indeed, which no other feed here reaches.
+
+    One row exactly as the API returned it on 7 Sep 2026. Probed the same day:
+    20 rows, 8 passing these filters, 7 of those 8 published within a week --
+    and Saudi employers the ATS feeds do not carry, Rasan and Consulum among
+    them.
+
+    Two things this endpoint does NOT have, both confirmed live: any working
+    server-side date filter (it answered "Parameter 'datePosted' is unknown"),
+    and a single date field. It returns two clocks that disagreed by 76 days on
+    the first row sampled.
+    """
+
+    ROW = {
+        "id": "aWQ9MTQyZjUxMjJiYWI2MjBmMDtjYz1zYQ==",
+        "title": "Software Engineer - Full Stack",
+        "company": {"name": "rasan", "image": "", "addresses": []},
+        "applyUrl": "https://careers.tameeni.com/jobs/7957785-engineer",
+        "location": {"country": "المملكة العربية السعودية",
+                     "countryCode": "SA", "location": "Riyadh"},
+        # Epoch MILLISECONDS. Published 2026-09-06, indexed 2026-09-07.
+        "datePublishedTimestamp": 1788652800000,
+        "dateOnIndeedTimestamp": 1788801159024,
+        "description": "Build payment integrations.",
+    }
+
+    def _response(self, rows, status=200, headers=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: {"data": rows}
+        response.text = ""
+        response.headers = headers or {}
+        return response
+
+    def test_a_row_becomes_a_job_the_pipeline_understands(self):
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW])):
+            job = digest.fetch_indeed("key")[0]
+        self.assertEqual(job["company"], "rasan")
+        self.assertEqual(job["title"], "Software Engineer - Full Stack")
+        self.assertEqual(job["source"], "indeed")
+        self.assertIn("Riyadh", job["location"])
+        self.assertEqual(job["url"], "https://careers.tameeni.com/jobs/7957785-engineer")
+        self.assertEqual(job["description"], "Build payment integrations.")
+
+    def test_the_date_is_when_the_employer_published_not_when_indeed_noticed(self):
+        """The two clocks disagreed by 76 days on the first row probed. An
+        index date only says a scraper saw an old posting today, so reading it
+        would let a months-old role pass a seven-day cutoff as same-day."""
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW])):
+            job = digest.fetch_indeed("key")[0]
+        self.assertEqual(job["first_published"], "2026-09-06")
+
+    def test_a_row_with_no_publish_date_is_undated_rather_than_todays(self):
+        """Falling back to the index date would silently relabel it as fresh."""
+        row = dict(self.ROW)
+        del row["datePublishedTimestamp"]
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([row])):
+            job = digest.fetch_indeed("key")[0]
+        self.assertEqual(job["first_published"], "")
+
+    def test_it_is_age_gated_and_is_not_an_employer_source(self):
+        self.assertNotIn("indeed", digest.EMPLOYER_SOURCES)
+        self.assertNotIn("indeed", digest.DIRECT_BOARD_SOURCES)
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age(
+            [{"source": "indeed", "first_published": "2026-06-01"}], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_it_respects_its_own_free_plan(self):
+        with mock.patch.object(digest.requests, "get") as get:
+            jobs = digest.fetch_indeed(
+                "key",
+                quota={"requests_remaining":
+                       digest.FREE_TIER["indeed"]["reserve_requests"] - 1,
+                       "reset_at": digest.time.time() + 3600})
+        self.assertEqual(jobs, [])
+        get.assert_not_called()
+
+    def test_no_key_and_failures_are_survivable(self):
+        self.assertEqual(digest.fetch_indeed(""), [])
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=digest.requests.Timeout("slow")):
+            self.assertEqual(digest.fetch_indeed("key"), [])
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([], status=429)):
+            self.assertEqual(digest.fetch_indeed("key"), [])
+
+    def test_the_request_names_the_country_the_api_demanded(self):
+        """It answered 400 MISSING_OR_PARAMETER without countryCode."""
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([])) as get:
+            digest.fetch_indeed("key")
+        self.assertIn("countryCode=sa", get.call_args[0][0])
