@@ -169,36 +169,36 @@ class WorkflowGuardTests(unittest.TestCase):
 class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
     """Every tunable digest.py reads has to actually reach the scheduled run.
 
-    JSEARCH_DAILY_REQUESTS was read by digest.py and documented as "override with
-    a repository variable" for 100+ commits while digest.yml never passed it, so
-    the budget silently stayed at the hardcoded default. That was invisible until
-    the JSearch plan came within days of running dry (102 of 200 requests left on
-    7 Sep 2026, ~21 days to reset, 6 spent a day). A comment is not a wire.
+    JSEARCH_DAILY_REQUESTS was read by digest.py and documented as "override
+    with a repository variable" for 100+ commits while digest.yml never passed
+    it, so the budget silently stayed at the hardcoded default. That was
+    invisible until the JSearch plan came within days of running dry. A comment
+    is not a wire.
+
+    Read as text rather than parsed as YAML: PyYAML is not in the pinned
+    requirements, and adding a dependency to the daily run to assert something
+    about a config file is a worse trade than a substring check.
     """
 
-    def _run_digest_env(self):
-        import yaml
+    def _digest_workflow(self):
         path = Path(__file__).with_name(".github") / "workflows" / "digest.yml"
-        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
-        for job in workflow["jobs"].values():
-            for step in job.get("steps") or []:
-                if step.get("name") == "Run digest":
-                    return step.get("env") or {}
-        self.fail("digest.yml has no 'Run digest' step")
+        return path.read_text(encoding="utf-8")
 
     def test_the_jsearch_budget_reaches_the_scheduled_run(self):
-        env = self._run_digest_env()
-        self.assertIn("JSEARCH_DAILY_REQUESTS", env)
-        self.assertIn("vars.JSEARCH_DAILY_REQUESTS", env["JSEARCH_DAILY_REQUESTS"])
+        self.assertIn("JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}",
+                      self._digest_workflow())
 
     def test_every_tunable_digest_reads_is_passed(self):
-        """Names read via os.environ.get in digest.py, minus the ones that are
-        secrets or set by the runner itself, must all appear in the step's env."""
+        """Names read via os.environ.get in digest.py, which are either secrets
+        or repository variables, must all be handed to the run."""
         source = Path(__file__).with_name("digest.py").read_text(encoding="utf-8")
         read = set(re.findall(r'os\.environ\.get\(\s*"([A-Z0-9_]+)"', source))
-        env = self._run_digest_env()
-        missing = sorted(name for name in read if name not in env)
-        self.assertEqual(missing, [], f"digest.py reads {missing}, digest.yml never passes them")
+        # Set by the runner itself, never by the workflow author.
+        read -= {"GITHUB_REPOSITORY"}
+        workflow = self._digest_workflow()
+        missing = sorted(name for name in read if f"{name}: ${{{{" not in workflow)
+        self.assertEqual(missing, [],
+                         f"digest.py reads {missing}, digest.yml never passes them")
 
 
 class TestActiveAtsStateIsPersisted(unittest.TestCase):
