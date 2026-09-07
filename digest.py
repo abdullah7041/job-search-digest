@@ -2569,10 +2569,18 @@ ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
 # TITLE_INCLUDE as a Boolean the API can evaluate, so the tech filter runs
 # server-side and the free plan's 250-jobs-a-month allowance is not spent on
 # hotel and retail postings. Chained with <-> where a term is a phrase.
+# Deliberately NOT the bare word "engineer". TITLE_INCLUDE can afford it because
+# LOCATION_INCLUDE, TITLE_EXCLUDE and the ranker all sit downstream of it for
+# free. Here every row costs allowance: the first filtered probe (7 Sep 2026)
+# spent 8 of 10 rows on civil, mechanical, electrical, irrigation and
+# arboriculture engineers. Name the software disciplines instead.
 ACTIVE_ATS_TITLE = (
-    "engineer | developer | software | backend | frontend | 'full stack' | "
-    "'machine learning' | 'data scien':* | mlops | devops | sre | "
-    "'site reliability' | platform | automation | architect"
+    "software | developer | backend | 'back end' | frontend | 'front end' | "
+    "'full stack' | fullstack | 'machine learning' | 'data scien':* | "
+    "'data engineer' | 'ai engineer' | 'ml engineer' | mlops | devops | sre | "
+    "'site reliability' | 'platform engineer' | 'cloud engineer' | "
+    "'solutions engineer' | 'solutions architect' | 'software architect' | "
+    "'data architect' | 'automation engineer' | 'qa engineer' | 'test engineer'"
 )
 
 
