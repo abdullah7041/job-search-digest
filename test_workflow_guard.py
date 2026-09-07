@@ -1,5 +1,6 @@
 import datetime as dt
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -198,3 +199,29 @@ class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
         env = self._run_digest_env()
         missing = sorted(name for name in read if name not in env)
         self.assertEqual(missing, [], f"digest.py reads {missing}, digest.yml never passes them")
+
+
+class TestActiveAtsStateIsPersisted(unittest.TestCase):
+    """A state file the run writes but the workflow never commits is amnesia.
+
+    The Active Jobs DB allowance is 250 jobs and 25 requests a MONTH, both hard.
+    If the file recording what is left never survives the run, every morning
+    starts believing it has a full allowance and the reserve protects nothing.
+    """
+
+    def test_the_guard_accepts_the_file_into_the_state_artifact(self):
+        from workflow_guard import _safe_state_path
+        self.assertEqual(_safe_state_path("active_ats.json"), "active_ats.json")
+
+    def test_the_run_that_writes_it_can_hand_it_between_jobs(self):
+        """execute writes it, persist-state commits it, and the artifact is the
+        only thing that crosses between them."""
+        from workflow_guard import _changed_state_paths
+        self.assertIn("active_ats.json", inspect.getsource(_changed_state_paths))
+
+    def test_the_workflow_commits_it(self):
+        path = Path(__file__).with_name(".github") / "workflows" / "digest.yml"
+        text = path.read_text(encoding="utf-8")
+        add = [ln for ln in text.splitlines() if "git add --" in ln]
+        self.assertTrue(add, "digest.yml no longer has a git add line")
+        self.assertIn("active_ats.json", add[0])

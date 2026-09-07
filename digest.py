@@ -943,6 +943,142 @@ def pinpoint_salary(j):
     return f"{nums} {cur}/{freq}".strip().rstrip("/")
 
 
+# Relisters that post OTHER companies' roles through a real ATS. The host is
+# jobs.lever.co, so PAID_RELISTER_HOSTS never sees them and, worse, the source
+# reads as an employer ATS -- which would make prefer_employer_postings favour
+# the relisted copy over the employer's own link. Three of the ten rows in the
+# first filtered probe (7 Sep 2026) were Jobgether. Refused server-side so they
+# do not cost monthly allowance either.
+ACTIVE_ATS_EXCLUDE_ORGS = ("Jobgether",)
+
+# Never spend the last of the monthly job allowance. Both caps are hard and
+# neither resets early; exhausting the jobs cap takes the only source that can
+# answer "posted this week" out until the reset.
+ACTIVE_ATS_JOBS_RESERVE = 30
+
+# The allowance has to be known BEFORE the request that would exceed it, and the
+# headers only arrive on a response -- so what one run learned is written down
+# for the next. Its own file rather than a stats.json row: stats rows are pruned
+# on a TTL and a run can end at any of four save_stats call sites, while this has
+# to survive both.
+ACTIVE_ATS_STATE_FILE = "active_ats.json"
+ACTIVE_ATS_PAGE = 10
+
+
+def load_active_ats_quota():
+    """Last known monthly allowance. Missing or unreadable reads as no knowledge.
+
+    Never as no allowance: assuming zero would disable the only source that can
+    answer "posted this week", permanently, on nothing more than a lost file.
+    """
+    if not os.path.exists(ACTIVE_ATS_STATE_FILE):
+        return {}
+    try:
+        with open(ACTIVE_ATS_STATE_FILE) as handle:
+            quota = json.load(handle)
+    except (OSError, ValueError) as e:
+        log(f"WARN Active ATS quota unreadable ({e}); treating it as unknown")
+        return {}
+    return quota if isinstance(quota, dict) else {}
+
+
+def save_active_ats_quota(quota):
+    if not quota:
+        return
+    with open(ACTIVE_ATS_STATE_FILE, "w") as handle:
+        json.dump(quota, handle, indent=0, sort_keys=True)
+
+
+def fetch_active_ats(api_key, quota=None, max_age_days=None):
+    """Read one page of Saudi technical roles from the employers' own ATSs.
+
+    Measured 7 Sep 2026, same day and same country: JSearch returned ZERO jobs
+    at date_posted=week and a corpus aged 18-159 days, while this feed returned
+    ten technical roles aged 0-1 days, every one on the employer's own board.
+    That is the entire reason it exists -- the aggregator cannot answer "posted
+    this week" at all, which is what the digest is asked for.
+
+    The free plan allows 250 JOBS and 25 REQUESTS a month, two separate hard
+    limits, so the filtering runs server-side: every row the API rejects is
+    allowance kept. `quota` is read and updated in place, the way fetch_jsearch
+    tracks its own headers.
+
+    Fail-soft like every other fetcher: any error is [] and a log line.
+    """
+    if not api_key:
+        return []
+    quota = quota if quota is not None else {}
+    remaining = quota.get("jobs_remaining")
+    if isinstance(remaining, int) and remaining < ACTIVE_ATS_JOBS_RESERVE:
+        log(f"Active ATS: {remaining} jobs left this month, below the "
+            f"{ACTIVE_ATS_JOBS_RESERVE} reserve; skipping")
+        return []
+    # One clock for both the page and the gate. time_frame is required and cuts
+    # on INDEXED time, while the age gate reads date_posted -- so a row can sit
+    # inside the window and outside the gate. Passing date_posted_gte as well
+    # means the server has already applied the same cut the gate will.
+    days = max_age_days if isinstance(max_age_days, int) and max_age_days > 0 else 7
+    since = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    url = (f"https://{ACTIVE_ATS_HOST}/active-ats"
+           f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
+           f"&location={requests.utils.quote('Saudi Arabia')}"
+           f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
+           f"&exclude_organization={requests.utils.quote(','.join(ACTIVE_ATS_EXCLUDE_ORGS))}"
+           f"&date_posted_gte={since}T00:00:00"
+           f"&time_frame={days}d&description_format=text&limit={ACTIVE_ATS_PAGE}")
+    try:
+        r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
+                                       "X-RapidAPI-Host": ACTIVE_ATS_HOST}, timeout=30)
+    except requests.RequestException as e:
+        log(f"WARN Active ATS: request failed: {e}")
+        return []
+    for header, field in (("x-ratelimit-jobs-remaining", "jobs_remaining"),
+                          ("x-ratelimit-requests-remaining", "requests_remaining")):
+        try:
+            quota[field] = int(r.headers[header])
+        except (KeyError, TypeError, ValueError):
+            pass
+    if r.status_code != 200:
+        log(f"WARN Active ATS: HTTP {r.status_code}: {r.text[:120]}")
+        return []
+    try:
+        rows = r.json()
+    except ValueError:
+        log("WARN Active ATS: non-JSON response")
+        return []
+    if isinstance(rows, dict):
+        rows = rows.get("data") or rows.get("jobs") or []
+    refused = {name.casefold() for name in ACTIVE_ATS_EXCLUDE_ORGS}
+    out = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        company = (row.get("organization") or "").strip()
+        # exclude_organization is exact and case-sensitive on their side, so a
+        # spelling they treat as different still reaches us. Refuse it here too.
+        if company.casefold() in refused:
+            continue
+        locations = row.get("locations_derived") or []
+        if not isinstance(locations, list):
+            locations = [locations]
+        out.append({
+            "company": company,
+            "id": str(row.get("id") or ""),
+            "title": (row.get("title") or "").strip(),
+            "location": ", ".join(str(p) for p in locations if p),
+            "url": row.get("url") or "",
+            # date_posted is when the employer published; date_created is when
+            # Fantastic.jobs indexed it. The gate reads the employer's clock.
+            "first_published": str(row.get("date_posted") or "")[:10],
+            "source": "active_ats", "token": "",
+            "description": (row.get("description_text") or "").strip(),
+        })
+    log(f"Active ATS: {len(out)} jobs "
+        f"({quota.get('jobs_remaining', '?')} jobs, "
+        f"{quota.get('requests_remaining', '?')} requests left this month)")
+    return out
+
+
 FETCHERS = {
     "greenhouse": fetch_greenhouse,
     "ashby": fetch_ashby,
@@ -1083,7 +1219,10 @@ def posting_key(job):
 
 # The sources that ARE the employer: a link from one of these is the company's
 # own posting, which is the link this digest should always prefer to hand over.
-EMPLOYER_SOURCES = frozenset(FETCHERS)
+# active_ats is not in FETCHERS -- it is one feed, not a per-company board -- but
+# every row it returns IS the employer's own ATS posting, so it belongs to the
+# set prefer_employer_postings favours over an aggregator relay.
+EMPLOYER_SOURCES = frozenset(FETCHERS) | {"active_ats"}
 
 
 def prefer_employer_postings(jobs):
@@ -2088,6 +2227,16 @@ def main():
     paywalled = []
     all_jobs.extend(fetch_jsearch(rapidapi_key, paywalled))
 
+    # Freshness: the employers' own ATSs, read as one feed. This is the only
+    # source that can answer "posted this week" -- measured 7 Sep 2026, JSearch
+    # returned ZERO jobs at date_posted=week and a corpus aged 18-159 days,
+    # while this returned ten technical roles aged 0-1 days, all on employer
+    # boards. Its monthly allowance is small and hard, so the quota it reports
+    # is carried in state rather than assumed from a day count.
+    active_ats_quota = load_active_ats_quota()
+    all_jobs.extend(fetch_active_ats(rapidapi_key, active_ats_quota, MAX_JOB_AGE_DAYS))
+    save_active_ats_quota(active_ats_quota)
+
     # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever).
     # COMPANIES is the hand-curated list; the boards after it were discovered
     # from employers the paid-relister cut discarded on an earlier run. Reading
@@ -2558,6 +2707,58 @@ def discover(names):
 # yield, which no amount of reading the vendor's docs will tell us.
 #
 # It reads. It never writes, never delivers and never touches seen.json.
+# Nothing older than this reaches the digest. first_published was written by
+# every fetcher and read by NOTHING before this, so "fresh" meant only "not
+# delivered before" -- a four-month-old posting counted as new the first time it
+# was seen, which is how a closed HudHud Maps role from a month earlier reached
+# the 7 Sep 2026 digest. Overridable, because the achievable cutoff depends
+# entirely on what the sources can supply.
+def _max_job_age(raw):
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return 7
+    return value if value > 0 else 7
+
+
+MAX_JOB_AGE_DAYS = _max_job_age(os.environ.get("MAX_JOB_AGE_DAYS"))
+
+
+def split_by_age(jobs, max_age_days, today=None):
+    """Split postings into (fresh, stale) and record each one's age in days.
+
+    An undated posting is FRESH, not stale. Pinpoint publishes no date at all
+    and Greenhouse only sometimes, so dropping the undated would quietly remove
+    those employers from the digest entirely. The card says the date is unknown
+    instead, which is the honest version of what is known.
+    """
+    today = today or datetime.date.today()
+    fresh, stale = [], []
+    for job in jobs:
+        raw = str(job.get("first_published") or "")[:10]
+        try:
+            age = (today - datetime.date.fromisoformat(raw)).days
+        except ValueError:
+            job["age_days"] = None
+            fresh.append(job)
+            continue
+        # Ingestion delay and timezones can put a posting a few hours ahead.
+        job["age_days"] = max(age, 0)
+        (stale if job["age_days"] > max_age_days else fresh).append(job)
+    return fresh, stale
+
+
+def age_label(age_days):
+    """How the card states a posting's age, including when it has none."""
+    if age_days is None:
+        return "posting date unknown"
+    if age_days == 0:
+        return "posted today"
+    if age_days == 1:
+        return "posted yesterday"
+    return f"posted {age_days} days ago"
+
+
 ACTIVE_ATS_HOST = "active-jobs-db.p.rapidapi.com"
 
 # The ATS platforms worth asking for: every source this digest already fetches

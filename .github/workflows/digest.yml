@@ -66,6 +66,10 @@ jobs:
           # and documented it as overridable, but it was never passed in, so the
           # budget could not actually be lowered when the plan came close to dry.
           JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}
+          # The age cutoff in days. Achievable only against a source that can
+          # supply it: measured 7 Sep 2026, JSearch returns nothing at all
+          # inside a week, while the ATS feed returns 0-1 day old postings.
+          MAX_JOB_AGE_DAYS: ${{ vars.MAX_JOB_AGE_DAYS }}
         run: python digest.py
       - name: Package generated state
         run: python workflow_guard.py package-state --root . --output state-artifact
@@ -99,7 +103,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- seen.json stats.json boards.json jobs/
+          git add -- seen.json stats.json boards.json active_ats.json jobs/
           if git diff --cached --quiet; then
             echo "no state change"
             exit 0
