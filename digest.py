@@ -3075,17 +3075,59 @@ def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
             value = value[:140] + f"... ({len(rows[0][key])} chars)"
         print(f"  {key} = {value!r}")
     print()
-    # Whether the rows are actually fresh is the only question that matters,
-    # and it cannot be read off the parameter name -- JSearch accepted the same
-    # one and returned a 159-day corpus.
-    for row in rows[:20]:
-        title = str(row.get("title") or "?")[:44]
+    # Two clocks, and they disagree by months: datePublishedTimestamp is when the
+    # employer published, dateOnIndeedTimestamp is when Indeed indexed it. Both
+    # are epoch MILLISECONDS. Report the employer's clock, because that is the
+    # one the digest promises against -- an index date says only that a scraper
+    # noticed an old posting today.
+    today = datetime.date.today()
+
+    def _age(row, field):
+        stamp = row.get(field)
+        if not isinstance(stamp, (int, float)):
+            return None
+        try:
+            when = datetime.datetime.utcfromtimestamp(stamp / 1000).date()
+        except (ValueError, OverflowError, OSError):
+            return None
+        return (today - when).days
+
+    shaped = []
+    for row in rows:
         company = row.get("company")
         if isinstance(company, dict):
             company = company.get("name")
-        posted = str(row.get("datePosted") or row.get("date")
-                     or row.get("postedAt") or "?")[:24]
-        print(f"- [{posted:24}] {str(company or '?')[:24]:24} {title}")
+        where = row.get("location")
+        if isinstance(where, dict):
+            where = ", ".join(str(v) for v in
+                              (where.get("location"), where.get("country")) if v)
+        shaped.append({
+            "company": str(company or ""),
+            "title": str(row.get("title") or "").strip(),
+            "location": str(where or ""),
+            "url": row.get("applyUrl") or "",
+            "source": "indeed", "token": "",
+            "description": str(row.get("description") or ""),
+            "published_age": _age(row, "datePublishedTimestamp"),
+            "indexed_age": _age(row, "dateOnIndeedTimestamp"),
+        })
+    kept = [j for j in shaped if matches_filters(j)]
+    ages = sorted(j["published_age"] for j in kept
+                  if isinstance(j["published_age"], int))
+    within = sum(1 for a in ages if a <= 7)
+    print(f"{len(kept)} of {len(shaped)} rows pass this digest's own filters")
+    if ages:
+        print(f"published age of those: min {ages[0]}, median "
+              f"{ages[len(ages) // 2]}, max {ages[-1]}; within 7 days: "
+              f"{within}/{len(ages)}")
+    print()
+    for job in kept[:25]:
+        pub = job["published_age"]
+        idx = job["indexed_age"]
+        pub = f"{pub}d" if isinstance(pub, int) else "?"
+        idx = f"{idx}d" if isinstance(idx, int) else "?"
+        print(f"- [pub {pub:>5} / seen {idx:>4}] {job['company'][:22]:22} "
+              f"{job['title'][:44]}")
     return 0
 
 
