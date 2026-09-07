@@ -22,7 +22,7 @@ import openrouter
 import resume_tailor
 from job_archive import make_snapshot, job_card_payload, prune_snapshots, write_snapshots
 from resume_render import parse_resume, render_pdf, source_refs
-from resume_source import validate_tailored_resume, vocabulary
+from resume_source import snippet_supported, validate_tailored_resume, vocabulary
 from resume_ingest import prepare_resume_preview
 from discord_delivery import interactive_cards_payload, post_interactive_cards
 from interactive_runner import process_task, run_task
@@ -573,6 +573,97 @@ class TestEvidenceGuards(unittest.TestCase):
             {"text": "Shipped 28,000 lines of TypeScript solo.", "source_refs": ["b1"]}]}
 
         self.assertEqual(validate_tailored_resume(tailored, sources, vocabulary(MASTER), MASTER), [])
+
+
+class TestSnippetSupport(unittest.TestCase):
+    """A model claiming evidence must have copied it from somewhere real.
+
+    The mirror of unsupported_terms. That asks "is this named thing absent from
+    the resume?"; this asks "does this quoted snippet actually appear in the
+    source it cites?". Ported from Watheq's verifyEvidenceSnippet
+    (netlify/lib/strategic-reality-check.js:105), which is the mechanism that
+    makes its low-ceiling verdict trustworthy. See plans/018.
+    """
+
+    SOURCE = ("Built an LLM evaluation pipeline that judge-scores prompt, "
+              "temperature, and model variants, so quality changes ship on "
+              "measured results instead of guesses.")
+
+    def test_a_verbatim_quote_is_supported(self):
+        self.assertTrue(snippet_supported("judge-scores prompt, temperature", self.SOURCE))
+
+    def test_punctuation_and_case_do_not_matter(self):
+        self.assertTrue(snippet_supported("JUDGE SCORES PROMPT TEMPERATURE", self.SOURCE))
+
+    def test_a_near_quote_survives_on_token_overlap(self):
+        """Models paraphrase lightly. A snippet that keeps three of four words
+        is still pointing at real text."""
+        self.assertTrue(snippet_supported(
+            "built an LLM evaluation pipeline that judge-scores variants", self.SOURCE))
+
+    def test_an_invented_quote_is_not_supported(self):
+        self.assertFalse(snippet_supported(
+            "deployed Kubernetes clusters across three regions", self.SOURCE))
+
+    def test_a_snippet_too_short_to_mean_anything_is_not_supported(self):
+        """Two characters overlap with almost any text, so a short snippet is
+        not evidence even when it technically matches."""
+        self.assertFalse(snippet_supported("an", self.SOURCE))
+        self.assertFalse(snippet_supported("", self.SOURCE))
+
+    def test_an_empty_source_supports_nothing(self):
+        self.assertFalse(snippet_supported("judge-scores prompt", ""))
+        self.assertFalse(snippet_supported("judge-scores prompt", None))
+
+    def test_a_fabricated_requirement_wrapped_in_real_vocabulary_is_rejected(self):
+        """The regression guard for the snippet gate's threshold.
+
+        Removing unsupported_terms from blocker titles left snippet_supported
+        carrying the whole weight. `words` is a set filtered only by length, so
+        stopwords count as much as the term that carries the claim -- and this
+        snippet scored 0.800 against the real HungerStation posting, which
+        mentions neither Kubernetes nor Terraform nor "required". Eight
+        surrounding words carried it past a 0.75 bar. At 0.85 it is rejected.
+        """
+        # Read the REAL posting rather than an approximation. A hand-written
+        # stand-in of this JD scored the snippet at 0.60, which passes at 0.75
+        # as well as at 0.85 -- the test would have been decorative.
+        fixture = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "eval", "fixtures", "hungerstation-senior-data-engineer-i.json")
+        with open(fixture, encoding="utf-8") as handle:
+            jd = json.load(handle)["job"]["description"]
+        # Kubernetes is the fabrication. Terraform IS in the posting, and that
+        # is the point: real surrounding vocabulary is what carries an invented
+        # requirement over a 0.75 bar.
+        self.assertNotIn("kubernetes", jd.lower())
+        self.assertIn("terraform", jd.lower())
+        self.assertFalse(snippet_supported(
+            "Experience with Kubernetes and Terraform is required for this role", jd))
+
+    def test_a_two_word_generic_quote_is_too_thin_to_be_evidence(self):
+        """"Strong SQL" really does occur in a posting that says "Strong SQL
+        skills", but two generic words do not show the posting REQUIRES
+        anything. Every snippet the live run produced was 55+ characters."""
+        self.assertFalse(snippet_supported("Strong SQL", "Strong SQL skills required"))
+
+    def test_the_live_run_snippets_all_still_verify(self):
+        """The seven snippets the first live HungerStation check produced. Every
+        one matched verbatim, so tightening the overlap constant must not touch
+        them -- this is the sample the threshold was chosen against."""
+        jd = ("- 5-8 years of experience in Data Engineering or similar roles. "
+              "- Bachelor's degree in Computer Science, Engineering, or related field. "
+              "- Experience with modern data stack (Airflow, dbt, Looker)")
+        for snippet in ("5-8 years of experience in Data Engineering or similar roles",
+                        "Bachelor's degree in Computer Science, Engineering, or related field",
+                        "Experience with modern data stack (Airflow, dbt, Looker)"):
+            with self.subTest(snippet=snippet[:40]):
+                self.assertTrue(snippet_supported(snippet, jd))
+
+    def test_overlap_below_the_bar_is_rejected(self):
+        """One shared word out of five is coincidence, not a citation."""
+        self.assertFalse(snippet_supported(
+            "pipeline orchestration using Airflow and dbt", self.SOURCE))
 
 
 class TestTailoringPlan(unittest.TestCase):

@@ -1,0 +1,20 @@
+{
+  "id": "ceiling-senior-ai-product-engineer",
+  "description": "THE COUNTERWEIGHT. 018A lowers scores by design, so without a fixture that must stay high the set is a one-way ratchet into pessimism and an over-correction passes clean.\n\nConstructed, and openly so: every requirement here is something resume.md demonstrates in an ## EXPERIENCE or ## PROJECTS bullet rather than lists in ## SKILLS, it asks 3+ years rather than 5-8, and it states no degree requirement. That is the point -- it isolates the single question 'does the ranker still reward genuine evidence?' from every credential and tenure gap the other fixtures probe.\n\nThe band is measured, not assumed: this exact JD scored 98 under 018A ('Near-perfect match on LLM evaluations, prompts, TypeScript/React, Supabase, and Riyadh location'). The first ceiling fixture was a real posting archived at 95, which measurement showed was itself inflation -- see inflation-genai-credentialed.",
+  "source": "constructed to match resume.md's demonstrated evidence; band probed live 2026-09-07",
+  "job": {
+    "id": "ceiling-ai-product",
+    "title": "Senior AI Product Engineer",
+    "company": "Constructed",
+    "location": "Riyadh, Saudi Arabia",
+    "description": "Job Description\n\nWe are hiring a Senior AI Product Engineer in Riyadh, Saudi Arabia, to own LLM-powered product features end to end.\n\nKey Responsibilities\n- Ship production LLM application features from prototype to live traffic\n- Design and maintain prompt frameworks and agentic workflows\n- Build evaluation pipelines that judge-score prompt, model and temperature variants\n- Enforce output contracts and guardrails so model output is validated before it reaches users\n- Build and operate the serverless backend and data layer behind those features\n- Instrument production monitoring and alerting for AI features\n- Work directly with founders and users; own features rather than tickets\n\nQualifications\n- 3+ years building and shipping production software\n- Strong Python and TypeScript\n- Hands-on experience building LLM applications against hosted model APIs (OpenAI, Anthropic, Gemini or OpenRouter)\n- Practical prompt engineering and LLM evaluation experience\n- Experience with output validation and guardrails for model responses\n- React and a modern serverless stack (Netlify, Vercel or similar)\n- PostgreSQL and role-based access control\n- CI/CD, monitoring and error tracking (GitHub Actions, Sentry or similar)\n- Comfortable owning a system solo, from schema to deployment\n- Based in Saudi Arabia. Arabic and English.\n- A degree is not required; shipped production work matters more.\n\nNice to Have\n- Experience with Arabic-language product edge cases\n- Payment gateway integration experience\n"
+  },
+  "expected": {
+    "score_band": [
+      80,
+      100
+    ],
+    "must_flag": [],
+    "must_not_credit": []
+  }
+}

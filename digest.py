@@ -33,6 +33,7 @@ Profile:
 import os
 import re
 import hashlib
+import functools
 import sys
 import json
 import time
@@ -45,6 +46,7 @@ from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
 from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
+from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
 
 # ------------------------------- CONFIG -------------------------------------
@@ -281,6 +283,13 @@ JD_RANK_CHARS = 2000    # JD window per job inside the one ranking call
 # function, seniority mismatch, or several gaps" band, one point below the
 # strong-match line.
 TEASER_SCORE_CAP = 69
+
+# A job whose stated hard requirements the resume cannot evidence is held out of
+# the strong tier, exactly as a teaser is, and for the same reason: "strong
+# match" has to mean the evidence backed it up. Same value as TEASER_SCORE_CAP
+# because it expresses the same thing -- one point below STRONG_MATCH_MIN_SCORE
+# minus the review band. See plans/018.
+BLOCKED_SCORE_CAP = 69
 
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
@@ -1129,9 +1138,30 @@ def drop_repeat_descriptions(jobs, seen):
     return kept, repeats
 
 
+@functools.lru_cache(maxsize=None)
+def _keyword_pattern(keyword):
+    """A keyword matches at a word start, with the suffix left free.
+
+    'agent' must still match 'Agentic' and 'data' must still match
+    'Datacentre', so there is no trailing boundary. The leading one is what
+    stops 'api' matching 'Scraping' and 'ml' matching 'AML'. Measured on the
+    91 archived titles at ab0eb45: 6 spurious hits removed, 0 real hits lost;
+    requiring both boundaries would have cost 2 real ones. See plans/017.
+
+    re.escape is required, not optional: 'full-stack', 'full stack' and
+    'forward deployed' are all live keywords holding regex metacharacters.
+    """
+    return re.compile(r"(?<![a-z0-9])" + re.escape(keyword))
+
+
+def keyword_hits(title, keywords):
+    """How many of `keywords` start a word in `title`."""
+    lowered = title.lower()
+    return sum(1 for k in keywords if _keyword_pattern(k).search(lowered))
+
+
 def keyword_score(job):
-    title = job["title"].lower()
-    hits = sum(1 for k in PROFILE["skill_keywords"] if k in title)
+    hits = keyword_hits(job["title"], PROFILE["skill_keywords"])
     return min(100, 40 + hits * 15)  # 40 base for passing filters, +15 per skill hit
 
 
@@ -1157,7 +1187,28 @@ RANK_SCHEMA = {
 }
 
 
-def rank_jobs(jobs, api_key):
+RESUME_EVIDENCE_CHARS = 8000
+
+
+def load_resume_evidence(path="resume.md", limit=RESUME_EVIDENCE_CHARS):
+    """The candidate's resume as scoring evidence, or "" when there is none.
+
+    Deliberately never raises. `interactive_runner._master_document` raises on
+    a missing resume because a person clicked a button and is waiting for an
+    answer; this runs unattended every morning, so a bad read has to degrade to
+    the previous blurb-only behaviour rather than take the whole digest down.
+
+    The limit is headroom against an unbounded file, not a working truncation:
+    resume.md is ~4.3 KB today.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return handle.read().strip()[:limit]
+    except OSError:
+        return ""
+
+
+def rank_jobs(jobs, api_key, evidence=None):
     """One call. Returns {id: {score, why}} or None on any failure (caller falls back).
 
     The 2026-07-31 digest handed Lead/Staff roles 92-98 because the old prompt
@@ -1177,22 +1228,51 @@ def rank_jobs(jobs, api_key):
     targets = PROFILE.get("target_titles")
     if targets:
         profile += " Currently targeting: " + ", ".join(targets) + "."
+    # The blurb is a paragraph the candidate wrote about himself, so every
+    # keyword in it read as demonstrated capability. The resume goes in as
+    # separately labelled evidence now, and the blurb keeps the job it is
+    # actually good at: stating constraints and wants. See plans/018.
+    evidence = load_resume_evidence() if evidence is None else evidence
     listing = [
         {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"],
          "description_kind": jd_grade(j.get("description") or ""),
          "jd_excerpt": jd_signal(j.get("description") or "", JD_RANK_CHARS)}
         for j in sorted(jobs, key=lambda j: j["id"])
     ]
+    # Omitted entirely rather than sent empty: a bare
+    # <candidate_evidence></candidate_evidence> invites the model to read "no
+    # evidence" as "no capability", which would tank every score on a day the
+    # file went missing.
+    evidence_block = (
+        f"<candidate_evidence>\n{evidence}\n</candidate_evidence>\n"
+        "The evidence block is the candidate's resume. It is the only thing "
+        "here that proves capability, so judge every hard requirement against it.\n"
+        "A term whose only appearance is under ## SUMMARY or ## SKILLS is a claim, "
+        "not evidence -- anyone can type any keyword there. A term counts as "
+        "demonstrated only when a ## EXPERIENCE or ## PROJECTS entry shows the "
+        "candidate using it. A resume that lists every required tool and "
+        "demonstrates none is a weak match on skills, not a strong one.\n\n"
+    ) if evidence else ""
     prompt = (
-        f"{profile}\n\n"
+        f"{evidence_block}"
+        f"<candidate_preferences>\n{profile}\n</candidate_preferences>\n"
+        "The preferences block states what the candidate wants and the constraints "
+        "that rule a role out. It proves nothing about capability.\n\n"
         "Score each job 0-100 for fit to this candidate. Anchor every score to this rubric:\n"
         "- 90-100: senior-level INDIVIDUAL CONTRIBUTOR role in a core area (AI/LLM apps, "
         "software/backend, full-stack, data) in Saudi Arabia, and the JD's hard requirements "
-        "are clearly covered by the profile. Reserve 95+ for near-perfect matches.\n"
+        "are clearly covered by the candidate's evidence. Reserve 95+ for near-perfect matches.\n"
         "- 70-89: senior IC role in a core area with one or two real gaps against the JD.\n"
         "- 40-69: adjacent function, seniority mismatch, or several gaps.\n"
         "- 0-39: leadership/staff/principal/management track, wrong location (including a title "
         "that says based elsewhere or offers relocation), or wrong function.\n"
+        "When the posting states a hard number of years, or a required degree, "
+        "certification or licence, weigh it as a requirement in its own right rather "
+        "than folding it into the function judgement. Count years from what the "
+        "evidence block actually dates, not from a total the preferences block claims. "
+        "A stated credential the evidence does not show is a real gap and belongs in "
+        "your reason; a requirement written as 'preferred' or 'nice to have' is not a "
+        "hard one and must not be scored as a gap.\n"
         "jd_excerpt starts where the posting begins describing the job, so it is the "
         "requirements and responsibilities, not the company's recruiting copy. Score against "
         "what it states. A requirement the excerpt does not mention is unknown, not a gap: "
@@ -1433,7 +1513,45 @@ def cap_teaser_scores(jobs):
         if job["score"] <= TEASER_SCORE_CAP:
             continue
         job["score"] = TEASER_SCORE_CAP
-        job["why"] = f"{job['why']} (capped: description is a short teaser)"[:140]
+        # Same reason as cap_blocked_scores: trim the reason, keep the suffix.
+        suffix = " (capped: description is a short teaser)"
+        job["why"] = job["why"][:140 - len(suffix)].rstrip() + suffix
+        capped.append(job)
+    return capped
+
+
+def cap_blocked_scores(jobs):
+    """Hold a job with verified requirement gaps out of the strong tier.
+
+    The mirror of cap_teaser_scores. That one says the description could not
+    back the score up; this one says the description DID, and the resume could
+    not meet it. Returns the jobs it capped.
+
+    Only a `low` ceiling caps, and only a ceiling computed from evidence that
+    survived checking. `unknown` -- a check that failed, timed out, or never
+    ran -- must never cap: silence means "no verdict", not "bad verdict", or a
+    provider outage would quietly demote every strong match in the digest.
+    """
+    capped = []
+    for job in jobs:
+        check = job.get("fit_check") or {}
+        if check.get("ceiling") != "low":
+            continue
+        if job["score"] <= BLOCKED_SCORE_CAP:
+            # Belt and braces rather than a live hazard: cap_teaser_scores runs
+            # far upstream, so a teaser-capped job sits at 69, is_strong needs
+            # 80, and it never gets a fit_check at all -- the ceiling guard
+            # above already returned. Kept so the two caps stay composable if
+            # either ever moves.
+            continue
+        blockers = len(check.get("blockers") or [])
+        job["score"] = BLOCKED_SCORE_CAP
+        # Trim the reason, not the suffix. apply_ranking already truncates `why`
+        # to exactly 140, so appending and slicing the result silently ate the
+        # explanation on a full-length reason -- leaving a card that reads
+        # "fit 69" with a reason written for an 88 and nothing saying why.
+        suffix = f" (capped: {blockers} verified requirement gaps)"
+        job["why"] = job["why"][:140 - len(suffix)].rstrip() + suffix
         capped.append(job)
     return capped
 
@@ -1489,15 +1607,27 @@ def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
     return kept, deferred
 
 
+def is_strong(job):
+    """A high-confidence, JD-backed model match.
+
+    Extracted from split_tiers so the reality check and the tier split cannot
+    drift apart: the jobs worth spending a per-job model call on are exactly the
+    ones about to be labelled "Strong matches".
+    """
+    return bool(job["ranking_verified"]
+                and job["score"] >= STRONG_MATCH_MIN_SCORE
+                and job.get("description"))
+
+
 def split_tiers(jobs):
     """Separate high-confidence JD-backed model matches from review candidates."""
-    strong = [
-        job for job in jobs
-        if job["ranking_verified"]
-        and job["score"] >= STRONG_MATCH_MIN_SCORE
-        and bool(job.get("description"))
-    ]
-    review = [job for job in jobs if job not in strong]
+    strong = [job for job in jobs if is_strong(job)]
+    # `job not in strong` here was a dict equality compare -- O(n^2) with deep
+    # comparison. Unreachable as a defect (strength is a pure function of the
+    # dict, so two equal dicts are both strong or neither is), but refactoring
+    # the predicate out and leaving the membership test would be worse than
+    # either fixing it or not touching it. plans/README.md:296.
+    review = [job for job in jobs if not is_strong(job)]
     return strong, review
 
 
@@ -2043,7 +2173,11 @@ def main():
             "Heartbeat sent.")
         return
 
-    ranking = rank_jobs(fresh, rank_key) if rank_key else None
+    # Read once and passed to both passes, so "the ranker and the reality check
+    # scored the same evidence" is a property of the code rather than of two
+    # reads happening to agree.
+    evidence = load_resume_evidence()
+    ranking = rank_jobs(fresh, rank_key, evidence) if rank_key else None
     if rank_key and ranking is None:
         log("Ranker unavailable, using keyword scoring for this run")
     apply_ranking(fresh, ranking)
@@ -2089,6 +2223,20 @@ def main():
         log(f"Deferred {job['company']} - {job['title']}: fit {job['score']}, "
             f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
 
+    # Between cap_per_company and split_tiers on purpose, and the position does
+    # three jobs at once. avg_score was taken above, so drift keeps measuring
+    # what it always measured. drop_below_floor already ran, so the cap can
+    # never CAUSE a job to be dropped or remembered as below-floor -- a capped
+    # job is delivered, flagged, and then remembered like any other delivery,
+    # which is what stops it being re-fetched and re-capped every morning. And
+    # split_tiers has not run, so a capped job lands in "Worth reviewing" on its
+    # own instead of wearing a "Strong matches" label beside a fit 69.
+    check_jobs([job for job in fresh if is_strong(job)], evidence,
+               rank_key, RANK_MODEL, RANK_FALLBACKS, RANK_PROVIDER, log)
+    for job in cap_blocked_scores(fresh):
+        gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
+        log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
+
     strong, review = split_tiers(fresh)
     strong.sort(key=lambda x: x["score"], reverse=True)
     review.sort(key=lambda x: x["score"], reverse=True)
@@ -2126,6 +2274,10 @@ def main():
                 flags.append("link check inconclusive")
             if not j.get("description"):
                 flags.append("title-only assessment")
+            check = j.get("fit_check") or {}
+            if check.get("ceiling") == "low":
+                gaps = "; ".join(b["title"] for b in check.get("blockers") or [])
+                flags.append(f"low ceiling - {gaps}" if gaps else "low ceiling")
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(

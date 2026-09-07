@@ -1,0 +1,32 @@
+{
+  "id": "hungerstation-senior-data-engineer-i",
+  "description": "THE case this whole pass exists for: the digest delivered it at fit 85, Watheq scored it 58 with a low-ceiling verdict. Every hard qualification the resume misses is stated outright in the posting -- 5-8 years of Data Engineering, a CS/Engineering bachelor's, GCP/BigQuery, Airflow/dbt/Looker, Terraform, distributed data systems. resume.md evidences none of them: its only credential is a pipefitting diploma, and its data work is Power BI analytics, not platform engineering. What it DOES evidence is real and should still score -- Python, SQL, CI/CD, monitoring, LLM integrations -- so this is a mid-band fixture, not a floor one.",
+  "source": "operator-supplied JD, 2026-09-06 (newer than the newest archive)",
+  "job": {
+    "title": "Senior Data Engineer I",
+    "company": "HungerStation",
+    "location": "Riyadh, Saudi Arabia",
+    "id": "hungerstation-sde1",
+    "description": "Hungerstation is part of the Delivery Hero Group, the world's pioneering local delivery platform, our mission is to deliver an amazing experience-fast, easy, and to your door. We operate in around 65 countries worldwide. Headquartered in Berlin, Germany. Delivery Hero has been listed on the Frankfurt Stock Exchange since 2017 and is part of the MDAX stock market index.\n\nJob Description\n\nHungerStation is hiring a Senior Data Engineer I to design, build, and scale our data platform and processing frameworks that power analytics, AI-driven applications, and business intelligence across the organization.\n\nThis role sits at the core of our data ecosystem focusing on scalability, reliability, and performance of data systems.\n\nYou Will Be Working On\n\n• Design, implement, and extend scalable data platforms and architectures\n• Build and maintain high-performance data pipelines and data models using BigQuery\n• Optimize datasets and workloads for performance and cost efficiency\n• Develop analytics-ready data models, semantic layers, and governed metrics\n• Build backend services and APIs using Python or Java to support data applications\n• Contribute to AI-enabled data use cases (e.g., automated insights, conversational analytics)\n• Improve system reliability by addressing technical debt and scaling challenges\n• Implement best practices across CI/CD, testing, monitoring, and deployment automation\n• Manage and optimize cloud infrastructure supporting the data platform\n• Collaborate with cross-functional teams to ensure data quality and engineering standards\n• Ensure compliance with data governance, privacy, and security standards\n• Improve monitoring frameworks and operational resilience of the data platform\n• Support initiatives to enhance data quality, reliability, and system stability\n\nQualifications\n\n• 5-8 years of experience in Data Engineering or similar roles\n• Bachelor's degree in Computer Science, Engineering, or related field\n• Master's or relevant certifications are a plus\n• Strong experience building scalable distributed data systems\n• Hands-on with GCP (BigQuery preferred)\n• Proven experience with ETL/ELT pipelines and data modeling\n• Experience with modern data stack (Airflow, dbt, Looker)\n• Strong SQL skills and understanding of relational data systems\n• Experience with Python or Java for backend/data services\n• Familiarity with Infrastructure-as-Code (Terraform preferred)\n• Experience with CI/CD, testing, and monitoring practices\n• Exposure to AI-driven data applications or LLM integrations is a plus\n"
+  },
+  "expected": {
+    "score_band": [
+      35,
+      68
+    ],
+    "must_flag": [
+      "BigQuery",
+      "GCP",
+      "Airflow",
+      "dbt",
+      "Looker",
+      "Terraform",
+      "degree",
+      "years"
+    ],
+    "must_not_credit": [
+      "data modeling"
+    ],
+    "invariance_group": "hungerstation-benefits-boilerplate"
+  }
+}

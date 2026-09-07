@@ -1,0 +1,23 @@
+{
+  "id": "floor-aml-officer",
+  "description": "The floor test. An anti-money-laundering compliance role: wrong function outright. A regression that inflates this fixture is the most dangerous kind, because nothing downstream would catch it -- drop_below_floor only fires below 50. must_flag was [\"compliance\"], which was written for the 15-word `why` and reused unchanged against blocker titles. The live check named the gaps correctly -- AML and financial crime, a Bachelor's degree, KYC and transaction monitoring -- and not one used the literal word \"compliance\", so a correct answer failed. Now [\"AML\", \"degree\"]: more specific than the word it replaced, present in both output shapes, and no weaker as a guard (a ranker that scores this role high still fails on the band, and one that reports no blockers still fails that category).",
+  "source": "jobs\\2026-08-21.json (archived score 10)",
+  "job": {
+    "id": "floor-aml-officer",
+    "title": "AML Officer",
+    "company": "Tabby",
+    "location": "Riyadh, KSA",
+    "description": "As an AML Officer, you will support the implementation and day-to-day operation of Tabby’s Anti-Money Laundering and Counter-Terrorist Financing (AML/CTF) framework. You will conduct transaction monitoring, KYC and sanctions screening activities, investigate potentially suspicious activity, and support compliance with SAMA requirements and internal financial crime policies.\nConduct transaction monitoring and review alerts to identify potentially suspicious or unusual activity.\nPerform KYC and customer due diligence reviews in line with AML/CTF policies and regulatory requirements.\nConduct sanctions and watchlist screening and escalate potential matches for further investigation.\nInvestigate suspicious transactions and customer activity, documenting findings and recommendations appropriately.\nSupport the preparation and submission of suspicious transaction/activity reports in accordance with applicable requirements.\nMonitor customer accounts and transactions for indicators of money laundering, terrorist financing, fraud, and other financial crime risks.\nMaintain accurate and complete investigation records, case documentation, and supporting evidence.\nEscalate high-risk or complex cases to the AML Manager or relevant stakeholders in a timely manner.\nSupport the implementation and continuous improvement of AML/CTF controls, processes, and procedures.\nAssist with AML risk assessments, periodic reviews, reporting, and regulatory requests.\nCollaborate with Compliance, Risk, Operations, Product, and Technology teams to address AML-related issues and strengthen controls.\nStay informed of emerging AML/CTF typologies, regulatory developments, and financial crime risks relevant to fintech and digital wallets.\nSupport internal audits, SAMA inspections, and other regulatory reviews by providing required documentation and information.\nBachelor’s degree in Law, Finance, Business, Accounting, or a related discipline.\n2–4 years of experience in AML/CTF, financial crime compliance, transaction monitoring, KYC, or a related field, preferably within fintech, banking, or financial services.\nGood understanding of SAMA AML/CTF requirements, FATF standards, and financial crime compliance principles.\nExperience conducting transaction monitoring, KYC reviews, sanctions screening, and suspicious activity investigations.\nFamiliarity with AML systems, transaction monitoring platforms, and case management tools.\nProfessional certification such as CAMS, ICA, or equivalent is a plus."
+  },
+  "expected": {
+    "score_band": [
+      0,
+      39
+    ],
+    "must_flag": [
+      "AML",
+      "degree"
+    ],
+    "must_not_credit": []
+  }
+}

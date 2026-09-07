@@ -23,5 +23,10 @@ update your background memory.
   **title only**, so every entry has to be something that can plausibly appear
   in a title. A phrase like "llm evaluation" can never match one and is dead
   weight; "llm" matches constantly.
+  A keyword matches at a **word start**, and the suffix is left free — so
+  `agent` covers `agentic` and `data` covers `datacentre`, but `ml` no longer
+  fires on `AML` and `api` no longer fires on `Scraping`. That makes a keyword
+  which is a common letter-run inside other words (`ai`, `ml`, `api`) safe to
+  keep in the list.
 - `target_titles` — a list of role titles/seniority you're targeting now;
   appended onto the blurb automatically by `rank_jobs()`.
