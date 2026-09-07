@@ -1062,6 +1062,19 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
         # spelling they treat as different still reaches us. Refuse it here too.
         if company.casefold() in refused:
             continue
+        # The index saying the posting has expired. Free -- it arrives on a row
+        # already paid for -- and liveness is exactly what failed on 7 Sep.
+        # Usually absent, so this only ever adds a drop; an unparseable value is
+        # ignored rather than trusted, because guessing "expired" wrong hides a
+        # live role.
+        expires = str(row.get("date_valid_through") or "")[:10]
+        if expires:
+            try:
+                if datetime.date.fromisoformat(expires) < datetime.date.today():
+                    log(f"DROP expired {expires}: {company} — {row.get('title')}")
+                    continue
+            except ValueError:
+                pass
         locations = row.get("locations_derived") or []
         if not isinstance(locations, list):
             locations = [locations]
@@ -2747,9 +2760,28 @@ def _max_job_age(raw):
 
 MAX_JOB_AGE_DAYS = _max_job_age(os.environ.get("MAX_JOB_AGE_DAYS"))
 
+# The boards this digest reads per company, as opposed to any index OF those
+# boards. Defined here rather than from FETCHERS because FETCHERS is built
+# further down; the two are asserted equal in the tests.
+DIRECT_BOARD_SOURCES = frozenset(
+    {"greenhouse", "ashby", "workable", "lever", "pinpoint"})
+
 
 def split_by_age(jobs, max_age_days, today=None):
     """Split postings into (fresh, stale) and record each one's age in days.
+
+    Age is a proxy for "probably dead". That holds for an index and not for a
+    board: an aggregator keeps serving a posting long after the employer pulled
+    it, which is how a closed HudHud Maps role reached the 7 Sep 2026 digest,
+    while an employer's own ATS lists only what it is still hiring for. So a
+    posting read directly from a company board is exempt -- measured live that
+    day, gating the 169 postings on those boards would have discarded 73 open
+    vacancies to solve a problem they do not have. Liveness carries them
+    instead: verify_link drops a pulled posting, and fetch_workable and
+    fetch_ashby skip unpublished ones at the fetch.
+
+    Exempt from the cutoff, never from the truth -- every posting still records
+    its real age, so the card cannot imply a freshness it does not have.
 
     An undated posting is FRESH, not stale. Pinpoint publishes no date at all
     and Greenhouse only sometimes, so dropping the undated would quietly remove
@@ -2768,7 +2800,9 @@ def split_by_age(jobs, max_age_days, today=None):
             continue
         # Ingestion delay and timezones can put a posting a few hours ahead.
         job["age_days"] = max(age, 0)
-        (stale if job["age_days"] > max_age_days else fresh).append(job)
+        too_old = job["age_days"] > max_age_days
+        (stale if too_old and job.get("source") not in DIRECT_BOARD_SOURCES
+         else fresh).append(job)
     return fresh, stale
 
 

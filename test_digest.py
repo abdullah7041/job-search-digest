@@ -3175,3 +3175,102 @@ class TestActiveAtsRealRowShape(unittest.TestCase):
         with mock.patch.object(digest.requests, "get", return_value=response):
             job = digest.fetch_active_ats("key")[0]
         self.assertTrue(digest.matches_filters(job))
+
+
+class TestTheAgeGateSparesEmployerBoards(unittest.TestCase):
+    """Age is a proxy for "probably dead". True of an aggregator, false of a board.
+
+    An employer's own ATS lists only roles it is still hiring for and removes
+    them when it stops, so a 60-day-old Greenhouse posting is 60 days of a real
+    open vacancy. An aggregator index keeps serving a posting long after the
+    employer pulled it -- which is the whole reason a closed HudHud Maps role
+    reached the 7 Sep digest.
+
+    Measured live 7 Sep 2026 across the 169 postings on the directly-fetched
+    boards: 14 were 7 days old or less, 37 were 8-30 days, 73 were over 30 days
+    and 45 (all Tabby, via Pinpoint) carried no date at all. Gating them on age
+    would have discarded 73 open vacancies to solve a problem those boards do
+    not have. Liveness carries them instead: verify_link already drops a pulled
+    posting, and fetch_workable and fetch_ashby skip unpublished ones at fetch.
+    """
+
+    def _job(self, source, first_published):
+        return {"company": "Careem", "title": "Backend Engineer", "source": source,
+                "url": "https://boards.greenhouse.io/careem/jobs/1",
+                "first_published": first_published}
+
+    def test_an_old_posting_on_the_employers_own_board_is_kept(self):
+        today = datetime.date(2026, 9, 7)
+        for source in ("greenhouse", "ashby", "workable", "lever", "pinpoint"):
+            with self.subTest(source=source):
+                fresh, stale = digest.split_by_age(
+                    [self._job(source, "2026-06-01")], 7, today)
+                self.assertEqual(stale, [], f"{source} should not be age-gated")
+                self.assertEqual(fresh[0]["age_days"], 98)
+
+    def test_an_old_aggregator_posting_is_still_dropped(self):
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("jsearch", "2026-06-01")], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_ats_feed_is_gated_because_it_is_an_index_not_a_board(self):
+        """active_ats rows ARE employer postings, but they are read from a
+        third-party index of them, so the index decides what it still shows."""
+        today = datetime.date(2026, 9, 7)
+        fresh, stale = digest.split_by_age([self._job("active_ats", "2026-06-01")], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_exempt_posting_still_reports_its_real_age(self):
+        """Exempt from the cutoff, not from the truth: the card still says how
+        old it is, so nothing implies a week-old posting that is not one."""
+        today = datetime.date(2026, 9, 7)
+        fresh, _ = digest.split_by_age([self._job("greenhouse", "2026-08-01")], 7, today)
+        self.assertEqual(digest.age_label(fresh[0]["age_days"]), "posted 37 days ago")
+
+
+class TestDirectBoardSourcesStaysHonest(unittest.TestCase):
+    def test_it_names_exactly_the_per_company_fetchers(self):
+        """DIRECT_BOARD_SOURCES is written out by hand because it is defined
+        above FETCHERS. Adding a fetcher without adding it here would silently
+        age-gate a real employer board."""
+        self.assertEqual(digest.DIRECT_BOARD_SOURCES, frozenset(digest.FETCHERS))
+
+    def test_the_ats_index_is_an_employer_source_but_not_a_direct_board(self):
+        self.assertIn("active_ats", digest.EMPLOYER_SOURCES)
+        self.assertNotIn("active_ats", digest.DIRECT_BOARD_SOURCES)
+
+
+class TestActiveAtsExpiry(unittest.TestCase):
+    """date_valid_through is the index saying the posting has expired.
+
+    Free -- it arrives on a row already paid for -- and liveness is what
+    actually failed on 7 Sep. Often None (it was on the row sampled that day),
+    so this only ever adds a drop, never keeps something verify_link would cut.
+    """
+
+    def _fetch(self, row):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [row]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            return digest.fetch_active_ats("key")
+
+    BASE = dict(TestActiveAtsRealRowShape.ROW)
+
+    def test_an_expired_posting_is_refused(self):
+        yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+        self.assertEqual(self._fetch(dict(self.BASE, date_valid_through=yesterday)), [])
+
+    def test_a_posting_valid_in_the_future_is_kept(self):
+        later = (datetime.date.today() + datetime.timedelta(days=30)).isoformat()
+        self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through=later))), 1)
+
+    def test_no_expiry_is_not_an_expiry(self):
+        self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through=None))), 1)
+
+    def test_an_unparseable_expiry_is_ignored_rather_than_trusted(self):
+        self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through="soon"))), 1)
