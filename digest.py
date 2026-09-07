@@ -954,6 +954,7 @@ def pinpoint_salary(j):
 # first filtered probe (7 Sep 2026) were Jobgether. Refused server-side so they
 # do not cost monthly allowance either.
 ACTIVE_ATS_EXCLUDE_ORGS = ("Jobgether",)
+EXCLUDED_ORGS_PARAM = ",".join(ACTIVE_ATS_EXCLUDE_ORGS)
 
 # Never spend the last of the monthly job allowance. Both caps are hard and
 # neither resets early; exhausting the jobs cap takes the only source that can
@@ -969,28 +970,38 @@ ACTIVE_ATS_STATE_FILE = "active_ats.json"
 ACTIVE_ATS_PAGE = 10
 
 
-def load_active_ats_quota():
-    """Last known monthly allowance. Missing or unreadable reads as no knowledge.
+def load_api_quotas():
+    """Last known monthly allowance per feed. Unreadable reads as no knowledge.
 
-    Never as no allowance: assuming zero would disable the only source that can
+    Never as no allowance: assuming zero would disable the sources that can
     answer "posted this week", permanently, on nothing more than a lost file.
+
+    Keyed by feed because RapidAPI meters PER API -- one shared counter would
+    make each feed's reserve fire on the other's spending.
     """
     if not os.path.exists(ACTIVE_ATS_STATE_FILE):
         return {}
     try:
         with open(ACTIVE_ATS_STATE_FILE) as handle:
-            quota = json.load(handle)
+            quotas = json.load(handle)
     except (OSError, ValueError) as e:
-        log(f"WARN Active ATS quota unreadable ({e}); treating it as unknown")
+        log(f"WARN API quota state unreadable ({e}); treating it as unknown")
         return {}
-    return quota if isinstance(quota, dict) else {}
+    if not isinstance(quotas, dict):
+        return {}
+    # The file started as a single feed's quota, before there were two. An old
+    # one holds that feed's counters at the top level; read it as such rather
+    # than discarding a still-valid allowance.
+    if "jobs_remaining" in quotas or "requests_remaining" in quotas:
+        return {"active_ats": quotas}
+    return {k: v for k, v in quotas.items() if isinstance(v, dict)}
 
 
-def save_active_ats_quota(quota):
-    if not quota:
+def save_api_quotas(quotas):
+    if not quotas:
         return
     with open(ACTIVE_ATS_STATE_FILE, "w") as handle:
-        json.dump(quota, handle, indent=0, sort_keys=True)
+        json.dump(quotas, handle, indent=0, sort_keys=True)
 
 
 def fetch_active_ats(api_key, quota=None, max_age_days=None):
@@ -1001,11 +1012,69 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
     ten technical roles aged 0-1 days, every one on the employer's own board.
     That is the entire reason it exists -- the aggregator cannot answer "posted
     this week" at all, which is what the digest is asked for.
+    """
+    days, since = _age_window(max_age_days)
+    query = ("?source=" + requests.utils.quote(ACTIVE_ATS_SOURCES)
+             + "&location=" + requests.utils.quote("Saudi Arabia")
+             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
+             + "&date_posted_gte=" + since + "T00:00:00"
+             + "&time_frame=" + str(days) + "d"
+             + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
+    return _fetch_fantastic("Active ATS", ACTIVE_ATS_HOST, "/active-ats", query,
+                            "active_ats", api_key, quota)
 
-    The free plan allows 250 JOBS and 25 REQUESTS a month, two separate hard
-    limits, so the filtering runs server-side: every row the API rejects is
-    allowance kept. `quota` is read and updated in place, the way fetch_jsearch
-    tracks its own headers.
+
+def fetch_linkedin(api_key, quota=None, max_age_days=None):
+    """Read one page of Saudi technical roles as LinkedIn itself lists them.
+
+    Probed 7 Sep 2026: ten rows, all posted that day, nine of them genuinely
+    technical -- Tableau Developer at TCS, ROS2 and Embedded Firmware at Atwad,
+    Data Science at stc, Backend Golang. JSearch, asked for the same country on
+    the same day, returned nothing at all inside a week. This is the same
+    LinkedIn the digest already delivers, minus the staleness of reaching it
+    through Google for Jobs.
+
+    Its rows are relays, not the employer's own posting, so this source stays
+    OUT of EMPLOYER_SOURCES: prefer_employer_postings must keep favouring a real
+    board when both have the role.
+
+    Three of the ten probe rows were Morocco despite location=Saudi Arabia, so
+    location_conflict is what catches the leak; it already exists for exactly
+    this.
+    """
+    days, since = _age_window(max_age_days)
+    query = ("?location=" + requests.utils.quote("Saudi Arabia")
+             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
+             + "&date_posted_gte=" + since + "T00:00:00"
+             + "&time_frame=" + str(days) + "d"
+             + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
+    return _fetch_fantastic("LinkedIn", LINKEDIN_API_HOST, "/active-jb", query,
+                            "linkedin_api", api_key, quota)
+
+
+def _age_window(max_age_days):
+    """The cutoff as both a bucket and an exact date.
+
+    time_frame is required and cuts on INDEXED time, while the age gate reads
+    date_posted -- so a row can sit inside the window and outside the gate.
+    Sending date_posted_gte too means the server has already applied the same
+    cut the gate will.
+    """
+    days = max_age_days if isinstance(max_age_days, int) and max_age_days > 0 else 7
+    return days, (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+
+
+def _fetch_fantastic(name, host, path, query, source, api_key, quota):
+    """One page from a Fantastic.jobs feed, shaped into this pipeline's job dict.
+
+    Both feeds share a vendor, a row shape and a plan: 250 JOBS and 25 REQUESTS
+    a month, two separate hard limits, metered PER API. So the filtering runs
+    server-side -- every row the API rejects is allowance kept -- and each feed
+    carries its own `quota`, read and updated in place the way fetch_jsearch
+    tracks its headers. Sharing one counter would make each feed's reserve fire
+    on the other's spending.
 
     Fail-soft like every other fetcher: any error is [] and a log line.
     """
@@ -1014,27 +1083,15 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
     quota = quota if quota is not None else {}
     remaining = quota.get("jobs_remaining")
     if isinstance(remaining, int) and remaining < ACTIVE_ATS_JOBS_RESERVE:
-        log(f"Active ATS: {remaining} jobs left this month, below the "
-            f"{ACTIVE_ATS_JOBS_RESERVE} reserve; skipping")
+        log(name + ": " + str(remaining) + " jobs left this month, below the "
+            + str(ACTIVE_ATS_JOBS_RESERVE) + " reserve; skipping")
         return []
-    # One clock for both the page and the gate. time_frame is required and cuts
-    # on INDEXED time, while the age gate reads date_posted -- so a row can sit
-    # inside the window and outside the gate. Passing date_posted_gte as well
-    # means the server has already applied the same cut the gate will.
-    days = max_age_days if isinstance(max_age_days, int) and max_age_days > 0 else 7
-    since = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
-    url = (f"https://{ACTIVE_ATS_HOST}/active-ats"
-           f"?source={requests.utils.quote(ACTIVE_ATS_SOURCES)}"
-           f"&location={requests.utils.quote('Saudi Arabia')}"
-           f"&title_advanced={requests.utils.quote(ACTIVE_ATS_TITLE)}"
-           f"&exclude_organization={requests.utils.quote(','.join(ACTIVE_ATS_EXCLUDE_ORGS))}"
-           f"&date_posted_gte={since}T00:00:00"
-           f"&time_frame={days}d&description_format=text&limit={ACTIVE_ATS_PAGE}")
+    url = "https://" + host + path + query
     try:
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
-                                       "X-RapidAPI-Host": ACTIVE_ATS_HOST}, timeout=30)
+                                       "X-RapidAPI-Host": host}, timeout=30)
     except requests.RequestException as e:
-        log(f"WARN Active ATS: request failed: {e}")
+        log("WARN " + name + ": request failed: " + str(e))
         return []
     for header, field in (("x-ratelimit-jobs-remaining", "jobs_remaining"),
                           ("x-ratelimit-requests-remaining", "requests_remaining")):
@@ -1043,16 +1100,16 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
         except (KeyError, TypeError, ValueError):
             pass
     if r.status_code != 200:
-        log(f"WARN Active ATS: HTTP {r.status_code}: {r.text[:120]}")
+        log("WARN " + name + ": HTTP " + str(r.status_code) + ": " + r.text[:120])
         return []
     try:
         rows = r.json()
     except ValueError:
-        log("WARN Active ATS: non-JSON response")
+        log("WARN " + name + ": non-JSON response")
         return []
     if isinstance(rows, dict):
         rows = rows.get("data") or rows.get("jobs") or []
-    refused = {name.casefold() for name in ACTIVE_ATS_EXCLUDE_ORGS}
+    refused = {org.casefold() for org in ACTIVE_ATS_EXCLUDE_ORGS}
     out = []
     for row in rows:
         if not isinstance(row, dict):
@@ -1071,7 +1128,8 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
         if expires:
             try:
                 if datetime.date.fromisoformat(expires) < datetime.date.today():
-                    log(f"DROP expired {expires}: {company} — {row.get('title')}")
+                    log("DROP expired " + expires + ": " + company
+                        + " - " + str(row.get("title")))
                     continue
             except ValueError:
                 pass
@@ -1082,17 +1140,17 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
             "company": company,
             "id": str(row.get("id") or ""),
             "title": (row.get("title") or "").strip(),
-            "location": ", ".join(str(p) for p in locations if p),
+            "location": ", ".join(str(part) for part in locations if part),
             "url": row.get("url") or "",
             # date_posted is when the employer published; date_created is when
             # Fantastic.jobs indexed it. The gate reads the employer's clock.
             "first_published": str(row.get("date_posted") or "")[:10],
-            "source": "active_ats", "token": "",
+            "source": source, "token": "",
             "description": (row.get("description_text") or "").strip(),
         })
-    log(f"Active ATS: {len(out)} jobs "
-        f"({quota.get('jobs_remaining', '?')} jobs, "
-        f"{quota.get('requests_remaining', '?')} requests left this month)")
+    log(name + ": " + str(len(out)) + " jobs ("
+        + str(quota.get("jobs_remaining", "?")) + " jobs, "
+        + str(quota.get("requests_remaining", "?")) + " requests left this month)")
     return out
 
 
@@ -2244,15 +2302,19 @@ def main():
     paywalled = []
     all_jobs.extend(fetch_jsearch(rapidapi_key, paywalled))
 
-    # Freshness: the employers' own ATSs, read as one feed. This is the only
-    # source that can answer "posted this week" -- measured 7 Sep 2026, JSearch
-    # returned ZERO jobs at date_posted=week and a corpus aged 18-159 days,
-    # while this returned ten technical roles aged 0-1 days, all on employer
-    # boards. Its monthly allowance is small and hard, so the quota it reports
-    # is carried in state rather than assumed from a day count.
-    active_ats_quota = load_active_ats_quota()
-    all_jobs.extend(fetch_active_ats(rapidapi_key, active_ats_quota, MAX_JOB_AGE_DAYS))
-    save_active_ats_quota(active_ats_quota)
+    # Freshness: the two feeds that can actually answer "posted this week".
+    # Measured 7 Sep 2026 against the same country on the same day, JSearch
+    # returned ZERO rows inside a week and a corpus aged 18-159 days. The ATS
+    # feed returned ten technical roles aged 0-1 days, all on employer boards;
+    # the LinkedIn feed returned ten more, all posted that day, nine of them
+    # technical. Their allowances are small, hard and metered per API, so each
+    # carries its own counter in state rather than a shared assumption.
+    quotas = load_api_quotas()
+    for feed, fetch in (("active_ats", fetch_active_ats),
+                        ("linkedin_api", fetch_linkedin)):
+        quota = quotas.setdefault(feed, {})
+        all_jobs.extend(fetch(rapidapi_key, quota, MAX_JOB_AGE_DAYS))
+    save_api_quotas(quotas)
 
     # Depth: direct company ATS feeds (Greenhouse, Ashby, Workable, Lever).
     # COMPANIES is the hand-curated list; the boards after it were discovered

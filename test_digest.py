@@ -2998,10 +2998,13 @@ class TestFetchActiveAts(unittest.TestCase):
         self.assertIn("Saudi", requests_unquote(url))
 
 
-class TestActiveAtsQuotaSurvivesTheRun(unittest.TestCase):
-    """The monthly allowance has to be known BEFORE the request that would
-    exceed it. Both caps are hard, the plan resets monthly, and the headers only
-    arrive on a response -- so what one run learned has to reach the next one.
+class TestApiQuotasSurviveTheRun(unittest.TestCase):
+    """The monthly allowance has to be known BEFORE the request that exceeds it.
+
+    Both caps are hard, both reset monthly, and the headers only arrive on a
+    response -- so what one run learned has to reach the next. Keyed by feed
+    because RapidAPI meters PER API: one shared counter would make each feed's
+    reserve fire on the other's spending.
     """
 
     def setUp(self):
@@ -3015,24 +3018,55 @@ class TestActiveAtsQuotaSurvivesTheRun(unittest.TestCase):
 
     def test_a_missing_file_reads_as_no_knowledge_rather_than_no_allowance(self):
         """First run of all, and the first run after the file is lost. Assuming
-        zero would disable the only fresh source permanently."""
-        self.assertEqual(digest.load_active_ats_quota(), {})
+        zero would disable the only fresh sources permanently."""
+        self.assertEqual(digest.load_api_quotas(), {})
 
     def test_what_one_run_learned_reaches_the_next(self):
-        digest.save_active_ats_quota({"jobs_remaining": 90, "requests_remaining": 9})
-        self.assertEqual(digest.load_active_ats_quota(),
-                         {"jobs_remaining": 90, "requests_remaining": 9})
+        digest.save_api_quotas({"active_ats": {"jobs_remaining": 90},
+                                "linkedin_api": {"jobs_remaining": 200}})
+        self.assertEqual(digest.load_api_quotas(),
+                         {"active_ats": {"jobs_remaining": 90},
+                          "linkedin_api": {"jobs_remaining": 200}})
 
     def test_a_corrupt_file_does_not_stop_the_digest(self):
         with open(digest.ACTIVE_ATS_STATE_FILE, "w") as handle:
             handle.write("{not json")
-        self.assertEqual(digest.load_active_ats_quota(), {})
+        self.assertEqual(digest.load_api_quotas(), {})
+
+    def test_a_file_written_before_there_were_two_feeds_still_counts(self):
+        """The file started as one feed's counters at the top level. Reading it
+        as an empty mapping would silently hand that feed a full allowance it
+        does not have."""
+        with open(digest.ACTIVE_ATS_STATE_FILE, "w") as handle:
+            json.dump({"jobs_remaining": 40, "requests_remaining": 4}, handle)
+        self.assertEqual(digest.load_api_quotas(),
+                         {"active_ats": {"jobs_remaining": 40,
+                                         "requests_remaining": 4}})
 
     def test_the_reserve_is_honoured_across_runs(self):
-        digest.save_active_ats_quota({"jobs_remaining": digest.ACTIVE_ATS_JOBS_RESERVE - 1})
+        digest.save_api_quotas(
+            {"active_ats": {"jobs_remaining": digest.ACTIVE_ATS_JOBS_RESERVE - 1}})
+        quotas = digest.load_api_quotas()
         with mock.patch.object(digest.requests, "get") as get:
-            self.assertEqual(digest.fetch_active_ats("key", digest.load_active_ats_quota()), [])
+            self.assertEqual(
+                digest.fetch_active_ats("key", quotas["active_ats"]), [])
         get.assert_not_called()
+
+    def test_one_feed_running_low_does_not_stop_the_other(self):
+        """The failure a shared counter would cause: the ATS feed near its cap
+        silencing LinkedIn, which has its own untouched allowance."""
+        digest.save_api_quotas(
+            {"active_ats": {"jobs_remaining": digest.ACTIVE_ATS_JOBS_RESERVE - 1},
+             "linkedin_api": {"jobs_remaining": 240}})
+        quotas = digest.load_api_quotas()
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: [TestFetchLinkedin.ROW]
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            jobs = digest.fetch_linkedin("key", quotas["linkedin_api"])
+        self.assertEqual(len(jobs), 1)
 
 
 class TestPostingAge(unittest.TestCase):
@@ -3274,3 +3308,97 @@ class TestActiveAtsExpiry(unittest.TestCase):
 
     def test_an_unparseable_expiry_is_ignored_rather_than_trusted(self):
         self.assertEqual(len(self._fetch(dict(self.BASE, date_valid_through="soon"))), 1)
+
+
+class TestFetchLinkedin(unittest.TestCase):
+    """LinkedIn as its own feed rather than relayed through Google for Jobs.
+
+    Probed 7 Sep 2026: ten rows, every one posted that day, nine of the ten
+    genuinely technical -- Tableau Developer at TCS, ROS2 and Embedded Firmware
+    at Atwad, Data Science at stc, Backend Golang. JSearch, asked for the same
+    country the same day, returned zero rows inside a week.
+
+    Same vendor and row shape as Active Jobs DB, so the shaping is shared. Its
+    allowance is separate: RapidAPI meters per API.
+    """
+
+    ROW = {
+        "id": 2351033857,
+        "title": "Tableau Developer",
+        "organization": "Tata Consultancy Services",
+        "url": "https://sa.linkedin.com/jobs/view/tableau-developer-at-tata-consultancy-services-4462958816",
+        "source": "linkedin",
+        "date_posted": "2026-09-07T16:40:23",
+        "date_valid_through": None,
+        "locations_derived": ["Riyadh, Riyadh Region, Saudi Arabia"],
+        "description_text": "Tata Consultancy Services is hiring a Tableau Developer.",
+    }
+
+    def _response(self, rows, status=200, headers=None):
+        response = mock.Mock()
+        response.status_code = status
+        response.json = lambda: rows
+        response.text = ""
+        response.headers = headers or {}
+        return response
+
+    def test_a_row_shapes_the_same_way_the_ats_feed_does(self):
+        with mock.patch.object(digest.requests, "get", return_value=self._response([self.ROW])):
+            job = digest.fetch_linkedin("key")[0]
+        self.assertEqual(job["company"], "Tata Consultancy Services")
+        self.assertEqual(job["title"], "Tableau Developer")
+        self.assertEqual(job["source"], "linkedin_api")
+        self.assertEqual(job["first_published"], "2026-09-07")
+        self.assertIn("Saudi Arabia", job["location"])
+        self.assertTrue(job["description"])
+
+    def test_it_is_not_treated_as_the_employers_own_posting(self):
+        """An ATS row IS the employer's posting; a LinkedIn row is a relay of
+        it. prefer_employer_postings must keep favouring the real board."""
+        self.assertNotIn("linkedin_api", digest.EMPLOYER_SOURCES)
+        self.assertNotIn("linkedin_api", digest.DIRECT_BOARD_SOURCES)
+
+    def test_it_is_age_gated(self):
+        today = datetime.date(2026, 9, 7)
+        job = {"source": "linkedin_api", "first_published": "2026-06-01"}
+        fresh, stale = digest.split_by_age([job], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_the_relister_exclusion_is_shared_with_the_ats_feed(self):
+        """Jobgether appeared twice in the 7 Sep LinkedIn probe, same as in the
+        ATS probe. One list, not two that drift apart."""
+        row = dict(self.ROW, organization="Jobgether", id=99)
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([row, self.ROW])):
+            jobs = digest.fetch_linkedin("key")
+        self.assertEqual([j["company"] for j in jobs], ["Tata Consultancy Services"])
+
+    def test_it_keeps_its_own_allowance(self):
+        """Separate API, separate meter. Sharing one counter would make each
+        feed's reserve fire on the other's spending."""
+        quota = {}
+        headers = {"x-ratelimit-jobs-remaining": "240",
+                   "x-ratelimit-requests-remaining": "24"}
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([self.ROW], headers=headers)):
+            digest.fetch_linkedin("key", quota=quota)
+        self.assertEqual(quota["jobs_remaining"], 240)
+
+    def test_no_key_and_a_failed_request_are_both_survivable(self):
+        self.assertEqual(digest.fetch_linkedin(""), [])
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=digest.requests.Timeout("slow")):
+            self.assertEqual(digest.fetch_linkedin("key"), [])
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([], status=429)):
+            self.assertEqual(digest.fetch_linkedin("key"), [])
+
+    def test_the_request_narrows_on_saudi_arabia_and_a_date(self):
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response([])) as get:
+            digest.fetch_linkedin("key")
+        url = get.call_args[0][0]
+        self.assertIn("date_posted_gte=", url)
+        self.assertIn("description_format=text", url)
+        self.assertIn("Saudi", requests_unquote(url))
