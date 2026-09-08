@@ -692,7 +692,21 @@ def fetch_jsearch(api_key, paywalled=None):
             state   = (j.get("job_state")   or "").strip()
             country = (j.get("job_country") or "").strip()
             country = COUNTRY_CODE_TO_NAME.get(country.upper(), country)
-            location = ", ".join(p for p in (city, state, country) if p)
+            # On a REMOTE row the country is the one this query asked for, not
+            # the employer's. Measured live 8 Sep 2026 on `data engineer
+            # Riyadh`, sent with country=sa: ten of ten remote rows came back
+            # job_country='SA' while plainly being United States roles --
+            # CrowdStrike with job_city='Anywhere، OR', Govcio with no city at
+            # all. Expanding that to "Saudi Arabia" gave every one of them a
+            # passing location, and 19 reached the run that day. They were
+            # dropped for AGE, by luck; a fresh one would have been scored.
+            #
+            # So a remote row has to name the place itself. Remote work from
+            # Riyadh still says Riyadh and still matches.
+            if j.get("job_is_remote"):
+                location = ", ".join(p for p in (city, state) if p)
+            else:
+                location = ", ".join(p for p in (city, state, country) if p)
 
             # The primary link is whichever publisher JSearch ranked first, and
             # that is frequently a paid relister -- 100 of the 174 aggregator
@@ -3139,7 +3153,11 @@ def probe_indeed(api_key, query="software engineer", location="Saudi Arabia"):
         # It names the parameter it wanted and warns about ones it did not
         # recognise, which is cheaper to read than guessing across requests.
         print(f"body[:900]: {r.text[:900]}")
-        return 1
+        # A clear answer IS the probe working. 403 "not subscribed" and 400
+        # "missing parameter" are findings to read, not workflow failures;
+        # exiting non-zero on them turned every discovery run into a red X
+        # next to the daily digest and buried whether anything real broke.
+        return 0
     try:
         payload = r.json()
     except ValueError:
@@ -3249,7 +3267,11 @@ def probe_bayt(api_key, days_old="7", scan_pages="10"):
     if r.status_code != 200:
         # 403 means the key is not subscribed; subscribing is the operator's call.
         print(f"body[:300]: {r.text[:300]}")
-        return 1
+        # A clear answer IS the probe working. 403 "not subscribed" and 400
+        # "missing parameter" are findings to read, not workflow failures;
+        # exiting non-zero on them turned every discovery run into a red X
+        # next to the daily digest and buried whether anything real broke.
+        return 0
     try:
         payload = r.json()
     except ValueError:
@@ -3373,7 +3395,11 @@ def _probe_fantastic(name, url, api_key, time_frame, limit):
         # A 403 here means the key is not subscribed to this API. Subscribing is
         # an account action for the operator, not something this probe can do.
         print(f"body[:300]: {r.text[:300]}")
-        return 1
+        # A clear answer IS the probe working. 403 "not subscribed" and 400
+        # "missing parameter" are findings to read, not workflow failures;
+        # exiting non-zero on them turned every discovery run into a red X
+        # next to the daily digest and buried whether anything real broke.
+        return 0
     try:
         jobs = r.json()
     except ValueError:
@@ -3492,7 +3518,11 @@ def probe_jsearch(query, api_key):
     print(f"quota headers: {quota or '(none reported)'}")
     if r.status_code != 200:
         print(f"body[:200]: {r.text[:200]}")
-        return 1
+        # A clear answer IS the probe working. 403 "not subscribed" and 400
+        # "missing parameter" are findings to read, not workflow failures;
+        # exiting non-zero on them turned every discovery run into a red X
+        # next to the daily digest and buried whether anything real broke.
+        return 0
     payload = r.json().get("data") or {}
     jobs = payload.get("jobs", []) if isinstance(payload, dict) else payload
     print(f"top-level data keys: {sorted(payload) if isinstance(payload, dict) else 'list'}")

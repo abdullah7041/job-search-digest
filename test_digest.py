@@ -3650,3 +3650,68 @@ class TestFetchIndeed(unittest.TestCase):
                                return_value=self._response([])) as get:
             digest.fetch_indeed("key")
         self.assertIn("countryCode=sa", get.call_args[0][0])
+
+
+class TestARemoteJobsCountryIsNotEvidence(unittest.TestCase):
+    """JSearch echoes the QUERY's country back on remote rows.
+
+    Measured live 8 Sep 2026 on `data engineer Riyadh`, which this digest sends
+    with country=sa. Ten of ten remote rows came back as job_country='SA' while
+    plainly being United States roles:
+
+        CrowdStrike  Data Engineer, Go To Market (Remote)
+            job_city='Anywhere, OR'  job_country='SA'  job_is_remote=True
+        Govcio LLC   Senior Data Engineer (Remote)
+            job_city=None            job_country='SA'  job_is_remote=True
+
+    'SA' there is our own parameter reflected, not the employer's location, so
+    expanding it to "Saudi Arabia" handed every one of them a passing location.
+    Nineteen reached the run that day and were dropped for AGE, by luck -- a
+    fresh one would have been scored and could have been delivered.
+
+    A remote row therefore has to name a Saudi city to count as Saudi.
+    """
+
+    def _job(self, city, remote, country="SA"):
+        response = mock.Mock()
+        response.status_code = 200
+        response.json = lambda: {"data": {"jobs": [{
+            "job_id": "x1", "job_title": "Data Engineer",
+            "employer_name": "Acme", "job_apply_link": "https://acme.test/1",
+            "job_city": city, "job_state": None, "job_country": country,
+            "job_is_remote": remote,
+            "job_posted_at_datetime_utc": "2026-09-08T00:00:00Z",
+        }]}}
+        response.text = ""
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response):
+            jobs = digest.fetch_jsearch("key")
+        return jobs[0] if jobs else None
+
+    def test_a_remote_row_with_no_city_does_not_become_saudi(self):
+        job = self._job(None, True)
+        self.assertFalse(digest.matches_filters(job),
+                         f"location {job['location']!r} must not read as Saudi")
+
+    def test_a_remote_row_in_a_us_state_does_not_become_saudi(self):
+        job = self._job("Anywhere\u060c OR", True)
+        self.assertFalse(digest.matches_filters(job),
+                         f"location {job['location']!r} must not read as Saudi")
+
+    def test_a_remote_row_in_a_real_saudi_city_is_still_kept(self):
+        """Remote work from Riyadh is a real posting and must survive."""
+        job = self._job("Riyadh\u060c RIY", True)
+        self.assertTrue(digest.matches_filters(job),
+                        f"location {job['location']!r} should read as Saudi")
+
+    def test_an_onsite_row_still_trusts_the_country(self):
+        """Not remote means JSearch reported a real place; Arabic city names
+        are why the country was expanded in the first place."""
+        job = self._job("\u0627\u0644\u0631\u064a\u0627\u0636", False)
+        self.assertTrue(digest.matches_filters(job),
+                        f"location {job['location']!r} should read as Saudi")
+
+    def test_an_onsite_row_with_no_city_still_trusts_the_country(self):
+        job = self._job(None, False)
+        self.assertTrue(digest.matches_filters(job),
+                        f"location {job['location']!r} should read as Saudi")
