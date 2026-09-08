@@ -3568,6 +3568,12 @@ def probe_jsearch(query, api_key):
             with_site += 1
             paid_with_site += paid
         print(f"- {(job.get('employer_name') or '?')[:40]} — {(job.get('job_title') or '?')[:50]}")
+        # What matches_filters actually reads. A remote US role returned under
+        # country=sa can arrive with an empty city and the country expanded to
+        # "Saudi Arabia", which passes LOCATION_INCLUDE on the country alone.
+        print(f"    city/state/country: {job.get('job_city')!r} / "
+              f"{job.get('job_state')!r} / {job.get('job_country')!r}"
+              f"   is_remote={job.get('job_is_remote')!r}")
         print(f"    primary link host: {link_host(primary) or '(none)'}"
               f"{'  [PAID RELISTER]' if paid else ''}")
         print(f"    employer_website:  {link_host(site) or (site or '(empty)')}")
