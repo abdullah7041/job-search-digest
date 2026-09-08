@@ -692,21 +692,33 @@ def fetch_jsearch(api_key, paywalled=None):
             state   = (j.get("job_state")   or "").strip()
             country = (j.get("job_country") or "").strip()
             country = COUNTRY_CODE_TO_NAME.get(country.upper(), country)
-            # On a REMOTE row the country is the one this query asked for, not
-            # the employer's. Measured live 8 Sep 2026 on `data engineer
-            # Riyadh`, sent with country=sa: ten of ten remote rows came back
-            # job_country='SA' while plainly being United States roles --
-            # CrowdStrike with job_city='Anywhere، OR', Govcio with no city at
-            # all. Expanding that to "Saudi Arabia" gave every one of them a
-            # passing location, and 19 reached the run that day. They were
-            # dropped for AGE, by luck; a fresh one would have been scored.
+            # job_country is the country this query ASKED for, not the
+            # employer's, on every row -- remote and onsite alike. Measured
+            # live 8 Sep 2026 on `software engineer Saudi Arabia`, sent with
+            # country=sa: Quest Diagnostics and Liquid XR came back
+            # job_city='Los Ángeles، CA' with job_country='SA' and
+            # job_is_remote=False, alongside remote rows reading
+            # 'Anywhere، CA' or carrying no city at all.
             #
-            # So a remote row has to name the place itself. Remote work from
-            # Riyadh still says Riyadh and still matches.
-            if j.get("job_is_remote"):
-                location = ", ".join(p for p in (city, state) if p)
-            else:
+            # Expanding that 'SA' to "Saudi Arabia" put the word "saudi" into
+            # every one of those strings, so a Los Angeles role read as local.
+            # Nineteen reached the 8 Sep 07:00 run and nine more the run after;
+            # both times the AGE gate caught them, by luck, rather than the
+            # location filter by design.
+            #
+            # So the country is evidence only when the city agrees. A real
+            # Saudi row carries a Saudi region code where an American one
+            # carries a state code -- 'Riyadh، RIY' and 'Al Khubar، EAS'
+            # against 'Los Ángeles، CA'. That code is what keeps the real rows
+            # whose transliteration LOCATION_INCLUDE has never heard of.
+            place = " ".join(p for p in (city, state) if p)
+            if _names_somewhere_saudi(place):
                 location = ", ".join(p for p in (city, state, country) if p)
+            else:
+                # Drop the country rather than the row: matches_filters is the
+                # one place that decides, and a row with a real city elsewhere
+                # in Saudi Arabia can still match on the city alone.
+                location = place
 
             # The primary link is whichever publisher JSearch ranked first, and
             # that is frequently a paid relister -- 100 of the 174 aggregator
@@ -1360,6 +1372,43 @@ def fetch_company(c):
         log(f"WARN {c['name']}: unknown source '{c['source']}'. Skipping.")
         return []
     return fn(c)
+
+
+# The regions JSearch reports for Saudi postings, as the code trailing the city
+# ('Riyadh، RIY', 'Al Khubar، EAS'). Kept because the transliterations vary far
+# more than the codes do: LOCATION_INCLUDE knows "khobar" but not "Al Khubar",
+# and nothing would recognise "al-'Aqrabiyyah" or "Najd" without this.
+SAUDI_REGION_CODES = frozenset({
+    "RIY",  # Riyadh
+    "MAK",  # Makkah
+    "MAD",  # Al Madinah
+    "EAS",  # Eastern Province
+    "ASI",  # 'Asir
+    "TAB",  # Tabuk
+    "HAI",  # Ha'il
+    "NBO",  # Northern Borders
+    "JAZ",  # Jazan
+    "NAJ",  # Najran
+    "BAH",  # Al Bahah
+    "JAW",  # Al Jawf
+    "QAS",  # Al Qassim
+})
+
+
+def _names_somewhere_saudi(place):
+    """True when the city/state text itself says Saudi Arabia.
+
+    Deliberately does NOT read the country: JSearch echoes the requested
+    country onto every row, so it cannot distinguish Riyadh from Los Angeles.
+    """
+    if not place:
+        return False
+    lowered = place.casefold()
+    if any(k in lowered for k in LOCATION_INCLUDE):
+        return True
+    # The region code trails the city after an Arabic comma.
+    tail = re.split(r"[،,]", place)[-1].strip().upper()
+    return tail in SAUDI_REGION_CODES
 
 
 def location_conflict(title):

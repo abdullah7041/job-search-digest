@@ -3652,31 +3652,36 @@ class TestFetchIndeed(unittest.TestCase):
         self.assertIn("countryCode=sa", get.call_args[0][0])
 
 
-class TestARemoteJobsCountryIsNotEvidence(unittest.TestCase):
-    """JSearch echoes the QUERY's country back on remote rows.
+class TestJSearchCountryIsAlwaysTheQuerysCountry(unittest.TestCase):
+    """job_country is the parameter this digest sent, not the employer's place.
 
-    Measured live 8 Sep 2026 on `data engineer Riyadh`, which this digest sends
-    with country=sa. Ten of ten remote rows came back as job_country='SA' while
-    plainly being United States roles:
+    Measured live 8 Sep 2026 on `software engineer Saudi Arabia`, sent with
+    country=sa. Every row came back job_country='SA' -- including plainly
+    American ones, and NOT only remote ones:
 
-        CrowdStrike  Data Engineer, Go To Market (Remote)
-            job_city='Anywhere, OR'  job_country='SA'  job_is_remote=True
-        Govcio LLC   Senior Data Engineer (Remote)
-            job_city=None            job_country='SA'  job_is_remote=True
+        Quest Diagnostics  city='Los Angeles, CA'  country='SA'  remote=False
+        Liquid XR          city='Los Angeles, CA'  country='SA'  remote=False
+        YO AI Labs         city='Anywhere, CA'     country='SA'  remote=True
+        Govcio LLC         city=None               country='SA'  remote=True
 
-    'SA' there is our own parameter reflected, not the employer's location, so
-    expanding it to "Saudi Arabia" handed every one of them a passing location.
-    Nineteen reached the run that day and were dropped for AGE, by luck -- a
-    fresh one would have been scored and could have been delivered.
+    Expanding that 'SA' to "Saudi Arabia" put the word "saudi" into every one
+    of those location strings, so a Los Angeles role read as local. Nineteen
+    reached the 8 Sep 07:00 run and nine more the run after; both times the age
+    gate caught them by luck rather than the location filter by design.
 
-    A remote row therefore has to name a Saudi city to count as Saudi.
+    Real Saudi rows carry a Saudi region code where the US rows carry a state
+    code -- 'Riyadh, RIY' and 'Al Khubar, EAS' against 'Los Angeles, CA'. The
+    country is trusted only when the city itself, or that region code, says
+    Saudi Arabia.
     """
 
-    def _job(self, city, remote, country="SA"):
+    SEP = "\u060c"  # Arabic comma; JSearch separates city and region with it
+
+    def _job(self, city, remote=False, country="SA"):
         response = mock.Mock()
         response.status_code = 200
         response.json = lambda: {"data": {"jobs": [{
-            "job_id": "x1", "job_title": "Data Engineer",
+            "job_id": "x1", "job_title": "Software Engineer",
             "employer_name": "Acme", "job_apply_link": "https://acme.test/1",
             "job_city": city, "job_state": None, "job_country": country,
             "job_is_remote": remote,
@@ -3685,33 +3690,54 @@ class TestARemoteJobsCountryIsNotEvidence(unittest.TestCase):
         response.text = ""
         response.headers = {}
         with mock.patch.object(digest.requests, "get", return_value=response):
-            jobs = digest.fetch_jsearch("key")
-        return jobs[0] if jobs else None
+            return digest.fetch_jsearch("key")[0]
 
-    def test_a_remote_row_with_no_city_does_not_become_saudi(self):
-        job = self._job(None, True)
+    def _assert_local(self, city, **kw):
+        job = self._job(city, **kw)
+        self.assertTrue(digest.matches_filters(job),
+                        f"location {job['location']!r} should read as Saudi")
+
+    def _assert_foreign(self, city, **kw):
+        job = self._job(city, **kw)
         self.assertFalse(digest.matches_filters(job),
                          f"location {job['location']!r} must not read as Saudi")
 
-    def test_a_remote_row_in_a_us_state_does_not_become_saudi(self):
-        job = self._job("Anywhere\u060c OR", True)
-        self.assertFalse(digest.matches_filters(job),
-                         f"location {job['location']!r} must not read as Saudi")
+    def test_an_american_city_is_not_saudi_even_when_onsite(self):
+        """The case that leaked: not remote, real US city, country echoed."""
+        self._assert_foreign(f"Los Angeles{self.SEP} CA")
+        self._assert_foreign(f"Culver City{self.SEP} CA")
 
-    def test_a_remote_row_in_a_real_saudi_city_is_still_kept(self):
-        """Remote work from Riyadh is a real posting and must survive."""
-        job = self._job("Riyadh\u060c RIY", True)
-        self.assertTrue(digest.matches_filters(job),
-                        f"location {job['location']!r} should read as Saudi")
+    def test_an_american_remote_row_is_not_saudi(self):
+        self._assert_foreign(f"Anywhere{self.SEP} CA", remote=True)
+        self._assert_foreign(f"Anywhere{self.SEP} OR", remote=True)
 
-    def test_an_onsite_row_still_trusts_the_country(self):
-        """Not remote means JSearch reported a real place; Arabic city names
-        are why the country was expanded in the first place."""
-        job = self._job("\u0627\u0644\u0631\u064a\u0627\u0636", False)
-        self.assertTrue(digest.matches_filters(job),
-                        f"location {job['location']!r} should read as Saudi")
+    def test_a_row_with_no_city_at_all_is_not_saudi(self):
+        """Nothing but the echoed country, which is no evidence."""
+        self._assert_foreign(None, remote=True)
 
-    def test_an_onsite_row_with_no_city_still_trusts_the_country(self):
-        job = self._job(None, False)
-        self.assertTrue(digest.matches_filters(job),
-                        f"location {job['location']!r} should read as Saudi")
+    def test_a_saudi_city_named_in_english_is_kept(self):
+        self._assert_local(f"Riyadh{self.SEP} RIY")
+
+    def test_a_saudi_city_named_in_arabic_is_kept(self):
+        """Why the country was expanded in the first place."""
+        self._assert_local("\u0627\u0644\u0631\u064a\u0627\u0636")
+
+    def test_a_saudi_city_the_keyword_list_does_not_know_is_kept(self):
+        """'Al Khubar' is Khobar and "al-'Aqrabiyyah" is nowhere in
+        LOCATION_INCLUDE, so the region code is what saves these real rows."""
+        self._assert_local(f"Al Khubar{self.SEP} EAS")
+        self._assert_local(f"al-'Aqrabiyyah{self.SEP} EAS")
+        self._assert_local(f"Najd{self.SEP} RIY")
+
+    def test_remote_work_from_riyadh_still_counts(self):
+        self._assert_local(f"Riyadh{self.SEP} RIY", remote=True)
+
+    def test_every_saudi_region_code_is_recognised(self):
+        for code in digest.SAUDI_REGION_CODES:
+            with self.subTest(code=code):
+                self._assert_local(f"Somewhere{self.SEP} {code}")
+
+    def test_no_us_state_code_is_mistaken_for_a_saudi_region(self):
+        for code in ("CA", "OR", "DC", "NY", "TX", "WA", "UT", "MA", "IL"):
+            with self.subTest(code=code):
+                self._assert_foreign(f"Somewhere{self.SEP} {code}")
