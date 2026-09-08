@@ -10,6 +10,24 @@
     "company": "Anonymous",
     "miss": "2026-09-07"
   },
+  "artefact": {
+    "company": "Artefact",
+    "found": "2026-09-08",
+    "roles": 123,
+    "source": "greenhouse",
+    "token": "artefact"
+  },
+  "bbi": {
+    "company": "BBI",
+    "found": "2026-09-08",
+    "roles": 0,
+    "source": "workable",
+    "token": "bbi"
+  },
+  "bcapital": {
+    "company": "B Capital",
+    "miss": "2026-09-08"
+  },
   "creditninjakmdpartners": {
     "company": "CreditNinja - KMD Partners, LLC",
     "miss": "2026-09-03"
@@ -17,6 +35,10 @@
   "crystalnetworks": {
     "company": "Crystalnetworks",
     "miss": "2026-09-05"
+  },
+  "dashco": {
+    "company": "dashco",
+    "miss": "2026-09-08"
   },
   "dataplus": {
     "company": "DataPlus",
@@ -42,6 +64,10 @@
   "democrance": {
     "company": "Democrance",
     "miss": "2026-09-03"
+  },
+  "denodo": {
+    "company": "Denodo",
+    "miss": "2026-09-08"
   },
   "ernstyoungadvisoryservices": {
     "company": "Ernst & Young Advisory Services Sdn Bhd",

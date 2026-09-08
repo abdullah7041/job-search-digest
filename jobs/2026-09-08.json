@@ -117,6 +117,36 @@
         "completeness_failures": [],
         "grade": "full"
       }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:5730410",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "workable",
+      "source_id": "5730410",
+      "title": "Data Scientist",
+      "company": "Gathern",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/gathern/j/B82E62FB1D/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Lacks required degree and 4-6 years formal machine learning/data science modeling experience.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-08-09T00:00:00.000Z",
+      "age_days": 30,
+      "jd": {
+        "status": "incomplete",
+        "text": "Data Scientist:\nDrive data-driven decision-making by developing analytical models, extracting actionable insights, and translating complex datasets into measurable business impact aligned with company strategy.\nKey Accountabilities:\n●  Develop predictive and statistical models to support business objectives\n●  Perform data cleaning, transformation, and feature engineering\n●  Translate business problems into analytical frameworks\n●  Build dashboards and data visualizations for stakeholders\n●  Conduct exploratory data analysis (EDA) to uncover trends and insights\n●  Collaborate with Product, Marketing, and Engineering teams\n●  Monitor model performance and ensure continuous optimization\nCore Behavioral Competencies:\n●  Strategic Vision & Agility – Proficient\n●  Growth Mindset – Proficient\n●  Scalable Execution – Proficient\n●  People Leadership & Talent Development – Basic/Proficient\n●  Governance & Ethical Conduct – Proficient\n●  Customer Centricity – Proficient\n●  Innovative Thinking & Digital Fluency – Expert\n●  Stakeholder Management – Proficient\nTechnical Competencies:\n●  Data Modeling & Statistical Analysis – Proficient\n●  Machine Learning & Predictive Modeling – Proficient\n●  Data Wrangling & Feature Engineering – Proficient\n●  Data Visualization & Storytelling – Proficient\n●  SQL & Database Querying – Proficient\n●  Python / R for Data Science – Proficient\n●  Experimentation & A/B Testing – Basic/Proficient\n●  Model Deployment & Monitoring – Basic/Proficient\nRequirements\nEducation :\n● Bachelor’s degree in Data Science, Statistics, Computer Science, Mathematics, or related field.\nExperience :\n●   4–6 years in data science or advanced analytics roles\n●   Experience building and deploying machine learning models\n●   Experience working with large structured and unstructured datasets\n●   Experience collaborating with cross-functional teams",
+        "sha256": "0bad076e83577a6ed48ef0b3934dacdfa7283feac2c3bb8922f67ba0b904b68f",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
     }
   ]
 }
