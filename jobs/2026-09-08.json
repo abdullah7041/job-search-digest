@@ -147,6 +147,62 @@
         ],
         "grade": "incomplete"
       }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "greenhouse:7866724002",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "greenhouse",
+      "source_id": "7866724002",
+      "title": "Data Engineer",
+      "company": "Artefact",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://job-boards.greenhouse.io/artefact/jobs/7866724002",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Lacks required CS bachelor's degree and demonstrated enterprise Spark/Kafka/cloud ETL experience.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2025-02-19T00:36:34-05:00",
+      "age_days": 566,
+      "jd": {
+        "status": "captured",
+        "text": "Artefact is a new generation of data service providers specialising in data consulting and data-driven digital marketing. It is dedicated to transforming data into business impact across the entire value chain of organisations. We are proud to say we’re enjoying skyrocketing growth.\nThe backbone of our consulting missions, today our Data consulting team has more than 400 consultants covering all Artefact's offers (and more): data marketing, data governance, strategy consulting, product owner…\nWhat you will be doing?\nAs a Data Engineer, your role involves crafting and maintaining robust data pipelines, utilising Python and SQL, to ensure efficient extraction, transformation, and loading (ETL) of data.\nYour responsibilities will include:\nData Pipeline Development: Building and optimising data pipelines to facilitate seamless data flow across systems and platforms.\nDatabase Management: Managing databases, ensuring their integrity, and implementing data storage and retrieval solutions.\nCloud Services Integration: Leveraging cloud services such as MS Azure, GCP, and AWS to architect and deploy scalable data solutions.\nMachine Learning Integration: Collaborating with teams to integrate machine learning models into data pipelines for enhanced data processing.\nUtilising Spark & Kafka: Implementing and working with Spark and Kafka for real-time data processing and analytics.\nWhat we are looking for?\n2-5 years: Data Engineer\nProficiency in Python, SQL, and database management.\nExperience with Data Pipelines ETL, Cloud Services (MS Azure, GCP, AWS), ML Modeling, Spark & Kafka.\nProven problem-solving skills and a solution-oriented mindset.\nExperience working with business stakeholders either internally or externally\nExcellent communication skills to collaborate effectively within teams and with stakeholders.\nStrong business acumen with an interest in business-facing roles.\nAdaptability and a start-up mentality to thrive in a dynamic environment.\nMinimum of a bachelor's degree in Computer Science, Electronics, and Communication Engineering degrees.\nArtefact is the place to be: come and build the future of data and AI\nInnovation: We have a passion for creating impacting projects and believe innovation can come from anyone.\nAction:  We make things rather than telling people how to make them.\nCollaboration:  We believe in bringing talented people together, winning together, and in learning from each other.",
+        "sha256": "76ca5465466d56b6b3ed15eab9a13c96fcde1165ccc3452b59a931d1bff07345",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "greenhouse:8396755002",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "greenhouse",
+      "source_id": "8396755002",
+      "title": "Data Engineer",
+      "company": "Artefact",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://job-boards.greenhouse.io/artefact/jobs/8396755002",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Missing required CS bachelor's degree and proven experience in Spark, Kafka, and cloud ETL.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-01-29T13:01:51-05:00",
+      "age_days": 222,
+      "jd": {
+        "status": "captured",
+        "text": "Artefact is a new generation of data service providers specialising in data consulting and data-driven digital marketing. It is dedicated to transforming data into business impact across the entire value chain of organisations. We are proud to say we’re enjoying skyrocketing growth.\nThe backbone of our consulting missions, today our Data consulting team has more than 400 consultants covering all Artefact's offers (and more): data marketing, data governance, strategy consulting, product owner…\nWhat you will be doing?\nAs a Data Engineer, your role involves crafting and maintaining robust data pipelines, utilising Python and SQL, to ensure efficient extraction, transformation, and loading (ETL) of data.\nYour responsibilities will include:\nData Pipeline Development: Building and optimising data pipelines to facilitate seamless data flow across systems and platforms.\nDatabase Management: Managing databases, ensuring their integrity, and implementing data storage and retrieval solutions.\nCloud Services Integration: Leveraging cloud services such as MS Azure, GCP, and AWS to architect and deploy scalable data solutions.\nMachine Learning Integration: Collaborating with teams to integrate machine learning models into data pipelines for enhanced data processing.\nUtilising Spark & Kafka: Implementing and working with Spark and Kafka for real-time data processing and analytics.\nWhat we are looking for?\n2-5 years: Data Engineer\nProficiency in Python, SQL, and database management.\nExperience with Data Pipelines ETL, Cloud Services (MS Azure, GCP, AWS), ML Modeling, Spark & Kafka.\nProven problem-solving skills and a solution-oriented mindset.\nExperience working with business stakeholders either internally or externally\nExcellent communication skills to collaborate effectively within teams and with stakeholders.\nStrong business acumen with an interest in business-facing roles.\nAdaptability and a start-up mentality to thrive in a dynamic environment.\nMinimum of a bachelor's degree in Computer Science, Electronics, and Communication Engineering degrees.\nArtefact is the place to be: come and build the future of data and AI\nInnovation: We have a passion for creating impacting projects and believe innovation can come from anyone.\nAction:  We make things rather than telling people how to make them.\nCollaboration:  We believe in bringing talented people together, winning together, and in learning from each other.",
+        "sha256": "76ca5465466d56b6b3ed15eab9a13c96fcde1165ccc3452b59a931d1bff07345",
+        "completeness_failures": [],
+        "grade": "full"
+      }
     }
   ]
 }

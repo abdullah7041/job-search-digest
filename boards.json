@@ -6,6 +6,10 @@
     "source": "workable",
     "token": "adree"
   },
+  "anixglobal": {
+    "company": "Anix Global",
+    "miss": "2026-09-08"
+  },
   "anonymous": {
     "company": "Anonymous",
     "miss": "2026-09-07"
@@ -26,6 +30,10 @@
   },
   "bcapital": {
     "company": "B Capital",
+    "miss": "2026-09-08"
+  },
+  "consortgroup": {
+    "company": "Consort Group",
     "miss": "2026-09-08"
   },
   "creditninjakmdpartners": {
@@ -76,6 +84,13 @@
   "ernstyoungae": {
     "company": "Ernst & Young AE",
     "miss": "2026-09-03"
+  },
+  "etapsoftware": {
+    "company": "ETAP Software",
+    "found": "2026-09-08",
+    "roles": 0,
+    "source": "workable",
+    "token": "etap"
   },
   "exequtmena": {
     "company": "exequt MENA",
@@ -186,6 +201,13 @@
     "source": "workable",
     "token": "qualcomm"
   },
+  "qualcommtechnologies": {
+    "company": "Qualcomm Technologies, Inc",
+    "found": "2026-09-08",
+    "roles": 0,
+    "source": "workable",
+    "token": "qualcomm"
+  },
   "saha": {
     "company": "Saha",
     "miss": "2026-09-08"
@@ -207,6 +229,13 @@
   "silveredgearabia": {
     "company": "Silver Edge Arabia",
     "miss": "2026-09-03"
+  },
+  "solbusinesssolutions": {
+    "company": "SOL Business Solutions",
+    "found": "2026-09-08",
+    "roles": 0,
+    "source": "workable",
+    "token": "sol"
   },
   "supportfinity": {
     "company": "SupportFinity™",
