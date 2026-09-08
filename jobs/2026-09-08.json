@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-08",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2351894108",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2351894108",
+      "title": "Senior Specialist, Data Science & Artificial Intelligence",
+      "company": "Maaden",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://fa-epod-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/9067",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 91,
+      "why": "Excellent senior AI/LLM IC role in Riyadh matching candidate's GenAI, evaluation, and RAG skills.",
+      "ranking_verified": true,
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-08",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Why This Role Matters\nThe Senior Specialist, Data Science & Artificial Intelligence II accelerates\nbusiness value creation through the application of advanced analytics, machine\nlearning, and Generative AI solutions. The role transforms data into actionable\nintelligence that improves decision-making, operational performance, automation,\ninnovation, and business outcomes across the enterprise.\nThe role enables Ma’aden to harness the power of AI by developing scalable,\nreliable, and responsible solutions that address complex business challenges.\nThrough the deployment of machine learning models and GenAI applications, the\nrole improves efficiency, enhances user experiences, and unlocks new\nopportunities for digital transformation.\nBy combining technical expertise with governance, security, and ethical AI\npractices, the role ensures that AI solutions deliver measurable value while\nmaintaining trust, compliance, and sustainable adoption across the organization.\nWhat You Will Deliver AI Solution Development & Innovation\n * Develop and deploy machine learning, deep learning, and Generative AI\n   solutions that address strategic and operational business challenges.\n * Design scalable AI applications that improve decision-making, productivity,\n   automation, and business performance.\n * Accelerate AI adoption through innovative use of advanced analytics and\n   emerging AI technologies.\n\nModel Performance & Optimization\n * Improve model accuracy, reliability, and effectiveness through feature\n   engineering, tuning, evaluation, and optimization techniques.\n * Strengthen AI outcomes through robust testing, validation, and continuous\n   performance enhancement.\n * Ensure AI solutions remain aligned with business objectives and evolving\n   operational requirements.\n\nGenerative AI & LLM Enablement\n * Build and enhance GenAI applications using prompt engineering,\n   retrieval-augmented generation (RAG), and large language model technologies.\n * Improve response quality, accuracy, and relevance through structured\n   evaluation and optimization approaches.\n * Deliver enterprise-ready AI capabilities that support knowledge discovery,\n   content generation, and intelligent automation.\n\nData Preparation & Engineering Enablement\n * Transform structured and unstructured data into high-quality datasets\n   suitable for AI and machine learning applications.\n * Improve data usability and reliability through effective cleansing,\n   preparation, and feature development practices.\n * Ensure AI solutions are built on trusted, governed, and business-relevant\n   data assets.\n\nAI Operations & Lifecycle Management\n * Support deployment, monitoring, retraining, and lifecycle management of AI\n   solutions using MLOps and LLMOps practices.\n * Improve operational reliability and scalability of production AI models and\n   applications.\n * Enable sustainable AI adoption through effective performance monitoring and\n   continuous improvement.\n\nGovernance, Risk & Responsible AI\n * Ensure AI solutions comply with enterprise governance, cybersecurity,\n   privacy, and ethical AI requirements.\n * Strengthen transparency and trust by documenting models, assumptions, risks,\n   and validation outcomes.\n * Promote responsible AI practices that balance innovation with risk management\n   and compliance obligations.\n\nWhat Success Looks Like\n * AI and machine learning solutions deliver measurable business value and\n   operational improvement.\n * Generative AI applications provide accurate, reliable, and high-quality\n   outputs for end users.\n * Machine learning models achieve performance targets and remain effective\n   throughout their lifecycle.\n * AI solutions are successfully integrated into enterprise processes and\n   systems.\n * MLOps and LLMOps practices improve model reliability, scalability, and\n   operational efficiency.\n * Governance, security, and responsible AI requirements are consistently\n   embedded within AI initiatives.\n\nMinimum Qualifications\n * Bachelor’s degree in Data Science, Artificial Intelligence, Computer Science,\n   or a related quantitative discipline.\n\nExperience\n * 4–6 years of experience in data science, machine learning, artificial\n   intelligence, or advanced analytics roles.\n * Experience developing and deploying machine learning and AI solutions in\n   business environments.\n * Experience working with structured and unstructured data for analytical and\n   AI use cases.\n * Experience supporting AI solution deployment, monitoring, and model lifecycle\n   management.\n\nSkills That Matter Functional Expertise\n * Machine Learning & Deep Learning\n * Generative AI & Large Language Models (LLMs)\n * Prompt Engineering\n * Retrieval-Augmented Generation (RAG)\n * Model Fine-Tuning & Evaluation\n * Data Preparation & Feature Engineering\n\nBusiness & Delivery\n * Python & SQL\n * TensorFlow, PyTorch & Scikit-Learn\n * MLOps & LLMOps Practices\n * API Integration & AI Deployment\n * Model Monitoring & Performance Optimization\n * Analytical Problem Solving\n\nPeople & Collaboration\n * Collaboration & Teamwork\n * Stakeholder Engagement\n * Communication & Knowledge Sharing\n * Results Orientation\n * Accountability\n * Continuous Improvement",
+        "sha256": "aa47ab934f90952d271ea66d9b87f135d7271f161e9419e1a3306a366042cf35",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2351386577",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2351386577",
+      "title": "Senior Full-Stack Engineer",
+      "company": "SOL Business Solutions",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-full-stack-engineer-at-sol-business-solutions-4462231076",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 78,
+      "why": "Solid full-stack match in Riyadh, though requires mobile frameworks (React Native/Flutter).",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-07",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Summary:\nWe are looking for an experienced Full-Stack Engineer who can take business requirements and turn them into complete, working web and mobile applications. We need someone who is fast, hands-on, and capable of owning the full development process — from understanding requirements and designing the solution to development, integrations, testing, and deployment.\n\nWhat We Are Looking For:\nAbility to translate business requirements into functional, production-ready applications\nStrong experience building web platforms and mobile apps from concept to launch\nStrong full-stack development skills across frontend, backend, APIs, and databases\nFast and practical approach to development and problem-solving\nStrong experience with APIs, webhooks, and third-party integrations\nExperience with WhatsApp Business / WhatsApp Cloud API and WhatsApp Flows\nExperience building automated workflows and connecting different systems\nAbility to independently manage projects from concept to deployment\n\nQualifications & Experience:\nMinimum 5 years of professional full-stack development experience\nProven track record of building and launching end-to-end web and mobile applications\nStrong experience with modern frontend and backend technologies\nExperience with mobile development frameworks such as React Native, Flutter, or similar\nExperience with REST APIs, databases, authentication, and cloud deployment\nExperience with workflow automation tools such as n8n, Make, or similar\nExperience with Meta APIs, CRM integrations, and AI/LLM integrations is a plus\nStrong debugging and problem-solving skills\nAble to work independently, move quickly, and take ownership of deliverables",
+        "sha256": "7b62aaeca5d05c1134b42a3a6aa8ff829c774dc2b24660388225c880c67696c3",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2351397190",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2351397190",
+      "title": "Data Science & Analytics Manager",
+      "company": "Jobs for Humanity",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://jobs.smartrecruiters.com/JobsForHumanity/744000147991644-data-science-analytics-manager",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 65,
+      "why": "Management title and placeholder posting requiring big data (Spark) and formal degree.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-07",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Company Description\nJobs for Humanity is partnering with test_recoird to build an inclusive and just employment ecosystem. Therefore, we prioritize individuals coming from all walks of life. \n\nCompany Name: test_recoird\n\nJob Description\nDevelop and deploy data-driven models and insights to improve business decisions, optimize performance, and drive measurable growth. Key Performance Indicators: • Build accurate predictive models • Deliver actionable insights to stakeholders • Automate analytics and reporting workflows • Improve model performance and reliability • Monitor pipelines and maintain production ML Qualifications: • Bachelor’s or Master’s in Data Science, CS, Statistics, or related field • 2+ years experience with machine learning/data science • Strong mathematics, statistics, and experimental design • Proficiency with Python and data wrangling • Experience deploying ML models to production\nQualifications\nRequired Qualifications \nBachelor’s or Master’s in Data Science, CS, Statistics, or related field\n2+ years experience with machine learning/data science\nStrong mathematics, statistics, and experimental design\nProficiency with Python and data wrangling\nExperience deploying ML models to production\nPython\nSQL\nMachine learning\nStatistics and A/B testing\nData visualization\nBig data tools (Spark)\nMLOps (model deployment, monitoring)\nProblem-solving\nClear communication\nStakeholder management\n\nCompany: test_recoird\nCompensation: SAR 0 - SAR 15000 - monthly",
+        "sha256": "ee3ef2f783390372bcaef1347c2c47c1bcfa973ba14aa2f974c6077f6b42f31e",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_YmluZzotMTE4NDIzOTg5MS5SZXRybw",
+      "captured_at": "2026-09-08T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_YmluZzotMTE4NDIzOTg5MS5SZXRybw",
+      "title": "Remote  Machine Learning Engineer — $60–$80/Hour",
+      "company": "24-Mag",
+      "location": "Anywhere، NY, Saudi Arabia",
+      "url": "https://www.careerbuilder.com/job-details/remote-machine-learning-engineer-60-80-hour-new-york-ny--de1a7e7b-3d72-48b0-831e-039427a886e2?trk=bingjobs",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 50,
+      "why": "US consulting ML reviewer gig, partially matches ML evaluation skills but wrong location.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "unknown",
+      "first_published": "2026-09-03",
+      "age_days": 5,
+      "jd": {
+        "status": "captured",
+        "text": "We are sharing a specialised part-time consulting opportunity for experienced Machine Learning professionals with strong hands-on expertise in experiment design, model selection, hyperparameter tuning, data quality, and rigorous evaluation methodology.\n\r\nThis role focuses on reviewing applied machine learning tasks for technical correctness, methodological rigour, and reproducibility. Selected experts will assess experimental design, modelling decisions, validation practices, metrics, and supporting evidence while identifying issues such as data leakage, metric gaming, or unreliable conclusions.\n\r\nKey Responsibilities\n\r\nMachine Learning Experiment Review\n\r\n\r\n- Evaluate applied machine learning experiments for methodological soundness\n- Review experimental hypotheses, assumptions, and modelling choices\n- Assess whether experiments are appropriately designed to answer the stated question\n- Identify weaknesses that could invalidate or distort conclusions\n- Apply practical judgement grounded in hands-on experimental ML experience\n\n\r\nModel Selection & Tuning\n\r\n\r\n- Review model-selection decisions and supporting rationale\n- Evaluate hyperparameter-tuning approaches and search strategies\n- Assess whether model comparisons are fair and methodologically appropriate\n- Identify overfitting, cherry-picking, or poorly justified modelling choices\n- Determine whether conclusions are supported by experimental results\n\n\r\nTraining & Validation Methodology\n\r\n\r\n- Evaluate train/test splits, cross-validation strategies, and validation procedures\n- Identify inappropriate data partitioning or evaluation practices\n- Review whether datasets and experimental protocols support reliable generalisation\n- Detect contamination between training, validation, and test data\n- Assess whether evaluation procedures match the underlying ML problem\n\n\r\nData Quality & Leakage Detection\n\r\n\r\n- Review datasets and preprocessing workflows for potential quality issues\n- Identify data leakage, target leakage, or unintended information exposure\n- Assess feature-engineering and preprocessing decisions\n- Detect methodological shortcuts that could inflate reported performance\n- Evaluate whether data handling supports reliable experimentation\n\n\r\nMetrics & Performance Evaluation\n\r\n\r\n- Review metric selection against the task objective\n- Assess whether reported metrics appropriately capture model performance\n- Identify metric gaming, misleading optimisation targets, or incomplete evaluation\n- Review performance comparisons and supporting statistical evidence\n- Determine whether claimed improvements are meaningful and defensible\n\n\r\nReproducibility & Evidence Review\n\r\n\r\n- Reproduce or validate experimental results where required\n- Assess whether reported findings can be independently reproduced\n- Review code, configuration, experimental settings, and supporting evidence\n- Identify inconsistencies between claims and observed results\n- Determine whether conclusions follow logically from the available evidence\n\n\r\nMachine Learning Frameworks\n\r\n\r\n- Work with experiments built using standard ML frameworks and libraries\n- Review implementations involving PyTorch, TensorFlow, scikit-learn, and XGBoost\n- Evaluate model-training and experimentation workflows\n- Identify implementation choices that may compromise experimental validity\n- Apply framework-specific knowledge when assessing technical quality\n\n\r\nBenchmark & Challenge Evaluation\n\r\n\r\n- Review applied ML tasks and benchmark-style challenges\n- Assess whether tasks measure the intended modelling capability\n- Evaluate competition-style experimental approaches where relevant\n- Identify task-design issues that could reward shortcuts rather than genuine modelling quality\n- Apply experience from benchmarking or competitive ML environments where applicable\n\n\r\nRubric-Based Technical Evaluation\n\r\n\r\n- Assess assigned ML tasks against structured technical criteria\n- Provide clear written explanations supporting evaluation decisions\n- Identify specific methodological or implementation evidence behind each judgement\n- Apply grading standards consistently across assignments\n- Distinguish genuine methodological problems from reasonable alternative approaches\n\n\r\nIdeal Profile\n\r\n\r\n- 3+ years of hands-on applied or experimental machine learning experience\n- Strong practical experience with experiment design, model selection, hyperparameter tuning, and evaluation methodology\n- Deep understanding of data leakage, metric gaming, train/test methodology, and cross-validation hygiene\n- Proficiency with standard ML frameworks such as PyTorch, TensorFlow, scikit-learn, or XGBoost\n- Strong ability to critique machine learning claims against experimental evidence\n- Comfortable reproducing results and diagnosing discrepancies\n- Strong quantitative and analytical judgement\n- Clear written communication and ability to provide precise technical feedback\n- Kaggle, ML competition, or benchmark experience is advantageous\n- Graduate research or publication experience in applied machine learning is preferred\n- Previous task-grading, technical peer-review, or ML evaluation experience is advantageous\n- This opportunity is focused on applied and experimental machine learning, rather than LLM application development or MLOps\n\n\r\nEngagement Details\n\r\n\r\n- Part-time independent contractor engagement\n- Fully remote within the United States\n- Flexible scheduling based on project requirements\n- Compensation: $60–$80/hour\n- Work focuses on applied machine learning experimentation, model evaluation, methodological review, reproducibility, and technical quality assessment\n- Projects may be extended, shortened, or concluded based on project needs and performance\n- Work must be completed without using confidential or proprietary information belonging to any employer, client, institution, or other third party\n- H1-B and STEM OPT support is unavailable for this engagement\n\n\r\nAbout the Platform\n\r\nThis opportunity is available through 24-MAG LLC. We conn",
+        "sha256": "1c3ea24268c88da4fd3a94e516c64cc6b6448eeeb87d0a6f00a395903d1a4341",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}

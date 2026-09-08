@@ -66,6 +66,20 @@
     "company": "FileCloud",
     "miss": "2026-09-03"
   },
+  "gathern": {
+    "company": "Gathern",
+    "found": "2026-09-08",
+    "roles": 11,
+    "source": "workable",
+    "token": "gathern"
+  },
+  "hala": {
+    "company": "HALA",
+    "found": "2026-09-08",
+    "roles": 12,
+    "source": "greenhouse",
+    "token": "hala"
+  },
   "hungerstation": {
     "company": "HungerStation",
     "found": "2026-09-06",
@@ -83,6 +97,10 @@
     "roles": 40,
     "source": "workable",
     "token": "innovationteam"
+  },
+  "intellisenseio": {
+    "company": "IntelliSense.io",
+    "miss": "2026-09-08"
   },
   "jobgether": {
     "company": "Jobgether",
@@ -142,6 +160,10 @@
     "source": "workable",
     "token": "qualcomm"
   },
+  "saha": {
+    "company": "Saha",
+    "miss": "2026-09-08"
+  },
   "sap": {
     "company": "SAP",
     "found": "2026-09-07",
@@ -163,6 +185,13 @@
   "supportfinity": {
     "company": "SupportFinity™",
     "miss": "2026-09-07"
+  },
+  "tabby": {
+    "company": "Tabby  تابي",
+    "found": "2026-09-08",
+    "roles": 0,
+    "source": "workable",
+    "token": "tabby"
   },
   "trueai": {
     "company": "true ai",
