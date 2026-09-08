@@ -3404,9 +3404,16 @@ def _probe_fantastic(name, url, api_key, time_frame, limit):
             age = f"{(today - datetime.date.fromisoformat(raw)).days}d"
         except ValueError:
             age = "?"
-        print(f"- [{age:>4}] {str(job.get('organization') or '?')[:28]:28} "
-              f"{str(job.get('title') or '?')[:44]:44} "
-              f"{link_host(str(job.get('url') or '')) or '(no url)'}")
+        # locations_derived is what the fetcher turns into `location`, and so
+        # what LOCATION_INCLUDE is judged against. Print it: three of ten rows
+        # in the 7 Sep probe were Morocco despite location=Saudi Arabia.
+        where = job.get("locations_derived") or []
+        if not isinstance(where, list):
+            where = [where]
+        print(f"- [{age:>4}] {str(job.get('organization') or '?')[:24]:24} "
+              f"{str(job.get('title') or '?')[:36]:36} "
+              f"{link_host(str(job.get('url') or '')) or '(no url)':18} "
+              f"{'; '.join(str(w) for w in where)[:40]}")
     return 0
 # ----------------------------------------------------------------------------
 
