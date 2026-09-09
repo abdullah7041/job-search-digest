@@ -18,6 +18,7 @@
   "arbetecareers": {
     "company": "Arbete Careers",
     "found": "2026-09-09",
+    "last_read": "2026-09-09",
     "roles": 0,
     "source": "workable",
     "token": "arbetecareers"
@@ -41,6 +42,10 @@
   "bcapital": {
     "company": "B Capital",
     "miss": "2026-09-08"
+  },
+  "br0423branchofgevernovainternationalllcsaudiarabia": {
+    "company": "BR0423 Branch of GE Vernova International LLC - Saudi Arabia",
+    "miss": "2026-09-09"
   },
   "cleargrid": {
     "company": "ClearGrid",
@@ -169,6 +174,7 @@
   "hudsonmanpower": {
     "company": "Hudson Manpower",
     "found": "2026-09-09",
+    "last_read": "2026-09-09",
     "roles": 0,
     "source": "workable",
     "token": "hudson"
@@ -220,6 +226,13 @@
   "latitude": {
     "company": "Latitude",
     "miss": "2026-09-03"
+  },
+  "lenovo": {
+    "company": "Lenovo",
+    "found": "2026-09-09",
+    "roles": 0,
+    "source": "workable",
+    "token": "lenovo"
   },
   "lucidmotors": {
     "company": "Lucid Motors",
@@ -304,6 +317,10 @@
     "company": "Silver Edge Arabia",
     "miss": "2026-09-03"
   },
+  "smabmachinesetquipementsindustriels": {
+    "company": "SMAB (Machines et Équipements Industriels)",
+    "miss": "2026-09-09"
+  },
   "solbusinesssolutions": {
     "company": "SOL Business Solutions",
     "found": "2026-09-08",
@@ -311,6 +328,13 @@
     "roles": 0,
     "source": "workable",
     "token": "sol"
+  },
+  "sourcecode": {
+    "company": "Source Code",
+    "found": "2026-09-09",
+    "roles": 0,
+    "source": "workable",
+    "token": "sourcecode"
   },
   "supportfinity": {
     "company": "SupportFinity™",
@@ -331,6 +355,10 @@
     "roles": 0,
     "source": "workable",
     "token": "trueai"
+  },
+  "vivadata": {
+    "company": "VIVADATA",
+    "miss": "2026-09-09"
   },
   "zunderdog": {
     "company": "Zunderdog",
