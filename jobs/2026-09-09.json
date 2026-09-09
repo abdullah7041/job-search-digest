@@ -31,6 +31,220 @@
         ],
         "grade": "incomplete"
       }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2355213180",
+      "captured_at": "2026-09-09T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2355213180",
+      "title": "Web Developer",
+      "company": "Lenovo",
+      "location": "Eastern Province, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/web-developer-at-lenovo-4464115288",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 75,
+      "why": "Strong match for React and Agentic AI UI development in Saudi Arabia.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Proven React 19, UI/UX, and Agentic AI integrations."
+        },
+        "experience": {
+          "score": 22,
+          "max": 30,
+          "note": "Built full frontend AI platform solo in production."
+        },
+        "education": {
+          "score": 5,
+          "max": 15,
+          "note": "No degree required in posting requirements."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Eastern Province, Saudi Arabia location."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-09",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Why Work at Lenovo\nWe are Lenovo. We do what we say. We own what we do. We WOW our customers.\n\nLenovo is a US$83 billion revenue global technology powerhouse, ranked #153 in the Fortune Global 500, and serving millions of customers every day in 180 markets. Focused on a bold vision to deliver Smarter Technology for All, Lenovo has built on its success as the world’s largest PC company with a full-stack portfolio of AI-enabled, AI-ready, and AI-optimized devices (PCs, workstations, smartphones, tablets), infrastructure (server, storage, edge, high performance computing and software defined infrastructure), software, solutions, and services. Lenovo’s continued investment in world-changing innovation is building a more equitable, trustworthy, and smarter future for everyone, everywhere. Lenovo is listed on the Hong Kong stock exchange under Lenovo Group Limited (HKSE: 992) (ADR: LNVGY).\n\nThis transformation together with Lenovo’s world-changing innovation is building a more inclusive, trustworthy, and smarter future for everyone, everywhere. To find out more visit www.lenovo.com, and read about the latest news via our StoryHub.\nDescription and Requirements\nWe are seeking a talented Web Front-End Developer / UX Designer to design and develop dynamic, interactive, and intuitive user interfaces for Agentic AI applications. In this role, you will collaborate with AI engineers and backend developers to create seamless front-end experiences that enhance the functionality of AI-driven agents. Your work will directly impact how users interact with autonomous AI systems, ensuring usability, efficiency, and scalability.\n\nThis role sits within Lenovo’s Solutions & Services Group (SSG), the global organization that brings together our end‑to‑end AI solutions and services to turn customer vision into value. You’ll be joining a new, distributed engineering team building the xIQ Agent Platform, an AI‑native delivery platform that powers Lenovo’s Agentic AI strategy across hybrid cloud, on‑prem, and edge.\n\nKey Responsibilities:\nDesign and develop responsive, high-performance front-end interfaces for AI-driven applications.\nImplement and optimize UI/UX components that enhance user interaction with Agentic AI systems.\nCollaborate with AI and backend teams to integrate APIs, real-time data, and AI-generated outputs.\nEnsure applications are scalable, secure, and performant across different devices and browsers.\nStay up to date with emerging front-end technologies, AI advancements, and best practices.\nConduct testing, debugging, and performance tuning for optimal user experience.\nWork closely with product managers and designers to translate requirements into functional applications.\nBasic Qualifications:\nProven experience in front-end development using React or similar modern front-end frameworks.\nStrong proficiency in HTML, CSS, JavaScript, and TypeScript.\nPreferred Qualifications:\nExperience building and maintaining reusable UI components using tools such as Storybook or similar component libraries/design systems.\nExperience integrating with RESTful APIs and real-time data sources.\nFamiliarity with Python and backend frameworks such as FastAPI, specifically in the context of consuming and integrating APIs for front-end applications.\nFamiliarity with state management libraries (e.g., Zustand, Redux).\nSolid understanding of UI/UX best practices, including designing for AI-powered and data-driven interfaces.\nExperience implementing responsive, accessible, and high-performance web applications (WCAG standards preferred).\nExperience designing and implementing user input flows and forms, including validation and error handling.\nExposure to Docker, Kubernetes, and CI/CD pipelines, with the ability to deploy and manage front-end changes in containerized environments.\nExposure to Nginx, Next.js, and other modern middleware frameworks\nCommitment to building and maintaining high-quality code and adhering to team coding standards and best practices\nNice-to-Have Skills:\nFamiliarity with LLMs, AI agents, and conversational UI frameworks.\nExperience working with Figma, including interpreting designs, collaborating with designers, and translating UI/UX specifications into implementation.\nExperience with interactive data visualization or advanced UI animations.\nKnowledge of prompt engineering and AI-driven UX patterns.\nWhy Join Us?\nWork at the forefront of AI-driven applications and autonomous agents.\nCollaborate with a team of AI researchers, engineers, and designers.\nContribute to building the next generation of intelligent web applications.\nCompetitive salary, flexible work environment, and opportunities for professional growth.\n\nHybrid Schedule on campus in Morrisville, NC. 3 days in office, 2 days work from home.\nAlso open to any location in the Eastern Time Zone as a remote role\n\nhttps://www.linkedin.com/company/lenovo/life/ssgxiq\n\nIf you're passionate about web development and excited about the intersection of AI and front-end experiences, we'd love to hear from you!\nWe are an Equal Opportunity Employer and do not discriminate against any employee or applicant for employment because of race, color, sex, age, religion, sexual orientation, gender identity, national origin, status as a veteran, and basis of disability or any federal, state, or local protected class.\n\nAdditional Locations:\n* United States of America - North Carolina - Morrisville\n\nPAY TRANSPARENCY\n\nThe anticipated annual compensation range for this position is 86,800–133,055 USD. Final compensation will be based on relevant experience, skills, and business considerations. Individuals may also be considered for bonuses and/or commissions. Lenovo’s various benefits can be found at www.lenovobenefits.com\nIn compliance with Colorado’s Equal Pay for Equal Work Act (EPEWA), the expected application deadline for this position is 12-02-2026. This requirement applies to both internal and external candidates.",
+        "sha256": "04b9f502f544fbcd5327bf8906a5859c2962401722f739f7e833bf4fabe71880",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2354470666",
+      "captured_at": "2026-09-09T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2354470666",
+      "title": "Agentic AI, Engineer",
+      "company": "Master-Works",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/2tEV6J1u2gJjYFnT832nDL/agentic-ai%2C-engineer-in-riyadh-at-master-works",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong match on Agentic AI and LLM workflows, but lacks bachelor's degree. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 36,
+          "max": 40,
+          "note": "Demonstrated agentic workflows, prompt frameworks, and LLM evaluation."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "2+ years LLM fits well; overall SWE experience is shorter."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Lacks required CS or AI bachelor's/master's degree."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Senior IC role based in Riyadh."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Degree in CS or Related Technical Field"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-09",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Master Works is looking for an Agentic AI, Engineer to join our growing team and design, build, and deploy agentic AI systems that can plan, reason, and act. The role covers both single-agent and multi-agent systems, as well as orchestration of workflows involving retrieval-augmented generation (RAG), context engineering, reasoning, tool calling, memory, and inter-agent communication. This role is ideal for a strong software engineer with hands-on AI/ML development experience and a passion for transforming generative AI models into reliable, goal-driven systems capable of solving complex, real-world business problems.\nKey Responsibilities:\nArchitect, build, and deploy agentic AI systems that integrate AI agents with foundation models, enterprise systems, third-party tools, and APIs using established agentic frameworks or custom-built orchestrators.\nBuild and maintain retrieval-augmented generation (RAG), memory, and reasoning pipelines that ground agent decisions in reliable, real-world data and enable persistent, contextual, and adaptive behavior.\nDesign single-agent and multi-agent workflows, including planning, delegation, tool selection, handoffs, inter-agent communication, and human-in-the-loop controls.\nOptimize orchestration and reasoning performance while balancing autonomy, latency, cost, interpretability, reliability, and maintainability.\nCollaborate with Generative AI engineers, application engineers, MLOps engineers, and product teams to move agentic AI solutions from prototype to production.\nMonitor, evaluate, and benchmark agent performance, and help ensure AI systems are safe, accurate, trustworthy, observable, and capable of delivering a high-quality user experience.\nDocument agent architectures, communication flows, guardrails, context-engineering strategies, memory design, tool interfaces, and orchestration logic to ensure clarity and reproducibility.\nStay current with advances in agentic AI, multi-agent orchestration, RAG, model-context protocols, cognitive architectures, evaluation methods, and AI safety mechanisms.\nCollaborate with cross-functional teams to design and deliver complete AI solutions for customers.\nBachelor’s or Master’s degree in Computer Science, Artificial Intelligence, Machine Learning, Data Science, Software Engineering, or a related field.\n2+ years of hands-on experience developing agentic AI systems, LLM-powered applications, or advanced Generative AI solutions.\nPreferably 5+ years of overall professional software engineering experience\nContributions to open-source agentic AI frameworks, orchestration platforms, evaluation tooling, or agent communication protocols.\nExperience building microservices and deploying AI applications on cloud platforms such as AWS, Azure, or Google Cloud Platform (GCP).\nExperience with AI safety, guardrails, observability, traceability, evaluation, and explainability for agentic AI systems.\nExperience deploying LLM or agentic workloads in production using containers, Kubernetes, CI/CD pipelines, and modern MLOps or LLMOps practices.\nJob Location: HQ",
+        "sha256": "fa618349268fcf556a71af6a86f9234826734a0addad6cb54996b7c21e1eed33",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2354531510",
+      "captured_at": "2026-09-09T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2354531510",
+      "title": "Senior AI/ML Software Engineer",
+      "company": "TestCrew | شركة متخصصة في اختبار البرمجيات في مستوى الجودة والأداء",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-ai-ml-software-engineer-at-testcrew-quality-engineering-software-testing-4463856321",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Good AI/LLM application fit, but requires 7+ years professional software development. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Strong LLM, prompt engineering, APIs, and PostgreSQL skills."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Does not meet the hard 7+ years software engineering requirement."
+        },
+        "education": {
+          "score": 5,
+          "max": 15,
+          "note": "Self-taught background with pipefitting diploma."
+        },
+        "seniority_location": {
+          "score": 9,
+          "max": 15,
+          "note": "Demands 7+ years developer leadership experience."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Short of 7+ Years Professional Software Development Requirement"
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-09-09",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "We are looking for a Senior Software Developer with strong AI/ML development experience to design, develop, and integrate intelligent applications and AI-powered solutions. The ideal candidate will have a strong software engineering background combined with hands-on experience building applications using Generative AI, Large Language Models (LLMs), AI agents, Machine Learning, and AI APIs.\nThe candidate will work closely with software engineers, architects, DevOps/SRE teams, data engineers, and business stakeholders to deliver scalable, secure, and production-ready AI solutions.\n\nKey Responsibilities\nDesign and develop scalable, reliable, and maintainable software applications incorporating AI capabilities.\nDevelop and integrate solutions using Generative AI and Large Language Models (LLMs).\nBuild AI-powered applications using RAG (Retrieval-Augmented Generation), vector databases, embeddings, and semantic search.\nDevelop and integrate AI agents and agentic workflows for business automation and intelligent decision-making.\nIntegrate commercial and open-source AI models through APIs and SDKs.\nWork with models such as OpenAI, Anthropic, Gemini, Llama, Mistral, or equivalent technologies.\nDesign and implement prompt engineering, context management, evaluation, and AI guardrails.\nDevelop REST APIs, microservices, and backend components required to integrate AI capabilities into enterprise applications.\nImplement AI solutions using Python and/or modern backend technologies such as Node.js, Java, or .NET.\nWork with databases including SQL/NoSQL databases and vector databases such as Pinecone, Weaviate, Milvus, pgvector, or equivalent.\nDevelop data ingestion and processing pipelines required for AI/RAG solutions.\nOptimize AI applications for performance, scalability, cost, latency, and reliability.\nImplement automated testing and evaluation frameworks for AI applications.\nCollaborate with DevOps/MLOps teams to deploy and operate AI workloads in cloud environments.\nApply security, privacy, governance, and responsible-AI principles when developing AI solutions.\nConduct technical analysis, troubleshoot complex production issues, and provide recommendations for improvements.\nPerform code reviews and contribute to engineering standards, architecture decisions, and best practices.\nMentor junior and mid-level developers and provide technical leadership within the development team.\nStay current with emerging AI technologies, frameworks, models, and development practices.\nRequired Technical Skills\n\nSoftware Engineering\n7+ years of professional software development experience.\nStrong experience with Python and at least one additional programming language such as Java, JavaScript/TypeScript, C#, or Go.\nStrong knowledge of REST APIs, microservices, distributed systems, and event-driven architectures.\nStrong understanding of software design principles, design patterns, clean code, and system architecture.\nExperience with relational and NoSQL databases.\nAI / Generative AI\nHands-on experience developing and deploying AI/ML or Generative AI applications.\nStrong understanding of LLMs and transformer-based models.\nPractical experience with:\nPrompt engineering\nRAG architectures\nEmbeddings\nVector databases\nSemantic search\nLLM orchestration\nAI agents\nFunction/tool calling\nStructured outputs\nAI evaluation\nAI safety and guardrails\nExperience integrating LLM APIs such as OpenAI, Azure OpenAI, Anthropic, Google Gemini, or equivalent.\nExperience with AI frameworks such as LangChain, LlamaIndex, Semantic Kernel, AutoGen, CrewAI, or equivalent.\nExperience with ML/AI frameworks such as PyTorch, TensorFlow, Hugging Face, or equivalent is an advantage.\n\nCloud & DevOps\nExperience developing and deploying applications on AWS, Azure, or Google Cloud.\nKnowledge of Docker and Kubernetes.\nUnderstanding of CI/CD pipelines and infrastructure automation.\nExperience with AI/ML deployment and MLOps/LLMOps practices is highly desirable.\nUnderstanding of application observability, logging, monitoring, and performance optimization.\nPreferred Qualifications\nBachelor's or Master's degree in Computer Science, Software Engineering, Artificial Intelligence, Data Science, or a related field.\nExperience building enterprise-grade AI applications.\nExperience taking AI/ML solutions from POC to production.\nExperience with AI model evaluation, fine-tuning, or model customization.\nExperience with cloud-native AI services.\nKnowledge of AI security, data privacy, model governance, and responsible AI.\nExperience with high-volume, distributed, or real-time systems.\nExperience working in Agile/Scrum development environments.\n\nKey Competencies\nStrong problem-solving and analytical skills.\nAbility to translate business requirements into scalable technical solutions.\nStrong communication and stakeholder-management skills.\nAbility to work independently while collaborating effectively with cross-functional teams.\nStrong ownership and delivery mindset.\nPassion for emerging AI technologies and continuous learning.\nAbility to mentor developers and provide technical leadership.\n\nWhat We Offer\nOpportunity to work on enterprise-scale AI and Generative AI projects.\nExposure to modern LLM, cloud, and AI engineering technologies.\nOpportunity to design and implement AI solutions from architecture through production.\nCollaborative environment with experienced software, cloud, DevOps, SRE, and AI engineering teams.\nOpportunities for technical leadership and career growth.",
+        "sha256": "2dbd527a0e590429c0a6b935e378071e5d1cf7b11827141961b91dfa838a7fa5",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2354531597",
+      "captured_at": "2026-09-09T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2354531597",
+      "title": "Senior Odoo Developer",
+      "company": "Jadeer",
+      "location": "Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-odoo-developer-at-jadeer-4463044181",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Specialized Odoo technical development role; lacks Odoo framework experience.",
+      "ranking_verified": true,
+      "track": "Software and backend engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 18,
+          "max": 40,
+          "note": "Strong Python and SQL, but zero Odoo framework experience."
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Lacks prior senior Odoo developer experience."
+        },
+        "education": {
+          "score": 7,
+          "max": 15,
+          "note": "Equivalent experience permitted."
+        },
+        "seniority_location": {
+          "score": 5,
+          "max": 15,
+          "note": "Part-time remote position."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Odoo Framework Experience",
+        "Lack of Senior Odoo Developer Experience",
+        "Lack of Odoo.sh and Odoo Environment Management Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-09",
+      "age_days": 0,
+      "jd": {
+        "status": "incomplete",
+        "text": "Role Description The Senior Odoo Technical Developer role is a part-time remote position focused on designing, developing, and maintaining advanced Odoo modules and customizations to support Jadeer’s operations. The person in this role will configure and extend Odoo functionalities, integrate Odoo with internal and external systems. Daily tasks include writing and reviewing clean, efficient code, troubleshooting technical issues, improving database performance, and ensuring a secure and scalable architecture. The Senior Odoo Technical Developer will collaborate with functional teams to gather requirements, translate business needs into technical solutions, and provide guidance on best practices in Odoo development. The role also involves documenting technical designs, supporting deployments, and contributing to continuous improvement initiatives.\n\nQualifications\nStrong software development and programming skills, including experience with Odoo frameworks and related technologies.\nHands-on expertise in systems integration, including connecting Odoo with external applications, services, and APIs.\nProficiency working with databases, including designing schemas, writing queries, and optimizing performance.\nAbility to implement and adjust front-end elements using Cascading Style Sheets (CSS) and related web technologies.\nPrevious experience in a senior or lead Odoo developer role, preferably supporting real estate or investment workflows.\nSolid understanding of software architecture, version control (e.g., Git), and secure coding practices.\nManage Odoo.sh environments, Git branches, deployments, releases, and upgrade/migration considerations.\nStrong analytical and problem-solving skills, with the ability to translate business requirements into technical designs.\nEffective communication skills and ability to collaborate with cross-functional, remote teams.\nBachelor’s degree in Computer Science, Information Technology, Engineering, or related field, or equivalent practical experience.\nExperience with Linux-based environments, containerization, or cloud platforms is an advantage.",
+        "sha256": "054bdfa9cebd3a7f9876c7accb49beb0554c3b26d02b0d78ed5b7700c5ad3597",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
     }
   ]
 }
