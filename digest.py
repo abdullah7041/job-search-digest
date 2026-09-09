@@ -242,11 +242,37 @@ RANK_MODEL, RANK_FALLBACKS = configured_chain(
 # JSON-schema requirement.
 RANK_PROVIDER = {"data_collection": "deny", "require_parameters": True}
 
-# The daily run has no user waiting on it, but it does have a ten-minute
-# workflow timeout it shares with every fetch above.
+# The daily run has no user waiting on it, but it does have a workflow timeout
+# it shares with every fetch above.
 RANK_BUDGET_SECONDS = 120
 
+# The network phase: everything before ranking. A job timeout is NOT graceful --
+# it cancels the job, so the state artifact is never packaged and seen.json never
+# records cards Discord already holds. The only defence is for digest.py to
+# finish on its own, so the phases have to sum under the wall:
+#
+#   RUN_BUDGET_SECONDS   600   fetch, link settling, JD enrichment
+#   RANK_BUDGET_SECONDS  120   one ranking call
+#   CHECK_BUDGET_SECONDS 120   the reality checks
+#   ------------------------------------------------------------------
+#   840 of the execute job's 1200, leaving delivery and persistence unbounded.
+#
+# 600 and not 720 because the reality check now runs on every delivered job
+# rather than the two or three scoring 80+, so both model budgets should be
+# assumed spent rather than averaged.
+#
+# Deliberately never checked at or after delivery. Once cards reach Discord,
+# persisting seen.json is mandatory: the same rule CHECK_BUDGET_SECONDS states,
+# which is to spend a deadline on losing work and never on losing the digest.
+RUN_BUDGET_SECONDS = 600
+
 MAX_JOBS_IN_DIGEST = 25
+# Discovered boards read per run, on top of the hand-curated COMPANIES list,
+# which is never rationed. Board discovery adds entries every week and has no
+# ceiling of its own, so without this the company loop grows without bound
+# against RUN_BUDGET_SECONDS. At 22 confirmed boards today this does not bind;
+# it is here so that it cannot start to silently.
+MAX_BOARDS_PER_RUN = 40
 # One employer must not be able to fill a morning on its own. Board discovery
 # works well enough that it can: Innovationteam, found 3 Sep 2026, supplied 9 of
 # that evening's 12 delivered cards from a board of 40 roles, with 7 more of its
@@ -2379,11 +2405,24 @@ def board_discovery_seeds(paywalled, still_paid, matched):
     return out
 
 
-def confirmed_boards(boards):
-    """Every discovered board as a COMPANIES entry, minus the ones already there."""
+def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
+    """Every discovered board as a COMPANIES entry, minus the ones already there.
+
+    Least recently read first, then capped. The order matters only once the cap
+    binds, and then it matters a lot: newest-first would starve exactly the
+    boards discovered earliest and validated longest, so a board that misses one
+    run is at the front of the queue for the next. A record with no `last_read`
+    has never been read and sorts ahead of every record that has.
+
+    The cap is a growth backstop rather than a ration -- board discovery adds
+    entries every week with no ceiling of its own, and the company loop it feeds
+    spends a request and half a second per entry against RUN_BUDGET_SECONDS. At
+    22 confirmed boards it does not bind. COMPANIES is never rationed.
+    """
     already = {(c["source"], c["token"]) for c in COMPANIES}
     out = []
-    for record in boards.values():
+    for key in sorted(boards, key=lambda k: (boards[k].get("last_read") or "", k)):
+        record = boards[key]
         if not record.get("source"):
             continue
         pair = (record["source"], record["token"])
@@ -2392,7 +2431,7 @@ def confirmed_boards(boards):
         already.add(pair)
         out.append({"name": record.get("company") or record["token"],
                     "source": record["source"], "token": record["token"]})
-    return out
+    return out[:limit] if limit is not None else out
 # ----------------------------------------------------------------------------
 
 
@@ -2526,6 +2565,10 @@ def main():
         log("WARN INTERACTIVE_WORKER_URL set without WORKER_CALLBACK_SECRET; using plain webhook")
         worker_url = ""
     rank_key = os.environ.get("OPENROUTER_API_KEY")  # optional
+    # The network phase's deadline. Taken before the first fetch, and checked
+    # only where the remaining work is optional -- never mid-delivery. See
+    # RUN_BUDGET_SECONDS.
+    run_deadline = time.monotonic() + RUN_BUDGET_SECONDS
 
     seen = load_seen()
     boards = load_boards()
@@ -2565,8 +2608,27 @@ def main():
     # them here is the entire payoff of that discovery: the posting arrives from
     # the employer with a free link and a complete JD, and
     # prefer_employer_postings drops the relisted copy without being told.
-    for c in COMPANIES + confirmed_boards(boards):
+    today_iso = datetime.date.today().isoformat()
+    # Which discovered record a queue entry came from, so the loop can stamp
+    # last_read without confirmed_boards having to widen the entry shape that
+    # fetch_company takes.
+    board_by_pair = {(r["source"], r["token"]): k for k, r in boards.items()
+                     if r.get("source")}
+    board_queue = COMPANIES + confirmed_boards(boards)
+    read_boards = False
+    for index, c in enumerate(board_queue):
+        # COMPANIES is hand-curated and always read; only discovered boards are
+        # droppable, and confirmed_boards has already ordered them so the ones
+        # skipped here are first in line tomorrow.
+        if index >= len(COMPANIES) and time.monotonic() >= run_deadline:
+            log(f"Run budget spent: {len(board_queue) - index} discovered "
+                "board(s) unread this run, least recently read first next run")
+            break
         all_jobs.extend(fetch_company(c))
+        key = board_by_pair.get((c["source"], c["token"]))
+        if key:
+            boards[key]["last_read"] = today_iso
+            read_boards = True
         time.sleep(0.5)
 
     # dedupe within the run (same posting could appear twice)
@@ -2599,8 +2661,19 @@ def main():
     # here is read directly from the next run on. Scoped to the postings that
     # passed the filters, so five ATS requests are never spent on a role this
     # candidate would not be shown.
-    if discover_boards(board_discovery_seeds(paywalled, still_paid, matched),
-                       boards, datetime.date.today().isoformat()):
+    # Pure investment in tomorrow's run and therefore the first thing worth
+    # dropping when the budget is gone: five ATS probes per seed employer buy
+    # nothing for the digest going out this morning.
+    discovered = False
+    if time.monotonic() < run_deadline:
+        discovered = discover_boards(
+            board_discovery_seeds(paywalled, still_paid, matched),
+            boards, today_iso)
+    else:
+        log("Run budget spent: skipping employer board discovery this run")
+    # One write covering both the last_read stamps the company loop set and any
+    # board discovery just added.
+    if discovered or read_boards:
         save_boards(boards)
 
     # A paid-relister drop is deliberately NOT remembered in seen.json. Unlike
@@ -2626,8 +2699,25 @@ def main():
 
     # Verification is evidence, not a boolean gate: a third-party site may block
     # this runner while still serving a job seeker. Only confirmed closure drops.
+    #
+    # This is the pass the run budget most needs to guard. verify_link fetches a
+    # third-party page once per job, and on a 24-new-job morning that is dozens
+    # of round trips against sites that can hang. A job left unsettled keeps
+    # LINK_UNKNOWN, which the card already renders as "link check inconclusive"
+    # -- an honest degradation that exists rather than a new one.
+    unsettled = 0
     for j in fresh:
+        if time.monotonic() >= run_deadline:
+            # Set explicitly. settle_link is the ONLY writer of link_status, and
+            # the three readers below index it rather than .get() it, so leaving
+            # the key absent would raise instead of degrading.
+            j["link_status"] = LINK_UNKNOWN
+            unsettled += 1
+            continue
         settle_link(j)
+    if unsettled:
+        log(f"Run budget spent: {unsettled} link check(s) skipped, "
+            "those jobs carry an inconclusive link")
     checked = len(fresh)  # both filters below shrink `fresh`; the ratio needs this
     closed = [j for j in fresh if j["link_status"] == LINK_CLOSED]
     fresh = [j for j in fresh if j["link_status"] != LINK_CLOSED]
@@ -2662,7 +2752,16 @@ def main():
         log("No new matching jobs. Heartbeat sent.")
         return
 
-    enrich_descriptions(fresh)
+    # A ranking built on a thin description is a worse outcome than a late one,
+    # so enrichment is the last thing dropped and it degrades to whatever JD text
+    # the fetchers already carried. jd_grade then labels those honestly as a
+    # teaser or a fragment, and cap_teaser_scores holds them out of the strong
+    # tier -- so a budget-starved run under-sells rather than over-sells.
+    if time.monotonic() < run_deadline:
+        enrich_descriptions(fresh)
+    else:
+        log(f"Run budget spent: {len(fresh)} job(s) scored on the description "
+            "their source supplied, without enrichment")
 
     # A rescued apply link is BUILT from a token and a posting id, not copied
     # from a page, so it has never been fetched at the point enrichment records
@@ -2672,6 +2771,11 @@ def main():
     # learn what `link_checked` already records.
     for job in fresh:
         if not job.get("apply_url") or job["apply_url"] == job.get("link_checked"):
+            continue
+        if time.monotonic() >= run_deadline:
+            # Same rule as the first pass: an unchecked link is inconclusive,
+            # never assumed good. The card says so.
+            job["link_status"] = LINK_UNKNOWN
             continue
         settle_link(job)
     # Same rule as after the first pass: enrichment can only have improved the

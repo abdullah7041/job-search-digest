@@ -1059,7 +1059,7 @@ def _board_probe_stub(probe_boards):
 
 
 def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
-             fit_checks=None, probe_boards=False):
+             fit_checks=None, probe_boards=False, companies=()):
     """Run digest.main() fully mocked; return (discord_posts, workdir).
 
     Pass `work` from a previous call to run a second day against the seen.json
@@ -1075,6 +1075,11 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
     to parse into a check on every strong job of every run. Patching keeps that
     noise out and, more usefully, lets a test say exactly what the reality pass
     found.
+
+    `companies` fills the hand-curated COMPANIES list, which defaults to empty
+    so a test's jobs arrive only through the aggregator. Pass it when the test
+    is about the company loop itself -- the run budget rations discovered
+    boards and must never ration these.
 
     `_probe_employer_board` is stubbed out for a blunter reason: it is the one
     call here that reaches the network with requests.get rather than
@@ -1121,7 +1126,7 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
     try:
         with mock.patch.dict(os.environ, monkey_env, clear=False), \
              mock.patch.object(digest, "fetch_jsearch", return_value=[dict(j) for j in supplied]), \
-             mock.patch.object(digest, "COMPANIES", []), \
+             mock.patch.object(digest, "COMPANIES", list(companies)), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
              mock.patch.object(digest, "rank_jobs", return_value=ranking), \
              mock.patch.object(digest, "check_jobs", side_effect=fake_check),              _board_probe_stub(probe_boards), \
@@ -3741,3 +3746,133 @@ class TestJSearchCountryIsAlwaysTheQuerysCountry(unittest.TestCase):
         for code in ("CA", "OR", "DC", "NY", "TX", "WA", "UT", "MA", "IL"):
             with self.subTest(code=code):
                 self._assert_foreign(f"Somewhere{self.SEP} {code}")
+
+
+class TestTheRunBudgetLosesWorkNotTheDigest(unittest.TestCase):
+    """The execute job's timeout is not graceful: it cancels the job, so the
+    state artifact is never packaged and seen.json never records cards Discord
+    already holds. RUN_BUDGET_SECONDS exists so digest.py finishes on its own,
+    and every check it adds must drop optional work rather than the delivery."""
+
+    ENV = dict(DISCORD_WEBHOOK_URL="https://discord.test/hook",
+               OPENROUTER_API_KEY="k")
+
+    def test_the_phases_sum_under_the_workflow_wall(self):
+        """The whole point of the constant. If these three plus delivery can
+        exceed the execute job's timeout, the budget buys nothing."""
+        wall = 20 * 60
+        self.assertLess(
+            digest.RUN_BUDGET_SECONDS + digest.RANK_BUDGET_SECONDS
+            + fit_check_module.CHECK_BUDGET_SECONDS, wall)
+
+    def _run_with_no_budget(self, **kwargs):
+        with mock.patch.object(digest, "RUN_BUDGET_SECONDS", -1):
+            return run_main(self.ENV, {}, **kwargs)
+
+    def test_a_spent_budget_still_delivers_and_still_records_what_it_sent(self):
+        """The one thing the budget must never cost. A run that delivers and
+        then fails to write seen.json re-delivers the same cards tomorrow,
+        which is the exact failure the timeout used to cause."""
+        posts, work = self._run_with_no_budget(jobs=[dict(REAL_JOBS[1])],
+                                               link_statuses=[])
+        self.assertTrue(posts, "a starved run still has to deliver")
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            self.assertTrue(json.load(handle), "delivery was not remembered")
+
+    def test_an_unchecked_link_is_inconclusive_rather_than_missing(self):
+        """settle_link is the only writer of link_status and three readers index
+        it rather than .get() it, so a skipped check must set the key. The card
+        already renders LINK_UNKNOWN as 'link check inconclusive'."""
+        with mock.patch.object(digest, "settle_link") as settle:
+            posts, _ = self._run_with_no_budget(jobs=[dict(REAL_JOBS[1])],
+                                                link_statuses=[])
+        settle.assert_not_called()
+        self.assertIn("link check inconclusive", "\n".join(posts))
+
+    def test_a_spent_budget_skips_enrichment_rather_than_the_digest(self):
+        """Enrichment is dropped last and degrades to whatever text the fetcher
+        supplied, which jd_grade then labels honestly."""
+        with mock.patch.object(digest, "enrich_descriptions") as enrich:
+            posts, _ = self._run_with_no_budget(jobs=[dict(REAL_JOBS[1])],
+                                                link_statuses=[])
+        enrich.assert_not_called()
+        self.assertTrue(posts)
+
+    def test_a_spent_budget_skips_board_discovery(self):
+        """Pure investment in tomorrow's run, so the first thing worth dropping:
+        five ATS probes per seed employer buy nothing for this morning."""
+        with mock.patch.object(digest, "discover_boards") as discover:
+            self._run_with_no_budget(jobs=[dict(REAL_JOBS[1])], link_statuses=[])
+        discover.assert_not_called()
+
+    CURATED = [{"name": "Hala", "source": "ashby", "token": "hala"},
+               {"name": "Salla", "source": "lever", "token": "salla"}]
+
+    def test_a_spent_budget_still_reads_every_hand_curated_company(self):
+        """COMPANIES is curated and is never rationed; only discovered boards
+        are droppable. Getting this backwards would let a slow morning silently
+        stop reading the employers this digest was built around."""
+        with mock.patch.object(digest, "fetch_company", return_value=[]) as fetch:
+            self._run_with_no_budget(jobs=[dict(REAL_JOBS[1])], link_statuses=[],
+                                     companies=self.CURATED)
+        read = [call.args[0]["token"] for call in fetch.call_args_list]
+        self.assertEqual(read, [c["token"] for c in self.CURATED])
+
+    def test_a_spent_budget_drops_the_discovered_boards_after_them(self):
+        """The other half of the same guard: curated first and always, then
+        discovered boards only while there is budget left."""
+        work = tempfile.mkdtemp(prefix="digest_budget_")
+        for name in ("profile.json", "resume.md"):
+            source = os.path.join(REPO, name)
+            if os.path.exists(source):
+                shutil.copy(source, work)
+        with open(os.path.join(work, "boards.json"), "w", encoding="utf-8") as handle:
+            json.dump({"nabla": {"company": "Nabla", "source": "ashby",
+                                 "token": "nabla", "found": "2026-09-03"}}, handle)
+        with mock.patch.object(digest, "fetch_company", return_value=[]) as fetch:
+            self._run_with_no_budget(jobs=[dict(REAL_JOBS[1])], link_statuses=[],
+                                     work=work, companies=self.CURATED)
+        shutil.rmtree(work)
+        read = [call.args[0]["token"] for call in fetch.call_args_list]
+        self.assertEqual(read, [c["token"] for c in self.CURATED])
+        self.assertNotIn("nabla", read)
+
+
+class TestConfirmedBoardsIsBounded(unittest.TestCase):
+    """Board discovery adds entries every week with no ceiling of its own, and
+    the company loop spends a request and half a second on each one."""
+
+    @staticmethod
+    def _boards(count, last_read=None):
+        return {f"b{i}": {"company": f"B{i}", "source": "ashby",
+                          "token": f"b{i}",
+                          **({"last_read": last_read(i)} if last_read else {})}
+                for i in range(count)}
+
+    def test_the_cap_bounds_what_one_run_reads(self):
+        self.assertEqual(len(digest.confirmed_boards(self._boards(80), limit=5)), 5)
+
+    def test_the_cap_does_not_bind_at_todays_board_count(self):
+        """Stated as a property rather than a comment: this is a growth
+        backstop, and it must not be quietly rationing anything today."""
+        boards = digest.load_boards() if os.path.exists(digest.BOARDS_FILE) else {}
+        self.assertLessEqual(len(digest.confirmed_boards(boards, limit=None)),
+                             digest.MAX_BOARDS_PER_RUN)
+
+    def test_the_least_recently_read_board_is_read_first(self):
+        """Newest-first would starve exactly the boards discovered earliest and
+        validated longest, so a board that misses one run leads the next."""
+        boards = self._boards(3, last_read=lambda i: f"2026-09-0{3 - i}")
+        order = [b["token"] for b in digest.confirmed_boards(boards)]
+        self.assertEqual(order, ["b2", "b1", "b0"])
+
+    def test_a_board_never_read_comes_before_every_board_that_has_been(self):
+        boards = self._boards(2, last_read=lambda i: "2026-01-01")
+        boards["fresh"] = {"company": "Fresh", "source": "ashby", "token": "fresh"}
+        self.assertEqual(digest.confirmed_boards(boards)[0]["token"], "fresh")
+
+    def test_a_curated_company_is_never_returned_as_a_discovered_board(self):
+        curated = digest.COMPANIES[0]
+        boards = {"dupe": {"company": curated["name"], "source": curated["source"],
+                           "token": curated["token"]}}
+        self.assertEqual(digest.confirmed_boards(boards), [])

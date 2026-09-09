@@ -35,7 +35,13 @@ jobs:
   execute:
     needs: preflight
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # A job timeout is NOT graceful: it cancels the job outright, so the
+    # package-state step never runs and seen.json never records cards Discord
+    # already holds. Tomorrow then re-delivers them. digest.py bounds itself to
+    # RUN_BUDGET_SECONDS + RANK_BUDGET_SECONDS + CHECK_BUDGET_SECONDS = 840s
+    # before delivery, so this is the backstop rather than the expected outcome.
+    # GitHub's own default is 360 minutes; the previous 10 was self-imposed.
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:

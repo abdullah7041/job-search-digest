@@ -188,6 +188,21 @@ class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
         self.assertIn("JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}",
                       self._digest_workflow())
 
+    def test_the_execute_job_outlasts_the_budgets_digest_holds_itself_to(self):
+        """A job timeout cancels the job outright, so the state artifact is never
+        packaged and seen.json never records cards Discord already holds --
+        tomorrow then re-delivers them. digest.py bounds its own phases, and this
+        pins that the workflow leaves room for all of them plus delivery."""
+        import digest
+        import fit_check
+        budgeted = (digest.RUN_BUDGET_SECONDS + digest.RANK_BUDGET_SECONDS
+                    + fit_check.CHECK_BUDGET_SECONDS)
+        execute = self._digest_workflow().split("  execute:", 1)[1]
+        minutes = int(re.search(r"timeout-minutes: (\d+)", execute).group(1))
+        self.assertGreater(minutes * 60, budgeted,
+                           "the execute job can be cancelled before digest.py "
+                           "reaches delivery and state persistence")
+
     def test_every_tunable_digest_reads_is_passed(self):
         """Names read via os.environ.get in digest.py, which are either secrets
         or repository variables, must all be handed to the run."""
