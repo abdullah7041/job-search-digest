@@ -289,3 +289,110 @@ class TestPrompt(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestWhatTheCheckIsAllowedToRead(unittest.TestCase):
+    """The defect that let this pass return "high" on a posting whose stated
+    minimum qualification the candidate does not hold.
+
+    The Ma'aden posting archived 2026-09-08 is 5187 characters with its Minimum
+    Qualifications at 3958, so `description[:4000]` cut mid-word at "Bachelor's
+    degre". The check saw the heading, could not quote a verifiable snippet from
+    half a word, and reported no blockers at all.
+    """
+
+    JD = ("Your Impact\n" + "We build things and ship them often.\n" * 200 +
+          "\nMinimum Qualifications\n"
+          " * Bachelor's degree in Computer Science or a related field.\n"
+          " * 6 years of experience building production systems.\n")
+
+    def test_the_window_alone_still_cuts_the_qualifications(self):
+        self.assertNotIn("Bachelor's degree",
+                         fit_check.jd_signal(self.JD, fit_check.JD_CHECK_CHARS))
+
+    def test_the_stated_requirements_reach_the_prompt_anyway(self):
+        text = fit_check.check_text({"description": self.JD})
+
+        self.assertIn("Stated requirements:", text)
+        self.assertIn("Bachelor's degree in Computer Science", text)
+        self.assertIn("6 years of experience", text)
+
+    def test_a_posting_stating_nothing_gets_no_requirements_heading(self):
+        """An empty heading would invite the model to fill it in."""
+        text = fit_check.check_text({"description": "We are a friendly team."})
+
+        self.assertNotIn("Stated requirements", text)
+
+    def test_the_prompt_names_a_missing_degree_as_its_own_kind_of_gap(self):
+        prompt = fit_check.build_prompt({"description": self.JD}, "resume")
+
+        self.assertIn("education_certification_gap", prompt)
+        self.assertIn("Stated requirements", prompt)
+
+    def test_a_quote_from_the_requirements_verifies_against_the_full_posting(self):
+        """`verify` checks a cited snippet against job["description"], not
+        against the excerpt. That is what lets a blocker quote a line the
+        window never reached and still survive."""
+        raw = {"blockers": [{
+            "type": "education_certification_gap", "severity": "high",
+            "title": "No bachelor's degree", "explanation": "The posting states one.",
+            "evidence": [{"source": "job_description",
+                          "snippet": "Bachelor's degree in Computer Science or a related field"}],
+        }], "unclear": [], "strengths": []}
+
+        result = fit_check.verify(raw, {"description": self.JD, "title": "T",
+                                        "company": "C"}, "A resume with no degree.")
+
+        self.assertEqual(len(result["blockers"]), 1, result["unclear"])
+
+
+class TestTheGapCeiling(unittest.TestCase):
+    """Ceilings, not penalties. Stacked subtraction took a measured example
+    from 91 to 46, well past the 67 Watheq gave the same posting."""
+
+    def test_no_gaps_leave_the_score_alone(self):
+        self.assertIsNone(fit_check.blocked_score_ceiling([]))
+
+    def test_a_stated_degree_gap_caps_whatever_severity_it_carries(self):
+        for severity in fit_check.SEVERITIES:
+            with self.subTest(severity=severity):
+                ceiling = fit_check.blocked_score_ceiling(
+                    [{"type": "education_certification_gap", "severity": severity}])
+                self.assertLessEqual(ceiling, fit_check.CREDENTIAL_CEILING)
+
+    def test_severity_sets_the_ceiling(self):
+        for severity, expected in fit_check.SEVERITY_CEILING.items():
+            with self.subTest(severity=severity):
+                self.assertEqual(fit_check.blocked_score_ceiling(
+                    [{"type": "domain_gap", "severity": severity}]), expected)
+
+    def test_the_lowest_ceiling_wins(self):
+        blockers = [{"type": "domain_gap", "severity": "medium"},
+                    {"type": "domain_gap", "severity": "critical"},
+                    {"type": "domain_gap", "severity": "high"}]
+
+        self.assertEqual(fit_check.blocked_score_ceiling(blockers),
+                         fit_check.SEVERITY_CEILING["critical"])
+
+    def test_a_blocker_with_no_severity_still_caps(self):
+        """`verify` defaults an unrecognised severity to medium. A blocker that
+        arrived without one still describes a real gap, and letting it escape
+        the ceiling would make a malformed blocker read as no blocker."""
+        self.assertEqual(fit_check.blocked_score_ceiling([{"title": "b"}]),
+                         fit_check.SEVERITY_CEILING["medium"])
+
+    def test_every_ceiling_holds_a_job_out_of_the_strong_tier(self):
+        """The property the whole table exists for. A "Strong match" label over
+        a verified requirement gap is the card lying."""
+        import digest
+        for ceiling in fit_check.SEVERITY_CEILING.values():
+            self.assertLess(ceiling, digest.STRONG_MATCH_MIN_SCORE)
+        self.assertLess(fit_check.CREDENTIAL_CEILING, digest.STRONG_MATCH_MIN_SCORE)
+
+    def test_a_capped_job_still_lands_above_the_delivery_floor(self):
+        """A ceiling must annotate a card, not delete it. The complaint was
+        "the card lied", not "show me fewer jobs"."""
+        import digest
+        for ceiling in list(fit_check.SEVERITY_CEILING.values()) + [
+                fit_check.CREDENTIAL_CEILING]:
+            self.assertGreaterEqual(ceiling, digest.MIN_DELIVER_SCORE)
