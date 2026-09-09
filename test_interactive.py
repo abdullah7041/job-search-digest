@@ -78,8 +78,36 @@ class TestJobArchive(unittest.TestCase):
         job = dict(JOB, description="")
         payload = job_card_payload(make_snapshot(job, "2026-08-03T12:00:00Z"))
 
-        self.assertIn("Job description needed", payload["embeds"][0]["footer"]["text"])
+        self.assertIn("No posting text archived", payload["embeds"][0]["footer"]["text"])
         self.assertFalse(payload["components"][0]["components"][0]["disabled"])
+
+    def test_a_partial_posting_is_not_reported_as_a_missing_one(self):
+        """The footer said "Job description needed before tailoring" and was
+        wrong twice on the run of 2026-09-09. _resolve_jd falls straight
+        through to re-fetching the posting, so nothing is needed. And the same
+        card listed three gaps quoted out of that very text -- it said "here is
+        what the posting demands" and "send me the posting" in one breath."""
+        job = dict(JOB, description="Python and SQL required. " * 30)
+        snapshot = make_snapshot(job, "2026-08-03T12:00:00Z")
+        footer = job_card_payload(snapshot)["embeds"][0]["footer"]["text"]
+
+        self.assertEqual(snapshot["jd"]["status"], "incomplete")
+        self.assertIn("Partial posting archived", footer)
+        self.assertNotIn("No posting text", footer)
+
+    def test_a_partial_posting_can_still_carry_its_verified_gaps(self):
+        """The contradiction itself, pinned. A gap quoted out of partial text
+        is a real gap; the card has to be able to say both things."""
+        job = dict(JOB, description="Python and SQL required. " * 30,
+                   fit_check={"blockers": [{"title": "No Odoo framework experience"}],
+                              "unclear": [], "strengths": [], "ceiling": "low",
+                              "note": ""})
+        payload = job_card_payload(make_snapshot(job, "2026-08-03T12:00:00Z"))
+        footer = payload["embeds"][0]["footer"]["text"]
+
+        self.assertIn("Partial posting archived", footer)
+        self.assertIn("1 verified gap(s)", footer)
+        self.assertNotIn("needed", footer)
 
     def test_snapshot_rejects_a_nonempty_jd_fragment_as_incomplete(self):
         job = dict(JOB, description="Python and SQL required.")

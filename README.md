@@ -327,7 +327,7 @@ set changes; no workflow runs it.
 - Check the first digest by hand: are the roles actually Saudi, actually senior, actually relevant? Tune `TITLE_INCLUDE` / `TITLE_EXCLUDE` if not.
 - Kill the Gemini key for one run and confirm the keyword fallback still posts.
 - After changing `worker/commands.js`, run `DISCORD_BOT_TOKEN=… npm run register --prefix worker`. Nothing else changes what Discord shows, and a command left registered with no branch behind it answers "Unsupported command." forever.
-- Click **Tailor CV** on a card whose footer says "Job description needed before tailoring". It should either come back with a PDF — the runner read the posting on the second try — or name `/tailor-jd` and the URL it could not read. It should never come back with nothing to do next.
+- Click **Tailor CV** on a card whose footer says "No posting text archived" or "Partial posting archived". It should either come back with a PDF — the runner read the posting on the second try — or name `/tailor-jd` and the URL it could not read. It should never come back with nothing to do next.
 - Then let the cron take over.
 
 ## What's deliberately simple

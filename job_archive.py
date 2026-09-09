@@ -276,15 +276,25 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
 
 def job_card_payload(snapshot: dict) -> dict:
     """Return an application-owned Discord message with one Tailor CV button."""
-    jd_available = snapshot["jd"]["status"] == "captured"
     footer = f"{snapshot['tier']} · fit {snapshot['score']}"
     if not snapshot.get("ranking_verified"):
         # A keyword fallback score rendered identically to a model score, so a
         # run where the ranker was down looked exactly like a run where it
         # worked. Say which one produced the number.
         footer += " · Heuristic score, ranker unavailable"
-    if not jd_available:
-        footer += " · Job description needed before tailoring"
+    # What the archive actually holds, and what the button will do about it.
+    #
+    # "Job description needed before tailoring" was wrong twice on the run of
+    # 2026-09-09. It read as a demand, when `interactive_runner._resolve_jd`
+    # falls straight through to re-fetching the posting from its URL. And it
+    # sat on the same card as three verified gaps quoted out of that very text,
+    # so a card said "here is what the posting demands" and "send me the
+    # posting" in the same breath. Partial text is still text.
+    status = (snapshot.get("jd") or {}).get("status")
+    if status == "missing":
+        footer += " · No posting text archived; tailoring reads the link"
+    elif status != "captured":
+        footer += " · Partial posting archived; tailoring re-reads the link"
     elif snapshot_grade(snapshot) == GRADE_TEASER:
         footer += " · Short teaser, not the full posting"
     if snapshot.get("link_status") == "unknown":
