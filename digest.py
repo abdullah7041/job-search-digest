@@ -3059,12 +3059,15 @@ def main():
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
             dropped_stale=len(stale), undated=undated,
-            strong=0, review=0, tailored=0, tailor_failed=0,
-            relisted=len(relisted),
+            strong=0, competitive=0, review=0, tailored=0, tailor_failed=0,
+            relisted=len(relisted), cooling=len(cooling),
         )
-        log(f"Nothing left to deliver: {len(relisted)} relists, "
-            f"{len(lost_late_rescue)} lost the rescued link enrichment found. "
-            "Heartbeat sent.")
+        # Cooling is named here because it is the one reason on this path that a
+        # reader can act on: those postings are coming back, and a morning where
+        # every candidate was one would otherwise read as a dead feed.
+        log(f"Nothing left to deliver: {len(relisted)} relists, {len(cooling)} "
+            f"still cooling below the floor, {len(lost_late_rescue)} lost the "
+            "rescued link enrichment found. Heartbeat sent.")
         return
 
     # Read once and passed to both passes, so "the ranker and the reality check
@@ -3106,6 +3109,7 @@ def main():
             dropped_stale=len(stale), undated=undated,
             strong=0, review=0, tailored=0, tailor_failed=0,
             relisted=len(relisted), below_floor=len(below_floor),
+            cooling=len(cooling),
         )
         log(f"All {len(below_floor)} new postings scored below {MIN_DELIVER_SCORE}. Heartbeat sent.")
         return
@@ -3259,7 +3263,7 @@ def main():
             dropped_stale=len(stale), undated=undated,
         strong=len(strong), competitive=len(competitive), review=len(review),
         tailored=0, tailor_failed=0,
-        delivered=len(delivered_ids), relisted=len(relisted),
+        delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
         below_floor=len(below_floor), deferred=len(deferred),
     )
     log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")

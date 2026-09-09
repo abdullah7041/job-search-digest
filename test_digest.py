@@ -4280,7 +4280,11 @@ class TestTheBelowFloorCooldown(unittest.TestCase):
         seen = {}
         digest.defer_below_floor(seen, self.JOB, "2026-09-10")
 
-        self.assertTrue(all(key.strip(digest.FLOOR_SEEN_PREFIX) for key in seen))
+        # One key, and not the bare prefix. An empty description_key would
+        # write "floor:" itself, which every undescribed job would then collide
+        # on -- one rejected posting would put the whole feed in cooldown.
+        self.assertEqual(len(seen), 1)
+        self.assertNotIn(digest.FLOOR_SEEN_PREFIX, seen)
         self.assertTrue(digest.still_cooling(seen, self.JOB, "2026-09-10"))
 
     def test_a_job_inside_the_cooldown_is_skipped(self):
