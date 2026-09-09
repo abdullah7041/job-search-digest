@@ -4167,6 +4167,18 @@ class TestTheRankingContract(unittest.TestCase):
                 track["evidence"].startswith("Judge against"),
                 f"{track['name']} asserts capability instead of naming where to look")
 
+    def test_every_thing_the_resume_leads_with_has_a_track_to_land_on(self):
+        """Lenovo's "Web Developer" routed to the AI and LLM track on the run of
+        2026-09-09. Not a routing bug: no track named frontend, React or web
+        existed, so the model picked the least wrong option from a menu with no
+        right answer, on a posting that says Agentic AI six times. The resume
+        leads with 28,000 lines of React and TypeScript."""
+        titles = " ".join(t.lower() for track in digest.PROFILE["tracks"]
+                          for t in track["titles"] + [track["name"]])
+
+        for area in ("frontend", "backend", "data", "ai", "web"):
+            self.assertIn(area, titles, f"no track a {area} posting can land on")
+
     def test_the_prompt_states_what_the_candidate_does_not_do(self):
         """He builds WITH models, he does not build models. Without this the
         rubric has no way to tell an LLM application role from a Data Scientist
