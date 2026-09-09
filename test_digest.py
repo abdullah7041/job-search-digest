@@ -4167,6 +4167,19 @@ class TestTheRankingContract(unittest.TestCase):
                 track["evidence"].startswith("Judge against"),
                 f"{track['name']} asserts capability instead of naming where to look")
 
+    def test_the_prompt_states_what_the_candidate_does_not_do(self):
+        """He builds WITH models, he does not build models. Without this the
+        rubric has no way to tell an LLM application role from a Data Scientist
+        posting demanding training and fine-tuning: they share most of their
+        vocabulary, so the second reads as a near miss instead of a wrong
+        function. The Ma'aden posting asked for Model Fine-Tuning, TensorFlow
+        and PyTorch and scored 91."""
+        prompt = self._prompt()["prompt"]
+
+        self.assertIn("he BUILDS WITH models, he does not build models", prompt)
+        for absent in ("TensorFlow", "PyTorch", "fine-tuning"):
+            self.assertIn(absent, prompt)
+
     def test_no_tracks_means_no_track_section_rather_than_an_empty_one(self):
         self.assertEqual(digest.describe_tracks([]), "")
         self.assertEqual(digest.describe_tracks(None), "")
