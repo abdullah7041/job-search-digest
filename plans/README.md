@@ -20,6 +20,7 @@ verdict honest.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | [018](018-ground-the-fit-score-in-resume-evidence.md) | Ground the fit score in resume evidence | P1 | M + M | — | **DONE**. 018A `43cc4ce`, gate cleared, 018B `770ac6d`+`df63b58`. Gold set 7/7 live with the reality pass on |
+| [019](019-show-the-scorer-what-a-posting-demands.md) | Show the scorer the half of a posting that can lower a score | P1 | S + L | 018 | **DONE**. 019A `85f878f`, 019B `f862ef5`. Requirement recall 109/120, up from 71. Re-scoring the four inflated postings still needs a key |
 
 ### The diagnosis, verified in code rather than asserted
 

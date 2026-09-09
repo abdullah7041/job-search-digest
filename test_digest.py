@@ -4144,13 +4144,28 @@ class TestTheRankingContract(unittest.TestCase):
         requirement line the extractor missed."""
         self.assertIn("unknown, not a gap", self._prompt()["prompt"])
 
-    def test_every_track_reaches_the_prompt_with_its_evidence(self):
+    def test_every_track_reaches_the_prompt_with_its_pointer(self):
         prompt = self._prompt()["prompt"]
 
         for track in digest.PROFILE["tracks"]:
             self.assertIn(track["name"], prompt)
             self.assertIn(track["titles"][0], prompt)
             self.assertIn(track["evidence"][:40], prompt)
+
+    def test_the_track_block_points_at_the_resume_rather_than_asserting(self):
+        """The tracks land inside <candidate_preferences>, which the prompt
+        tells the model proves nothing about capability. Plan 018 pulled
+        self-authored capability claims out of that block on purpose, so a
+        track that restated what the candidate has built would either be
+        discounted and do nothing, or be believed and put 018's defect back."""
+        prompt = self._prompt()["prompt"]
+
+        self.assertIn("These lines say where to look; they prove nothing", prompt)
+        for track in digest.PROFILE["tracks"]:
+            self.assertNotIn("Evidenced by", track["evidence"])
+            self.assertTrue(
+                track["evidence"].startswith("Judge against"),
+                f"{track['name']} asserts capability instead of naming where to look")
 
     def test_no_tracks_means_no_track_section_rather_than_an_empty_one(self):
         self.assertEqual(digest.describe_tracks([]), "")
@@ -4217,6 +4232,9 @@ class TestTheBelowFloorCooldown(unittest.TestCase):
 
     JOB = {"id": "x", "url": "https://example.com/x", "source": "greenhouse"}
 
+    DESCRIBED = dict(JOB, company="C", title="Senior Data Engineer",
+                     description="Build pipelines. " * 40)
+
     def test_a_dropped_job_is_deferred_rather_than_remembered(self):
         seen = {}
         digest.defer_below_floor(seen, self.JOB, "2026-09-10")
@@ -4224,6 +4242,46 @@ class TestTheBelowFloorCooldown(unittest.TestCase):
         self.assertEqual(list(seen), [digest.FLOOR_SEEN_PREFIX
                                       + digest.job_identity(self.JOB)])
         self.assertNotIn(digest.job_identity(self.JOB), seen)
+
+    def test_the_description_is_deferred_too(self):
+        """remember() writes both keys and so must this. An aggregator relists
+        the same posting under a fresh URL, which gives it a fresh identity --
+        65 of the first 122 aggregator cards were repeats, and one role arrived
+        under 11 ids in 9 days. Identity alone would let a below-floor posting
+        come back tomorrow as a stranger and cost a full enrich-and-rank."""
+        seen = {}
+        digest.defer_below_floor(seen, self.DESCRIBED, "2026-09-10")
+
+        self.assertIn(digest.FLOOR_SEEN_PREFIX + digest.description_key(self.DESCRIBED),
+                      seen)
+
+    def test_a_relisted_copy_under_a_new_url_is_still_cooling(self):
+        seen = {}
+        digest.defer_below_floor(seen, self.DESCRIBED, "2026-09-10")
+        relisted = dict(self.DESCRIBED, id="y", url="https://elsewhere.example/y")
+
+        self.assertNotEqual(digest.job_identity(relisted),
+                            digest.job_identity(self.DESCRIBED))
+        self.assertTrue(digest.still_cooling(seen, relisted, "2026-09-12"))
+
+    def test_a_different_role_at_the_same_employer_is_not_cooling(self):
+        """description_key is scoped to employer AND title, so the cooldown
+        must not spread from one rejected role to the next one they post."""
+        seen = {}
+        digest.defer_below_floor(seen, self.DESCRIBED, "2026-09-10")
+        other = dict(self.DESCRIBED, id="z", url="https://example.com/z",
+                     title="Senior AI Engineer")
+
+        self.assertFalse(digest.still_cooling(seen, other, "2026-09-12"))
+
+    def test_a_job_with_no_description_still_gets_a_cooldown(self):
+        """description_key is empty without text, and an empty key must not be
+        written -- it would collide with every other undescribed job."""
+        seen = {}
+        digest.defer_below_floor(seen, self.JOB, "2026-09-10")
+
+        self.assertTrue(all(key.strip(digest.FLOOR_SEEN_PREFIX) for key in seen))
+        self.assertTrue(digest.still_cooling(seen, self.JOB, "2026-09-10"))
 
     def test_a_job_inside_the_cooldown_is_skipped(self):
         seen = {}

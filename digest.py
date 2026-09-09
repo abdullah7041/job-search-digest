@@ -1741,6 +1741,15 @@ def describe_tracks(tracks):
     Power BI. Grouping lets the ranker pick the track first and score the job
     against that track's evidence.
 
+    Each track POINTS at the resume rather than restating it, and that is the
+    whole discipline here. This text lands inside <candidate_preferences>, which
+    the prompt tells the model proves nothing about capability -- so a paragraph
+    asserting what the candidate has built would either be discounted, doing
+    nothing, or believed, putting back exactly the self-authored capability
+    claims plan 018 pulled out of the blurb. Naming which resume entry to judge
+    a track by is routing, not evidence. A negative disclosure ("the resume
+    shows no Spark or Kafka anywhere") is a constraint and belongs here too.
+
     One resume, several tracks. A second resume file would split the evidence
     in half and go stale independently; the per-job document is what the Tailor
     CV button produces at apply time.
@@ -1751,10 +1760,12 @@ def describe_tracks(tracks):
     for track in tracks:
         titles = ", ".join(track.get("titles") or [])
         lines.append(f"- {track.get('name', '')}: {titles}.\n"
-                     f"  Evidenced by: {track.get('evidence', '')}")
+                     f"  Where to look: {track.get('evidence', '')}")
     return ("\n\nTarget tracks. Pick the ONE this posting belongs to, name it in "
-            "`track`, and judge the posting against that track's evidence rather "
-            "than against the whole resume at once:\n" + "\n".join(lines))
+            "`track`, and judge it against the part of the candidate_evidence "
+            "block that track points at rather than against the whole resume at "
+            "once. These lines say where to look; they prove nothing "
+            "themselves:\n" + "\n".join(lines))
 
 
 def rank_jobs(jobs, api_key, evidence=None):
@@ -2210,18 +2221,41 @@ def defer_below_floor(seen, job, today):
     single morning for a verdict already reached, which costs description
     fetches and ranking tokens daily. A week gives the second chance without
     paying for it every day.
+
+    Both keys, like `remember`, and for the same reason. An aggregator relists
+    the same posting under a fresh URL, which gives it a fresh identity -- 65 of
+    the first 122 aggregator cards were repeats and one role arrived under 11
+    ids in 9 days. Keying only on identity would let a below-floor posting come
+    back tomorrow as a stranger, be enriched and re-ranked, and cost exactly the
+    daily bill this cooldown exists to avoid.
     """
-    seen[FLOOR_SEEN_PREFIX + job_identity(job)] = today
+    for key in _floor_keys(job):
+        seen[key] = today
+
+
+def _floor_keys(job):
+    """The cooldown keys for one posting: its identity, and its description.
+
+    Both carry FLOOR_SEEN_PREFIX so `save_seen` prunes them on the seven-day
+    clock rather than the state TTL. `description_key` is falsy for a job with
+    no description text, which is why this is a list rather than a pair.
+    """
+    keys = [FLOOR_SEEN_PREFIX + job_identity(job)]
+    described = description_key(job)
+    if described:
+        keys.append(FLOOR_SEEN_PREFIX + described)
+    return keys
 
 
 def still_cooling(seen, job, today):
-    """Is this posting inside the cooldown a below-floor score gave it?"""
-    stamped = seen.get(FLOOR_SEEN_PREFIX + job_identity(job))
-    if not stamped:
-        return False
+    """Is this posting inside the cooldown a below-floor score gave it?
+
+    Either key answering is enough: a relisted copy matches on its description
+    while its identity has changed.
+    """
     cutoff = (datetime.date.fromisoformat(today)
               - datetime.timedelta(days=FLOOR_COOLDOWN_DAYS)).isoformat()
-    return stamped >= cutoff
+    return any(seen.get(key, "") >= cutoff for key in _floor_keys(job))
 
 
 def drop_below_floor(jobs):
@@ -3003,6 +3037,21 @@ def main():
     fresh, relisted = drop_repeat_descriptions(fresh, seen)
     for job in relisted:
         log(f"Skipping {job['company']} — {job['title']}: description already delivered")
+
+    # The cooldown, checked a second time now that every job has its text. The
+    # pass above the fetch could only compare identities, and the identity of a
+    # relisted aggregator posting is new every day -- which is the whole reason
+    # description_key exists. Without this the description half of a floor: key
+    # would never match anything.
+    # One pass, and no `job not in cooling` membership test: that is a deep dict
+    # comparison, which plans/README.md:296 already flagged once in split_tiers.
+    still, cooling = [], []
+    for job in fresh:
+        (cooling if still_cooling(seen, job, today_iso) else still).append(job)
+    fresh = still
+    for job in cooling:
+        log(f"Cooling {job['company']} — {job['title']}: scored below the floor "
+            f"within the last {FLOOR_COOLDOWN_DAYS} days")
     if not fresh:
         post_heartbeat(webhook, worker_url, worker_secret, today,
                        len(all_jobs), len(matched), warnings)

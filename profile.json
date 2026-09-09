@@ -54,7 +54,7 @@
         "AI Solutions Architect",
         "Head of AI"
       ],
-      "evidence": "Watheq, live in production: LLM evaluation pipelines that judge-score prompt, temperature and model variants; anti-hallucination output contracts with evidence-anchored scoring caps; prompt frameworks and agentic workflows across matching, rewriting and parsing over OpenRouter model APIs. Plus LLM fit-scoring with deterministic fallbacks in the job-search digest. Strongest track."
+      "evidence": "Judge against the Watheq experience entry and the job-search digest project entry in the resume. Do not credit this track from the summary or skills lines."
     },
     {
       "name": "Software and backend engineering",
@@ -67,7 +67,7 @@
         "Senior Automation Engineer",
         "Solutions Engineer"
       ],
-      "evidence": "The Watheq platform built solo: React 19 and TypeScript, Supabase/PostgreSQL with role-based access control, Netlify serverless functions, payment integration, Sentry. A Cloudflare Workers service backing a Discord bot with request signature verification and a D1 schema. Production Python automation on GitHub Actions with multi-source ATS integrations. About a year of full-time software engineering."
+      "evidence": "Judge against the Watheq experience entry and the projects section. Note the dates: full-time software engineering runs from Aug 2025, so a posting asking for several years of it is a real gap."
     },
     {
       "name": "Data and analytics",
@@ -77,7 +77,7 @@
         "Senior Product Manager",
         "Technical Product Manager"
       ],
-      "evidence": "Six years at Alghalia: Power BI dashboards used as the single source of truth for inventory and sales, customer segmentation across 100+ accounts, competitor and pricing analysis, weekly performance reporting. SQL and advanced Excel. This is the longest-running experience but it is business analytics, not machine learning modelling or large-scale data engineering: no Spark, Kafka, Airflow or warehouse ETL."
+      "evidence": "Judge against the Alghalia experience entry, which runs from Mar 2020. It is business analytics and reporting, not machine-learning modelling or large-scale data engineering: the resume shows no Spark, Kafka, Airflow or warehouse ETL anywhere."
     }
   ]
 }
