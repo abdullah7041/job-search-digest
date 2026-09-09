@@ -57,17 +57,20 @@
       "evidence": "Judge against the Watheq experience entry and the job-search digest project entry in the resume. Do not credit this track from the summary or skills lines. This is LLM application engineering only: the resume shows no model training, fine-tuning, TensorFlow, PyTorch or scikit-learn anywhere."
     },
     {
-      "name": "Software and backend engineering",
+      "name": "Software engineering, front and back",
       "titles": [
         "Senior Software Engineer",
         "Staff Software Engineer",
         "Senior Backend Engineer",
         "Senior Full-Stack Engineer",
+        "Senior Frontend Engineer",
+        "Web Developer",
+        "UI Engineer",
         "Founding Engineer",
         "Senior Automation Engineer",
         "Solutions Engineer"
       ],
-      "evidence": "Judge against the Watheq experience entry and the projects section. Note the dates: full-time software engineering runs from Aug 2025, so a posting asking for several years of it is a real gap."
+      "evidence": "Judge against the Watheq experience entry and the projects section. Frontend is real here and is the largest single thing he has shipped: React 19, TypeScript, Tailwind, Vite and Zustand, 28,000+ lines in production. Backend is Supabase/PostgreSQL, serverless functions and Python automation. Note the dates: full-time software engineering runs from Aug 2025, so a posting asking for several years of it is a real gap."
     },
     {
       "name": "Data and analytics",
