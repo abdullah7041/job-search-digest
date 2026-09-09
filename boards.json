@@ -32,6 +32,10 @@
     "company": "B Capital",
     "miss": "2026-09-08"
   },
+  "cleargrid": {
+    "company": "ClearGrid",
+    "miss": "2026-09-09"
+  },
   "consortgroup": {
     "company": "Consort Group",
     "miss": "2026-09-08"
@@ -77,6 +81,13 @@
     "company": "Denodo",
     "miss": "2026-09-08"
   },
+  "eramtalent": {
+    "company": "Eram Talent",
+    "found": "2026-09-09",
+    "roles": 0,
+    "source": "workable",
+    "token": "eram"
+  },
   "ernstyoungadvisoryservices": {
     "company": "Ernst & Young Advisory Services Sdn Bhd",
     "miss": "2026-09-07"
@@ -106,6 +117,13 @@
   "filecloud": {
     "company": "FileCloud",
     "miss": "2026-09-03"
+  },
+  "flintmiddleeast": {
+    "company": "Flint Middle-East",
+    "found": "2026-09-09",
+    "roles": 0,
+    "source": "workable",
+    "token": "flint"
   },
   "gathern": {
     "company": "Gathern",
@@ -183,6 +201,10 @@
     "company": "Müller's Solutions",
     "miss": "2026-09-05"
   },
+  "mukounsaudiarabia": {
+    "company": "Mukoun, Saudi Arabia",
+    "miss": "2026-09-09"
+  },
   "nakhla": {
     "company": "Nakhla",
     "found": "2026-09-07",
@@ -218,6 +240,13 @@
     "roles": 0,
     "source": "workable",
     "token": "sap"
+  },
+  "saudibusinessmachines": {
+    "company": "Saudi Business Machines",
+    "found": "2026-09-09",
+    "roles": 0,
+    "source": "workable",
+    "token": "saudi"
   },
   "sensys": {
     "company": "SENSYS Inc.",

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2352406894",
+      "captured_at": "2026-09-09T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2352406894",
+      "title": "Data Engineer - Industrial and Refinery Data",
+      "company": "Tata Consultancy Services",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/data-engineer-industrial-and-refinery-data-at-tata-consultancy-services-4463252174",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 60,
+      "why": "Data pipelines and Python match, but candidate lacks specialized refinery/historian domain experience.",
+      "ranking_verified": true,
+      "ceiling": "unknown",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-08",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Job Title – Data Engineer - Industrial and Refinery Data\nCompany – TCS (MEA)\nLocation – Riyadh, Saudi Arabia (KSA)\nJob type – Full time\n\nAbout Us:\nTata Consultancy Services (TCS) is an IT services, consulting and business solutions organization that has been partnering with many of the world’s largest businesses in their transformation journeys for over 50 years. TCS offers a consulting-led, cognitive powered, integrated portfolio of business, technology and engineering services and solutions. This is delivered through its unique Location Independent Agile™ delivery model, recognized as a benchmark of excellence in software development.\nA part of the Tata group, India's largest multinational business group, TCS has over 616,171 of the world’s best-trained consultants with 157 nationalities in 53 countries. For more information, visit www.tcs.com and follow TCS news at @TCS_News.\n\nJob Description:\n\nDesired Competencies (Technical / Behavioral):\n\nMust-Have:\n\n· Experience building reliable data pipelines for high-volume structured and time-series data. \n· Hands-on knowledge of SQL, Python, APIs, data modelling and ETL/ELT frameworks.\n· Experience integrating historians, laboratory, maintenance, asset and engineering data sources.\n· Strong understanding of data quality, metadata, lineage, security and access controls. \n· Familiarity with feature stores, vector databases or AI-ready data platforms.\n\nGood-to-Have:\n\n· Oil & Gas, refinery or process manufacturing data experience. \n· Exposure to OSI PI or equivalent historians, LIMS, CMMS/SAP and streaming platforms. \n· Ability to contextualize tag-level data against equipment, process hierarchy and engineering information.\n\nApplication Deadline: 10-October-2026\n\nPrivacy Note:\nhttps://www.tcs.com/connect-with-tcs/privacy-policy",
+        "sha256": "9aea29f3a1d3acb005318db725e8cd40c2a08618815bd703383dd8d304d0a9ee",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    }
+  ]
+}
