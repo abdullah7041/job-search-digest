@@ -1,5 +1,5 @@
 {
-  "blurb": "Candidate: AI Product Engineer and solo founder in Saudi Arabia who ships production LLM systems end to end — prompt engineering, LLM evaluation pipelines, output validation and guardrails, agentic workflows, and AI observability. Founder of Watheq, an Arabic-first AI resume and job-matching SaaS built solo and live in production: React 19 and TypeScript front end, Supabase/PostgreSQL with role-based access control, Netlify serverless functions, payment integration, and Sentry monitoring. Also runs production automation on GitHub Actions in Python, including multi-source ATS integrations, a paid aggregator API integration with monthly quota budgeting and cursor paging, employer-source verification that recovers a free apply link behind a paid relister, and LLM fit-scoring with deterministic fallbacks. Built and operates a Cloudflare Workers service backing a Discord bot: slash commands, request signature verification, a shared signed HTTP client, D1 schema, and webhook-fallback delivery. Ships JD-aware resume tailoring under enforced output contracts, where every fit note and gap has to survive an evidence check against the resume. Works plan-first and test-first: written plans per change, TDD, and a CI workflow guard. Python, TypeScript and SQL, with 5+ years across software engineering and data analytics (Power BI, segmentation, competitor and pricing analysis). Native Arabic, and builds for Saudi-market edge cases like Hijri dates and Arabic parsing. Wants SENIOR-LEVEL INDIVIDUAL CONTRIBUTOR roles (AI/ML, software, product, or data) based in Saudi Arabia, and is open to lead, staff, principal, or head-of titles when the role is hands-on technical ownership of the kind he already does. He has built and operated whole production systems solo but has never managed a team, so a role that is mostly people management is a weaker fit than one that is mostly building. MUST BE BASED IN SAUDI ARABIA: not roles based outside Saudi Arabia, even with relocation offered. Values simple, reliable, high-ownership work.",
+  "blurb": "Candidate: AI Product Engineer and solo founder in Saudi Arabia who ships production LLM systems end to end — prompt engineering, LLM evaluation pipelines, output validation and guardrails, agentic workflows, and AI observability. Founder of Watheq, an Arabic-first AI resume and job-matching SaaS built solo and live in production: React 19 and TypeScript front end, Supabase/PostgreSQL with role-based access control, Netlify serverless functions, payment integration, and Sentry monitoring. Also runs production automation on GitHub Actions in Python, including multi-source ATS integrations, a paid aggregator API integration with monthly quota budgeting and cursor paging, employer-source verification that recovers a free apply link behind a paid relister, and LLM fit-scoring with deterministic fallbacks. Built and operates a Cloudflare Workers service backing a Discord bot: slash commands, request signature verification, a shared signed HTTP client, D1 schema, and webhook-fallback delivery. Ships JD-aware resume tailoring under enforced output contracts, where every fit note and gap has to survive an evidence check against the resume. Works plan-first and test-first: written plans per change, TDD, and a CI workflow guard. Python, TypeScript and SQL, with 5+ years across software engineering and data analytics (Power BI, segmentation, competitor and pricing analysis). Native Arabic, and builds for Saudi-market edge cases like Hijri dates and Arabic parsing. Wants SENIOR-LEVEL INDIVIDUAL CONTRIBUTOR roles (AI/ML, software, product, or data) based in Saudi Arabia, and is open to lead, staff, principal, or head-of titles when the role is hands-on technical ownership of the kind he already does. He has built and operated whole production systems solo but has never managed a team, so a role that is mostly people management is a weaker fit than one that is mostly building. MUST BE BASED IN SAUDI ARABIA: not roles based outside Saudi Arabia, even with relocation offered. Values simple, reliable, high-ownership work. EDUCATION: holds a diploma in Pipefitting Technology from Saudi Petroleum Services Polytechnic (2018) and NO bachelor's degree. Everything he does in software and AI is self-taught and shipped rather than credentialed. A posting that states a bachelor's degree as a minimum qualification is a real gap he does not meet, and it belongs in the reason; a degree written as 'preferred' or 'or equivalent experience' is not.",
   "skill_keywords": [
     "ai",
     "ml",
@@ -39,27 +39,45 @@
     "prompt",
     "analyst"
   ],
-  "target_titles": [
-    "Senior AI Engineer",
-    "Senior AI/ML Engineer",
-    "Lead AI Engineer",
-    "Staff AI Engineer",
-    "AI Product Engineer",
-    "Applied AI Engineer",
-    "LLM Engineer",
-    "Forward Deployed Engineer",
-    "Founding Engineer",
-    "Senior Software Engineer",
-    "Staff Software Engineer",
-    "Senior Backend Engineer",
-    "Senior Full-Stack Engineer",
-    "Senior Data Engineer",
-    "Senior Automation Engineer",
-    "Solutions Engineer",
-    "AI Solutions Architect",
-    "Head of AI",
-    "Senior Data Analyst",
-    "Senior Product Manager",
-    "Technical Product Manager"
+  "tracks": [
+    {
+      "name": "AI and LLM product engineering",
+      "titles": [
+        "Senior AI Engineer",
+        "Senior AI/ML Engineer",
+        "Lead AI Engineer",
+        "Staff AI Engineer",
+        "AI Product Engineer",
+        "Applied AI Engineer",
+        "LLM Engineer",
+        "Forward Deployed Engineer",
+        "AI Solutions Architect",
+        "Head of AI"
+      ],
+      "evidence": "Watheq, live in production: LLM evaluation pipelines that judge-score prompt, temperature and model variants; anti-hallucination output contracts with evidence-anchored scoring caps; prompt frameworks and agentic workflows across matching, rewriting and parsing over OpenRouter model APIs. Plus LLM fit-scoring with deterministic fallbacks in the job-search digest. Strongest track."
+    },
+    {
+      "name": "Software and backend engineering",
+      "titles": [
+        "Senior Software Engineer",
+        "Staff Software Engineer",
+        "Senior Backend Engineer",
+        "Senior Full-Stack Engineer",
+        "Founding Engineer",
+        "Senior Automation Engineer",
+        "Solutions Engineer"
+      ],
+      "evidence": "The Watheq platform built solo: React 19 and TypeScript, Supabase/PostgreSQL with role-based access control, Netlify serverless functions, payment integration, Sentry. A Cloudflare Workers service backing a Discord bot with request signature verification and a D1 schema. Production Python automation on GitHub Actions with multi-source ATS integrations. About a year of full-time software engineering."
+    },
+    {
+      "name": "Data and analytics",
+      "titles": [
+        "Senior Data Analyst",
+        "Senior Data Engineer",
+        "Senior Product Manager",
+        "Technical Product Manager"
+      ],
+      "evidence": "Six years at Alghalia: Power BI dashboards used as the single source of truth for inventory and sales, customer segmentation across 100+ accounts, competitor and pricing analysis, weekly performance reporting. SQL and advanced Excel. This is the longest-running experience but it is business analytics, not machine learning modelling or large-scale data engineering: no Spark, Kafka, Airflow or warehouse ETL."
+    }
   ]
 }

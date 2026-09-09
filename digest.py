@@ -44,8 +44,9 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
-from job_archive import (GRADE_TEASER, jd_grade, jd_signal,
+from job_archive import (GRADE_TEASER, jd_grade, jd_requirements, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
+import fit_check
 from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
 
@@ -167,7 +168,7 @@ DEFAULT_PROFILE = {
         "api", "cloud", "aws", "gcp", "data", "saas", "platform", "devops",
         "founding", "applied ai", "architect", "solutions",
     ],
-    "target_titles": [],
+    "tracks": [],
 }
 
 # JSearch (RapidAPI / Google for Jobs aggregator), endpoint /search-v2.
@@ -280,8 +281,13 @@ MAX_BOARDS_PER_RUN = 40
 # this a board that posts a batch crowds every other employer out of the day.
 MAX_JOBS_PER_COMPANY = 3
 STRONG_MATCH_MIN_SCORE = 80
+# The floor of the rubric's "competitive with gaps" band. A job here is a real
+# match with something the posting states that the resume cannot show, which is
+# a different thing from a role that is merely adjacent -- and with the scoring
+# made honest it is where most genuinely relevant postings now land.
+COMPETITIVE_MIN_SCORE = 60
 
-def _score_floor(raw: str, default: int = 50) -> int:
+def _score_floor(raw: str, default: int = 40) -> int:
     """Read the delivery floor from the environment, tolerating a bad value.
 
     An unset repository variable renders as an empty string, and a mistyped one
@@ -318,7 +324,7 @@ MIN_DELIVER_SCORE = _score_floor(os.environ.get("MIN_DELIVER_SCORE") or "")
 # only; it never spends tailoring credits or writes private resumes into the
 # repository. These two bounds are what the daily run still needs from the JD.
 JD_MAX_CHARS = 6000     # JD text stored per job in the snapshot archive
-JD_RANK_CHARS = 2000    # JD window per job inside the one ranking call
+JD_RANK_CHARS = 2600    # JD window per job inside the one ranking call
 
 # The window is taken from where the posting starts describing the job, not from
 # the top. The old 900 leading characters of a McKinsey posting are entirely
@@ -334,12 +340,11 @@ JD_RANK_CHARS = 2000    # JD window per job inside the one ranking call
 # strong-match line.
 TEASER_SCORE_CAP = 69
 
-# A job whose stated hard requirements the resume cannot evidence is held out of
-# the strong tier, exactly as a teaser is, and for the same reason: "strong
-# match" has to mean the evidence backed it up. Same value as TEASER_SCORE_CAP
-# because it expresses the same thing -- one point below STRONG_MATCH_MIN_SCORE
-# minus the review band. See plans/018.
-BLOCKED_SCORE_CAP = 69
+# A job whose stated hard requirements the resume cannot evidence is held down
+# to what those gaps allow, exactly as a teaser is held out of the strong tier
+# and for the same reason: "strong match" has to mean the evidence backed it up.
+# The ceiling is no longer one flat number -- see fit_check.SEVERITY_CEILING and
+# blocked_score_ceiling, which cap a stated-degree gap on its own. plans/018-019.
 
 STATE_FILE = "seen.json"
 STATE_TTL_DAYS = 120  # prune seen ids older than this to bound file size
@@ -382,11 +387,19 @@ PAID_RELISTER_HOSTS = (
     "wuzzuf.net", "wzzff.com",
 )
 
-# seen.json holds two kinds of key. A job identity remembers the posting; this
+# seen.json holds three kinds of key. A job identity remembers the posting; this
 # prefix remembers a description within its employer and title context, which
 # catches an aggregator that relists the same job under a fresh URL. Both age
 # out on the same TTL.
 JD_SEEN_PREFIX = "jd:"
+
+# The third kind, and the one that ages out on its own clock. A posting the
+# ranker put below MIN_DELIVER_SCORE is skipped for a week rather than written
+# under the 120-day TTL, because scores move: the archives hold one description
+# scored 40, 40, 40, 45, 50, 50 and 75 unchanged. Long enough not to re-rank the
+# same reject every morning, short enough that one bad number is not a verdict.
+FLOOR_SEEN_PREFIX = "floor:"
+FLOOR_COOLDOWN_DAYS = 7
 USER_AGENT = "job-digest/1.0 (personal job search)"
 
 # Drift monitoring: stats.json tracks one row per run (fetched/matched/new/avg
@@ -1647,6 +1660,28 @@ def keyword_score(job):
     return min(100, 40 + hits * 15)  # 40 base for passing filters, +15 per skill hit
 
 
+# The four dimensions the ranker reports alongside its number, with the rubric
+# weights Watheq uses. Ported from its MATCH_SCORING_RUBRIC, and education is
+# the one that matters most here: it is the dimension a candidate with no
+# bachelor's degree keeps being scored against, and it was never asked about.
+RANK_CATEGORIES = {
+    "hard_skills": 40,
+    "experience": 30,
+    "education": 15,
+    "seniority_location": 15,
+}
+
+_CATEGORY_SCORE = {
+    "type": "object",
+    "properties": {
+        "score": {"type": "integer"},
+        "max": {"type": "integer"},
+        "note": {"type": "string"},
+    },
+    "required": ["score", "max", "note"],
+    "additionalProperties": False,
+}
+
 RANK_SCHEMA = {
     "type": "object",
     "properties": {
@@ -1658,8 +1693,15 @@ RANK_SCHEMA = {
                     "id": {"type": "string"},
                     "score": {"type": "integer"},
                     "why": {"type": "string"},
+                    "track": {"type": "string"},
+                    "categories": {
+                        "type": "object",
+                        "properties": {name: _CATEGORY_SCORE for name in RANK_CATEGORIES},
+                        "required": list(RANK_CATEGORIES),
+                        "additionalProperties": False,
+                    },
                 },
-                "required": ["id", "score", "why"],
+                "required": ["id", "score", "why", "track", "categories"],
                 "additionalProperties": False,
             },
         },
@@ -1690,8 +1732,33 @@ def load_resume_evidence(path="resume.md", limit=RESUME_EVIDENCE_CHARS):
         return ""
 
 
+def describe_tracks(tracks):
+    """The candidate's target roles, grouped by what evidences each of them.
+
+    A flat title list said what he wants and nothing about which part of the
+    resume backs it. A Senior Data Analyst posting was then judged against a
+    profile that opens with LLM systems, and an AI posting against six years of
+    Power BI. Grouping lets the ranker pick the track first and score the job
+    against that track's evidence.
+
+    One resume, several tracks. A second resume file would split the evidence
+    in half and go stale independently; the per-job document is what the Tailor
+    CV button produces at apply time.
+    """
+    if not tracks:
+        return ""
+    lines = []
+    for track in tracks:
+        titles = ", ".join(track.get("titles") or [])
+        lines.append(f"- {track.get('name', '')}: {titles}.\n"
+                     f"  Evidenced by: {track.get('evidence', '')}")
+    return ("\n\nTarget tracks. Pick the ONE this posting belongs to, name it in "
+            "`track`, and judge the posting against that track's evidence rather "
+            "than against the whole resume at once:\n" + "\n".join(lines))
+
+
 def rank_jobs(jobs, api_key, evidence=None):
-    """One call. Returns {id: {score, why}} or None on any failure (caller falls back).
+    """One call. Returns {id: {score, why, track, categories}} or None on failure.
 
     The 2026-07-31 digest handed Lead/Staff roles 92-98 because the old prompt
     had no rubric: it asked for a 0-100 with no anchor, so everything AI-flavored
@@ -1700,27 +1767,46 @@ def rank_jobs(jobs, api_key, evidence=None):
 
     What the rubric could not fix on its own is what it was scoring. The excerpt
     used to be the first 900 characters of the posting, which on a McKinsey
-    posting is the culture section and nothing else, and the model duly reported
-    that the description named no technical requirements — across seven days and
-    a 35-point spread on a byte-identical description. It reads the
-    requirements section now, and the listing is sorted so a score no longer
-    depends on which other jobs happened to be new that day.
+    posting is the culture section and nothing else. It reads from the first
+    heading that introduces the work now.
+
+    That still walked away from the OTHER end. A posting states its Minimum
+    Qualifications last, so on the 5187-character Ma'aden posting archived
+    2026-09-08 the 2000-character window covered 217-2217: every
+    responsibility, no degree, no year count, no fine-tuning. The model scored
+    what it was shown, 91, while Watheq scored the same posting 67 on the full
+    text. 42% of the postings in the archive state a degree this candidate does
+    not hold.
+
+    So every job now carries `hard_requirements`, read line by line from the
+    whole description, and `coverage`, which says whether the excerpt is the
+    posting or a window of it. `description_kind` could not answer that: it is
+    computed on the stored text, so it reported "full" while the model was
+    handed a third of one, on 48 of the 49 postings whose requirements the
+    window cut. See plans/019.
     """
-    profile = PROFILE["blurb"]
-    targets = PROFILE.get("target_titles")
-    if targets:
-        profile += " Currently targeting: " + ", ".join(targets) + "."
+    profile = PROFILE["blurb"] + describe_tracks(PROFILE.get("tracks"))
     # The blurb is a paragraph the candidate wrote about himself, so every
     # keyword in it read as demonstrated capability. The resume goes in as
     # separately labelled evidence now, and the blurb keeps the job it is
     # actually good at: stating constraints and wants. See plans/018.
     evidence = load_resume_evidence() if evidence is None else evidence
-    listing = [
-        {"id": j["id"], "title": j["title"], "company": j["company"], "location": j["location"],
-         "description_kind": jd_grade(j.get("description") or ""),
-         "jd_excerpt": jd_signal(j.get("description") or "", JD_RANK_CHARS)}
-        for j in sorted(jobs, key=lambda j: j["id"])
-    ]
+    listing = []
+    for job in sorted(jobs, key=lambda j: j["id"]):
+        description = job.get("description") or ""
+        excerpt = jd_signal(description, JD_RANK_CHARS)
+        listing.append({
+            "id": job["id"],
+            "title": job["title"],
+            "company": job["company"],
+            "location": job["location"],
+            "description_kind": jd_grade(description),
+            # Computed on what is actually SENT. That is the whole point: the
+            # grade above is computed on the stored text and cannot answer it.
+            "coverage": "complete" if len(excerpt) >= len(description) else "windowed",
+            "jd_excerpt": excerpt,
+            "hard_requirements": jd_requirements(description),
+        })
     # Omitted entirely rather than sent empty: a bare
     # <candidate_evidence></candidate_evidence> invites the model to read "no
     # evidence" as "no capability", which would tank every score on a day the
@@ -1735,32 +1821,48 @@ def rank_jobs(jobs, api_key, evidence=None):
         "candidate using it. A resume that lists every required tool and "
         "demonstrates none is a weak match on skills, not a strong one.\n\n"
     ) if evidence else ""
+    weights = ", ".join(f"{name.replace('_', ' ')} {maximum}"
+                        for name, maximum in RANK_CATEGORIES.items())
     prompt = (
         f"{evidence_block}"
         f"<candidate_preferences>\n{profile}\n</candidate_preferences>\n"
         "The preferences block states what the candidate wants and the constraints "
         "that rule a role out. It proves nothing about capability.\n\n"
-        "Score each job 0-100 for fit to this candidate. Anchor every score to this rubric:\n"
-        "- 90-100: senior-level INDIVIDUAL CONTRIBUTOR role in a core area (AI/LLM apps, "
-        "software/backend, full-stack, data) in Saudi Arabia, and the JD's hard requirements "
-        "are clearly covered by the candidate's evidence. Reserve 95+ for near-perfect matches.\n"
-        "- 70-89: senior IC role in a core area with one or two real gaps against the JD.\n"
-        "- 40-69: adjacent function, seniority mismatch, or several gaps.\n"
-        "- 0-39: leadership/staff/principal/management track, wrong location (including a title "
-        "that says based elsewhere or offers relocation), or wrong function.\n"
-        "When the posting states a hard number of years, or a required degree, "
-        "certification or licence, weigh it as a requirement in its own right rather "
-        "than folding it into the function judgement. Count years from what the "
-        "evidence block actually dates, not from a total the preferences block claims. "
-        "A stated credential the evidence does not show is a real gap and belongs in "
-        "your reason; a requirement written as 'preferred' or 'nice to have' is not a "
-        "hard one and must not be scored as a gap.\n"
+        "Score each job 0-100 for fit to this candidate.\n"
+        f"Use this strict evidence-based rubric: {weights}. "
+        "80+ means hireable today, 60-79 means competitive with gaps, below 60 "
+        "means significant gaps. Never score above 90 unless every requirement "
+        "the posting states is met with evidence from the candidate_evidence "
+        "block. Reserve 95+ for a posting whose every stated requirement is met.\n"
+        "Score 0-39 regardless of the rubric when the role is a "
+        "leadership/staff/principal/management track, is based outside Saudi "
+        "Arabia (including a title that says based elsewhere or offers "
+        "relocation), or is the wrong function.\n"
+        "Report each rubric category as an object with score, max and a note of "
+        "at most 12 words. Set max to that category's weight above and score to "
+        "an integer from 0 up to that same max. The four categories do NOT have "
+        "to sum to the overall score: report each honestly and let the overall "
+        "score be your own judgement.\n"
+        "hard_requirements lists the lines where THIS posting states what it "
+        "demands: a degree, a span of years, a certification, a must-have. They "
+        "are read from the whole posting, including the parts jd_excerpt does not "
+        "reach, so treat them as the authority on what the role requires. Weigh a "
+        "stated degree, licence or year count as a requirement in its own right "
+        "rather than folding it into the function judgement. Count years from what "
+        "the evidence block actually dates, not from a total the preferences block "
+        "claims. A stated credential the evidence does not show is a real gap and "
+        "belongs in your reason; a requirement written as 'preferred', 'nice to "
+        "have' or 'or equivalent experience' is not a hard one and must not be "
+        "scored as a gap.\n"
         "jd_excerpt starts where the posting begins describing the job, so it is the "
         "requirements and responsibilities, not the company's recruiting copy. Score against "
-        "what it states. A requirement the excerpt does not mention is unknown, not a gap: "
-        "never lower a score for something the posting simply did not say.\n"
+        "what it states. A requirement neither jd_excerpt nor hard_requirements mentions is "
+        "unknown, not a gap: never lower a score for something the posting simply did not say.\n"
+        "coverage says whether jd_excerpt is the whole posting ('complete') or a window of it "
+        "('windowed'). On a windowed posting, hard_requirements is what you know about its "
+        "demands; do not assume the unseen part is either favourable or damning.\n"
         "description_kind tells you what you are reading. 'full' is a complete posting. "
-        "'teaser' is a short aggregator summary and 'incomplete' is a fragment — for those two, "
+        "'teaser' is a short aggregator summary and 'incomplete' is a fragment - for those two, "
         "judge on title and function alone and say so in your reason. Never score above 85 when "
         "jd_excerpt is empty: a title alone cannot prove fit.\n"
         "Give a one-line reason of at most 15 words naming the deciding factor.\n"
@@ -1772,7 +1874,9 @@ def rank_jobs(jobs, api_key, evidence=None):
                            time.monotonic() + RANK_BUDGET_SECONDS,
                            provider=RANK_PROVIDER)
         return {
-            str(it["id"]): {"score": int(it["score"]), "why": str(it["why"])[:140]}
+            str(it["id"]): {"score": int(it["score"]), "why": str(it["why"])[:140],
+                            "track": str(it.get("track") or "")[:60],
+                            "categories": it.get("categories")}
             for it in answer["scores"]
         }
     except Exception as e:
@@ -1960,6 +2064,39 @@ def enrich_descriptions(jobs):
         job["description"] = get_description(job)
 
 
+def valid_categories(raw):
+    """The rubric categories the model reported, or {} if they do not check out.
+
+    Two rules, both Watheq's, and the second is the load-bearing one.
+
+    Validate score-within-max, never a specific max. Watheq's own evaluation
+    harness records that the model emits each category on its own 0-100 scale
+    about as often as on the stated weight, and the display only ever uses the
+    ratio, so pinning the max would reject honest answers.
+
+    Never reconcile the four against the overall score. Watheq documents that
+    the models' sums run 30+ points above their stated overall on partial
+    matches, so forcing agreement is what pushes a weak resume into the
+    hireable band. They are reported alongside the number, not folded into it.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    checked = {}
+    for name in RANK_CATEGORIES:
+        part = raw.get(name)
+        if not isinstance(part, dict):
+            return {}
+        try:
+            score, maximum = int(part["score"]), int(part["max"])
+        except (KeyError, TypeError, ValueError):
+            return {}
+        if not 0 < maximum <= 100 or not 0 <= score <= maximum:
+            return {}
+        checked[name] = {"score": score, "max": maximum,
+                         "note": str(part.get("note") or "").strip()[:80]}
+    return checked
+
+
 def apply_ranking(jobs, ranking):
     """Attach validated model scores or deterministic fallbacks to every job."""
     for job in jobs:
@@ -1971,12 +2108,19 @@ def apply_ranking(jobs, ranking):
         except (KeyError, TypeError, ValueError):
             valid = False
         if valid:
-            job.update(score=score, why=why, ranking_verified=True)
+            # Categories are additive evidence, so a malformed set costs the
+            # breakdown and never the score: the number is the model's own
+            # judgement and does not depend on them.
+            job.update(score=score, why=why, ranking_verified=True,
+                       track=str(result.get("track") or "").strip()[:60],
+                       categories=valid_categories(result.get("categories")))
         else:
             job.update(
                 score=keyword_score(job),
                 why="matches your target titles and skills",
                 ranking_verified=False,
+                track="",
+                categories={},
             )
 
 
@@ -2003,36 +2147,37 @@ def cap_teaser_scores(jobs):
 
 
 def cap_blocked_scores(jobs):
-    """Hold a job with verified requirement gaps out of the strong tier.
+    """Hold a job with verified requirement gaps down to what they allow.
 
     The mirror of cap_teaser_scores. That one says the description could not
     back the score up; this one says the description DID, and the resume could
     not meet it. Returns the jobs it capped.
 
-    Only a `low` ceiling caps, and only a ceiling computed from evidence that
-    survived checking. `unknown` -- a check that failed, timed out, or never
-    ran -- must never cap: silence means "no verdict", not "bad verdict", or a
-    provider outage would quietly demote every strong match in the digest.
+    The ceiling comes from `blocked_score_ceiling`, so a single verified missing
+    degree caps on its own. It used to take a "low" ceiling -- two blockers, or
+    one the model happened to call critical -- which is why a Ma'aden posting
+    stating a bachelor's degree the candidate does not hold was delivered at 91
+    with nothing on the card saying so.
+
+    A check that failed, timed out or never ran reports `unknown` and no
+    blockers, so it produces no ceiling and caps nothing. Silence means "no
+    verdict", never "bad verdict", or a provider outage would quietly demote
+    every strong match in the digest.
     """
     capped = []
     for job in jobs:
         check = job.get("fit_check") or {}
-        if check.get("ceiling") != "low":
+        blockers = check.get("blockers") or []
+        ceiling = fit_check.blocked_score_ceiling(blockers)
+        if ceiling is None or job["score"] <= ceiling:
             continue
-        if job["score"] <= BLOCKED_SCORE_CAP:
-            # Belt and braces rather than a live hazard: cap_teaser_scores runs
-            # far upstream, so a teaser-capped job sits at 69, is_strong needs
-            # 80, and it never gets a fit_check at all -- the ceiling guard
-            # above already returned. Kept so the two caps stay composable if
-            # either ever moves.
-            continue
-        blockers = len(check.get("blockers") or [])
-        job["score"] = BLOCKED_SCORE_CAP
+        job["score"] = ceiling
         # Trim the reason, not the suffix. apply_ranking already truncates `why`
         # to exactly 140, so appending and slicing the result silently ate the
         # explanation on a full-length reason -- leaving a card that reads
         # "fit 69" with a reason written for an 88 and nothing saying why.
-        suffix = f" (capped: {blockers} verified requirement gaps)"
+        suffix = f" (capped: {len(blockers)} verified requirement gap"
+        suffix += ")" if len(blockers) == 1 else "s)"
         job["why"] = job["why"][:140 - len(suffix)].rstrip() + suffix
         capped.append(job)
     return capped
@@ -2049,6 +2194,34 @@ def remember(seen, job, today):
     key = description_key(job)
     if key:
         seen[key] = today
+
+
+def defer_below_floor(seen, job, today):
+    """Skip this posting for a week rather than retiring it for four months.
+
+    A below-floor drop used to go through `remember`, which writes the job under
+    STATE_TTL_DAYS. Given the score instability the archives already record --
+    one QuantumBlack posting scored 40, 40, 40, 45, 50, 50 and 75 on a
+    byte-identical description -- one bad morning retired a real job until
+    January.
+
+    A cooldown rather than no memory at all. Not remembering it would work, but
+    the same 15-20 rejects would be re-fetched, re-enriched and re-ranked every
+    single morning for a verdict already reached, which costs description
+    fetches and ranking tokens daily. A week gives the second chance without
+    paying for it every day.
+    """
+    seen[FLOOR_SEEN_PREFIX + job_identity(job)] = today
+
+
+def still_cooling(seen, job, today):
+    """Is this posting inside the cooldown a below-floor score gave it?"""
+    stamped = seen.get(FLOOR_SEEN_PREFIX + job_identity(job))
+    if not stamped:
+        return False
+    cutoff = (datetime.date.fromisoformat(today)
+              - datetime.timedelta(days=FLOOR_COOLDOWN_DAYS)).isoformat()
+    return stamped >= cutoff
 
 
 def drop_below_floor(jobs):
@@ -2089,28 +2262,48 @@ def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
     return kept, deferred
 
 
+TIER_STRONG = "Strong matches"
+TIER_COMPETITIVE = "Competitive with gaps"
+TIER_REVIEW = "Worth reviewing"
+
+
 def is_strong(job):
-    """A high-confidence, JD-backed model match.
+    """A high-confidence, JD-backed model match with nothing verified against it.
 
     Extracted from split_tiers so the reality check and the tier split cannot
-    drift apart: the jobs worth spending a per-job model call on are exactly the
-    ones about to be labelled "Strong matches".
+    drift apart. The blocker clause is what stops the label contradicting the
+    card under it: cap_blocked_scores has already pulled a gapped job's score to
+    its ceiling, and every ceiling sits below STRONG_MATCH_MIN_SCORE, so this is
+    belt and braces rather than a second opinion.
     """
     return bool(job["ranking_verified"]
                 and job["score"] >= STRONG_MATCH_MIN_SCORE
-                and job.get("description"))
+                and job.get("description")
+                and not (job.get("fit_check") or {}).get("blockers"))
 
 
 def split_tiers(jobs):
-    """Separate high-confidence JD-backed model matches from review candidates."""
-    strong = [job for job in jobs if is_strong(job)]
-    # `job not in strong` here was a dict equality compare -- O(n^2) with deep
-    # comparison. Unreachable as a defect (strength is a pure function of the
-    # dict, so two equal dicts are both strong or neither is), but refactoring
-    # the predicate out and leaving the membership test would be worse than
-    # either fixing it or not touching it. plans/README.md:296.
-    review = [job for job in jobs if not is_strong(job)]
-    return strong, review
+    """Three tiers, matching the bands the ranker is now scored against.
+
+    Two tiers stopped working the moment the scoring became honest. `is_strong`
+    needs 80, and the new rubric plus the gap ceilings put a degree-gated role
+    at 69 or below -- 42% of the archive states a degree this candidate does not
+    hold, so "Strong matches" would have been a permanently empty heading above
+    every card.
+
+    The middle tier is the rubric's own "60-79, competitive with gaps" band. It
+    is where a real match with a real gap belongs, and naming it is what stops a
+    69 reading as a rejection.
+    """
+    strong, competitive, review = [], [], []
+    for job in jobs:
+        if is_strong(job):
+            strong.append(job)
+        elif job["score"] >= COMPETITIVE_MIN_SCORE:
+            competitive.append(job)
+        else:
+            review.append(job)
+    return strong, competitive, review
 
 
 # Substrings that a closed/expired posting page shows. Checked case-insensitively
@@ -2210,8 +2403,17 @@ def load_seen():
 
 
 def save_seen(seen):
-    cutoff = (datetime.date.today() - datetime.timedelta(days=STATE_TTL_DAYS)).isoformat()
-    pruned = {k: v for k, v in seen.items() if v >= cutoff}
+    """Prune each kind of key on its own clock.
+
+    A single cutoff was right while every key meant "delivered". A floor: key
+    means "scored badly once", which is a much weaker claim and has to expire
+    much sooner, or the cooldown is a 120-day retirement under a new name.
+    """
+    today = datetime.date.today()
+    cutoff = (today - datetime.timedelta(days=STATE_TTL_DAYS)).isoformat()
+    floor_cutoff = (today - datetime.timedelta(days=FLOOR_COOLDOWN_DAYS)).isoformat()
+    pruned = {k: v for k, v in seen.items()
+              if v >= (floor_cutoff if k.startswith(FLOOR_SEEN_PREFIX) else cutoff)}
     with open(STATE_FILE, "w") as f:
         json.dump(pruned, f, indent=0, sort_keys=True)
 
@@ -2680,7 +2882,9 @@ def main():
     # the delivery floor, this is a verdict on the link, not on the role: the
     # same posting appearing on the employer's own board tomorrow should be
     # delivered tomorrow.
-    fresh = [j for j in matched if job_identity(j) not in seen]
+    fresh = [j for j in matched
+             if job_identity(j) not in seen
+             and not still_cooling(seen, j, today_iso)]
 
     # Age before liveness, because this costs no network and settle_link spends
     # a request per job. Deliberately NOT written to seen.json: the check is
@@ -2835,11 +3039,13 @@ def main():
 
     fresh, below_floor = drop_below_floor(fresh)
     for job in below_floor:
-        log(f"Below floor {job['company']} — {job['title']}: fit {job['score']} < {MIN_DELIVER_SCORE}")
-        # A verified score under the floor is a decision, not a delivery
-        # failure, so it is remembered here rather than left to be re-fetched,
-        # re-scored and re-rejected every day until it ages out.
-        remember(seen, job, today)
+        log(f"Below floor {job['company']} — {job['title']}: fit {job['score']} "
+            f"< {MIN_DELIVER_SCORE}; skipped for {FLOOR_COOLDOWN_DAYS} days")
+        # A cooldown, not a retirement. This is a verdict on one score, and the
+        # archives show a score moving 35 points on an unchanged description --
+        # so it stops the same reject being re-ranked every morning without
+        # burying a real job for the full state TTL.
+        defer_below_floor(seen, job, today)
 
     if not fresh:
         save_seen(seen)
@@ -2871,24 +3077,33 @@ def main():
     # never CAUSE a job to be dropped or remembered as below-floor -- a capped
     # job is delivered, flagged, and then remembered like any other delivery,
     # which is what stops it being re-fetched and re-capped every morning. And
-    # split_tiers has not run, so a capped job lands in "Worth reviewing" on its
-    # own instead of wearing a "Strong matches" label beside a fit 69.
-    check_jobs([job for job in fresh if is_strong(job)], evidence,
-               rank_key, RANK_MODEL, RANK_FALLBACKS, RANK_PROVIDER, log)
+    # split_tiers has not run, so a capped job is tiered on the score the cap
+    # left it rather than wearing a "Strong matches" label beside a fit 69.
+    # Every delivered job, not only the ones already scoring 80+. Scoped that
+    # way this pass produced exactly one low ceiling across 208 archived
+    # snapshots, because it never looked at the other 196 -- and a gap the
+    # ranker missed on a job it scored 78 is the gap most worth naming.
+    # MAX_CHECKED_JOBS and CHECK_BUDGET_SECONDS still bound it, and a job past
+    # either keeps a neutral result that caps nothing.
+    check_jobs(fresh, evidence, rank_key, RANK_MODEL, RANK_FALLBACKS,
+               RANK_PROVIDER, log)
     for job in cap_blocked_scores(fresh):
         gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
         log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
 
-    strong, review = split_tiers(fresh)
-    strong.sort(key=lambda x: x["score"], reverse=True)
-    review.sort(key=lambda x: x["score"], reverse=True)
-    strong = strong[:MAX_JOBS_IN_DIGEST]
-    review = review[:MAX_JOBS_IN_DIGEST - len(strong)]
-    for j in strong:
-        j["tier"] = "Strong matches"
-    for j in review:
-        j["tier"] = "Worth reviewing"
-    delivered = strong + review
+    tiers = split_tiers(fresh)
+    room = MAX_JOBS_IN_DIGEST
+    delivered = []
+    for name, group in zip((TIER_STRONG, TIER_COMPETITIVE, TIER_REVIEW), tiers):
+        group.sort(key=lambda x: x["score"], reverse=True)
+        # Best-scoring tier first, so the cut falls on the weakest jobs rather
+        # than on whichever tier happened to be listed last.
+        group[:] = group[:room]
+        room -= len(group)
+        for job in group:
+            job["tier"] = name
+        delivered.extend(group)
+    strong, competitive, review = tiers
     fresh = delivered
 
     # Persist full job/JD evidence before delivery. A later button click can
@@ -2921,9 +3136,15 @@ def main():
             if not j.get("description"):
                 flags.append("title-only assessment")
             check = j.get("fit_check") or {}
-            if check.get("ceiling") == "low":
-                gaps = "; ".join(b["title"] for b in check.get("blockers") or [])
-                flags.append(f"low ceiling - {gaps}" if gaps else "low ceiling")
+            gaps = "; ".join(b["title"] for b in check.get("blockers") or [])
+            if gaps:
+                # Named whatever the ceiling. A single verified gap used to show
+                # nothing, on a card whose score had already been capped for it.
+                flags.append(f"gaps the posting states - {gaps}")
+            elif check.get("ceiling") == "unknown":
+                # Now that every delivered job is checked, an unchecked one
+                # would otherwise read exactly like one checked and found clean.
+                flags.append("requirements not checked")
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
@@ -2987,7 +3208,8 @@ def main():
         stats, today, len(all_jobs), len(matched), new_count, avg_score,
         link_closed=len(closed), link_unknown=unknown_count,
             dropped_stale=len(stale), undated=undated,
-        strong=len(strong), review=len(review), tailored=0, tailor_failed=0,
+        strong=len(strong), competitive=len(competitive), review=len(review),
+        tailored=0, tailor_failed=0,
         delivered=len(delivered_ids), relisted=len(relisted),
         below_floor=len(below_floor), deferred=len(deferred),
     )

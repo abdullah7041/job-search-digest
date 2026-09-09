@@ -26,6 +26,7 @@ from __future__ import annotations
 import re
 import time
 
+from job_archive import jd_requirements, jd_signal
 from openrouter import chat_json
 from resume_source import snippet_supported, unsupported_terms, vocabulary
 
@@ -51,7 +52,7 @@ SEVERITIES = ["medium", "high", "critical"]
 
 # One call per job, so the population must stay small. split_tiers' strong tier
 # runs 3-6 on a normal day; this bounds a board-discovery day that floods it.
-MAX_CHECKED_JOBS = 10
+MAX_CHECKED_JOBS = 12
 
 # Shared across every job's call, in the style of RANK_BUDGET_SECONDS.
 #
@@ -67,7 +68,7 @@ MAX_CHECKED_JOBS = 10
 # Revisit with real wall times from a live run before raising it.
 CHECK_BUDGET_SECONDS = 120
 
-JD_CHECK_CHARS = 4000
+JD_CHECK_CHARS = 3000
 RESUME_CHECK_CHARS = 8000
 
 # A digest must never tell its reader what an employer will decide. Ported from
@@ -153,14 +154,37 @@ def neutral_result(reason: str = "") -> dict:
             "ceiling": "unknown", "note": reason}
 
 
+def check_text(job: dict) -> str:
+    """The part of the posting this check is allowed to judge, and its demands.
+
+    A plain `description[:JD_CHECK_CHARS]` slice is what made this pass useless
+    on the posting it was built for. The Ma'aden posting archived 2026-09-08 is
+    5187 characters with its Minimum Qualifications at 3958, so a 4000-character
+    prefix cut mid-word at "Bachelor's degre": the check saw the heading, could
+    not quote a verifiable snippet from half a word, returned zero blockers, and
+    `ceiling_band` duly reported "high" on a job whose stated minimum
+    qualification the candidate does not hold.
+
+    Same two-part reading as the ranker, from the same helpers, so the two
+    cannot drift: the window where the posting describes the work, plus the
+    requirement lines read from the whole text wherever they sit.
+    """
+    description = job.get("description") or ""
+    excerpt = jd_signal(description, JD_CHECK_CHARS)
+    requirements = jd_requirements(description)
+    if not requirements:
+        return excerpt
+    return excerpt + "\n\nStated requirements:\n" + "\n".join(
+        f"- {line}" for line in requirements)
+
+
 def build_prompt(job: dict, resume_text: str) -> str:
     """One job, the resume, and the rules that make the answer checkable."""
-    jd = (job.get("description") or "")[:JD_CHECK_CHARS]
     return (
         "You are a conservative hiring analyst. Decide what would genuinely stop "
         "this candidate being competitive for this specific role.\n\n"
         f"<resume>\n{resume_text[:RESUME_CHECK_CHARS]}\n</resume>\n\n"
-        f"<job_description>\n{jd}\n</job_description>\n\n"
+        f"<job_description>\n{check_text(job)}\n</job_description>\n\n"
         f"Job title: {job.get('title', '')}\n"
         f"Company: {job.get('company', '')}\n"
         f"Location: {job.get('location', '')}\n\n"
@@ -168,6 +192,12 @@ def build_prompt(job: dict, resume_text: str) -> str:
         "- A blocker is a HARD requirement this posting states that the resume "
         "does not evidence. A requirement written as 'preferred', 'nice to have' "
         "or 'a plus' is not a blocker. At most three, most severe first.\n"
+        "- The 'Stated requirements' list, when present, is where this posting "
+        "says what it demands. It is read from the whole posting, so a "
+        "requirement there counts even if the text above never repeats it.\n"
+        "- A degree, licence or certification the posting states as a minimum "
+        "and the resume does not show is an education_certification_gap. Say so "
+        "plainly rather than folding it into a skills blocker.\n"
         "- Every blocker and every strength must cite evidence: a short snippet "
         "COPIED VERBATIM from the resume or the job description, with source set "
         "to which one it came from. Do not paraphrase a snippet.\n"
@@ -317,6 +347,51 @@ def ceiling_band(blockers: list[dict]) -> str:
     if len(blockers) >= 2 or any(b.get("severity") == "critical" for b in blockers):
         return "low"
     return "mid"
+
+
+# How high a score a verified gap still allows. Replaces a single flat cap that
+# fired only on a "low" ceiling -- which needs two blockers or one the model
+# happened to call critical, so a single verified missing bachelor's degree
+# returned "mid", capped nothing, and showed nothing on the card. That is the
+# exact case this pass exists for: 42% of the postings in the archive state a
+# degree this candidate does not hold.
+#
+# Ceilings, not penalties. A posting with three gaps is not three times worse
+# than the worst of them, and stacked subtraction took a measured example from
+# 91 to 46 -- well past the 67 Watheq gave the same posting. The lowest ceiling
+# wins and nothing accumulates.
+#
+# 69 is one point below STRONG_MATCH_MIN_SCORE and the top of the "competitive
+# with gaps" band, so a job with a real gap can still be delivered and read
+# honestly; it just cannot wear a "Strong matches" label.
+SEVERITY_CEILING = {"critical": 55, "high": 69, "medium": 79}
+
+# A stated degree, licence or certification the resume cannot show caps on its
+# own whatever severity the model attached to it. Severity is the model's
+# opinion; "the posting states a minimum qualification and the resume does not
+# meet it" is a fact about two documents.
+CREDENTIAL_CEILING = 69
+CREDENTIAL_BLOCKER = "education_certification_gap"
+
+
+def blocked_score_ceiling(blockers: list[dict]) -> int | None:
+    """The highest score these verified gaps leave, or None when they leave any.
+
+    Pure, so the arithmetic is testable without a model, and every blocker that
+    reaches it has already survived `verify`.
+    """
+    ceilings = []
+    for blocker in blockers or []:
+        if blocker.get("type") == CREDENTIAL_BLOCKER:
+            ceilings.append(CREDENTIAL_CEILING)
+        # `verify` guarantees a severity from SEVERITIES, and defaults an
+        # unrecognised one to "medium". A blocker that reached here without one
+        # came from a caller that bypassed verify, and it still describes a real
+        # gap -- so it gets the same default rather than escaping the ceiling
+        # entirely, which would let a malformed blocker read as no blocker.
+        ceilings.append(SEVERITY_CEILING.get(blocker.get("severity"),
+                                             SEVERITY_CEILING["medium"]))
+    return min(ceilings) if ceilings else None
 
 
 def check_job(job: dict, resume_text: str, api_key: str, deadline: float,

@@ -114,7 +114,13 @@ def legacy_rank(jobs: list[dict], api_key: str) -> dict | None:
     and the comparison silently stops meaning anything.
     """
     profile = digest.PROFILE["blurb"]
-    targets = digest.PROFILE.get("target_titles")
+    # profile.json carried a flat `target_titles` when this copy was frozen; it
+    # carries named tracks now. Flattened rather than dropped, so the baseline
+    # keeps stating the same target roles and the A/B still measures the prompt
+    # rather than a profile that quietly lost half its input.
+    targets = digest.PROFILE.get("target_titles") or [
+        title for track in digest.PROFILE.get("tracks") or []
+        for title in track.get("titles") or []]
     if targets:
         profile += " Currently targeting: " + ", ".join(targets) + "."
     listing = [

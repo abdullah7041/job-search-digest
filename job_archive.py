@@ -109,6 +109,84 @@ def jd_signal(jd_text: str, limit: int) -> str:
     return text[offset:offset + limit] if offset != -1 else text[:limit]
 
 
+# What a posting DEMANDS, as opposed to what it describes. These three patterns
+# are what a hard requirement looks like in the wild: a credential, a span of
+# years, or a word that marks the line as non-negotiable.
+REQUIREMENT_RE = re.compile(
+    r"(?i)\b(?:bachelor|master|phd|ph\.d|b\.?sc|m\.?sc|degree|diploma|certifi\w*"
+    r"|licen[cs]e|qualification"
+    r"|\d+\s*(?:[-\u2013\u2014+]\s*\d*)?\s*\+?\s*(?:years?|yrs?)"
+    r"|must have|must be|required|requirement|minimum|mandatory|essential"
+    r"|proven experience|hands-on experience)\b"
+)
+
+# A requirement line shorter than this is a fragment, and one longer than this is
+# a paragraph that happens to contain the word "required". A long chunk is split
+# on sentence boundaries first, which is what recovers a qualifications block
+# written as prose rather than as bullets: 14 postings lost their requirement
+# without that split, 11 with it.
+REQUIREMENT_MIN_CHARS = 12
+REQUIREMENT_MAX_CHARS = 400
+REQUIREMENT_BUDGET = 900
+
+CHUNK_SPLIT_RE = re.compile(r"\n(?=\s*[*\u2022\-]|\s*[A-Z])")
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.;])\s+(?=[A-Z])")
+
+
+def jd_requirements(jd_text: str, limit: int = REQUIREMENT_BUDGET) -> list[str]:
+    """The lines where a posting states what it demands, wherever they sit.
+
+    jd_signal answers "where does this posting start describing the job", which
+    is the right question for responsibilities and the wrong one for
+    qualifications. A posting puts its Minimum Qualifications at the END, so a
+    window anchored at the first heading walks away from them.
+
+    Measured on the Ma'aden posting archived 2026-09-08: 5187 characters, with
+    responsibilities at 217, Minimum Qualifications at 3958 and Skills at 4529.
+    The 2000-character ranking window covered 217-2217, showed the model the
+    flattering half only, and it scored 91 while Watheq scored the same posting
+    67 on the full text. No single contiguous window reaches both ends, and
+    anchoring on the LAST heading lands on Skills and skips the qualifications
+    above it -- so this reads lines rather than a span.
+
+    Measured across the 120 archived postings that state a qualification:
+
+        jd_signal(text, 2000)     49 lose it
+        a head-plus-tail window   50 lose it
+        this                      11 lose it
+
+    at a mean of 403 characters per posting. `limit` bounds what one ranking
+    call carries for one job; it is headroom, not a working truncation.
+    """
+    chunks: list[str] = []
+    for chunk in CHUNK_SPLIT_RE.split(jd_text or ""):
+        if len(" ".join(chunk.split())) > REQUIREMENT_MAX_CHARS:
+            chunks.extend(SENTENCE_SPLIT_RE.split(chunk))
+        else:
+            chunks.append(chunk)
+
+    found: list[str] = []
+    seen: set[str] = set()
+    total = 0
+    for chunk in chunks:
+        # The bullet marker the split left on the front carries no meaning once
+        # the line is out of its list.
+        line = " ".join(chunk.split()).lstrip("*•- ")
+        if not REQUIREMENT_MIN_CHARS <= len(line) <= REQUIREMENT_MAX_CHARS:
+            continue
+        if not REQUIREMENT_RE.search(line):
+            continue
+        key = line.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        if total + len(line) + 2 > limit:
+            break
+        found.append(line)
+        total += len(line) + 2
+    return found
+
+
 def jd_grade(jd_text: str) -> str:
     """How much of a real job description this text actually is."""
     text = jd_text or ""
@@ -164,6 +242,12 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "score": job.get("score", 0),
         "why": job.get("why", ""),
         "ranking_verified": bool(job.get("ranking_verified")),
+        # Additive, like ceiling and jd.grade below. Which target track the
+        # ranker judged this against, and the four rubric categories it
+        # reported. Archived so a score can be read back apart from the one
+        # number, which is the whole complaint that produced them.
+        "track": job.get("track", ""),
+        "categories": job.get("categories") or {},
         # Additive, like the jd.grade field below: schema_version stays 1 so a
         # same-day append to an archive written before these existed still
         # merges. Readers must treat a missing ceiling as "unknown".
@@ -205,17 +289,25 @@ def job_card_payload(snapshot: dict) -> dict:
         footer += " · Short teaser, not the full posting"
     if snapshot.get("link_status") == "unknown":
         footer += " · Link check inconclusive"
-    # Only a low ceiling earns a line. "mid" is the ordinary case and saying so
-    # on every card would train the reader to skip the footer, and "unknown"
-    # means the check could not run -- which must not read as a verdict.
+    # A gap earns its line whatever the ceiling. It used to take a "low"
+    # ceiling, which needs two blockers or one the model called critical -- so a
+    # single verified missing bachelor's degree showed nothing at all, on a card
+    # whose score had already been capped for it.
+    #
+    # "unknown" is the opposite case and needs saying out loud now that every
+    # delivered job is checked rather than only the ones scoring 80+: a job past
+    # the check budget renders identically to one checked and found clean, and
+    # silence must read as unchecked rather than as clean.
     blockers = snapshot.get("blockers") or []
-    if snapshot.get("ceiling") == "low":
-        footer += f" · Low ceiling, {len(blockers)} blocker(s)"
+    if blockers:
+        footer += f" · {len(blockers)} verified gap(s)"
+    elif snapshot.get("ceiling") == "unknown":
+        footer += " · Requirements not checked"
     fields = [
         {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
         {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
     ]
-    if snapshot.get("ceiling") == "low" and blockers:
+    if blockers:
         # In a field rather than crammed into the footer: these are the whole
         # reason the score was capped, so they have to be readable.
         fields.append({"name": "Gaps the posting states",

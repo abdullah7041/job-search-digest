@@ -488,11 +488,21 @@ class TestRankedExcerpt(unittest.TestCase):
     """What the ranker reads, which is what the whole score rests on."""
 
     def test_the_excerpt_starts_at_the_requirements_not_at_the_top(self):
+        """Pinned against an explicit limit rather than JD_RANK_CHARS. The
+        constant is now wide enough to swallow this fixture whole, which is the
+        right outcome and the wrong way to test the property: jd_signal only
+        chooses a start when the text does not fit."""
         self.assertGreater(FULL_JD.index("Requirements:"), 900)
-        excerpt = job_archive.jd_signal(FULL_JD, digest.JD_RANK_CHARS)
+        excerpt = job_archive.jd_signal(FULL_JD, len(FULL_JD) - 100)
 
         self.assertIn("5+ years building production Python", excerpt)
         self.assertFalse(excerpt.startswith("Who You'll Work With"))
+
+    def test_the_ranking_window_covers_a_description_of_this_size_whole(self):
+        """JD_RANK_CHARS went 2000 to 2600 because the median archived posting
+        is 2650 characters. Recording the consequence so a later trim is a
+        visible decision rather than a silent re-truncation."""
+        self.assertEqual(job_archive.jd_signal(FULL_JD, digest.JD_RANK_CHARS), FULL_JD)
 
     def test_a_heading_word_inside_a_sentence_does_not_start_the_window(self):
         """A bare substring search put the McKinsey window at '...your location,
@@ -872,23 +882,48 @@ class TestBlockedScoreCap(unittest.TestCase):
     See plans/018.
     """
 
-    def _job(self, ceiling, blockers, score=88, why="Strong senior IC match in Riyadh."):
+    def _job(self, ceiling, blockers, score=88, why="Strong senior IC match in Riyadh.",
+             severity="high", kind="missing_required_skill"):
         return {"title": "T", "company": "C", "score": score, "why": why,
                 "ranking_verified": True, "description": FULL_JD,
-                "fit_check": {"blockers": [{"title": f"b{n}"} for n in range(blockers)],
+                "fit_check": {"blockers": [{"title": f"b{n}", "severity": severity,
+                                            "type": kind} for n in range(blockers)],
                               "unclear": [], "strengths": [], "ceiling": ceiling, "note": ""}}
 
-    def test_a_low_ceiling_caps_the_score(self):
+    def test_two_gaps_cap_the_score(self):
         job = self._job("low", 2)
         capped = digest.cap_blocked_scores([job])
         self.assertEqual(capped, [job])
-        self.assertEqual(job["score"], digest.BLOCKED_SCORE_CAP)
+        self.assertEqual(job["score"], fit_check_module.SEVERITY_CEILING["high"])
         self.assertIn("2 verified requirement gaps", job["why"])
 
-    def test_a_mid_ceiling_does_not_cap(self):
-        job = self._job("mid", 1)
+    def test_one_stated_degree_the_resume_lacks_caps_on_its_own(self):
+        """The case that produced this whole change. A single verified
+        education_certification_gap used to return a 'mid' ceiling, cap
+        nothing, and show nothing -- so a Ma'aden posting stating a bachelor's
+        degree the candidate does not hold was delivered at 91."""
+        job = self._job("mid", 1, severity="medium",
+                        kind="education_certification_gap")
+        self.assertEqual(digest.cap_blocked_scores([job]), [job])
+        self.assertEqual(job["score"], fit_check_module.CREDENTIAL_CEILING)
+        self.assertIn("1 verified requirement gap", job["why"])
+        self.assertNotIn("gaps)", job["why"], "one gap must not read as plural")
+
+    def test_the_lowest_ceiling_wins_and_nothing_stacks(self):
+        """Three gaps are not three times worse than the worst of them.
+        Stacked subtraction took a measured example from 91 to 46, well past
+        the 67 Watheq gave the same posting."""
+        job = self._job("low", 1, severity="critical")
+        job["fit_check"]["blockers"] += [
+            {"title": "b1", "severity": "medium", "type": "domain_gap"},
+            {"title": "b2", "severity": "high", "type": "experience_gap"}]
+        digest.cap_blocked_scores([job])
+        self.assertEqual(job["score"], fit_check_module.SEVERITY_CEILING["critical"])
+
+    def test_a_score_already_under_the_ceiling_is_left_alone(self):
+        job = self._job("mid", 1, severity="medium", score=60)
         self.assertEqual(digest.cap_blocked_scores([job]), [])
-        self.assertEqual(job["score"], 88)
+        self.assertEqual(job["score"], 60)
 
     def test_a_high_ceiling_does_not_cap(self):
         job = self._job("high", 0)
@@ -944,9 +979,10 @@ class TestStrongPredicate(unittest.TestCase):
             {"ranking_verified": False, "score": 95, "description": FULL_JD},
             {"ranking_verified": True, "score": 95, "description": ""},
         ]
-        strong, review = digest.split_tiers(jobs)
+        strong, competitive, review = digest.split_tiers(jobs)
         self.assertEqual(strong, [j for j in jobs if digest.is_strong(j)])
-        self.assertEqual(review, [j for j in jobs if not digest.is_strong(j)])
+        self.assertEqual(sorted(id(j) for j in competitive + review),
+                         sorted(id(j) for j in jobs if not digest.is_strong(j)))
 
     def test_duplicate_jobs_are_preserved_in_both_tiers(self):
         """split_tiers built the review tier with `job not in strong` -- a dict
@@ -959,11 +995,12 @@ class TestStrongPredicate(unittest.TestCase):
         weak = {"ranking_verified": True, "score": 40, "description": FULL_JD}
         strong_job = {"ranking_verified": True, "score": 95, "description": FULL_JD}
 
-        strong, review = digest.split_tiers([dict(weak), dict(weak)])
-        self.assertEqual((len(strong), len(review)), (0, 2))
+        strong, competitive, review = digest.split_tiers([dict(weak), dict(weak)])
+        self.assertEqual((len(strong), len(competitive), len(review)), (0, 0, 2))
 
-        strong, review = digest.split_tiers([dict(strong_job), dict(strong_job)])
-        self.assertEqual((len(strong), len(review)), (2, 0))
+        strong, competitive, review = digest.split_tiers(
+            [dict(strong_job), dict(strong_job)])
+        self.assertEqual((len(strong), len(competitive), len(review)), (2, 0, 0))
 
 
 class TestTierClassification(unittest.TestCase):
@@ -987,9 +1024,12 @@ class TestTierClassification(unittest.TestCase):
             "malformed": {"score": "not-a-number", "why": "bad"},
         }
         digest.apply_ranking(jobs, ranking)
-        strong, review = digest.split_tiers(jobs)
+        strong, competitive, review = digest.split_tiers(jobs)
         self.assertEqual([job["id"] for job in strong], ["strong"])
-        self.assertEqual({job["id"] for job in review}, {"low", "no-jd", "malformed"})
+        # 79 is the top of the rubric's "competitive with gaps" band, and a
+        # title-only 95 still belongs there rather than in Strong matches.
+        self.assertEqual({job["id"] for job in competitive}, {"low", "no-jd"})
+        self.assertEqual({job["id"] for job in review}, {"malformed"})
         self.assertFalse(next(job for job in jobs if job["id"] == "malformed")["ranking_verified"])
 
 
@@ -2135,15 +2175,25 @@ class TestPerCompanyCap(unittest.TestCase):
 
 
 class TestDeliveryFloor(unittest.TestCase):
+    """Scores are relative to MIN_DELIVER_SCORE rather than written out, so
+    moving the floor cannot silently stop these testing what they name."""
+
     def _jobs(self):
+        floor = digest.MIN_DELIVER_SCORE
         return [
             {"id": "good", "title": "Senior AI Engineer", "description": "Python LLM",
-             "company": "A", "score": 55, "ranking_verified": True},
+             "company": "A", "score": floor + 5, "ranking_verified": True},
             {"id": "weak", "title": "Senior Data Engineer", "description": "SQL",
-             "company": "B", "score": 45, "ranking_verified": True},
+             "company": "B", "score": floor - 5, "ranking_verified": True},
             {"id": "edge", "title": "Senior Backend Engineer", "description": "Go",
-             "company": "C", "score": 50, "ranking_verified": True},
+             "company": "C", "score": floor, "ranking_verified": True},
         ]
+
+    def test_the_floor_sits_below_the_competitive_band(self):
+        """Honest scoring moves a degree-gated role down 15-20 points. A floor
+        at the band boundary would drop exactly the roles the middle tier was
+        added to carry."""
+        self.assertLess(digest.MIN_DELIVER_SCORE, digest.COMPETITIVE_MIN_SCORE)
 
     def test_only_scores_under_the_floor_are_dropped(self):
         kept, dropped = digest.drop_below_floor(self._jobs())
@@ -2163,8 +2213,12 @@ class TestDeliveryFloor(unittest.TestCase):
         self.assertEqual(len(kept), 3)
 
     def test_the_floor_is_configurable(self):
-        with mock.patch.object(digest, "MIN_DELIVER_SCORE", 60):
-            kept, dropped = digest.drop_below_floor(self._jobs())
+        # Built OUTSIDE the patch. _jobs() sizes its scores from the live floor,
+        # so building them inside would raise the jobs along with the floor and
+        # the test would pass whatever drop_below_floor did.
+        jobs = self._jobs()
+        with mock.patch.object(digest, "MIN_DELIVER_SCORE", 100):
+            kept, dropped = digest.drop_below_floor(jobs)
 
         self.assertEqual([job["id"] for job in kept], [])
         self.assertEqual(len(dropped), 3)
@@ -2547,8 +2601,10 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("Senior Data Architect", body)
         for gone in ("Lead AI Engineer", "Staff level", "Team Leader", "Bangkok"):
             self.assertNotIn(gone, body)
-        self.assertIn("**Strong matches**", body)
-        self.assertIn("**Worth reviewing**", body)
+        self.assertIn(f"**{digest.TIER_STRONG}**", body)
+        # 74 is the rubric's "competitive with gaps" band. It used to read as
+        # "Worth reviewing", which undersold a real match with a real gap.
+        self.assertIn(f"**{digest.TIER_COMPETITIVE}**", body)
         # Tailoring is explicit through a Discord button; daily delivery is
         # never allowed to spend credits or leave a resume in the repository.
         self.assertNotIn("tailored resume:", body)
@@ -2586,7 +2642,8 @@ class TestEndToEnd(unittest.TestCase):
             stats = json.load(handle)
         self.assertEqual(stats[-1]["link_unknown"], 1)
         self.assertEqual(stats[-1]["strong"], 1)
-        self.assertEqual(stats[-1]["review"], 1)
+        self.assertEqual(stats[-1]["competitive"], 1)
+        self.assertEqual(stats[-1]["review"], 0)
 
     def test_the_same_posting_under_a_new_id_is_not_delivered_twice(self):
         """JSearch mints a fresh opaque id per request, so seen.json keyed on it
@@ -2663,14 +2720,17 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("tailored resume:", body)  # tailor also failed -> no links, no crash
 
     def test_a_job_below_the_floor_is_neither_delivered_nor_offered_again(self):
-        """The Datamatics role scores 41 and stops being a card.
+        """The Datamatics role stops being a card.
 
-        It is still remembered, so tomorrow's run does not re-fetch it,
-        re-score it and reject it again for the next 120 days.
+        Under a cooldown rather than the 120-day state TTL. The archives hold
+        one description scored 40, 40, 40, 45, 50, 50 and 75 unchanged, so one
+        bad number must not retire a real job until January -- but it must not
+        cost a re-fetch, a re-enrichment and a re-rank every morning either.
         """
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 41, "why": "Adjacent architecture work, most requirements missing"},
+            "jsearch_e": {"score": digest.MIN_DELIVER_SCORE - 1,
+                          "why": "Adjacent architecture work, most requirements missing"},
         }
 
         posts, work = run_main(self.ENV, ranking)
@@ -2680,7 +2740,9 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("Senior Data Architect", body)
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertIn("url:https://example.com/e", seen)
+        self.assertIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.com/e", seen)
+        self.assertNotIn("url:https://example.com/e", seen,
+                         "a below-floor score must not be remembered as a delivery")
 
     def test_a_blocked_job_is_delivered_flagged_rather_than_dropped(self):
         """The whole point of plan 018B, end to end.
@@ -2710,8 +2772,11 @@ class TestEndToEnd(unittest.TestCase):
         body = "\n".join(posts)
         self.assertIn("Senior Software Engineer (AI Systems)", body,
                       "a capped job must still be delivered")
-        self.assertIn(f"fit {digest.BLOCKED_SCORE_CAP}", body)
+        self.assertIn(f"fit {fit_check_module.SEVERITY_CEILING['high']}", body)
         self.assertIn("2 verified requirement gaps", body)
+        # The gaps themselves, on the card. A capped score with nothing naming
+        # what capped it is the complaint that started this.
+        self.assertIn("No Bachelor's degree in Computer Science", body)
 
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
@@ -2721,13 +2786,14 @@ class TestEndToEnd(unittest.TestCase):
         # Selected by title, not by index: the jobs the ranking left out fall
         # back to keyword_score, which can exceed a capped 69 and sort above it.
         snapshot = self._snapshot(work, "Senior Software Engineer (AI Systems)")
-        self.assertEqual(snapshot["tier"], "Worth reviewing",
-                         "a capped job must not wear a Strong matches label")
+        self.assertEqual(snapshot["tier"], digest.TIER_COMPETITIVE,
+                         "a capped job must not wear a Strong matches label, and "
+                         "a real match with a real gap is not merely 'worth reviewing'")
         self.assertEqual(snapshot["ceiling"], "low")
         self.assertEqual(len(snapshot["blockers"]), 2)
 
         card = job_archive.job_card_payload(snapshot)
-        self.assertIn("Low ceiling, 2 blocker(s)", card["embeds"][0]["footer"]["text"])
+        self.assertIn("2 verified gap(s)", card["embeds"][0]["footer"]["text"])
         gaps = [f for f in card["embeds"][0]["fields"] if f["name"].startswith("Gaps")]
         self.assertEqual(len(gaps), 1, "the blockers must be readable on the card")
         self.assertIn("No BigQuery or GCP evidence", gaps[0]["value"])
@@ -2738,22 +2804,50 @@ class TestEndToEnd(unittest.TestCase):
             snapshots = json.load(handle)["jobs"]
         return next(s for s in snapshots if s["title"] == title)
 
-    def test_only_strong_tier_jobs_get_the_paid_reality_check(self):
-        """One model call per checked job, so WHICH jobs are checked is a cost
-        control, not a detail. is_strong requires a verified score >= 80 with a
-        real JD; everything else must be left alone."""
+    def test_every_delivered_job_gets_the_paid_reality_check(self):
+        """Scoped to jobs already scoring 80+, this pass produced exactly one
+        low ceiling across 208 archived snapshots -- it never looked at the
+        other 196. A gap the ranker missed on a job it scored 78 is the gap
+        most worth naming, so every delivered job is checked now.
+
+        It is still a model call per job. MAX_CHECKED_JOBS and
+        CHECK_BUDGET_SECONDS bound the cost, and a job past either keeps a
+        neutral result that caps nothing."""
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
             "jsearch_a": {"score": 55, "why": "Lead title, seniority above target"},
         }
 
-        run_main(self.ENV, ranking)
+        posts, work = run_main(self.ENV, ranking)
+        shutil.rmtree(work, ignore_errors=True)
 
-        self.assertEqual(LAST_CHECK_CALL["titles"],
-                         ["Senior Software Engineer (AI Systems)"],
-                         "only the verified 80+ job with a JD should be checked")
+        checked = LAST_CHECK_CALL["titles"]
+        self.assertIn("Senior Software Engineer (AI Systems)", checked)
+        self.assertGreater(len(checked), 1,
+                           "every delivered job should be checked, not only the strong tier")
+        # Pinned against the cards actually sent rather than a title list, so a
+        # change to the fixture cannot quietly narrow what this asserts.
+        body = "\n".join(posts)
+        delivered = [title for title in checked if f"**{title}**" in body]
+        self.assertEqual(sorted(checked), sorted(delivered),
+                         "a job that was checked but not delivered is a wasted model call")
         self.assertGreater(LAST_CHECK_CALL["resume_chars"], 0,
                            "the check must receive resume evidence to check against")
+
+    def test_an_unchecked_job_says_so_rather_than_looking_clean(self):
+        """The cost of checking everything: "unknown" is now the ordinary
+        outcome for a job past the budget, and it renders identically to one
+        checked and found clean unless the card says otherwise."""
+        ranking = {
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+        }
+
+        posts, work = run_main(self.ENV, ranking)
+
+        self.assertIn("requirements not checked", "\n".join(posts))
+        snapshot = self._snapshot(work, "Senior Software Engineer (AI Systems)")
+        card = job_archive.job_card_payload(snapshot)
+        self.assertIn("Requirements not checked", card["embeds"][0]["footer"]["text"])
 
     def test_a_high_ceiling_job_keeps_its_score_and_tier(self):
         ranking = {
@@ -2800,16 +2894,20 @@ class TestEndToEnd(unittest.TestCase):
         """check_drift compares today's average against the prior window. Taking
         it after a cut that removes exactly the low scores would make a stale
         profile look like a healthy one."""
+        # Sized from the live floor so lowering it cannot quietly turn this
+        # into a test where nothing is cut and the assertion proves nothing.
+        rejected = digest.MIN_DELIVER_SCORE - 1
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 41, "why": "Adjacent architecture work, most requirements missing"},
+            "jsearch_e": {"score": rejected,
+                          "why": "Adjacent architecture work, most requirements missing"},
         }
 
         posts, work = run_main(self.ENV, ranking)
 
         with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
             row = json.load(handle)[-1]
-        self.assertEqual(row["avg_score"], 67.0)
+        self.assertEqual(row["avg_score"], round((93 + rejected) / 2, 1))
         self.assertEqual(row["new"], 2)
         self.assertEqual(row["below_floor"], 1)
         self.assertEqual(row["delivered"], 1)
@@ -3876,3 +3974,298 @@ class TestConfirmedBoardsIsBounded(unittest.TestCase):
         boards = {"dupe": {"company": curated["name"], "source": curated["source"],
                            "token": curated["token"]}}
         self.assertEqual(digest.confirmed_boards(boards), [])
+
+
+# The posting that produced this change: 5187 characters, responsibilities at
+# 217, Minimum Qualifications at 3958, Skills at 4529. Trimmed to the shape that
+# matters, with the same ordering and the same distance between the two ends.
+MAADEN_SHAPED_JD = (
+    "Why This Role Matters\n"
+    "The role transforms data into actionable intelligence.\n\n"
+    "What You Will Deliver\n"
+    # Repeated until it clears JD_RANK_CHARS, because the point of the
+    # fixture is a posting the window cannot cover. The real one is 5187.
+    + " * Develop and deploy machine learning and Generative AI solutions.\n" * 60 +
+    "\nMinimum Qualifications\n"
+    " * Bachelor's degree in Data Science, Artificial Intelligence, Computer "
+    "Science, or a related quantitative discipline.\n\n"
+    "Experience\n"
+    " * 4-6 years of experience in data science, machine learning, artificial "
+    "intelligence, or advanced analytics roles.\n\n"
+    "Skills That Matter\n"
+    " * Model Fine-Tuning & Evaluation\n"
+    " * TensorFlow, PyTorch & Scikit-Learn\n"
+)
+
+
+class TestWhatTheScorerIsAllowedToRead(unittest.TestCase):
+    """The whole defect, in one place.
+
+    A Ma'aden posting was delivered on 2026-09-08 as a Strong match at fit 91.
+    Watheq scored the same posting 67 and named two gaps. The digest's ranker
+    had been shown characters 217-2217 of 5187: every responsibility, no degree,
+    no year count, no fine-tuning.
+    """
+
+    def test_the_signal_window_alone_walks_past_the_qualifications(self):
+        """Not a regression test -- a record of why a window is not enough. No
+        single contiguous span reaches both ends of this posting, and anchoring
+        on the LAST heading lands on Skills and skips the qualifications above
+        it."""
+        window = job_archive.jd_signal(MAADEN_SHAPED_JD, 2000)
+
+        self.assertIn("Generative AI", window)
+        self.assertNotIn("Bachelor's degree", window)
+        self.assertNotIn("4-6 years", window)
+
+    def test_the_requirement_lines_are_found_wherever_they_sit(self):
+        found = " ".join(job_archive.jd_requirements(MAADEN_SHAPED_JD))
+
+        self.assertIn("Bachelor's degree", found)
+        self.assertIn("4-6 years", found)
+
+    def test_a_posting_that_states_no_requirement_yields_nothing(self):
+        """Silence must stay silence. Inventing a requirement here would put a
+        gap on a card that the posting never asked for."""
+        self.assertEqual(job_archive.jd_requirements(
+            "We are a friendly team building great products together."), [])
+
+    def test_a_bullet_marker_does_not_survive_into_the_prompt(self):
+        for line in job_archive.jd_requirements(MAADEN_SHAPED_JD):
+            self.assertFalse(line.startswith(("*", "-", "•")), line)
+
+    def test_the_budget_bounds_what_one_job_carries(self):
+        crowded = "\n".join(
+            f"* Requirement number {n}: {n} years of experience with tooling."
+            for n in range(200))
+        found = job_archive.jd_requirements(crowded, limit=300)
+
+        self.assertTrue(found)
+        self.assertLessEqual(sum(len(line) + 2 for line in found), 300)
+
+    def test_a_qualifications_block_written_as_prose_is_still_found(self):
+        """Sentence splitting is what recovers these. Without it a paragraph
+        that happens to contain the word 'required' is one over-long chunk and
+        is dropped whole: 14 archived postings lost their requirement that way,
+        11 with the split."""
+        prose = ("About us. " * 40 + "We build things. The successful candidate "
+                 "holds a Bachelor's degree in Computer Science. They will join "
+                 "a growing team. " + "More about us. " * 40)
+        found = " ".join(job_archive.jd_requirements(prose))
+
+        self.assertIn("Bachelor's degree in Computer Science", found)
+
+    def test_the_ranker_is_told_when_it_is_reading_a_window(self):
+        """description_kind is computed on the STORED text, so it reported
+        'full' while the model was handed a third of a posting -- on 48 of the
+        49 archived postings whose requirements the window cut."""
+        listing = self._listing(MAADEN_SHAPED_JD)
+
+        self.assertEqual(listing["coverage"], "windowed")
+        self.assertEqual(listing["description_kind"], job_archive.GRADE_FULL)
+        self.assertTrue(listing["hard_requirements"])
+
+    def test_a_posting_that_fits_is_reported_as_complete(self):
+        listing = self._listing("Requirements. " + "Short posting. " * 20)
+        self.assertEqual(listing["coverage"], "complete")
+
+    @staticmethod
+    def _listing(description):
+        job = {"id": "j", "title": "T", "company": "C", "location": "Riyadh",
+               "description": description}
+        captured = {}
+
+        def fake_chat(prompt, *args, **kwargs):
+            captured["prompt"] = prompt
+            raise RuntimeError("stop here; the prompt is what is under test")
+
+        with mock.patch.object(digest, "chat_json", side_effect=fake_chat):
+            digest.rank_jobs([job], "key", evidence="resume")
+        listing = json.loads(captured["prompt"].split("Jobs:\n", 1)[1])
+        return listing[0]
+
+
+class TestTheRankingContract(unittest.TestCase):
+    """Prompt pins, in the style of Watheq's own ai-contracts tests. The rubric
+    is the only thing standing between an unanchored 0-100 and a digest of 90s.
+    """
+
+    def _prompt(self):
+        captured = {}
+
+        def fake_chat(prompt, schema, *args, **kwargs):
+            captured.update(prompt=prompt, schema=schema)
+            raise RuntimeError("stop here")
+
+        job = {"id": "j", "title": "Senior AI Engineer", "company": "C",
+               "location": "Riyadh", "description": MAADEN_SHAPED_JD}
+        with mock.patch.object(digest, "chat_json", side_effect=fake_chat):
+            digest.rank_jobs([job], "key", evidence="resume")
+        return captured
+
+    def test_the_band_anchors_are_watheqs(self):
+        prompt = self._prompt()["prompt"]
+
+        self.assertIn("80+ means hireable today", prompt)
+        self.assertIn("60-79 means competitive with gaps", prompt)
+        self.assertIn("below 60 means significant gaps", prompt)
+
+    def test_the_ninety_ceiling_demands_every_requirement(self):
+        """The old rubric asked only that hard requirements be 'clearly
+        covered', which is what let a posting with an unmet minimum
+        qualification reach 91."""
+        self.assertIn("Never score above 90 unless every requirement",
+                      self._prompt()["prompt"])
+
+    def test_the_rubric_names_education_as_a_category_of_its_own(self):
+        prompt = self._prompt()["prompt"]
+
+        self.assertIn("education 15", prompt)
+        for name in digest.RANK_CATEGORIES:
+            self.assertIn(name, self._prompt()["schema"]["properties"]["scores"]
+                          ["items"]["properties"]["categories"]["properties"])
+
+    def test_the_categories_are_not_required_to_sum_to_the_score(self):
+        """Watheq documents that the models' own sums run 30+ points above
+        their stated overall on partial matches, so forcing agreement is what
+        pushes a weak resume into the hireable band."""
+        self.assertIn("do NOT have to sum to the overall score",
+                      self._prompt()["prompt"])
+
+    def test_the_requirements_block_is_named_as_the_authority(self):
+        prompt = self._prompt()["prompt"]
+
+        self.assertIn("hard_requirements", prompt)
+        self.assertIn("authority on what the role requires", prompt)
+
+    def test_an_unstated_requirement_is_still_never_a_gap(self):
+        """Kept unconditional on purpose. Relaxing it on a windowed posting
+        would remove the anti-invention guard on exactly the postings whose
+        requirement line the extractor missed."""
+        self.assertIn("unknown, not a gap", self._prompt()["prompt"])
+
+    def test_every_track_reaches_the_prompt_with_its_evidence(self):
+        prompt = self._prompt()["prompt"]
+
+        for track in digest.PROFILE["tracks"]:
+            self.assertIn(track["name"], prompt)
+            self.assertIn(track["titles"][0], prompt)
+            self.assertIn(track["evidence"][:40], prompt)
+
+    def test_no_tracks_means_no_track_section_rather_than_an_empty_one(self):
+        self.assertEqual(digest.describe_tracks([]), "")
+        self.assertEqual(digest.describe_tracks(None), "")
+
+
+class TestTheReportedCategories(unittest.TestCase):
+    def _result(self, categories):
+        jobs = [{"id": "j", "title": "Senior AI Engineer", "description": "Python"}]
+        digest.apply_ranking(jobs, {"j": {"score": 80, "why": "fits",
+                                          "track": "AI and LLM product engineering",
+                                          "categories": categories}})
+        return jobs[0]
+
+    @staticmethod
+    def _sane():
+        return {name: {"score": maximum, "max": maximum, "note": "n"}
+                for name, maximum in digest.RANK_CATEGORIES.items()}
+
+    def test_a_sane_breakdown_is_kept_with_the_track(self):
+        job = self._result(self._sane())
+
+        self.assertEqual(set(job["categories"]), set(digest.RANK_CATEGORIES))
+        self.assertEqual(job["track"], "AI and LLM product engineering")
+
+    def test_a_category_scored_above_its_own_max_is_rejected(self):
+        broken = self._sane()
+        broken["education"] = {"score": 100, "max": 15, "note": "n"}
+
+        self.assertEqual(self._result(broken)["categories"], {})
+
+    def test_a_category_on_its_own_hundred_point_scale_is_accepted(self):
+        """Watheq's evaluation harness records the model emitting each category
+        on a 0-100 scale about as often as on the stated weight, and only the
+        ratio is ever displayed. Pinning the max would reject honest answers."""
+        hundreds = {name: {"score": 70, "max": 100, "note": "n"}
+                    for name in digest.RANK_CATEGORIES}
+
+        self.assertEqual(len(self._result(hundreds)["categories"]),
+                         len(digest.RANK_CATEGORIES))
+
+    def test_categories_that_overshoot_the_total_are_still_kept(self):
+        """The decoupling, asserted rather than commented. Reconciling them is
+        what pushes a partial match into the hireable band."""
+        job = self._result(self._sane())
+
+        self.assertEqual(job["score"], 80)
+        self.assertGreater(sum(c["score"] for c in job["categories"].values()),
+                           job["score"])
+
+    def test_a_malformed_breakdown_costs_the_breakdown_and_not_the_score(self):
+        job = self._result("not an object at all")
+
+        self.assertEqual(job["categories"], {})
+        self.assertEqual(job["score"], 80)
+        self.assertTrue(job["ranking_verified"])
+
+
+class TestTheBelowFloorCooldown(unittest.TestCase):
+    """A below-floor drop used to go through remember(), which writes the job
+    under the 120-day state TTL. The archives hold one description scored 40,
+    40, 40, 45, 50, 50 and 75 unchanged, so one bad morning retired a real job
+    until January."""
+
+    JOB = {"id": "x", "url": "https://example.com/x", "source": "greenhouse"}
+
+    def test_a_dropped_job_is_deferred_rather_than_remembered(self):
+        seen = {}
+        digest.defer_below_floor(seen, self.JOB, "2026-09-10")
+
+        self.assertEqual(list(seen), [digest.FLOOR_SEEN_PREFIX
+                                      + digest.job_identity(self.JOB)])
+        self.assertNotIn(digest.job_identity(self.JOB), seen)
+
+    def test_a_job_inside_the_cooldown_is_skipped(self):
+        seen = {}
+        digest.defer_below_floor(seen, self.JOB, "2026-09-10")
+
+        self.assertTrue(digest.still_cooling(seen, self.JOB, "2026-09-12"))
+
+    def test_a_job_past_the_cooldown_comes_back(self):
+        seen = {}
+        digest.defer_below_floor(seen, self.JOB, "2026-09-10")
+        later = (datetime.date(2026, 9, 10)
+                 + datetime.timedelta(days=digest.FLOOR_COOLDOWN_DAYS + 1)).isoformat()
+
+        self.assertFalse(digest.still_cooling(seen, self.JOB, later))
+
+    def test_a_job_that_was_never_deferred_is_not_cooling(self):
+        self.assertFalse(digest.still_cooling({}, self.JOB, "2026-09-10"))
+
+    def test_each_kind_of_key_is_pruned_on_its_own_clock(self):
+        """A single cutoff was right while every key meant 'delivered'. A floor:
+        key means 'scored badly once', which has to expire much sooner or the
+        cooldown is a 120-day retirement under a new name."""
+        today = datetime.date.today()
+        recent = (today - datetime.timedelta(days=1)).isoformat()
+        middling = (today - datetime.timedelta(
+            days=digest.FLOOR_COOLDOWN_DAYS + 1)).isoformat()
+        seen = {"delivered-old": middling, "delivered-new": recent,
+                digest.FLOOR_SEEN_PREFIX + "stale": middling,
+                digest.FLOOR_SEEN_PREFIX + "fresh": recent}
+
+        work = tempfile.mkdtemp(prefix="digest_seen_")
+        cwd = os.getcwd()
+        try:
+            os.chdir(work)
+            digest.save_seen(seen)
+            with open(digest.STATE_FILE, encoding="utf-8") as handle:
+                pruned = json.load(handle)
+        finally:
+            os.chdir(cwd)
+            shutil.rmtree(work, ignore_errors=True)
+
+        self.assertIn("delivered-old", pruned, "a delivery keeps the long TTL")
+        self.assertIn(digest.FLOOR_SEEN_PREFIX + "fresh", pruned)
+        self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "stale", pruned,
+                         "a cooldown must expire on its own clock")
