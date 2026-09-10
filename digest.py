@@ -2691,6 +2691,13 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
     and 2026-08-08 was re-run four times, so appending gave a single day three
     of the seven slots in check_drift's trailing window. A re-run now replaces
     that day's row."""
+    if avg_score is None:
+        # A day's average is measured once and cannot be re-measured: a second
+        # run finds every posting already in seen.json, reports 0 new, and would
+        # otherwise write None over it. That corrupts the very history
+        # check_drift reads. Happened on 2026-09-09, twice in one hour.
+        avg_score = next((s.get("avg_score") for s in stats
+                          if s["date"] == today), None)
     row = {
         "date": today, "fetched": fetched, "matched": matched,
         "new": new, "avg_score": avg_score,
@@ -2725,9 +2732,18 @@ def check_drift(stats):
     recent_avg = sum(s["avg_score"] for s in recent) / len(recent)
     prior_avg = sum(s["avg_score"] for s in prior) / len(prior)
     if prior_avg - recent_avg >= DRIFT_SCORE_DROP_THRESHOLD:
+        # Says what it measured, not what it guessed. avg_score is taken over
+        # every new posting BEFORE the delivery floor, so it moves with what the
+        # sources send: fetched went 198 to 738 a day when the LinkedIn, Indeed
+        # and Bayt feeds landed and board discovery grew 3 confirmed boards to
+        # 22, and below_floor went 0-2 to 15-20. Over the same stretch the best
+        # delivered score never left 88-96. The old wording sent the reader to
+        # profile.json, which was the one thing that had just been checked.
         return (
-            f"Fit trending down ({DRIFT_WINDOW_DAYS}d avg {recent_avg:.0f} vs "
-            f"prior {prior_avg:.0f}) — profile may be stale. Check profile.json."
+            f"Average fit of new postings down ({DRIFT_WINDOW_DAYS}d "
+            f"{recent_avg:.0f} vs prior {prior_avg:.0f}). Broader sources, new "
+            "employer boards, a scoring change or a stale profile — check "
+            "fetched and below_floor in stats.json first."
         )
     return None
 
