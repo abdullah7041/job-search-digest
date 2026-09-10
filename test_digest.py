@@ -1084,7 +1084,71 @@ class TestStatsRows(unittest.TestCase):
         rows += [{"date": f"2026-07-{day:02d}", "avg_score": 60.0} for day in range(8, 15)]
         warning = digest.check_drift(rows)
         self.assertIsNotNone(warning)
-        self.assertIn("profile may be stale", warning)
+        self.assertIn("Average fit of new postings down", warning)
+
+    def test_the_warning_names_what_it_measured_not_what_it_guessed(self):
+        """It fired on 2026-09-09 saying "profile may be stale. Check
+        profile.json" when the profile had just been checked and was fine. The
+        average is taken over every new posting BEFORE the delivery floor, so it
+        moves with what the sources send: fetched went 198 to 738 a day as the
+        LinkedIn, Indeed and Bayt feeds landed and boards grew 3 to 22, while
+        the best delivered score never left 88-96."""
+        rows = [{"date": f"2026-07-{day:02d}", "avg_score": 85.0} for day in range(1, 8)]
+        rows += [{"date": f"2026-07-{day:02d}", "avg_score": 60.0} for day in range(8, 15)]
+
+        warning = digest.check_drift(rows)
+
+        self.assertIn("fetched and below_floor", warning)
+        self.assertNotIn("Check profile.json", warning)
+
+
+class TestAMeasuredAverageSurvivesARerun(unittest.TestCase):
+    """A day's average is measured once and cannot be re-measured. The second
+    run of 2026-09-09 found every posting already in seen.json, reported 0 new,
+    and wrote None over the ~23 the first run had measured -- corrupting the
+    history check_drift reads."""
+
+    def _row(self, work, **kwargs):
+        cwd = os.getcwd()
+        try:
+            os.chdir(work)
+            digest.save_stats(kwargs.pop("stats"), "2026-09-09", 700, 60, **kwargs)
+            with open(digest.STATS_FILE, encoding="utf-8") as handle:
+                return json.load(handle)[-1]
+        finally:
+            os.chdir(cwd)
+
+    def test_a_rerun_with_no_new_jobs_keeps_the_measured_average(self):
+        work = tempfile.mkdtemp(prefix="digest_stats_")
+        measured = [{"date": "2026-09-09", "avg_score": 23.4, "new": 19}]
+        try:
+            row = self._row(work, stats=measured, new=0, avg_score=None)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+        self.assertEqual(row["avg_score"], 23.4)
+        self.assertEqual(row["new"], 0, "the re-run's own counts still win")
+
+    def test_a_first_run_with_no_new_jobs_still_records_none(self):
+        """Nothing was measured, so there is nothing to keep. Inventing a number
+        here would be worse than the bug."""
+        work = tempfile.mkdtemp(prefix="digest_stats_")
+        try:
+            row = self._row(work, stats=[], new=0, avg_score=None)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+        self.assertIsNone(row["avg_score"])
+
+    def test_a_rerun_that_scored_something_overwrites_the_old_average(self):
+        work = tempfile.mkdtemp(prefix="digest_stats_")
+        measured = [{"date": "2026-09-09", "avg_score": 23.4, "new": 19}]
+        try:
+            row = self._row(work, stats=measured, new=4, avg_score=61.0)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+        self.assertEqual(row["avg_score"], 61.0)
 
 
 # What the last run_main() passed to check_jobs. See fake_check below.
