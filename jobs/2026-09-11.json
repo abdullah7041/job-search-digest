@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-11",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2357733611",
+      "captured_at": "2026-09-11T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2357733611",
+      "title": "NodeJS - Backend Engineer",
+      "company": "Colada",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/nodejs-backend-engineer-at-colada-4464597615",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Strong stack match on TypeScript backend, APIs, and Riyadh location. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 35,
+          "max": 40,
+          "note": "TypeScript, REST APIs, Git, and backend systems demonstrated in production."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "Shipped end-to-end backend services for Watheq, though full-time engineering is "
+        },
+        "education": {
+          "score": 7,
+          "max": 15,
+          "note": "No explicit degree required in posting."
+        },
+        "seniority_location": {
+          "score": 13,
+          "max": 15,
+          "note": "Riyadh location aligns with candidate preferences."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Missing Proven NodeJS Backend Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-10",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Description\nColada, a leading company in the Food & Beverage industry based in Riyadh, Saudi Arabia, \nis seeking a NodeJS - Backend Engineer. \n\nIn this role, you will develop and maintain scalable server-side applications, ensuring high performance and responsiveness. \n\nYou will collaborate with cross-functional teams to design robust APIs and contribute to the overall architecture of our backend systems, playing a key part in delivering innovative solutions that meet our business needs.\nRequirements\nProven experience with NodeJS and backend development\nStrong understanding of RESTful API design\nExperience with databases such as MongoDB\nFamiliarity with version control systems like Git\nGood problem-solving skills and attention to detail\n\nRoles And Responsibilities\nDesign, develop, and maintain backend services and APIs in Typescript and ExpressJS\nCollaborate with frontend developers and other team members to define and implement features\nOptimize applications for maximum speed and scalability using MongoDB\nEnsure high scalability of the application using Docker, Docker-Compose, AWS\n\nBenefits\nMarket Range salary and ESOPs\nFlexible remote working environment\nOpportunities for professional growth and development\nCollaborative and innovative team culture\n\nSkills\nProficiency in NodeJS and JavaScript\nExperience with RESTful API development\nKnowledge of database management\nStrong problem-solving and analytical skills\nExcellent communication and teamwork abilities",
+        "sha256": "3eff6e6ea43a75824e51d084064112e946260eb88a2e6ec5918f927284a9a503",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9OThlM2I1ZGZjNjA5Nzc4MTtjYz1zYQ==",
+      "captured_at": "2026-09-11T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9OThlM2I1ZGZjNjA5Nzc4MTtjYz1zYQ==",
+      "title": "Full Stack Developer",
+      "company": "Team Yamama",
+      "location": "Dammam, المملكة العربية السعودية",
+      "url": "http://sa.indeed.com/job/full-stack-developer-98e3b5dfc6097781",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Matches React and TypeScript web stack, but missing required CS degree. (capped: 3 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 36,
+          "max": 40,
+          "note": "Strong match on React, TypeScript, Node.js, PostgreSQL, and REST APIs."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "Solo full-stack SaaS shipped in production with 28k lines of code."
+        },
+        "education": {
+          "score": 2,
+          "max": 15,
+          "note": "Mandatory Bachelor's in CS/IT not met by diploma."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Dammam location in Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Computer Science or IT Bachelor's Degree",
+        "Insufficient Verified Years of Professional Full Stack Developer Experience",
+        "Lack of Evidenced Express.js Experience"
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-09-07",
+      "age_days": 4,
+      "jd": {
+        "status": "captured",
+        "text": "We are looking for a skilled and passionate Full Stack Developer with 2+ years of experience in developing scalable web applications using Node.js and Angular or React. The ideal candidate should have experience working on both front-end and back-end development, REST APIs, databases, and modern development practices.\n\nKey Responsibilities\n\n* Design, develop, test, and maintain scalable web applications.\n* Build responsive and user-friendly interfaces using Angular or React.\n* Develop robust backend services and RESTful APIs using Node.js.\n* Integrate front-end components with backend services and databases.\n* Optimize applications for speed, performance, and scalability.\n* Write clean, maintainable, and reusable code following best practices.\n* Troubleshoot, debug, and resolve application issues.\n* Collaborate with UI/UX designers, QA engineers, and cross-functional teams.\n* Participate in code reviews and contribute to improving development processes.\n* Stay updated with emerging technologies and industry trends.\n\nRequired Skills & Qualifications\n\n* Bachelor's degree in Computer Science, Information Technology, or a related field.\n* Minimum 2 years of experience as a Full Stack Developer.\n* Strong proficiency in JavaScript and TypeScript.\n* Hands-on experience with Node.js and Express.js.\n* Strong experience in Angular or React.\n* Experience with HTML5, CSS3, Bootstrap, and responsive web design.\n* Knowledge of RESTful API development and third-party API integration.\n* Experience with relational databases (MySQL/PostgreSQL) or NoSQL databases (MongoDB).\n* Familiarity with Git version control.\n* Understanding of authentication and authorization mechanisms (JWT, OAuth).\n* Knowledge of software development lifecycle (SDLC) and Agile methodologies.\n\nPreferred Skills\n\n* Experience with cloud platforms such as AWS, Azure, or Google Cloud.\n* Knowledge of Docker and containerization.\n* Experience with CI/CD pipelines.\n* Familiarity with unit testing frameworks and automated testing.\n* Understanding of microservices architecture.\n\n\n\nApplication Question(s):\n* Which is your nationality?\n\nExperience:\n* Full stack development: 2 years (Required)\n\nLanguage:\n* Arabic (Required)\n* English (Required)\n\nWork Location: In person",
+        "sha256": "6ec7459158ff62a10f1a15450d1fdf1e078a1fb15c7c4b658edea866006efb1f",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2356416362",
+      "captured_at": "2026-09-11T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2356416362",
+      "title": "Senior Full-Stack Software Engineer, (Forward deployed), GPS",
+      "company": "Scale AI",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4732394005",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Missing required CS degree and 5+ years post-grad full-stack experience. (capped: 3 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Demonstrated React, TypeScript, Python, PostgreSQL, and LLM app engineering."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Candidate full-stack software experience begins Aug 2025, well short of 5+ years"
+        },
+        "education": {
+          "score": 4,
+          "max": 15,
+          "note": "Posting requires a Bachelor's degree; candidate holds a pipefitting diploma."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh-based individual contributor match."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree in CS or Related Field",
+        "Lacks 5+ Years Post-Graduation Full-Stack Engineering Experience",
+        "Missing Required Cloud and Containerization Infrastructure Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-10",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Scale’s rapidly growing Global Public Sector team is focused on using AI to address critical challenges facing the public sector around the world. Our core work consists of:\nCreating custom AI applications that will impact millions of citizens\nGenerating high-quality training data for custom LLMs\nUpskilling and advisory services to spread the impact of AI\nAs a Full Stack Software Engineer (Forward Deployed), you’ll collaborate directly with public sector counterparts to quickly build full-stack, AI applications, to solve their most pressing challenges and achieve meaningful impact for citizens.\nAt Scale, we’re not just building AI solutions—we’re enabling the public sector to transform their operations and better serve citizens through cutting-edge technology. If you’re ready to shape the future of AI in the public sector and be a founding member of our team, we’d love to hear from you.\nYou will:\nPartner with public sector clients to scope, collect feedback and implement solutions for complex problems, including spending up to two weeks per month in client offices for feedback and delivery.\nArchitect production-grade applications that integrate AI models with full-stack frameworks, managing everything from interactive UIs to backend APIs and systems. \nDeploy and manage infrastructure within cloud environments, ensuring the highest levels of system integrity, security, scalability, and long-term reliability.\nContribute to core platform features designed to be reused across diverse international client use cases.\nPartner with design, product, and data teams to build robust applications aligned with the broader technical architecture.\nIdeally you’d have:\nBachelor’s degree in Computer Science or a related quantitative field \n5+ years of post-graduation, full-stack engineering experience with demonstrated proficiency in React (required), TypeScript, Next.js, Python, Node.js, PostgreSQL or MongoDB plus hands-on experience with Docker, Kubernetes, and Azure/AWS/GCP.\nProven ability to architect scalable, production-grade applications with a strong handle on cloud environments and infrastructure health.\nExperience working directly within customer infrastructure to deploy, maintain, and troubleshoot complex, end-to-end solutions.\nA self-starting approach with the technical maturity to navigate ambiguous requirements and deliver reliable software.\nDriven async communication methodologies to reduce communication frictions\nExperience building solutions with LLMs and a deep understanding of the overall Gen AI landscape\nNice to haves:\nProficient in Arabic \nPast experience working in a forward deployed engineer / dedicated customer engineer role\nExperience working cross functionally with operations\nPLEASE NOTE: Our policy requires a 90-day waiting period before reconsidering candidates for the same role. This allows us to ensure a fair and thorough evaluation of all applicants.\nAbout Us:\nAt Scale, our mission is to develop reliable AI systems for the world's most important decisions. Our products provide the high-quality data and full-stack technologies that power the world's leading models, and help enterprises and governments build, deploy, and oversee AI applications that deliver real impact. We work closely with industry leaders like Meta, Ernst & Young, Mayo Clinic, Time Inc., the Government of Qatar, and U.S. government agencies including the Army and Air Force. We are expanding our team to accelerate the development of AI applications.\nWe believe that everyone should be able to bring their whole selves to work, which is why we are proud to be an inclusive and equal opportunity workplace. We are committed to equal employment opportunity regardless of race, color, ancestry, religion, sex, national origin, sexual orientation, age, citizenship, marital status, disability status, gender identity or Veteran status. \nWe are committed to working with and providing reasonable accommodations to applicants with physical and mental disabilities. If you need assistance and/or a reasonable accommodation in the application or recruiting process due to a disability, please contact us at accommodations@scale.com. Please see the United States Department of Labor's Know Your Rights poster for additional information.\nWe comply with the United States Department of Labor's Pay Transparency provision. \nPLEASE NOTE: We collect, retain and use personal data for our professional business purposes, including notifying you of job opportunities that may be of interest and sharing with our affiliates. We limit the personal data we collect to that which we believe is appropriate and necessary to manage applicants’ needs, provide our services, and comply with applicable laws. Any information we collect in connection with your application will be treated in accordance with our internal policies and programs designed to protect personal data. Please see our privacy policy for additional information.",
+        "sha256": "e46cb00d1e6531cecaa9a2bba3078d9b9433393660a4e54c1dfea5d78c537570",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2357193645",
+      "captured_at": "2026-09-11T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2357193645",
+      "title": "Senior Full-Stack Software Engineer, (Forward deployed), GPS",
+      "company": "EngRadar",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-full-stack-software-engineer-forward-deployed-gps-at-engradar-4465803789",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Missing required CS degree and 5+ years post-grad full-stack experience. (capped: 3 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Strong match on React, TypeScript, Python, Postgres, and LLM integrations."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Candidate software engineering timeline starts in 2025, not 5+ years."
+        },
+        "education": {
+          "score": 4,
+          "max": 15,
+          "note": "Mandatory Bachelor's in CS not met by diploma."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh-based full-stack position."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Bachelor's Degree in Computer Science or Quantitative Field",
+        "Lacks 5+ Years Post-Graduation Full-Stack Engineering Experience",
+        "Missing Experience with Docker, Kubernetes, and Cloud Infrastructure"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-10",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "EngRadar / Scale AI\n\nSenior Full-Stack Software Engineer, (Forward deployed), GPS\n\nScale AI\n\nScale AI is the data foundation for AI, helping organizations build and deploy reliable production AI applications.\n\nScale AI is the employer — EngRadar is a job radar, not a recruiter. We track this posting from their own careers page and send you straight there; we never handle applications or CVs.\n\nRiyadh, Saudi Arabia Posted today aimachine learningenterprise\n\nApply directly →\n\nScale’s Rapidly Growing Global Public Sector Team Is Focused On Using AI To Address Critical Challenges Facing The Public Sector Around The World. Our Core Work Consists Of\n\nCreating custom AI applications that will impact millions of citizens\nGenerating high-quality training data for custom LLMs\nUpskilling and advisory services to spread the impact of AI\n\nAs a Full Stack Software Engineer (Forward Deployed), you’ll collaborate directly with public sector counterparts to quickly build full-stack, AI applications, to solve their most pressing challenges and achieve meaningful impact for citizens.\n\nAt Scale, we’re not just building AI solutions—we’re enabling the public sector to transform their operations and better serve citizens through cutting-edge technology. If you’re ready to shape the future of AI in the public sector and be a founding member of our team, we’d love to hear from you.\n\nYou Will\n\nPartner with public sector clients to scope, collect feedback and implement solutions for complex problems, including spending up to two weeks per month in client offices for feedback and delivery.\nArchitect production-grade applications that integrate AI models with full-stack frameworks, managing everything from interactive UIs to backend APIs and systems. \nDeploy and manage infrastructure within cloud environments, ensuring the highest levels of system integrity, security, scalability, and long-term reliability.\nContribute to core platform features designed to be reused across diverse international client use cases.\nPartner with design, product, and data teams to build robust applications aligned with the broader technical architecture.\n\nIdeally You’d Have\n\nBachelor’s degree in Computer Science or a related quantitative field \n5+ years of post-graduation, full-stack engineering experience with demonstrated proficiency in React (required), TypeScript, Next.js, Python, Node.js, PostgreSQL or MongoDB plus hands-on experience with Docker, Kubernetes, and Azure/AWS/GCP.\nProven ability to architect scalable, production-grade applications with a strong handle on cloud environments and infrastructure health.\nExperience working directly within customer infrastructure to deploy, maintain, and troubleshoot complex, end-to-end solutions.\nA self-starting approach with the technical maturity to navigate ambiguous requirements and deliver reliable software.\nDriven async communication methodologies to reduce communication frictions\nExperience building solutions with LLMs and a deep understanding of the overall Gen AI landscape\n\nNice To Haves\n\nProficient in Arabic \nPast experience working in a forward deployed engineer / dedicated customer engineer role\nExperience working cross functionally with operations\n\nPLEASE NOTE: Our policy requires a 90-day waiting period before reconsidering candidates for the same role. This allows us to ensure a fair and thorough evaluation of all applicants.\n\nAbout Us\n\nAt Scale, our mission is to develop reliable AI systems for the world's most important decisions. Our products provide the high-quality data and full-stack technologies that power the world's leading models, and help enterprises and governments build, deploy, and oversee AI applications that deliver real impact. We work closely with industry leaders like Meta, Ernst & Young, Mayo Clinic, Time Inc., the Government of Qatar, and U.S. government agencies including the Army and Air Force. We are expanding our team to accelerate the development of AI applications.\n\nWe believe that everyone should be able to bring their whole selves to work, which is why we are proud to be an inclusive and equal opportunity workplace. We are committed to equal employment opportunity regardless of race, color, ancestry, religion, sex, national origin, sexual orientation, age, citizenship, marital status, disability status, gender identity or Veteran status. \n\nWe are committed to working with and providing reasonable accommodations to applicants with physical and mental disabilities. If you need assistance and/or a reasonable accommodation in the application or recruiting process due to a disability, please contact us at accommodations@scale.com. Please see the United States Department of Labor's Know Your Rights poster for additional information.\n\nWe comply with the United States Department of Labor's Pay Transparency provision. \n\nPLEASE NOTE: We collect, retain and use personal data for our professional business purposes, including notifying you of job opportunities that may be of interest and sharing with our affiliates. We limit the personal data we collect to that which we believe is appropriate and necessary to manage applicants’ needs, provide our services, and comply with applicable laws. Any information we collect in connection with your application will be treated in accordance with our internal policies and programs designed to protect personal data. Please see our privacy policy for additional information.\n\nPosted by Scale AI on their own careers page — you apply directly, no recruiter in between. View original / apply →\n\nMore at Scale AI\n\nS\n\nAI Advisory Consultant\n\nScale AI\n\nScale AI is the data foundation for AI, helping organizations bu…\n\nSan Francisco, CA +1 aimachine learning\n\n1mo ago\n\nS\n\nAI Advisory Principal\n\nScale AI\n\nScale AI is the data foundation for AI, helping organizations bu…\n\nSan Francisco, CA +1 aimachine learning\n\n1mo ago\n\nS\n\nAI Infrastructure Engineer, Sandbox Platform\n\nScale AI\n\nScale AI is the data foundation for AI, helping organizatio",
+        "sha256": "5665cc652e4e22136d260433bd8e70d02bcdb7ce3213c20b67a4bbe130940a9a",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9Yzc3NjU2Yzc5MTkzZTcwMztjYz1zYQ==",
+      "captured_at": "2026-09-11T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9Yzc3NjU2Yzc5MTkzZTcwMztjYz1zYQ==",
+      "title": "Node Js Developer",
+      "company": "TechGropse Pvt Ltd",
+      "location": "Jeddah, المملكة العربية السعودية",
+      "url": "http://sa.indeed.com/job/node-js-developer-c77656c79193e703",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Good TypeScript backend fit, but missing required degree and on-site in Jeddah. (capped: 3 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 34,
+          "max": 40,
+          "note": "Demonstrated TypeScript, REST APIs, PostgreSQL, auth, and payment integrations."
+        },
+        "experience": {
+          "score": 16,
+          "max": 30,
+          "note": "Candidate full-stack development history is less than the requested 3-6 years."
+        },
+        "education": {
+          "score": 2,
+          "max": 15,
+          "note": "Requires Bachelor's degree in CS/SE."
+        },
+        "seniority_location": {
+          "score": 8,
+          "max": 15,
+          "note": "On-site/hybrid in Jeddah while candidate is based in Riyadh."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Location Mismatch for Required In-Person Role in Jeddah",
+        "Missing Required Bachelor's Degree in Computer Science or Related Field",
+        "Lacks 3 to 6 Years of Professional Node.js Experience"
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-09-10",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Job Description: Node.js Developer\n\nLocation: Jeddah, Saudi Arabia Employment Type: Full-Time Experience: 3–6 Years Department: Technology / Software Development Work Mode: On-site / Hybrid\n\nAbout the Role\n\nWe are looking for a skilled and motivated Node.js Developer to join our technology team in Jeddah, Saudi Arabia. The ideal candidate will be responsible for designing, developing, testing, and maintaining scalable and high-performance backend applications and APIs.\n\nYou will work closely with frontend developers, product managers, QA engineers, and other stakeholders to build reliable software solutions that meet business requirements.\n\nKey Responsibilities\n\n Develop and maintain scalable backend applications using Node.js.\n\n Design and implement RESTful APIs and backend services.\n\n Work with frameworks such as Express.js, NestJS, or similar.\n\n Develop secure, efficient, and reusable code following industry best practices.\n\n Integrate third-party APIs, payment gateways, and external services as required.\n\n Design and optimize databases and queries using MongoDB, PostgreSQL, MySQL, or similar technologies.\n\n Implement authentication and authorization mechanisms such as JWT and OAuth.\n\n Write unit and integration tests and troubleshoot application issues.\n\n Optimize application performance, scalability, and reliability.\n\n Collaborate with frontend developers to integrate backend APIs with web/mobile applications.\n\n Participate in code reviews and contribute to technical documentation.\n\n Work with Git and modern CI/CD and deployment practices.\n\n Monitor production applications and resolve bugs and performance issues.\n\n Follow security, coding, and software development best practices.\n\nRequired Skills & Qualifications\n\n Bachelor's degree in Computer Science, Software Engineering, or a related field.\n\n 3–6 years of professional experience in Node.js development.\n\n Strong proficiency in JavaScript and/or TypeScript.\n\n Hands-on experience with Node.js, Express.js, NestJS, or equivalent frameworks.\n\nPay: ﷼7,000.00 - ﷼8,000.00 per month\n\n\n\nLocation:\n* Jeddah (Required)\n\nWork Location: In person",
+        "sha256": "a397562fd991164236e9f361e832fed4d86e16b9cbb6a63b3a9bc1b9457db567",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}

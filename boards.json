@@ -2,7 +2,7 @@
   "adree": {
     "company": "Adree",
     "found": "2026-09-07",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 7,
     "source": "workable",
     "token": "adree"
@@ -18,7 +18,7 @@
   "arbetecareers": {
     "company": "Arbete Careers",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "arbetecareers"
@@ -26,7 +26,7 @@
   "artefact": {
     "company": "Artefact",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 123,
     "source": "greenhouse",
     "token": "artefact"
@@ -34,7 +34,7 @@
   "bbi": {
     "company": "BBI",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "bbi"
@@ -71,10 +71,17 @@
     "company": "dashco",
     "miss": "2026-09-08"
   },
+  "datamaticsglobalservices": {
+    "company": "Datamatics-Global-Services-Ltd",
+    "found": "2026-09-11",
+    "roles": 0,
+    "source": "workable",
+    "token": "datamatics"
+  },
   "dataplus": {
     "company": "DataPlus",
     "found": "2026-09-03",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "dataplus"
@@ -82,7 +89,7 @@
   "dataservicessaudiarabialimitedoneperson": {
     "company": "Data Services Saudi Arabia Limited One Person Company",
     "found": "2026-09-05",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "data"
@@ -90,6 +97,7 @@
   "deepsourcetechnologies": {
     "company": "DeepSource Technologies",
     "found": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 35,
     "source": "workable",
     "token": "deepsource"
@@ -97,7 +105,7 @@
   "deliveryhero": {
     "company": "Delivery Hero",
     "found": "2026-09-06",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "delivery"
@@ -113,7 +121,7 @@
   "eramtalent": {
     "company": "Eram Talent",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "eram"
@@ -129,7 +137,7 @@
   "etapsoftware": {
     "company": "ETAP Software",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "etap"
@@ -141,7 +149,7 @@
   "exequtmena": {
     "company": "exequt MENA",
     "found": "2026-09-03",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "exequt"
@@ -157,7 +165,7 @@
   "flintmiddleeast": {
     "company": "Flint Middle-East",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "flint"
@@ -165,7 +173,7 @@
   "gathern": {
     "company": "Gathern",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 11,
     "source": "workable",
     "token": "gathern"
@@ -173,10 +181,14 @@
   "hala": {
     "company": "HALA",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 12,
     "source": "greenhouse",
     "token": "hala"
+  },
+  "hiredgesolutions": {
+    "company": "Hiredge Solutions",
+    "miss": "2026-09-11"
   },
   "hiresquadresources": {
     "company": "Hiresquad Resources",
@@ -185,7 +197,7 @@
   "hudsonmanpower": {
     "company": "Hudson Manpower",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "hudson"
@@ -193,7 +205,7 @@
   "hungerstation": {
     "company": "HungerStation",
     "found": "2026-09-06",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "hungerstation"
@@ -205,7 +217,7 @@
   "innovationteam": {
     "company": "Innovationteam",
     "found": "2026-09-03",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 40,
     "source": "workable",
     "token": "innovationteam"
@@ -214,10 +226,14 @@
     "company": "IntelliSense.io",
     "miss": "2026-09-08"
   },
+  "ithrtechnologiesconsulting": {
+    "company": "ITHR Technologies Consulting LLC",
+    "miss": "2026-09-11"
+  },
   "jobgether": {
     "company": "Jobgether",
     "found": "2026-09-07",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "jobgether"
@@ -229,7 +245,7 @@
   "joinsolutions": {
     "company": "join solutions",
     "found": "2026-09-06",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "join"
@@ -241,7 +257,7 @@
   "lenovo": {
     "company": "Lenovo",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "lenovo"
@@ -249,7 +265,7 @@
   "lucidmotors": {
     "company": "Lucid Motors",
     "found": "2026-09-05",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 332,
     "source": "greenhouse",
     "token": "lucidmotors"
@@ -257,6 +273,7 @@
   "lucidmotorsmiddleeast": {
     "company": "Lucid Motors Middle East",
     "found": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "lucid"
@@ -264,7 +281,7 @@
   "miraiarabianinternational": {
     "company": "Mirai Arabian International Company Limited",
     "found": "2026-09-06",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "mirai"
@@ -280,10 +297,14 @@
   "nakhla": {
     "company": "Nakhla",
     "found": "2026-09-07",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 1,
     "source": "workable",
     "token": "nakhla"
+  },
+  "olikglobal": {
+    "company": "Olik Global",
+    "miss": "2026-09-11"
   },
   "otalence": {
     "company": "OTalence",
@@ -292,6 +313,7 @@
   "parsonscorporation": {
     "company": "Parsons Corporation",
     "found": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "parsons"
@@ -306,7 +328,7 @@
   "qualcommtechnologies": {
     "company": "Qualcomm Technologies, Inc",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "qualcomm"
@@ -322,7 +344,7 @@
   "sap": {
     "company": "SAP",
     "found": "2026-09-07",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "sap"
@@ -330,7 +352,7 @@
   "saudibusinessmachines": {
     "company": "Saudi Business Machines",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "saudi"
@@ -338,7 +360,7 @@
   "sensys": {
     "company": "SENSYS Inc.",
     "found": "2026-09-03",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "sensys"
@@ -354,7 +376,7 @@
   "solbusinesssolutions": {
     "company": "SOL Business Solutions",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "sol"
@@ -362,7 +384,7 @@
   "sourcecode": {
     "company": "Source Code",
     "found": "2026-09-09",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "sourcecode"
@@ -374,15 +396,19 @@
   "tabby": {
     "company": "Tabby  تابي",
     "found": "2026-09-08",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "tabby"
   },
+  "talpods": {
+    "company": "TalPods",
+    "miss": "2026-09-11"
+  },
   "trueai": {
     "company": "true ai",
     "found": "2026-09-07",
-    "last_read": "2026-09-10",
+    "last_read": "2026-09-11",
     "roles": 0,
     "source": "workable",
     "token": "trueai"
