@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-12",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2359013778",
+      "captured_at": "2026-09-12T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2359013778",
+      "title": "Frontend and Backend Web Application Developer",
+      "company": "Jobs for Humanity",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://jobs.smartrecruiters.com/JobsForHumanity/744000149058539-frontend-and-backend-web-application-developer",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 86,
+      "why": "Direct match for React, JavaScript/TypeScript, UI components, REST APIs, and Git in Riyadh.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 37,
+          "max": 40,
+          "note": "Demonstrated React, CSS, JavaScript, REST APIs, Git, and serverless Node.js."
+        },
+        "experience": {
+          "score": 23,
+          "max": 30,
+          "note": "Built full-scale production SaaS web app solo with modern React front-end."
+        },
+        "education": {
+          "score": 13,
+          "max": 15,
+          "note": "No mandatory degree requirement listed in posting."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Individual contributor role based in Riyadh, Saudi Arabia."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-11",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Company Description\nJobs for Humanity is partnering with ANB to build an inclusive and just employment ecosystem. Therefore, we prioritize individuals coming from all walks of life. \n\nCompany Name: ANB\n\nJob Description\nWe’re seeking a Frontend/Full-Stack Web Developer to design, build, and maintain responsive, high-performance web applications. You’ll translate product requirements into intuitive user interfaces and reliable backend integrations while collaborating to ensure quality through testing, reviews, and performance best practices.\nJob Purpose \nBuild and maintain modern web experiences by creating reusable UI components, optimizing performance and accessibility, and integrating RESTful APIs and backend services reliably.\nJob Duties and Responsibilities \nHTML\nCSS/SCSS\nJavaScript\nResponsive UI across browsers\nReact or Angular or Vue\nReusable components and layouts\nWeb performance optimization\nAccessibility (WCAG)\nREST API integration\nNode.js basics\nGit\nProblem-solving\nUnit/integration testing\nCode reviews\nQualifications\nRequired Qualifications \nProficiency in HTML\nProficiency in CSS/SCSS\nStrong JavaScript fundamentals\nExperience with React or Angular or Vue\nBasic Node.js knowledge\nExperience integrating REST APIs and backend services\nKnowledge of Git workflows\nExperience with web performance optimization\nAccessibility knowledge aligned to WCAG\nStrong problem-solving skills\nExperience writing tests and participating in code reviews\n\nCompany: ANB",
+        "sha256": "0b05622505214d607bbbe3b7ffcac43fc246e10f775f338417340d70b3951468",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2358806874",
+      "captured_at": "2026-09-12T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2358806874",
+      "title": "Jr. Data Scientist",
+      "company": "Why Hiring",
+      "location": "Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/jr-data-scientist-at-why-hiring-4463973086",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 75,
+      "why": "Strong match on Python, SQL, Power BI, and automation, but junior-level role.",
+      "ranking_verified": true,
+      "track": "Data and analytics",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Excellent fit for Python, SQL querying, Power BI, dashboards, and automation."
+        },
+        "experience": {
+          "score": 24,
+          "max": 30,
+          "note": "5+ years data analysis experience easily covers junior-level analytics responsib"
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No mandatory degree specified in posting requirements."
+        },
+        "seniority_location": {
+          "score": 8,
+          "max": 15,
+          "note": "Located in Saudi Arabia, but junior title below preferred senior level."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-11",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Junior Data Scientist\n📍 Remote (Saudi Arabia) | Full-Time\n\nAbout the Role\n\nWe're looking for a Junior Data Scientist to join a growing analytics team focused on building data-driven solutions and improving business performance through modern technologies. This role is ideal for someone who enjoys working with data, automation, and emerging AI tools in a collaborative, fast-paced environment.\n\nYou'll work alongside analysts, engineers, and business stakeholders to support reporting, forecasting, automation, and advanced analytics initiatives across different business areas.\n\nKey Responsibilities\n\n- Analyze and interpret large datasets to support business decision-making\n- Develop and maintain automated workflows using Python and SQL\n- Create dashboards, reports, and visualizations using BI and analytics tools\n- Support predictive analytics, segmentation, and forecasting projects\n- Assist in building scalable reporting and data processing solutions\n- Collaborate with technical and non-technical teams to translate business needs into data solutions\n- Contribute to the maintenance and optimization of data models and pipelines\n\nRequirements (Must-Have)\n\n- Experience working with Python for data analysis, scripting, or automation\n- Strong SQL knowledge and experience querying relational databases\n- Familiarity with business intelligence or data visualization tools (e.g. Power BI, Tableau)\n- Basic understanding of machine learning concepts (e.g. regression, classification)\n- Foundational knowledge of statistics (hypothesis testing, distributions, correlation)\n- Strong analytical thinking and problem-solving ability\n- Clear communication skills — able to explain data insights to non-technical audiences\n\nNice-to-Have\n\n- Understanding of cloud-based analytics or modern data platforms (AWS, GCP, Azure)\n- Interest in AI-enabled workflows, automation, or applied data science\n- Prior exposure to predictive modeling or forecasting projects\n\nWhat We Offer\n\n- Remote and flexible working environment\n- Opportunity to work on modern analytics and AI-focused projects\n- Supportive, collaborative team culture\n- Professional development and learning opportunities\n- Exposure to cloud technologies, automation, and scalable data solutions\n- Career growth within an expanding team\n- Performance-based incentives\n- Wellness and work-life balance support\n\n---\n\nAbout Why Hiring\nAt Why Hiring, we connect talented individuals with remote job opportunities, simplifying the job search and helping professionals find fulfilling roles regardless of geography.\n\nWhy Hiring does not discriminate on the basis of race, sex, color, religion, age, national origin, marital status, disability, veteran status, genetic information, sexual orientation, gender identity, or any other status protected by law.",
+        "sha256": "d7bc08b7d3990ae4cc1f4736572990f09c44bde16ccdcb75792dd222769a20ea",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2359416568",
+      "captured_at": "2026-09-12T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2359416568",
+      "title": "Senior Software Engineer - Full Stack",
+      "company": "Moyasar Financial Company",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/f6ym7sPLJcCzsXWeTroqjk/senior-software-engineer---full-stack-in-riyadh-at-moyasar-financial-company",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Requires 5+ years Ruby on Rails and a Bachelor's degree; candidate uses TS/Python.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Has PostgreSQL, REST APIs, and Moyasar experience; lacks Ruby on Rails/Redis/Sid"
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Strong web SaaS ownership, but lacks 5+ years dedicated Rails engineering."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Missing mandatory Bachelor's degree requirement."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Senior individual contributor role based in Riyadh, Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree",
+        "Lack of Evidenced Ruby and Ruby on Rails Experience",
+        "Insufficient Verified Years of Software Engineering Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-11",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "About the Role\nWe’re looking for a Senior Software Engineer – Full Stack to join our Engineering team at Moyasar and help us build and improve our digital payment products and services.\nYou’ll work across the stack using Ruby on Rails, PostgreSQL, Redis, and Sidekiq, building reliable solutions used by businesses and merchants to accept and manage payments. We’re looking for someone who thinks beyond the code someone who understands the business problem, helps shape the solution, and takes ownership from idea to delivery.\n\nWhat You’ll Do\nBuild and improve full-stack features for Moyasar’s payment products and merchant services. \nDevelop backend services, REST APIs, and user-facing web features. \nBuild reliable integrations that support our payment ecosystem. \nUnderstand merchant and business needs and turn them into practical technical solutions. \nTake ownership of features from problem definition through development and production. \nWork with Ruby on Rails, PostgreSQL, Redis, and Sidekiq. \nImprove the performance, reliability, scalability, and security of our systems. \nWrite clean, maintainable, and well-tested code. \nContribute to architecture and technical decisions. \nReview code and support other engineers. \nTroubleshoot production issues and continuously improve our products.\nBachelor’s degree. \n5+ years of software engineering experience. \nStrong experience with Ruby and Ruby on Rails. \nStrong full-stack development experience. \nExperience with PostgreSQL, Redis, Sidekiq, and REST APIs. \nExperience building user-facing web products. \nStrong product mindset and ownership. \nGood understanding of testing, performance, and scalable system design. \nStrong problem-solving and communication skills. \nExperience in fintech, digital payments, or financial services is a strong plus.",
+        "sha256": "fb6374145e3f6952995833cf2fac2ee9628ba249cce83ac32ee09e15fd5324d4",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
