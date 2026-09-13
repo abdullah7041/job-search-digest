@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-13",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2360547210",
+      "captured_at": "2026-09-13T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2360547210",
+      "title": "Senior AI Full Stack Developer",
+      "company": "99brightminds",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-ai-full-stack-developer-at-99brightminds-4464277423",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Lacks bachelor's degree and 5+ years of full stack software development experience. (capped: 2 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Matches React, TypeScript, Python, LLMs, APIs, but fine-tuning needed."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Full-stack experience from Aug 2025 falls short of 5+ years required."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Requires Bachelor's in CS/SE; candidate holds Pipefitting Diploma."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Onsite Saudi Arabia location matches candidate profile well."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Degree in Computer Science or Related Field",
+        "Lack of 5+ Years Full Stack Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-12",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Position: Senior AI Full Stack Developer\nLocation: Onsite - Kingdom of Saudi Arabia\nDuration: 1 year renewable\n\nRole Overview:\nDesign, develop, and deploy end-to-end AI-powered applications, combining full stack engineering expertise with modern machine learning and LLM integration capabilities.\n\nKey Responsibilities:\nBuild and maintain scalable web applications (frontend and backend)\nDevelop, integrate, and fine-tune AI/LLM solutions (RAG pipelines, chatbots, retrieval systems)\nDesign and manage APIs, databases, and cloud infrastructure\nImplement vector databases, embeddings, and semantic search solutions\nCollaborate with data scientists, product owners, and stakeholders\nEnsure security, performance, and code quality best practices\nDeploy and monitor models and applications in production environments\n\nRequired Skills & Qualifications:\nBachelor's degree in Computer Science, Software Engineering, or related field\n5+ years of full stack development experience\nProficiency in Python and JavaScript/TypeScript\nExperience with frameworks such as React, Node.js, FastAPI/Django\nHands-on experience with LLMs, LangChain/LlamaIndex, OpenAI/Azure OpenAI APIs\nExperience with vector databases (e.g., Pinecone, FAISS, Qdrant)\nStrong knowledge of SQL/NoSQL databases, REST APIs, and cloud platforms (Azure/AWS)\nFamiliarity with DevOps, CI/CD, and containerization (Docker, Kubernetes)\nStrong problem-solving skills and ability to work in agile teams\n\nPreferred:\nExperience in banking/fintech domain\nKnowledge of Shariah-compliant banking products\nArabic language proficiency",
+        "sha256": "f6bfb881d8a4c52a29c01181344209fc603a1ea08c32e4f4376b2483c849f9ad",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
