@@ -3,10 +3,14 @@
     "company": "99brightminds",
     "miss": "2026-09-13"
   },
+  "aalico": {
+    "company": "AALICO",
+    "miss": "2026-09-14"
+  },
   "adree": {
     "company": "Adree",
     "found": "2026-09-07",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 7,
     "source": "workable",
     "token": "adree"
@@ -22,7 +26,7 @@
   "arbetecareers": {
     "company": "Arbete Careers",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "arbetecareers"
@@ -30,7 +34,7 @@
   "artefact": {
     "company": "Artefact",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 123,
     "source": "greenhouse",
     "token": "artefact"
@@ -42,7 +46,7 @@
   "bbi": {
     "company": "BBI",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "bbi"
@@ -62,7 +66,7 @@
   "clientofethrahr": {
     "company": "Client of Ethra Hr",
     "found": "2026-09-12",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "client"
@@ -87,10 +91,14 @@
     "company": "dashco",
     "miss": "2026-09-08"
   },
+  "dataforcesolution": {
+    "company": "DataForce Solution",
+    "miss": "2026-09-14"
+  },
   "datamaticsglobalservices": {
     "company": "Datamatics-Global-Services-Ltd",
     "found": "2026-09-11",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "datamatics"
@@ -98,7 +106,7 @@
   "dataplus": {
     "company": "DataPlus",
     "found": "2026-09-03",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "dataplus"
@@ -106,7 +114,7 @@
   "dataservicessaudiarabialimitedoneperson": {
     "company": "Data Services Saudi Arabia Limited One Person Company",
     "found": "2026-09-05",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "data"
@@ -114,7 +122,7 @@
   "deepsourcetechnologies": {
     "company": "DeepSource Technologies",
     "found": "2026-09-10",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 35,
     "source": "workable",
     "token": "deepsource"
@@ -122,7 +130,7 @@
   "deliveryhero": {
     "company": "Delivery Hero",
     "found": "2026-09-06",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "delivery"
@@ -142,7 +150,7 @@
   "eramtalent": {
     "company": "Eram Talent",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "eram"
@@ -158,7 +166,7 @@
   "etapsoftware": {
     "company": "ETAP Software",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "etap"
@@ -170,7 +178,7 @@
   "exequtmena": {
     "company": "exequt MENA",
     "found": "2026-09-03",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "exequt"
@@ -186,15 +194,19 @@
   "flintmiddleeast": {
     "company": "Flint Middle-East",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "flint"
   },
+  "fortra": {
+    "company": "Fortra",
+    "miss": "2026-09-14"
+  },
   "gathern": {
     "company": "Gathern",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 11,
     "source": "workable",
     "token": "gathern"
@@ -202,7 +214,7 @@
   "hala": {
     "company": "HALA",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 12,
     "source": "greenhouse",
     "token": "hala"
@@ -222,7 +234,7 @@
   "hudsonmanpower": {
     "company": "Hudson Manpower",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "hudson"
@@ -230,7 +242,7 @@
   "hungerstation": {
     "company": "HungerStation",
     "found": "2026-09-06",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "hungerstation"
@@ -242,7 +254,7 @@
   "innovationteam": {
     "company": "Innovationteam",
     "found": "2026-09-03",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 40,
     "source": "workable",
     "token": "innovationteam"
@@ -258,10 +270,14 @@
   "jobgether": {
     "company": "Jobgether",
     "found": "2026-09-07",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "jobgether"
+  },
+  "jobletai": {
+    "company": "Joblet-AI",
+    "miss": "2026-09-14"
   },
   "jobsforhumanity": {
     "company": "Jobs for Humanity",
@@ -270,7 +286,7 @@
   "joinsolutions": {
     "company": "join solutions",
     "found": "2026-09-06",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "join"
@@ -282,7 +298,7 @@
   "lenovo": {
     "company": "Lenovo",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "lenovo"
@@ -290,7 +306,7 @@
   "lucidmotors": {
     "company": "Lucid Motors",
     "found": "2026-09-05",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 332,
     "source": "greenhouse",
     "token": "lucidmotors"
@@ -298,15 +314,22 @@
   "lucidmotorsmiddleeast": {
     "company": "Lucid Motors Middle East",
     "found": "2026-09-10",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "lucid"
   },
+  "metasmartfactory": {
+    "company": "META Smart Factory",
+    "found": "2026-09-14",
+    "roles": 0,
+    "source": "workable",
+    "token": "meta"
+  },
   "miraiarabianinternational": {
     "company": "Mirai Arabian International Company Limited",
     "found": "2026-09-06",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "mirai"
@@ -322,7 +345,7 @@
   "nakhla": {
     "company": "Nakhla",
     "found": "2026-09-07",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 1,
     "source": "workable",
     "token": "nakhla"
@@ -338,7 +361,7 @@
   "parsonscorporation": {
     "company": "Parsons Corporation",
     "found": "2026-09-10",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "parsons"
@@ -353,7 +376,7 @@
   "qualcommtechnologies": {
     "company": "Qualcomm Technologies, Inc",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "qualcomm"
@@ -365,7 +388,7 @@
   "saic": {
     "company": "SAIC",
     "found": "2026-09-12",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "saic"
@@ -377,7 +400,7 @@
   "sap": {
     "company": "SAP",
     "found": "2026-09-07",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "sap"
@@ -385,7 +408,7 @@
   "saudibusinessmachines": {
     "company": "Saudi Business Machines",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "saudi"
@@ -397,7 +420,7 @@
   "sensys": {
     "company": "SENSYS Inc.",
     "found": "2026-09-03",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "sensys"
@@ -413,7 +436,7 @@
   "solbusinesssolutions": {
     "company": "SOL Business Solutions",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "sol"
@@ -421,7 +444,7 @@
   "sourcecode": {
     "company": "Source Code",
     "found": "2026-09-09",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "sourcecode"
@@ -429,7 +452,7 @@
   "statera": {
     "company": "STATERA",
     "found": "2026-09-12",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "statera"
@@ -445,7 +468,7 @@
   "tabby": {
     "company": "Tabby  تابي",
     "found": "2026-09-08",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "tabby"
@@ -457,7 +480,7 @@
   "trueai": {
     "company": "true ai",
     "found": "2026-09-07",
-    "last_read": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "trueai"
@@ -469,6 +492,7 @@
   "whyhiring": {
     "company": "Why Hiring",
     "found": "2026-09-13",
+    "last_read": "2026-09-14",
     "roles": 0,
     "source": "workable",
     "token": "why"

@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-14",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2361608726",
+      "captured_at": "2026-09-14T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2361608726",
+      "title": "Frontend Software Engineer - Saudi Only",
+      "company": "Lucidya",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/1SH7vidmvUY4uAe9htVkqZ/hybrid-frontend-software-engineer---saudi-only-in-riyadh-at-lucidya",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Superb React and TypeScript match in Riyadh, held back by mandatory degree requirement. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Proven React 19, TypeScript, state management, and API consumption."
+        },
+        "experience": {
+          "score": 28,
+          "max": 30,
+          "note": "Ideal 0-2 years experience level for candidate's shipped web app."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Bachelor degree in CS or related field required."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Riyadh-based Saudi-only role fits perfectly."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Missing Bachelor's Degree in Computer Science or Related Field"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-13",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Lucidya is a leading AI-powered Customer Experience Management (CXM) platform in the MENA region, enabling enterprises to understand, engage, and serve their customers across digital channels at scale.\nAs we continue to scale our platform and move toward IPO-scale engineering, we are looking for a Frontend Software Engineer who is passionate about building high-quality user experiences, learning quickly, and using modern engineering practices — including AI — to deliver better software faster.\nThis role is ideal for an engineer with 0–2 years of professional experience who has a solid foundation in frontend development and wants to grow in an environment where ownership, speed, quality, collaboration, and continuous improvement matter.\nWe don't measure impact by how many lines of code you write. We care about your ability to understand problems, build maintainable solutions, collaborate effectively, and continuously improve the way you work.\nPlease note that this position is strictly open to Saudi nationals only. Applications from non-Saudi nationals will not be considered and will be disqualified from the recruitment process.\nWhat You Will Work On\nModern Frontend Development\nBuild and maintain production-grade web applications using React, JavaScript, and TypeScript. \nDevelop reusable, maintainable, and scalable frontend components. \nTurn product requirements and designs into clean, intuitive, and responsive user experiences. \nIntegrate frontend applications with REST APIs and real-time communication services. \nWork with WebSockets / Socket.IO to build real-time user experiences. \nUnderstand and work with event-driven flows connected to RabbitMQ and backend messaging systems. \nHandle real-time updates, reconnection scenarios, error states, and synchronization between live events and UI state. \nManage server state efficiently using React Query / TanStack Query. \nManage complex client-side state using Redux / Redux Toolkit when appropriate. \nContribute to improving frontend architecture, performance, code organization, and maintainability. \nQuality & Testing\nQuality is part of development — not something that happens after development.\nWrite reliable unit and integration tests using Jest. \nBuild and maintain end-to-end tests using Playwright. \nTest your work thoroughly before considering it complete. \nParticipate actively in code reviews and learn from feedback. \nIdentify regressions, edge cases, and potential production issues before they reach users. \nDebug issues systematically and focus on root causes rather than temporary workarounds. \nWrite code that is easy for other engineers to understand, review, test, and maintain. \nAI-Enabled Engineering\nWe expect engineers to use AI as an engineering accelerator, not as a replacement for engineering judgment.\nUse AI coding tools effectively to research, prototype, implement, debug, test, and refactor solutions faster. \nKnow how to provide AI tools with the right context, requirements, and constraints to generate useful results. \nCritically review and validate AI-generated code instead of accepting it blindly. \nUse AI to automate repetitive work and spend more time solving meaningful engineering problems. \nContinuously explore better AI-assisted workflows that improve productivity and engineering velocity. \nMaintain high standards for quality, security, performance, and maintainability, regardless of whether code was written manually or with AI assistance. \nThe goal isn't simply to write code faster. It's to deliver better outcomes in less time without sacrificing quality.\nOwnership & Collaboration\nTake ownership of your work from understanding the requirement through implementation, testing, review, and production. \nCommunicate clearly when requirements are unclear or when you identify technical risks. \nCollaborate closely with frontend engineers, backend engineers, QA, product managers, and designers. \nAsk questions when necessary while developing the ability to investigate and unblock yourself. \nGive and receive constructive feedback during code reviews and technical discussions. \nHelp teammates when needed and actively share what you learn. \nTake responsibility for the quality of what you ship. \nTreat the product as something you own — not simply a collection of assigned tickets. \nStack\nOur frontend ecosystem includes:\nReact \nJavaScript (ES6+) \nTypeScript \nReact Query / TanStack Query \nRedux / Redux Toolkit \nJest \nPlaywright \nWebSockets / Socket.IO \nRabbitMQ \nREST APIs \nGit \nModern AI-assisted development tools \nExperience with every technology is not required, but you should have strong fundamentals and the ability to learn quickly.\nWhat We Are Looking For\nBachelor's degree in Computer Science or a closely related field. \n0–2 years of professional frontend development experience. \nStrong understanding of JavaScript fundamentals. \nHands-on experience building applications with React. \nGood understanding of TypeScript and type-safe development. \nGood understanding of React fundamentals, including components, hooks, state management, rendering, and component lifecycle. \nExperience integrating frontend applications with APIs and handling asynchronous data. \nFamiliarity with React Query / TanStack Query and Redux / Redux Toolkit. \nUnderstanding of frontend testing and experience with tools such as Jest and Playwright. \nFamiliarity with real-time frontend architectures using WebSockets / Socket.IO. \nBasic understanding of message queues and event-driven systems, especially RabbitMQ. \nUnderstanding of common real-time challenges such as reconnection, duplicate events, stale data, race conditions, and keeping UI state synchronized. \nSolid understanding of HTML, CSS, responsive design, and browser fundamentals. \nFamiliarity with Git and collaborative development workflows. \nAbility to debug problems rather than only work around them. \nAbility to write clean, readable, and maintainable code. \nPractical experience using AI tools to improve software",
+        "sha256": "8cb05532dda428179c9f019785233938de8c241c084a9cc13e68bfc1b478c1d1",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2361608705",
+      "captured_at": "2026-09-14T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2361608705",
+      "title": "Frontend Software Engineer - Saudi Only",
+      "company": "Lucidya",
+      "location": "Al Khobar, Eastern Province, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/x8FQZPtenVPjjT8T1mfSzw/hybrid-frontend-software-engineer---saudi-only-in-al-khobar-at-lucidya",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Strong React/TypeScript fit, Eastern Province location works, but requires mandatory CS degree. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Deep practical React, TypeScript, and API integration experience."
+        },
+        "experience": {
+          "score": 28,
+          "max": 30,
+          "note": "Aligned with 0-2 years frontend development scope."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Requires Bachelor degree in Computer Science."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Al Khobar location in Eastern Province matches candidate history."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Missing Required Degree in Computer Science or Related Field"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-13",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Lucidya is a leading AI-powered Customer Experience Management (CXM) platform in the MENA region, enabling enterprises to understand, engage, and serve their customers across digital channels at scale.\nAs we continue to scale our platform and move toward IPO-scale engineering, we are looking for a Frontend Software Engineer who is passionate about building high-quality user experiences, learning quickly, and using modern engineering practices — including AI — to deliver better software faster.\nThis role is ideal for an engineer with 0–2 years of professional experience who has a solid foundation in frontend development and wants to grow in an environment where ownership, speed, quality, collaboration, and continuous improvement matter.\nWe don't measure impact by how many lines of code you write. We care about your ability to understand problems, build maintainable solutions, collaborate effectively, and continuously improve the way you work.\nPlease note that this position is strictly open to Saudi nationals only. Applications from non-Saudi nationals will not be considered and will be disqualified from the recruitment process.\nWhat You Will Work On\nModern Frontend Development\nBuild and maintain production-grade web applications using React, JavaScript, and TypeScript. \nDevelop reusable, maintainable, and scalable frontend components. \nTurn product requirements and designs into clean, intuitive, and responsive user experiences. \nIntegrate frontend applications with REST APIs and real-time communication services. \nWork with WebSockets / Socket.IO to build real-time user experiences. \nUnderstand and work with event-driven flows connected to RabbitMQ and backend messaging systems. \nHandle real-time updates, reconnection scenarios, error states, and synchronization between live events and UI state. \nManage server state efficiently using React Query / TanStack Query. \nManage complex client-side state using Redux / Redux Toolkit when appropriate. \nContribute to improving frontend architecture, performance, code organization, and maintainability. \nQuality & Testing\nQuality is part of development — not something that happens after development.\nWrite reliable unit and integration tests using Jest. \nBuild and maintain end-to-end tests using Playwright. \nTest your work thoroughly before considering it complete. \nParticipate actively in code reviews and learn from feedback. \nIdentify regressions, edge cases, and potential production issues before they reach users. \nDebug issues systematically and focus on root causes rather than temporary workarounds. \nWrite code that is easy for other engineers to understand, review, test, and maintain. \nAI-Enabled Engineering\nWe expect engineers to use AI as an engineering accelerator, not as a replacement for engineering judgment.\nUse AI coding tools effectively to research, prototype, implement, debug, test, and refactor solutions faster. \nKnow how to provide AI tools with the right context, requirements, and constraints to generate useful results. \nCritically review and validate AI-generated code instead of accepting it blindly. \nUse AI to automate repetitive work and spend more time solving meaningful engineering problems. \nContinuously explore better AI-assisted workflows that improve productivity and engineering velocity. \nMaintain high standards for quality, security, performance, and maintainability, regardless of whether code was written manually or with AI assistance. \nThe goal isn't simply to write code faster. It's to deliver better outcomes in less time without sacrificing quality.\nOwnership & Collaboration\nTake ownership of your work from understanding the requirement through implementation, testing, review, and production. \nCommunicate clearly when requirements are unclear or when you identify technical risks. \nCollaborate closely with frontend engineers, backend engineers, QA, product managers, and designers. \nAsk questions when necessary while developing the ability to investigate and unblock yourself. \nGive and receive constructive feedback during code reviews and technical discussions. \nHelp teammates when needed and actively share what you learn. \nTake responsibility for the quality of what you ship. \nTreat the product as something you own — not simply a collection of assigned tickets. \nStack\nOur frontend ecosystem includes:\nReact \nJavaScript (ES6+) \nTypeScript \nReact Query / TanStack Query \nRedux / Redux Toolkit \nJest \nPlaywright \nWebSockets / Socket.IO \nRabbitMQ \nREST APIs \nGit \nModern AI-assisted development tools \nExperience with every technology is not required, but you should have strong fundamentals and the ability to learn quickly.\nWhat We Are Looking For\nBachelor's degree in Computer Science or a closely related field. \n0–2 years of professional frontend development experience. \nStrong understanding of JavaScript fundamentals. \nHands-on experience building applications with React. \nGood understanding of TypeScript and type-safe development. \nGood understanding of React fundamentals, including components, hooks, state management, rendering, and component lifecycle. \nExperience integrating frontend applications with APIs and handling asynchronous data. \nFamiliarity with React Query / TanStack Query and Redux / Redux Toolkit. \nUnderstanding of frontend testing and experience with tools such as Jest and Playwright. \nFamiliarity with real-time frontend architectures using WebSockets / Socket.IO. \nBasic understanding of message queues and event-driven systems, especially RabbitMQ. \nUnderstanding of common real-time challenges such as reconnection, duplicate events, stale data, race conditions, and keeping UI state synchronized. \nSolid understanding of HTML, CSS, responsive design, and browser fundamentals. \nFamiliarity with Git and collaborative development workflows. \nAbility to debug problems rather than only work around them. \nAbility to write clean, readable, and maintainable code. \nPractical experience using AI tools to improve software",
+        "sha256": "8cb05532dda428179c9f019785233938de8c241c084a9cc13e68bfc1b478c1d1",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2361608694",
+      "captured_at": "2026-09-14T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2361608694",
+      "title": "Frontend Software Engineer - Saudi Only",
+      "company": "Lucidya",
+      "location": "Jeddah, Makkah Region, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/gYjyj8q1uYdeZKqq4Lu9zi/hybrid-frontend-software-engineer---saudi-only-in-jeddah-at-lucidya",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Excellent React/TypeScript match for 0-2y level, but demands mandatory CS Bachelor degree. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Extensive 28k lines React and TypeScript production front-end experience."
+        },
+        "experience": {
+          "score": 28,
+          "max": 30,
+          "note": "Targeted at 0-2 years frontend; fits candidate's recent intensive SaaS shipping."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandatory Bachelor in Computer Science missing."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Saudi-only role; Jeddah based (candidate in Riyadh/Eastern Province)."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Missing Required Computer Science Bachelor's Degree"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-13",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Lucidya is a leading AI-powered Customer Experience Management (CXM) platform in the MENA region, enabling enterprises to understand, engage, and serve their customers across digital channels at scale.\nAs we continue to scale our platform and move toward IPO-scale engineering, we are looking for a Frontend Software Engineer who is passionate about building high-quality user experiences, learning quickly, and using modern engineering practices — including AI — to deliver better software faster.\nThis role is ideal for an engineer with 0–2 years of professional experience who has a solid foundation in frontend development and wants to grow in an environment where ownership, speed, quality, collaboration, and continuous improvement matter.\nWe don't measure impact by how many lines of code you write. We care about your ability to understand problems, build maintainable solutions, collaborate effectively, and continuously improve the way you work.\nPlease note that this position is strictly open to Saudi nationals only. Applications from non-Saudi nationals will not be considered and will be disqualified from the recruitment process.\nWhat You Will Work On\nModern Frontend Development\nBuild and maintain production-grade web applications using React, JavaScript, and TypeScript. \nDevelop reusable, maintainable, and scalable frontend components. \nTurn product requirements and designs into clean, intuitive, and responsive user experiences. \nIntegrate frontend applications with REST APIs and real-time communication services. \nWork with WebSockets / Socket.IO to build real-time user experiences. \nUnderstand and work with event-driven flows connected to RabbitMQ and backend messaging systems. \nHandle real-time updates, reconnection scenarios, error states, and synchronization between live events and UI state. \nManage server state efficiently using React Query / TanStack Query. \nManage complex client-side state using Redux / Redux Toolkit when appropriate. \nContribute to improving frontend architecture, performance, code organization, and maintainability. \nQuality & Testing\nQuality is part of development — not something that happens after development.\nWrite reliable unit and integration tests using Jest. \nBuild and maintain end-to-end tests using Playwright. \nTest your work thoroughly before considering it complete. \nParticipate actively in code reviews and learn from feedback. \nIdentify regressions, edge cases, and potential production issues before they reach users. \nDebug issues systematically and focus on root causes rather than temporary workarounds. \nWrite code that is easy for other engineers to understand, review, test, and maintain. \nAI-Enabled Engineering\nWe expect engineers to use AI as an engineering accelerator, not as a replacement for engineering judgment.\nUse AI coding tools effectively to research, prototype, implement, debug, test, and refactor solutions faster. \nKnow how to provide AI tools with the right context, requirements, and constraints to generate useful results. \nCritically review and validate AI-generated code instead of accepting it blindly. \nUse AI to automate repetitive work and spend more time solving meaningful engineering problems. \nContinuously explore better AI-assisted workflows that improve productivity and engineering velocity. \nMaintain high standards for quality, security, performance, and maintainability, regardless of whether code was written manually or with AI assistance. \nThe goal isn't simply to write code faster. It's to deliver better outcomes in less time without sacrificing quality.\nOwnership & Collaboration\nTake ownership of your work from understanding the requirement through implementation, testing, review, and production. \nCommunicate clearly when requirements are unclear or when you identify technical risks. \nCollaborate closely with frontend engineers, backend engineers, QA, product managers, and designers. \nAsk questions when necessary while developing the ability to investigate and unblock yourself. \nGive and receive constructive feedback during code reviews and technical discussions. \nHelp teammates when needed and actively share what you learn. \nTake responsibility for the quality of what you ship. \nTreat the product as something you own — not simply a collection of assigned tickets. \nStack\nOur frontend ecosystem includes:\nReact \nJavaScript (ES6+) \nTypeScript \nReact Query / TanStack Query \nRedux / Redux Toolkit \nJest \nPlaywright \nWebSockets / Socket.IO \nRabbitMQ \nREST APIs \nGit \nModern AI-assisted development tools \nExperience with every technology is not required, but you should have strong fundamentals and the ability to learn quickly.\nWhat We Are Looking For\nBachelor's degree in Computer Science or a closely related field. \n0–2 years of professional frontend development experience. \nStrong understanding of JavaScript fundamentals. \nHands-on experience building applications with React. \nGood understanding of TypeScript and type-safe development. \nGood understanding of React fundamentals, including components, hooks, state management, rendering, and component lifecycle. \nExperience integrating frontend applications with APIs and handling asynchronous data. \nFamiliarity with React Query / TanStack Query and Redux / Redux Toolkit. \nUnderstanding of frontend testing and experience with tools such as Jest and Playwright. \nFamiliarity with real-time frontend architectures using WebSockets / Socket.IO. \nBasic understanding of message queues and event-driven systems, especially RabbitMQ. \nUnderstanding of common real-time challenges such as reconnection, duplicate events, stale data, race conditions, and keeping UI state synchronized. \nSolid understanding of HTML, CSS, responsive design, and browser fundamentals. \nFamiliarity with Git and collaborative development workflows. \nAbility to debug problems rather than only work around them. \nAbility to write clean, readable, and maintainable code. \nPractical experience using AI tools to improve software",
+        "sha256": "8cb05532dda428179c9f019785233938de8c241c084a9cc13e68bfc1b478c1d1",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2362115663",
+      "captured_at": "2026-09-14T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2362115663",
+      "title": "Solutions Engineer",
+      "company": "Fortra",
+      "location": "Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/solutions-engineer-at-fortra-4448483167",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Presales Solutions Engineer role; degree is preferred but candidate lacks enterprise IT security background.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 18,
+          "max": 40,
+          "note": "Has API/scripting skills; lacks enterprise PKI, SAML, DLP security protocols."
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Demonstrates technical demos/sales at Alghalia and Watheq, but not enterprise IT"
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "Degree is preferred or adequate career experience."
+        },
+        "seniority_location": {
+          "score": 13,
+          "max": 15,
+          "note": "Saudi Arabia based."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Enterprise Security Fundamentals"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-14",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Whether you’re an experienced professional or just getting started, your contributions matter at Fortra. If you’re passionate about tackling meaningful challenges alongside talented team members committed to helping each other succeed, all while having lots of fun, we want to hear from you. We offer competitive benefits and salaries, personal and professional development opportunities, flexibility, and much more!\n\nFortra’s Solutions Engineer's, also known as Presales Consultant/Engineer or Sales Engineer, are known as the trusted advisor's that expertly identify optimal solutions for our customer’s needs. It is an exciting opportunity for experienced professionals possessing strong technical skills, openness and team collaboration, and excellent presentation skills that help drive sales activities and business development.\n\nYou will work with leading companies for our global company, providing guidance during the sales process by identifying customers technical and business requirements and demonstrating product capabilities. You willl also be responsible for designing a solution proposal that is the best for the customer. Solutions Engineering is a fantastic role to interact and learn from multiple teams including sales, business partners, professional services, marketing, technical support and product development. Some of these activities may require traveling occasionally to meet customers and business partners on their premises, as well as participating in tradeshows or events.\n\nWhat You'll Do\n\nBe a team with sales representatives and work together on any activities with prospective customers and business partners.\nConduct “pain discovery” processes to understand the customer needs and articulate a solution that best addresses that need. Ability to understand the customer’s current environment and business problems.\nDeliver technical presentations and respond to technical questions during sales calls.\nDevelop, present and deliver high-impact solution demonstrations.\nDesign secure, scalable solutions across on-premises, cloud, and hybrid environments\nBe the owner for our customer’s evaluation process of the offered products and solutions.\nPlan and manage proofs of concept, including scope, success criteria, timelines, customer responsibilities, and technical validation.\nDetect technical and functional objections from the prospective customer during the sales process, be creative finding solutions, and work together with the appropriate team for remediation.\nBuild and defend proposals to customers, articulating the benefits of our company as the best solution that addresses that need to all levels, including “C” level executives.\nSupport responses to RFPs, RFIs, security questionnaires, and technical tender requirements.\nWork together on partners activities like discovery calls, demos, proposals, events and others.\nParticipate in partner enablement activities like tech training and functional enablement.\nCollaborate with product management, engineering, support, and professional services to resolve technical issues and represent regional customer needs.\nRepresent the Company at Trade Shows, User Group events, Conferences, and Virtual webinar events.\nServe as the market expert on products, from how customers use them, to how the competition positions against them, to how the field sells and services them.\n\nQualifications\n\nFour-year Degree in a technical field, ideally Computer Science or IT is preferred, or adequate career experience.\n3+ years of experience in IT on at least one of the following areas: technical presales, technical consultancy, development or technical support activities.\nExcellent oral presentation skills, public relations skills, and the ability to educate and train in a technical environment.\nGeneral knowledge of several technologies such as: SFTP, FTPS, HTTPS, SQL, SMB; NAS, DNS, proxies, load balancers, LDAP, SAML, API, web services, JSON, XML, Windows, Linux, cloud providers, hybrid infrastructure and containerized deployments.\nPrevious experience in workflow development or scripting, in any language.\nSecurity fundamentals: Encryption, PKI, authentication, authorization, certificates, key management, network security, Anti-malware, Data Loss Prevention, compliance and secure deployment practices\nWorking effectively with partners and distributors across the Middle East\nAbility to work independently in a regional role while collaborating effectively with international and remote teams.\nWillingness to travel occasionally. In a normal year, you might expect to travel 1-3 times per quarter.\nPrevious experience in MFT, data integration or job scheduling solutions is a plus.\n\nAt Fortra, we’re breaking the attack chain. Ready to join us? Visit our website to learn more about why employees choose to work for Fortra. Remember to connect with us on LinkedIn.\n\nAll qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, veteran or disability status.",
+        "sha256": "f9b04bd39aae572598caf9a8ce89cbe2a27994631f679d05bd8a68854259fa04",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
