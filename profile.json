@@ -1,9 +1,7 @@
 {
-  "blurb": "Candidate: AI Product Engineer and solo founder in Saudi Arabia who ships production LLM systems end to end — prompt engineering, LLM evaluation pipelines, output validation and guardrails, agentic workflows, and AI observability. Founder of Watheq, an Arabic-first AI resume and job-matching SaaS built solo and live in production: React 19 and TypeScript front end, Supabase/PostgreSQL with role-based access control, Netlify serverless functions, payment integration, and Sentry monitoring. Also runs production automation on GitHub Actions in Python, including multi-source ATS integrations, a paid aggregator API integration with monthly quota budgeting and cursor paging, employer-source verification that recovers a free apply link behind a paid relister, and LLM fit-scoring with deterministic fallbacks. Built and operates a Cloudflare Workers service backing a Discord bot: slash commands, request signature verification, a shared signed HTTP client, D1 schema, and webhook-fallback delivery. Ships JD-aware resume tailoring under enforced output contracts, where every fit note and gap has to survive an evidence check against the resume. Works plan-first and test-first: written plans per change, TDD, and a CI workflow guard. Python, TypeScript and SQL, with 5+ years across software engineering and data analytics (Power BI, segmentation, competitor and pricing analysis). Native Arabic, and builds for Saudi-market edge cases like Hijri dates and Arabic parsing. Wants SENIOR-LEVEL INDIVIDUAL CONTRIBUTOR roles (AI/ML, software, product, or data) based in Saudi Arabia, and is open to lead, staff, principal, or head-of titles when the role is hands-on technical ownership of the kind he already does. He has built and operated whole production systems solo but has never managed a team, so a role that is mostly people management is a weaker fit than one that is mostly building. MUST BE BASED IN SAUDI ARABIA: not roles based outside Saudi Arabia, even with relocation offered. Values simple, reliable, high-ownership work. EDUCATION: holds a diploma in Pipefitting Technology from Saudi Petroleum Services Polytechnic (2018) and NO bachelor's degree. Everything he does in software and AI is self-taught and shipped rather than credentialed. A posting that states a bachelor's degree as a minimum qualification is a real gap he does not meet, and it belongs in the reason; a degree written as 'preferred' or 'or equivalent experience' is not. WHAT HE DOES NOT DO: he BUILDS WITH models, he does not build models. No training, fine-tuning, or evaluation of ML models he authored; no TensorFlow, PyTorch, scikit-learn, deep learning, MLOps or feature engineering anywhere in his experience, and no formal study of statistics or data science. 'Evaluation' in his work means judge-scoring LLM prompt and model variants, not measuring a model he trained. A posting requiring model development, fine-tuning or a classical ML stack is a wrong-function match however much AI vocabulary it shares with his, and belongs in the 0-39 band rather than scored as a near miss.",
+  "blurb": "Candidate: AI Product Engineer and solo founder in Saudi Arabia who builds and deploys LLM-powered products and production automations end to end. Founder of Watheq, a private-beta bilingual AI resume optimization and job-matching platform for the Saudi market, built solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security, Upstash Redis rate limiting, OpenRouter/Gemini, and server-side PDF generation. He builds evidence-constrained LLM workflows for parsing, matching, gap analysis, interview questions, and resume improvement, with Zod validation, anti-hallucination output rules, gold-set evaluation harnesses, deterministic scoring, and quality-drift checks. He built bilingual PDF/DOCX processing with Arabic/English detection, OCR fallback, structured JSON recovery, real-time progress, and ATS-safe PDF exports. He also runs production automation on GitHub Actions: a Saudi job-discovery and ranking pipeline across five ATS APIs with fail-soft discovery, employer verification, apply-link recovery, quota controls, evidence-aware ranking, and Discord delivery. His TASI market-analysis platform combines Python, TypeScript, React/Next.js, deterministic technical rules, scheduled workflows, Discord alerts, a 5-year walk-forward backtest, provider failover, and CI contract tests. Python, TypeScript, and SQL, with 6+ years in commercial operations and data analysis and hands-on AI product engineering since 2025. Native Arabic and professional English. Wants senior individual-contributor AI/LLM, software, and data-analytics roles based in Saudi Arabia only; roles based outside Saudi Arabia are not a match even with relocation. He prefers hands-on technical ownership and not people management. EDUCATION: diploma in Pipefitting Technology from Saudi Petroleum Services Polytechnic (2018), GPA 4.6/5, and NO bachelor's degree. Everything in software and AI is self-taught and shipped rather than credentialed. A posting that states a bachelor's degree as a minimum qualification is a real gap; a degree that is preferred or accepts equivalent experience is not. WHAT HE DOES NOT DO: he BUILDS WITH models, he does not build models. Do not credit model training, fine-tuning, TensorFlow, PyTorch, scikit-learn, deep learning, MLOps, feature engineering, or formal statistics/data-science study. His evaluation work judge-scores LLM prompts and model variants, not models he trained. A posting requiring model development, fine-tuning, or a classical ML stack is a wrong-function match and belongs in the 0-39 band.",
   "skill_keywords": [
     "ai",
-    "ml",
-    "machine learning",
     "llm",
     "genai",
     "generative ai",
@@ -15,13 +13,9 @@
     "full-stack",
     "api",
     "cloud",
-    "aws",
-    "gcp",
-    "azure",
     "data",
     "saas",
     "platform",
-    "devops",
     "react",
     "postgres",
     "postgresql",
@@ -32,35 +26,30 @@
     "architect",
     "solutions",
     "analytics",
-    "rag",
     "agent",
     "integration",
     "forward deployed",
     "prompt",
-    "analyst"
+    "analyst",
+    "product"
   ],
   "tracks": [
     {
       "name": "AI and LLM product engineering",
       "titles": [
         "Senior AI Engineer",
-        "Senior AI/ML Engineer",
-        "Lead AI Engineer",
-        "Staff AI Engineer",
         "AI Product Engineer",
         "Applied AI Engineer",
         "LLM Engineer",
         "Forward Deployed Engineer",
-        "AI Solutions Architect",
-        "Head of AI"
+        "AI Solutions Architect"
       ],
-      "evidence": "Judge against the Watheq experience entry and the job-search digest project entry in the resume. Do not credit this track from the summary or skills lines. This is LLM application engineering only: the resume shows no model training, fine-tuning, TensorFlow, PyTorch or scikit-learn anywhere."
+      "evidence": "Judge against the Watheq experience entry and the selected AI and automation projects in the resume. This is LLM application engineering only: the resume shows no model training, fine-tuning, TensorFlow, PyTorch, or scikit-learn."
     },
     {
       "name": "Software engineering, front and back",
       "titles": [
         "Senior Software Engineer",
-        "Staff Software Engineer",
         "Senior Backend Engineer",
         "Senior Full-Stack Engineer",
         "Senior Frontend Engineer",
@@ -70,17 +59,14 @@
         "Senior Automation Engineer",
         "Solutions Engineer"
       ],
-      "evidence": "Judge against the Watheq experience entry and the projects section. Frontend is real here and is the largest single thing he has shipped: React 19, TypeScript, Tailwind, Vite and Zustand, 28,000+ lines in production. Backend is Supabase/PostgreSQL, serverless functions and Python automation. Note the dates: full-time software engineering runs from Aug 2025, so a posting asking for several years of it is a real gap."
+      "evidence": "Judge against the Watheq experience entry and the selected AI and automation projects in the resume. Frontend is evidenced by React 19, TypeScript, real-time product delivery, and bilingual document UX; backend is Supabase/PostgreSQL, Netlify Functions, Python automation, and APIs. Hands-on AI product engineering begins in Aug 2025, so a posting requiring several years of dedicated software engineering is a real gap."
     },
     {
       "name": "Data and analytics",
       "titles": [
-        "Senior Data Analyst",
-        "Senior Data Engineer",
-        "Senior Product Manager",
-        "Technical Product Manager"
+        "Senior Data Analyst"
       ],
-      "evidence": "Judge against the Alghalia experience entry, which runs from Mar 2020. It is business analytics and reporting, not machine-learning modelling or large-scale data engineering: the resume shows no Spark, Kafka, Airflow or warehouse ETL anywhere."
+      "evidence": "Judge against the Alghalia experience entry, which runs from Mar 2020. It evidences commercial analytics, Power BI reporting, customer segmentation, and competitor/pricing analysis, not production data engineering, warehouse ETL, Spark, Kafka, or Airflow."
     }
   ]
 }
