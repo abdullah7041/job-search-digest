@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-15",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2362347916",
+      "captured_at": "2026-09-15T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2362347916",
+      "title": "Software Engineer — AI & Systems",
+      "company": "Nexa",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-%E2%80%94-ai-systems-at-nexa-4467092316",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 62,
+      "why": "Matches Python/TypeScript and startup ownership, but candidate lacks low-level systems and 3+ years software experience.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 25,
+          "max": 40,
+          "note": "Has Python and TypeScript; lacks low-level systems (C++/Rust/Go) experience."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Software founder since Aug 2025 falls short of 3+ years software requirement."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "Self-taught background with polytechnic diploma; no degree strictly mandated."
+        },
+        "seniority_location": {
+          "score": 13,
+          "max": 15,
+          "note": "Based in Riyadh and strong IC ownership."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Insufficient Track Record of Full-Time Production Software Engineering Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-14",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "We’re hiring a Software Engineer to join one of the region’s most ambitious early-stage deep-tech companies, building foundational technology across AI, systems and hardware.\n\nThis role is for engineers who would rather own a problem than own a layer.\n\nYou might be working on backend services one week, infrastructure or data paths the next, and then diving closer to the hardware interface when that’s where the problem needs to be solved.\nYou’ll work with a small, highly experienced engineering team where the expectation isn’t “stay in your lane” — it’s figure out what needs to be built and make it work.\n\nWhat you’ll do\n• Take ambiguous technical problems from idea → architecture → production\n• Work across backend services, APIs, infrastructure, tooling and lower-level systems\n• Build internal tools that make the entire engineering team faster\n• Read unfamiliar codebases quickly and make safe, production-quality changes\n• Make technical decisions rather than waiting for perfect requirements\n• Own what you ship — including reliability in production\n• Work on problems spanning software, distributed systems, AI infrastructure and hardware\nWhat we’re looking for\n\nYou’ll have 3+ years of production software engineering experience and strong programming fundamentals.\n\nWe’re particularly interested in engineers comfortable working across different types of languages.\n\nThat could mean experience with a systems-oriented language such as:\nC++ • Rust • Go\n\nalongside a higher-level language such as:\nPython • TypeScript/JavaScript • Java\n\nYou don't need to know every language above. What matters is that you’ve demonstrated the ability to work across different layers of a technical system and can learn new technologies quickly.\n\nExperience with Linux, infrastructure, distributed systems, networking, cloud platforms or open source would be particularly valuable.\n\nWhy join?\n\nYou’ll be joining at an unusually exciting stage.\n🌍 Help build one of the region’s emerging deep-tech companies\n🧠 Work on genuinely difficult engineering problems\n⚙️ Build technology spanning hardware, systems and AI at scale\n📈 Have significant ownership while the engineering organisation is still small\n🤝 Work directly with a senior technical team\n🇸🇦 Be based in Riyadh, at the centre of a rapidly growing technology ecosystem\nThis is not a role for someone looking for a narrowly defined ticket queue.\nIt’s for an engineer who sees a difficult problem and thinks:\n\n“Give me the context. I’ll figure out the rest.”\n\n📍 Riyadh, Saudi Arabia\n💼 Full-time",
+        "sha256": "ad5d1dbf6fd17a122b515fcdbc06ec296a3e24dab9244ee659dea211efedbab0",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2363323955",
+      "captured_at": "2026-09-15T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2363323955",
+      "title": "Solutions Engineer",
+      "company": "AgileGrid Solutions",
+      "location": "Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/solutions-engineer-at-agilegrid-solutions-4467424301",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Matches web full stack (React, Python, SQL) but requires mandatory bachelor's degree. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Strong match on JavaScript, Python, React, and PostgreSQL."
+        },
+        "experience": {
+          "score": 16,
+          "max": 30,
+          "note": "Demonstrated full stack web app delivery solo on Watheq."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Lacks required Bachelor's/Master's degree in Computer Science."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Saudi Arabia location matches."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Degree in Computer Science or Related Field"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-15",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "About The Company\n\nWebEngage is a leading customer data platform and marketing automation solution provider dedicated to helping businesses deliver personalized and engaging customer experiences. Established with a vision to transform digital marketing, WebEngage offers a comprehensive suite of tools that enable organizations to understand their customers better, automate marketing campaigns, and drive growth through data-driven insights. With a strong commitment to innovation and customer success, WebEngage has earned a reputation for its user-friendly platform, robust analytics, and seamless integrations across various channels. The company serves a diverse range of industries including retail, e-commerce, banking, and healthcare, empowering them to build meaningful relationships with their customers and achieve their business objectives.\n\nAbout The Role\n\nWe are seeking a talented and motivated Software Engineer to join our dynamic development team at WebEngage. In this role, you will be responsible for designing, developing, and maintaining scalable web applications that enhance our platform’s capabilities. The ideal candidate will have a strong background in software development, a passion for building innovative solutions, and a keen eye for detail. You will collaborate closely with cross-functional teams including product managers, designers, and other engineers to deliver high-quality features that meet customer needs. This position offers an excellent opportunity to work on cutting-edge technology, contribute to the growth of a fast-paced organization, and develop your skills within a collaborative and innovative environment.\n\nQualifications\n\nBachelor’s or Master’s degree in Computer Science, Software Engineering, or related field.\nProven experience in full-stack development with proficiency in languages such as JavaScript, Python, Java, or similar.\nStrong understanding of web technologies including HTML, CSS, RESTful APIs, and frameworks like React, Angular, or Vue.js.\nExperience with database management systems such as MySQL, PostgreSQL, or NoSQL databases.\nFamiliarity with cloud platforms like AWS, Azure, or Google Cloud is preferred.\nExcellent problem-solving skills and the ability to work independently and within a team.\nStrong communication skills and a proactive approach to project management and collaboration.\n\nResponsibilities\n\nDesign, develop, and maintain scalable web applications and services that enhance platform functionality.\nCollaborate with product managers and designers to translate business requirements into technical specifications.\nWrite clean, efficient, and well-documented code following best practices and coding standards.\nConduct code reviews and provide constructive feedback to team members to ensure code quality and consistency.\nParticipate in agile development processes, including sprint planning, stand-ups, and retrospectives.\nIdentify and troubleshoot technical issues, providing timely solutions to ensure platform stability and performance.\nStay updated with emerging technologies and industry trends to continuously improve our development practices.\nAssist in deploying applications and monitoring system performance to ensure optimal operation.\n\nBenefits\n\nAt WebEngage, we value our employees and strive to provide a comprehensive benefits package that supports their well-being and professional growth. Our offerings include competitive salary packages, health insurance, and wellness programs. We promote a flexible work environment with options for remote work and flexible hours to ensure work-life balance. Employees have access to professional development opportunities, including training sessions, workshops, and conferences. Additionally, we foster a collaborative and inclusive culture that encourages innovation, creativity, and continuous learning. Regular team-building activities, recognition programs, and a supportive management team contribute to a positive work atmosphere where everyone can thrive.\n\nEqual Opportunity\n\nWebEngage is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees. We do not discriminate based on race, gender, age, religion, sexual orientation, disability, or any other protected characteristic. Our hiring practices are based solely on merit and the qualifications necessary to perform the job. We believe that a diverse workforce fosters innovation and drives our success, and we are dedicated to providing equal employment opportunities to all qualified candidates.",
+        "sha256": "08e748141a363348fd4b2b1d57677ac48953b4909d0c0be6c2e4d64097e916b1",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
