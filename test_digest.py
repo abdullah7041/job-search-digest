@@ -30,7 +30,7 @@ sys.path.insert(0, REPO)
 
 # Import from a temp cwd so test runs never touch the real seen.json/stats.json.
 _TMP = tempfile.mkdtemp(prefix="digest_test_")
-for f in ("profile.json", "resume.md"):
+for f in ("profile.json", "resume.md", "boards.json"):
     src = os.path.join(REPO, f)
     if os.path.exists(src):
         shutil.copy(src, _TMP)

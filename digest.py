@@ -271,9 +271,9 @@ MAX_JOBS_IN_DIGEST = 25
 # Discovered boards read per run, on top of the hand-curated COMPANIES list,
 # which is never rationed. Board discovery adds entries every week and has no
 # ceiling of its own, so without this the company loop grows without bound
-# against RUN_BUDGET_SECONDS. At 22 confirmed boards today this does not bind;
-# it is here so that it cannot start to silently.
-MAX_BOARDS_PER_RUN = 40
+# against RUN_BUDGET_SECONDS. At 42 confirmed boards today this does not bind;
+# it remains a backstop before discovery can silently consume the run budget.
+MAX_BOARDS_PER_RUN = 50
 # One employer must not be able to fill a morning on its own. Board discovery
 # works well enough that it can: Innovationteam, found 3 Sep 2026, supplied 9 of
 # that evening's 12 delivered cards from a board of 40 roles, with 7 more of its
@@ -2653,7 +2653,7 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     The cap is a growth backstop rather than a ration -- board discovery adds
     entries every week with no ceiling of its own, and the company loop it feeds
     spends a request and half a second per entry against RUN_BUDGET_SECONDS. At
-    22 confirmed boards it does not bind. COMPANIES is never rationed.
+    42 confirmed boards it does not bind. COMPANIES is never rationed.
     """
     already = {(c["source"], c["token"]) for c in COMPANIES}
     out = []
