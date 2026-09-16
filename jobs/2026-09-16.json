@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-16",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2364271100",
+      "captured_at": "2026-09-16T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2364271100",
+      "title": "QA Engineer - AI Applications",
+      "company": "Astek",
+      "location": "Dawamat Al Jandal, Al Jawf Region, Saudi Arabia",
+      "url": "https://ma.linkedin.com/jobs/view/qa-engineer-ai-applications-at-astek-4466534404",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 68,
+      "why": "Excellent alignment with AI/GenAI evaluation and testing; minor gap in specialized QA framework stack.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Strong LLM/RAG evaluation and CI/CD; lacks Playwright/Cypress/Selenium depth."
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Demonstrates LLM quality evaluation but lacks 3+ years dedicated QA experience."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Accepts equivalent experience alongside degree requirement."
+        },
+        "seniority_location": {
+          "score": 13,
+          "max": 15,
+          "note": "Saudi Arabia role, matching IC level."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lack of 3+ Years Relevant Testing Experience",
+        "Missing Bachelor's Degree in Computer Science"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-15",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Vous serez garant de la qualité et de la fiabilité des plateformes IA et GenAI\n\nVos missions : \n✅ Définir les stratégies et plans de tests des applications IA.\n✅ Valider les workflows LLM, RAG et Agents IA.\n✅ Réaliser les tests fonctionnels, API et End-to-End.\n✅ Développer les automatismes de tests intégrés aux pipelines CI/CD.\n✅ Évaluer les risques spécifiques à l'IA : hallucinations, prompt injection, toxicité, fuite de données.\n✅ Contrôler les performances, la latence et l'observabilité des plateformes.\n\nQualifications\nBachelor's degree or equivalent experience in Computer Science\n3+ years relevant testing experience\nStack : Playwright, Cypress, Selenium, Postman, JavaScript, TypeScript, Python, Java, CI/CD, LLM, RAG\nTeam player",
+        "sha256": "6b944b069248dd4d428abeb4c999f4d93a0fa067379cc3573af29f78c027660a",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9YWZmZDhkMmI1YmNmMDA3YjtjYz1zYQ==",
+      "captured_at": "2026-09-16T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9YWZmZDhkMmI1YmNmMDA3YjtjYz1zYQ==",
+      "title": "Senior Product Manager",
+      "company": "Malaa",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://malaa.pinpointhq.com/postings/90c3b9cb-8e1c-4416-8cec-9f5112219192?utm_medium=job_board&utm_source=indeed",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 64,
+      "why": "Strong hands-on technical prototyping and analytics fit, but non-traditional track for Senior PM.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Fits hands-on prototyping, code reading, AI tooling, and cohort/funnel analytics"
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Solo founder product shipping aligns well with early-stage prototype ownership."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Posting accepts strong record of building software yourself."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh location matches."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Lack of required three or more years in product management"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-15",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Description\n\nProduct managers at Malaa are generalists by design. You will not own a single domain; you will work across the whole product, investing, lending, savings and the growth loops that connect them, taking on whatever matters most in a given cycle.\n\nThe role is built for the way product work is changing. We are looking for a product manager with a software engineering background who can take a problem from \"we should address this\" to a working version in days, place it in front of customers, read the results and decide whether to scale it or stop it. You will have engineers and designers, and you will be expected to do the first mile of discovery yourself.\n\nThis is a senior position. You set the priorities for the initiatives you carry, you can explain and defend them, and you are accountable for what you commit to.\n\nWhat you will own?\n\nYou will collaborate with a squad of engineers and carry a changing portfolio of initiatives across the product, prioritised each cycle against what the business needs most. Over your first year, the role covers:\n• Outcomes rather than a backlog. You will be measured on results such as deposits into portfolios, activation and conversion between products, retention and the pace at which your squad ships. Each initiative you take on comes with a target, and you will be asked how you intend to reach it.\n• Building to learn. Before a specification, a prototype. You use AI development tools and your own engineering background to build a working version, read our codebase, define the event taxonomy and query the data directly. Engineers receive a running prototype and a clear brief.\n• Simplifying. Each quarter you remove something: a feature with no usage, a flow with unnecessary steps, a setting that should not exist. Shipping less that works well is part of the role.\n• Growing what works. Once a feature has traction, you improve it through experiments, cohort analysis and funnel data until the numbers move.\n• Treating regulation as product work. Compliance, personal data protection, KYC and disclosures are designed into the product from the start. You involve the compliance team early and make regulated flows feel simple to the customer.\n• Managing intake. Requests reach product from across the company. You maintain a single channel and a single ranked list, and you decline in writing with a reason.\n\nHow product and engineering work together?\nProduct and engineering at Malaa operate as one team under a single planning model. Each product manager is paired with a small squad of engineers and its engineering lead, with design shared across squads, and the ratio of product managers to engineers is kept deliberately low. All change, whether customer facing, technical health, reliability or platform, enters the same prioritisation, so a product manager is expected to make the case for engineering health alongside customer outcomes. Execution is coordinated daily within the squad; priorities, capacity and trade offs are settled weekly across squads. Every initiative is documented before it is built, and product managers carry out the technical exploration needed to write complete requirements.\n\nQualifications:\n\nRequired:\n• Three or more years in product management, with real ownership of a live consumer or fintech product and measurable results you can speak to.\n• A software engineering background: a computer science or engineering degree and time spent as an engineer, or an equally strong record of building software yourself. You can read our code and you have built working prototypes with your own hands, with or without AI tools.\n• Fluency with product data. You have defined event tracking, run experiments and made decisions from funnels and cohorts.\n• Professional written and spoken Arabic and English.\n\nPreferred:\n• Experience in a regulated product (banking, investment, lending or insurance) and familiarity with keeping compliance inside the product process.\n• Daily use of AI development and analysis tools, with a working prototype you can show.\n• Experience as the senior product person in a small team, setting the standard for others.\n\nWhy join?\n\nYou will shape a product that manages real money for a large customer base in one of the fastest growing markets in the world. The team is small, the standard is high and the impact of your decisions is visible in the numbers. If you want to build, ship and see results, this is that seat.\n\nAbout Malaa\nMalaa is the leading wealth management tool in the Kingdom, addressing the gap in the financial products offerings and advancing cutting-edge technology adoption by offering data-driven financial products and services that empower individuals and organizations for better financial decisions. Established in November 2021, Malaa aims to be the go-to for financial decision-making, whether it’s for saving, lending, or investing. Malaa is regulated by the Saudi Central Bank (SAMA) for Open Banking activities and the Capital Market Authority for Robo-advisory and asset management activities.\n\nMalaa is spearheading Open Banking in the Kingdom as the first Open Banking company to officially launch its services for its users and the first company to offer behavioral risk profiling for its lending partners, leveraging Open Banking data with exceptional engineering and data science capabilities.\n\nFor more information, visit: www.malaa.tech",
+        "sha256": "9bab0ea7502dff4e78e7dbff20c5de2492ad18bb4a8b001fb30f8594b8018261",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_U2tTTFZweTZZa1Vwd09Ya0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbFZrTmpsSWVtVXhiMTlmYkU1WU5sZENkbDgxTkZCUU5FeFhSbVZFVXpWZlRtNUtZelZqYW01d1NIRTJSMUZYVlVWd2QxOUdZa0Y0YVZSZlpVTTBiVXRSVXpoSUxWSmxRa1ZNTVROSGNIbGljRGx3V0cxMFpqRjZMVWxYWDAxWmFtaENTblIzWVdSemMwVkNjSHBsTW5KWGRHVjFjRlJ5VTNOSldFZEhjekZyUkUxeVYwNFNGM2hHY1hGaGN6WjNSaTFxVlRGelVWQjNOMVF6ZDBGVkdpSkJSSE55T1daU1JGQk1VRVV6WjJwellWaDNTRmxVVjJsWmMyaHVkV0Z0ZW1OUg",
+      "captured_at": "2026-09-16T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_U2tTTFZweTZZa1Vwd09Ya0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbFZrTmpsSWVtVXhiMTlmYkU1WU5sZENkbDgxTkZCUU5FeFhSbVZFVXpWZlRtNUtZelZqYW01d1NIRTJSMUZYVlVWd2QxOUdZa0Y0YVZSZlpVTTBiVXRSVXpoSUxWSmxRa1ZNTVROSGNIbGljRGx3V0cxMFpqRjZMVWxYWDAxWmFtaENTblIzWVdSemMwVkNjSHBsTW5KWGRHVjFjRlJ5VTNOSldFZEhjekZyUkUxeVYwNFNGM2hHY1hGaGN6WjNSaTFxVlRGelVWQjNOMVF6ZDBGVkdpSkJSSE55T1daU1JGQk1VRVV6WjJwellWaDNTRmxVVjJsWmMyaHVkV0Z0ZW1OUg",
+      "title": "Full Stack Engineer",
+      "company": "K&K Talents",
+      "location": "الدمام, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/full-stack-engineer-at-k-k-talents-4467720527",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Excellent tech stack match (React/Python/GenAI), but lacks the mandatory 5+ years enterprise SWE exper (capped: 2 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Strong in React, TypeScript, Python, REST APIs, and GenAI integration; lacks .NE"
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Full-stack software engineering began in 2025; misses required 5+ years enterpri"
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No formal degree barrier specified in requirements."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Dammam, Saudi Arabia location matches candidate background."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 5+ years of full stack developer experience",
+        "Missing required .NET backend development knowledge"
+      ],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "captured",
+        "text": "K&K Talents is an international recruiting agency that has been providing technical resources in the European region since 1993. This position is with one of our clients in Saudi Arabia who is actively hiring candidates to expand their teams.\n\nRole: Full Stack Engineer\n\nLocation: Dammam, Saudi Arabia\n\nEmployment Type: Full-time Permanent\n\nRoles & Responsibilities:\n\nIn the role of Full Stack Developer, you will design and develop scalable enterprise web applications using modern frontend and backend technologies. You will work closely with Data Scientists and Data Engineers to integrate AI/GenAI services, APIs, and analytics into enterprise applications.\n\nYou will be involved across the Software Development Life Cycle, including development, integration, deployment, testing, production support, and continuous improvement.\n\nKey Responsibilities:\n• Develop responsive, high-performance applications using React.js/Angular, HTML5, CSS3, JavaScript/TypeScript.\n• Develop backend services and RESTful APIs using Python and microservices architecture.\n• Integrate applications with AI/GenAI services, vector databases, and ML outputs.\n• Implement secure RBAC and authorization aligned with enterprise standards.\n• Deploy and support applications across OpenShift/Kubernetes, Cloud, and On-Premise environments.\n• Collaborate with Data Scientists and Data Engineers to deliver insights, recommendations, and analytics.\n• Support UAT, defect resolution, performance tuning, monitoring, and production support.\n• Maintain technical documentation including architecture, API contracts, and deployment specifications.\n\nRequired:\n• 5+ years of experience as a Full Stack Developer in enterprise environments.\n• Strong experience with React.js and/or Angular.\n• Strong knowledge of .NET and Python backend development.\n• Hands-on experience with HTML5, CSS3, JavaScript/TypeScript.\n• Strong understanding of RESTful APIs and Microservices.\n\nNote: Applicants for employment in Saudia Arabia should possess work authorization which does not require sponsorship by the employer for a visa.",
+        "sha256": "067c36edd2f87f6a99662f19f37400608e1da30ce18536ebaae677b533efc8b3",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
