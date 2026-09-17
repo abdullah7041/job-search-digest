@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-17",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2367489314",
+      "captured_at": "2026-09-17T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2367489314",
+      "title": "Software Engineer",
+      "company": "icreativez SEO",
+      "location": "Dawamat Al Jandal, Al Jawf Region, Saudi Arabia",
+      "url": "https://qa.linkedin.com/jobs/view/software-engineer-at-icreativez-seo-4468318025",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 75,
+      "why": "Incomplete posting for full lifecycle software engineer; good stack alignment.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Demonstrates full-stack development, Python, TypeScript, React, and SQL."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "Demonstrated full product lifecycle delivery on Watheq and TASI."
+        },
+        "education": {
+          "score": 15,
+          "max": 15,
+          "note": "No hard degree requirement stated in brief posting."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Located in Saudi Arabia with remote/hybrid flexibility."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-16",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Design, develop, and maintain high‑performance software solutions across the full lifecycle. Collaborate with cross‑functional teams to deliver scalable products. We offer flexible work arrangements (remote/hybrid/on‑site) and a collaborative culture.",
+        "sha256": "cc1869b0a8bfade22d9203be3ebcb7fe9579ee12a82754963f733e276ca16666",
+        "completeness_failures": [
+          "too_short",
+          "responsibilities_not_evidenced",
+          "requirements_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2366205916",
+      "captured_at": "2026-09-17T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2366205916",
+      "title": "Software Engineer",
+      "company": "Al-Sawab Commercial Company",
+      "location": "Yanbu`, Medina Province, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-at-al-sawab-commercial-company-4465992045",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Good fit for backend web development; accepts equivalent practical experience. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Demonstrated backend development, APIs, databases (Postgres), Git, and serverles"
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Hands-on software product building demonstrated via Watheq since 2025."
+        },
+        "education": {
+          "score": 15,
+          "max": 15,
+          "note": "Degree allows equivalent practical experience, which candidate possesses."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "On-site in Yanbu, Saudi Arabia."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "On-site role requires relocation to Yanbu"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-16",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Role Description: The Software Engineer will work full-time on-site in Yanbu‘ al Baḩr, collaborating with cross-functional teams to design, develop, test, and maintain software solutions that support the company’s operational and commercial objectives. Day-to-day responsibilities include implementing back-end features, writing clean and efficient code, integrating systems and APIs, and troubleshooting technical issues. The role involves participating in code reviews, refining requirements with stakeholders, and ensuring software reliability, performance, and security. The Software Engineer will also contribute to documentation, support deployment activities, and assist in continuous improvement of development processes and tools.\nQualifications\nStrong foundation in Computer Science, including algorithms, data structures, and software engineering principles.\nProficiency in Software Development and Programming, with experience in building and maintaining production-grade applications.\nHands-on experience in Back-End Web Development, including working with server-side frameworks and databases.\nSolid understanding of Object-Oriented Programming (OOP) and ability to design modular, maintainable code.\nBachelor’s degree in Computer Science, Software Engineering, or a related technical field, or equivalent practical experience.\nFamiliarity with version control systems (e.g., Git) and collaborative development workflows.\nAbility to analyze requirements, propose technical solutions, and communicate clearly with technical and non-technical stakeholders.\nExperience with testing practices, debugging, and performance optimization is beneficial.\nComfort working on-site in a collaborative environment and managing multiple tasks with attention to detail.",
+        "sha256": "e4425d9614e70afce7bbaab645300218f30d66da4a2322f2788b325317e10ceb",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
