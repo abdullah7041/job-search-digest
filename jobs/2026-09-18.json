@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-18",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_SHQxOE5taGtPdy1MV1huaUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURmt3WXpONVJscFRaRjlpU2xWck1YZFVjaTEyV205aFVVUjRRbWhCZVdjdFFWUk1jazlCZEY4M1ZGSTBVV3QxTVRWNFQyYzJUVlI2WjIxdFRqVTJjV2cyYzFGbFdIQm5WRmxXUm1ZM1YyNVhPVXRqUVdWa1VqUjBXWEF6ZUdoblMzcDBabUpUTnpCd1dHTk1WMVJOYkVsTE5HdDJPV1Y2Y0dKR1ZIUlVNRXhZYkVOamRYVVNGMEpmYlhOaGRIRnJRVjgyU3poTU1GQnhZelpPYzBGekdpSkJSSE55T1daVGVrSlpTVGRLY0RoSlRWQnpjVXR2ZW1KbFdrdGFZbGxGZDJSMw",
+      "captured_at": "2026-09-18T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_SHQxOE5taGtPdy1MV1huaUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURmt3WXpONVJscFRaRjlpU2xWck1YZFVjaTEyV205aFVVUjRRbWhCZVdjdFFWUk1jazlCZEY4M1ZGSTBVV3QxTVRWNFQyYzJUVlI2WjIxdFRqVTJjV2cyYzFGbFdIQm5WRmxXUm1ZM1YyNVhPVXRqUVdWa1VqUjBXWEF6ZUdoblMzcDBabUpUTnpCd1dHTk1WMVJOYkVsTE5HdDJPV1Y2Y0dKR1ZIUlVNRXhZYkVOamRYVVNGMEpmYlhOaGRIRnJRVjgyU3poTU1GQnhZelpPYzBGekdpSkJSSE55T1daVGVrSlpTVGRLY0RoSlRWQnpjVXR2ZW1KbFdrdGFZbGxGZDJSMw",
+      "title": "Senior Consultant/Assistant Manager - Tech Consulting - Data & AI - Data Engineer - Riyadh",
+      "company": "EY",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://www.glassdoor.co.uk/job-listing/senior-consultant-assistant-manager-tech-consulting-data-ai-data-engineer-riyadh-ey-JV_IC3110290_KO0,80_KE81,83.htm?jl=1010237703699",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 52,
+      "why": "Requires mandatory Bachelor's/Master's degree and 3-7+ years dedicated data engineering/consulting.",
+      "ranking_verified": true,
+      "track": "Data and analytics",
+      "categories": {
+        "hard_skills": {
+          "score": 25,
+          "max": 40,
+          "note": "Strong Python, SQL, data modeling; lacks Dataiku, streaming data pipelines."
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Strong analytics and commercial experience; lacks formal consulting or ETL data "
+        },
+        "education": {
+          "score": 2,
+          "max": 15,
+          "note": "Mandatory Bachelor's or Master's degree in CS/Engineering/Data Science."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh based, native Arabic speaker, fits IC consulting scope."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's or Master's Degree",
+        "Lacks 3-7+ Years in Data Engineering or Consulting"
+      ],
+      "link_status": "unknown",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "captured",
+        "text": "Location: Riyadh\n\nOther locations: Primary Location Only\n\nSalary: Competitive\n\nDate: Aug 18, 2026\n\nJob description\n\nRequisition ID: 1736212\n\nThe Opportunity\n\nAt EY, we help our clients harness the power of data, analytics, and artificial intelligence to accelerate digital transformation and enable better business outcomes. As a Senior Consultant / Assistant Manager within our Data & AI practice, you will play a critical role in designing, building, and scaling modern data platforms and architectures that support advanced analytics and AI use cases.\n\nYou will work closely with clients across the Saudi market to translate business strategies into robust data engineering solutions, while contributing to client engagements, proposals, and wider practice growth in the region.\n\nKey Responsibilities\n\n• Lead the design and delivery of end-to-end data engineering solutions across multiple client engagements.\n\n• Architect, build, and optimize scalable data platforms and data pipelines for analytics, BI, and AI use cases.\n\n• Design and implement modern data architectures, including medallion and lakehouse patterns, across cloud and on-premise environments.\n\n• Develop robust data models and pipelines ensuring performance, reliability, security, and governance.\n\n• Collaborate with business stakeholders, data scientists, and analytics teams to enable AI-driven solutions.\n\n• Support data modernization and migration initiatives, including legacy-to-cloud transitions.\n\n• Prepare and deliver high-quality client materials including presentations, solution designs, and executive-level narratives.\n\n• Contribute to proposal development, solution shaping, estimations, and commercial discussions.\n\n• Coach and mentor junior team members and contribute to EY knowledge assets.\n\nSkills and Attributes for Success\n\n• Strong hands-on experience in SQL and Python for data engineering use cases.\n\n• Proven expertise in data modeling, ETL/ELT development, and pipeline orchestration.\n\n• Solid understanding of data platforms and modern engineering technologies.\n\n• Deep knowledge of data architectures, including batch and streaming pipelines.\n\n• Experience across cloud platforms (Azure, AWS, and/or GCP) and on-premise technologies.\n\n• Strong understanding of data governance, quality, and security principles.\n\n• Excellent storytelling skills, with the ability to translate technical concepts into business value.\n\n• Strong experience preparing client presentations, business cases, and Data & AI proposals.\n\n• Good business and commercial acumen with consulting delivery experience.\n\n• Experience with Dataiku and related data science platforms for developing, orchestrating, and operationalizing analytics and AI solutions.\n\nExperience and Qualifications\n\n• 3-7+ years of experience in data engineering and/or Data & AI consulting.\n\n• Prior experience in a consulting or professional services environment is strongly preferred.\n\n• Bachelor’s or Master’s degree in Computer Science, Engineering, Data Science, or a related field.\n\n• Experience delivering projects within large, complex organizations is an advantage.\n\nLanguage Requirements\n\n• Arabic language skills are strongly preferred.\n\n• Professional proficiency in English is required.\n\nWhy EY\n\nEY offers an inclusive, high-performance environment where people are empowered to grow, innovate, and lead. You will be part of a growing Data & AI practice in Saudi Arabia, working on impactful projects aligned with Vision 2030 while building a sustainable consulting career.",
+        "sha256": "e10c025fa1098a855362c737048f1c134453814318b3f1715deac0d06ad97b58",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2369671437",
+      "captured_at": "2026-09-18T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2369671437",
+      "title": "Software QA Engineer (Web & Mobile)",
+      "company": "GeoWise AI",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-qa-engineer-web-mobile-at-geowise-ai-4468649272",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Requires manual web/mobile QA, test plans, and Jira/TestRail test management.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Has automated CI/CD and evaluation pipelines; lacks manual QA/TestRail experienc"
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Builds testing/evals for own apps; no dedicated QA analyst background."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "Accepts equivalent practical experience alongside Bachelor's."
+        },
+        "seniority_location": {
+          "score": 5,
+          "max": 15,
+          "note": "Riyadh based, but role focuses entirely on manual software QA."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-18",
+      "age_days": 0,
+      "jd": {
+        "status": "incomplete",
+        "text": "Company Description GeoWise is an AI receptionist for field home service businesses, including cleaning, HVAC, plumbing, electrical, home healthcare, mobile beauty & pest control companies. \n\nThe platform simulates dispatcher decision-making at the moment of booking, evaluating customer locations against service zones and optimizing drive time for technicians. GeoWise intelligently scores, filters, and prices available slots based on skills, capacity, distance, and deposit rules to keep technicians’ schedules efficient and back-to-back. Customers can book through WhatsApp in Arabic and English, a website widget, a hosted page, by phone, or via any AI assistant through the API. The company focuses on high-performance, real-world scheduling solutions that streamline operations and improve customer experience.\n\n\nRole Description The Software QA Engineer (Web & Mobile) is a full-time, on-site role based in Riyadh, Saudi Arabia in our global HQ. The person in this role will design and execute test plans and test cases for web and mobile applications, ensuring functional, integration, regression, and end-to-end quality across GeoWise’s scheduling and AI receptionist platforms. Daily tasks include manual testing of new features and bug fixes, validating cross-browser and cross-device behavior, documenting defects, and working closely with software developers and product managers to clarify requirements and improve overall product reliability. The Software QA Engineer will collaborate on release readiness, maintain test documentation, contribute to test process improvements, and support production issue investigations. The role involves active participation in Agile ceremonies, clear communication of risks and test results, and a continuous focus on user experience and performance.\n\n\nQualifications\nStrong foundation in Software Quality, Quality Assurance, and Software Quality Assurance, with experience in defining and applying test standards and best practices.\nHands-on expertise in Manual Testing of web and mobile applications, including functional, regression, usability, and cross-platform testing.\nWorking knowledge of Software Development concepts, SDLC, and Agile methodologies to collaborate effectively with engineering teams.\nExperience creating test plans, test cases, and test reports, and using issue-tracking and test management tools (e.g., Jira, TestRail, or similar).\nFamiliarity with APIs and basic tools for API testing; exposure to automation frameworks or scripting is a plus.\nBachelor’s degree in Computer Science, Engineering, Information Technology, or a related field, or equivalent practical experience.\nStrong analytical and problem-solving skills, attention to detail, and the ability to prioritize in a fast-paced environment.\nClear written and spoken communication skills in English; Arabic proficiency is an advantage.\nExperience testing location-based, mapping, or scheduling solutions, or products for field/home",
+        "sha256": "4689ae50b9e744f17fd303f6ed4b06da6628834b3eb2c353cff47ba442be0532",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2368373478",
+      "captured_at": "2026-09-18T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2368373478",
+      "title": "AI Solutions Architect",
+      "company": "First Point Group",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/ai-solutions-architect-at-first-point-group-4466264211",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Requires 8+ years presales/consulting experience and Middle East regional travel.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Strong GenAI, LLM, prototype/demo building, and bilingual Arabic/English skills."
+        },
+        "experience": {
+          "score": 7,
+          "max": 30,
+          "note": "Lacks 8+ years in presales, solutions consulting, or enterprise bidding."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No specific strict degree hard blocker listed in teaser."
+        },
+        "seniority_location": {
+          "score": 0,
+          "max": 15,
+          "note": "Regional presales role requiring extensive Middle East travel."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required 8+ Years in Presales or Solutions Consulting"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-17",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "About Our Client:\nA pioneering force in AI-driven risk intelligence, now expanding its footprint across the Middle East.\n\nKey Responsibilities\nLead customer discovery sessions and design tailored AI solutions.\nBuild and deliver compelling demos, prototypes, and POCs.\nProvide solution architecture and technical support for proposals and bids.\nEngage with C-level stakeholders and translate business needs into AI solutions.\nDrive customer success, expansion opportunities, and solution optimization.\n\nRequirements\n8+ years in Presales, Solutions Consulting, or Technical Consulting.\nStrong experience with Generative AI, LLMs, Chatbots, Voicebots, NLP, STT, and TTS.\nHands-on ability to build demos, prototypes, and POCs independently.\nStrong commercial mindset and customer-facing skills.\nFluent Arabic and English.\nWillingness to travel across the Middle East region.\n\nHighlights\n✅ Enterprise AI & GenAI Projects\n✅ Customer-Facing Presales Role\n✅ Regional Middle East Coverage\n✅ High-Growth Environment\n✅ Strong Career Development Opportunities\n#GenerativeAI #Presales #LLM #ConversationalAI #Voicebot #Chatbot #SaudiArabia #MiddleEastJobs #SolutionConsulting #AIJobs #ArabicSpeakers",
+        "sha256": "828d8e8e8b3ff3f2d07f103124e5133a754d306cc61ee10ac61681da3be05072",
+        "completeness_failures": [],
+        "grade": "teaser"
+      }
+    }
+  ]
+}
