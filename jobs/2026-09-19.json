@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-19",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2370908616",
+      "captured_at": "2026-09-19T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2370908616",
+      "title": "Software Engineer",
+      "company": "K&K Talents",
+      "location": "Dammam, Eastern Province, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-at-k-k-talents-4469186475",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 42,
+      "why": "Requires 5+ years full stack experience and .NET backend, missing both.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Matches React and Python; lacks .NET and enterprise OpenShift."
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Hard 5+ years full-stack requirement not met (started 2025)."
+        },
+        "education": {
+          "score": 7,
+          "max": 15,
+          "note": "No formal degree requirement explicitly mandated."
+        },
+        "seniority_location": {
+          "score": 5,
+          "max": 15,
+          "note": "Dammam location matches Saudi Arabia constraint."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 5+ years of full stack developer enterprise experience",
+        "Missing required .NET backend development knowledge"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-18",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "K&K Talents is an international recruiting agency that has been providing technical resources in the European region since 1993. This position is with one of our clients in Saudi Arabia who is actively hiring candidates to expand their teams.\n\nRole: Software Engineer (Full Stack)\nLocation: Dammam, Saudi Arabia\nEmployment Type: Full-time Permanent\n\nRoles & Responsibilities:\nIn the role of Full Stack Developer, you will design and develop scalable enterprise web applications using modern frontend and backend technologies. You will work closely with Data Scientists and Data Engineers to integrate AI/GenAI services, APIs, and analytics into enterprise applications.\nYou will be involved across the Software Development Life Cycle, including development, integration, deployment, testing, production support, and continuous improvement.\n\nKey Responsibilities:\nDevelop responsive, high-performance applications using React.js/Angular, HTML5, CSS3, JavaScript/TypeScript.\nDevelop backend services and RESTful APIs using Python and microservices architecture.\nIntegrate applications with AI/GenAI services, vector databases, and ML outputs.\nImplement secure RBAC and authorization aligned with enterprise standards.\nDeploy and support applications across OpenShift/Kubernetes, Cloud, and On-Premise environments.\nCollaborate with Data Scientists and Data Engineers to deliver insights, recommendations, and analytics.\nSupport UAT, defect resolution, performance tuning, monitoring, and production support.\nMaintain technical documentation including architecture, API contracts, and deployment specifications.\n\nRequired:\n5+ years of experience as a Full Stack Developer in enterprise environments.\nStrong experience with React.js and/or Angular.\nStrong knowledge of .NET and Python backend development.\nHands-on experience with HTML5, CSS3, JavaScript/TypeScript.\nStrong understanding of RESTful APIs and Microservices.\n\nNote: Applicants for employment in Saudia Arabia should possess work authorization which does not require sponsorship by the employer for a visa.",
+        "sha256": "242aaed90a7b228331f4304d5f8874c439f6cc39b17183358395e59a2bcd4a5a",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
