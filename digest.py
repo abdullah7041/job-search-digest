@@ -686,7 +686,8 @@ def fetch_jsearch(api_key, paywalled=None, quota=None):
         except requests.RequestException as e:
             log(f"WARN JSearch [{query!r}]: request failed: {e}")
             return [], ""
-        _record_quota(quota, r.headers)
+        recorded = _record_quota(quota, r.headers)
+        _debit_unreported_quota(quota, recorded)
         if r.status_code != 200:
             log(f"WARN JSearch [{query!r}]: HTTP {r.status_code}: {r.text[:120]}")
             return [], ""
@@ -812,11 +813,13 @@ def fetch_jsearch(api_key, paywalled=None, quota=None):
     selected_queries = jsearch_query_plan(
         AGGREGATOR_QUERIES, JSEARCH_DAILY_REQUESTS,
         riyadh_ordinal())
+    bootstrap_allowed = True
     for query in selected_queries:
-        if out_of_allowance("jsearch", quota):
+        if out_of_allowance("jsearch", quota, allow_unknown=bootstrap_allowed):
             log("JSearch: quota-paused; continuing without the aggregator")
             break
         jobs, _ = read_page(query)
+        bootstrap_allowed = False
         log(f"JSearch [{query!r}]: {len(jobs)} returned, {collect(jobs)} unique")
         time.sleep(0.5)  # be polite between queries
 
@@ -1048,7 +1051,7 @@ def fresh_api_feeds(day=None):
     return ("active_ats", "linkedin_api") if day % 2 == 0 else ()
 
 
-def can_spend(feed, quota, cost=1):
+def can_spend(feed, quota, cost=1, job_cost=0):
     """Whether a manual probe may make `cost` paid requests safely.
 
     Scheduled digests are allowed one bootstrap response when their persisted
@@ -1072,12 +1075,14 @@ def can_spend(feed, quota, cost=1):
     jobs_remaining = quota.get("jobs_remaining")
     reserve_jobs = plan["reserve_jobs"]
     if reserve_jobs is not None:
-        if not isinstance(jobs_remaining, int) or jobs_remaining <= reserve_jobs:
+        if (not isinstance(jobs_remaining, int)
+                or not isinstance(job_cost, int) or job_cost < 0
+                or jobs_remaining - job_cost < reserve_jobs):
             return False
     return True
 
 
-def run_paid_probe(feed, cost, probe, *args, **kwargs):
+def run_paid_probe(feed, cost, probe, *args, job_cost=0, **kwargs):
     """Run an explicitly approved probe without crossing a known reserve.
 
     Probes are optional diagnostics, unlike the scheduled digest. They therefore
@@ -1093,7 +1098,7 @@ def run_paid_probe(feed, cost, probe, *args, **kwargs):
         return 1
     quotas = load_api_quotas()
     quota = quotas.get(feed)
-    if not can_spend(feed, quota, cost):
+    if not can_spend(feed, quota, cost, job_cost):
         print(f"RapidAPI {feed} probe would cross its reserve or has unknown state; refusing.")
         return 1
     result = probe(*args, quota=quota, **kwargs)
@@ -1101,7 +1106,8 @@ def run_paid_probe(feed, cost, probe, *args, **kwargs):
     return result
 
 
-def out_of_allowance(feed, quota):
+def out_of_allowance(feed, quota, request_cost=1, job_cost=0,
+                     allow_unknown=True):
     """True when this feed should sit today's run out.
 
     Unknown reads as available, never as empty: a first run or a lost state
@@ -1121,16 +1127,22 @@ def out_of_allowance(feed, quota):
         return True
     reset_at = quota.get("reset_at")
     if isinstance(reset_at, (int, float)) and time.time() >= reset_at:
-        return False
-    for counter, floor in (("requests_remaining", plan["reserve_requests"]),
-                           ("jobs_remaining", plan["reserve_jobs"])):
+        return not allow_unknown
+    unknown = False
+    for counter, floor, cost in (("requests_remaining", plan["reserve_requests"], request_cost),
+                                 ("jobs_remaining", plan["reserve_jobs"], job_cost)):
         if floor is None:
             continue
         remaining = quota.get(counter)
-        if isinstance(remaining, int) and remaining <= floor:
+        if isinstance(remaining, int) and remaining - cost < floor:
             log(f"{feed}: {remaining} {counter.split('_')[0]} left this month, "
                 f"below the {floor} reserve; skipping")
             return True
+        if not isinstance(remaining, int):
+            unknown = True
+    if unknown and not allow_unknown:
+        log(f"{feed}: quota response omitted a remaining counter; pausing")
+        return True
     return False
 
 # The allowance has to be known BEFORE the request that would exceed it, and the
@@ -1280,7 +1292,8 @@ def fetch_indeed(api_key, quota=None, max_age_days=None):
     except requests.RequestException as e:
         log("WARN Indeed: request failed: " + str(e))
         return []
-    _record_quota(quota, r.headers)
+    recorded = _record_quota(quota, r.headers)
+    _debit_unreported_quota(quota, recorded)
     if r.status_code != 200:
         log("WARN Indeed: HTTP " + str(r.status_code) + ": " + r.text[:120])
         return []
@@ -1341,10 +1354,12 @@ def _record_quota(quota, headers):
     lets a feed held back under its reserve start again after the rollover
     rather than staying off for good.
     """
+    recorded = set()
     for header, field in (("x-ratelimit-jobs-remaining", "jobs_remaining"),
                           ("x-ratelimit-requests-remaining", "requests_remaining")):
         try:
             quota[field] = int(headers[header])
+            recorded.add(field)
         except (KeyError, TypeError, ValueError):
             pass
     quota["observed_at"] = time.time()
@@ -1352,6 +1367,18 @@ def _record_quota(quota, headers):
         quota["reset_at"] = time.time() + int(headers["x-ratelimit-requests-reset"])
     except (KeyError, TypeError, ValueError):
         pass
+    return recorded
+
+
+def _debit_unreported_quota(quota, recorded, request_cost=1, job_cost=0):
+    """Conservatively charge a request when RapidAPI omitted its counters."""
+    for field, cost in (("requests_remaining", request_cost),
+                        ("jobs_remaining", job_cost)):
+        if field in recorded or not isinstance(cost, int) or cost <= 0:
+            continue
+        remaining = quota.get(field)
+        if isinstance(remaining, int):
+            quota[field] = max(0, remaining - cost)
 
 
 def _fetch_fantastic(name, host, path, query, source, api_key, quota):
@@ -1369,7 +1396,7 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota):
     if not api_key:
         return []
     quota = quota if quota is not None else {}
-    if out_of_allowance(source, quota):
+    if out_of_allowance(source, quota, job_cost=ACTIVE_ATS_PAGE):
         return []
     url = "https://" + host + path + query
     try:
@@ -1378,7 +1405,8 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota):
     except requests.RequestException as e:
         log("WARN " + name + ": request failed: " + str(e))
         return []
-    _record_quota(quota, r.headers)
+    recorded = _record_quota(quota, r.headers)
+    _debit_unreported_quota(quota, recorded, job_cost=ACTIVE_ATS_PAGE)
     if r.status_code != 200:
         log("WARN " + name + ": HTTP " + str(r.status_code) + ": " + r.text[:120])
         return []
@@ -3635,7 +3663,8 @@ def probe_indeed(api_key, query="software engineer", location="Saudi Arabia", qu
     except requests.RequestException as e:
         print(f"request failed: {e}")
         return 1
-    _record_quota(quota, r.headers)
+    recorded = _record_quota(quota, r.headers)
+    _debit_unreported_quota(quota, recorded)
     print(f"HTTP {r.status_code} for query={query!r}, location={location!r}")
     response_quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
     print(f"quota headers: {response_quota or '(none reported)'}")
@@ -3879,7 +3908,8 @@ def _probe_fantastic(name, url, api_key, time_frame, limit, quota=None):
     except requests.RequestException as e:
         print(f"request failed: {e}")
         return 1
-    _record_quota(quota, r.headers)
+    recorded = _record_quota(quota, r.headers)
+    _debit_unreported_quota(quota, recorded, job_cost=limit)
     print(f"HTTP {r.status_code} for time_frame={time_frame}, limit={limit}")
     response_quota = {k.lower(): v for k, v in r.headers.items() if "ratelimit" in k.lower()}
     print(f"quota headers: {response_quota or '(none reported)'}")
@@ -3957,7 +3987,8 @@ def probe_freshness(query, api_key, quota=None):
                f"?query={requests.utils.quote(query)}&country=sa&date_posted={window}")
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
                                        "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
-        _record_quota(quota, r.headers)
+        recorded = _record_quota(quota, r.headers)
+        _debit_unreported_quota(quota, recorded)
         remaining = r.headers.get("x-ratelimit-requests-remaining", "?")
         if r.status_code != 200:
             print(f"date_posted={window}: HTTP {r.status_code} {r.text[:120]}")
@@ -4004,7 +4035,8 @@ def probe_jsearch(query, api_key, quota=None):
            f"?query={requests.utils.quote(query)}&country=sa&date_posted=month")
     r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
                                    "X-RapidAPI-Host": JSEARCH_HOST}, timeout=30)
-    _record_quota(quota, r.headers)
+    recorded = _record_quota(quota, r.headers)
+    _debit_unreported_quota(quota, recorded)
     print(f"HTTP {r.status_code} for query {query!r}")
     # RapidAPI reports the subscription's monthly allowance on every response;
     # the persisted value is what keeps later scheduled runs and probes safe.
@@ -4159,7 +4191,8 @@ def probe_queries(queries, api_key, quota=None):
         except requests.RequestException as e:
             print(f"{query!r}: request failed: {e}")
             continue
-        _record_quota(quota, r.headers)
+        recorded = _record_quota(quota, r.headers)
+        _debit_unreported_quota(quota, recorded)
         remaining = r.headers.get("x-ratelimit-requests-remaining", remaining)
         if r.status_code != 200:
             print(f"{query!r}: HTTP {r.status_code} — skipped")
@@ -4222,11 +4255,13 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-linkedin":
         sys.exit(run_paid_probe("linkedin_api", 1, probe_linkedin,
                                 os.environ.get("RAPIDAPI_KEY"),
-                                *(sys.argv[2:3] or [])))
+                                *(sys.argv[2:3] or []),
+                                job_cost=ACTIVE_ATS_PAGE))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-active-ats":
         sys.exit(run_paid_probe("active_ats", 1, probe_active_ats,
                                 os.environ.get("RAPIDAPI_KEY"),
-                                *(sys.argv[2:3] or [])))
+                                *(sys.argv[2:3] or []),
+                                job_cost=ACTIVE_ATS_PAGE))
     elif len(sys.argv) > 1 and sys.argv[1] == "--probe-freshness":
         query = " ".join(sys.argv[2:]) or AGGREGATOR_QUERIES[0]
         sys.exit(run_paid_probe("jsearch", 3, probe_freshness, query,

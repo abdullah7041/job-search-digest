@@ -1930,6 +1930,29 @@ class TestJsearchPaging(unittest.TestCase):
         self.assertEqual(quota["requests_remaining"], 27)
         self.assertIn("observed_at", quota)
 
+    def test_bootstrap_without_quota_headers_stops_before_a_second_query(self):
+        quota = {}
+        response = self._page(["1"])
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response) as get, \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["a", "b"]), \
+             mock.patch.object(digest, "JSEARCH_DAILY_REQUESTS", 2), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            digest.fetch_jsearch("key", quota=quota)
+        self.assertEqual(get.call_count, 1)
+
+    def test_missing_headers_debit_a_known_jsearch_balance_conservatively(self):
+        quota = {"requests_remaining": 41, "reset_at": digest.time.time() + 3600}
+        response = self._page(["1"])
+        response.headers = {}
+        with mock.patch.object(digest.requests, "get", return_value=response) as get, \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["a", "b"]), \
+             mock.patch.object(digest, "JSEARCH_DAILY_REQUESTS", 2), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            digest.fetch_jsearch("key", quota=quota)
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(quota["requests_remaining"], 40)
+
     def test_jsearch_probe_is_one_page_and_records_its_quota(self):
         response = mock.Mock()
         response.status_code = 200
@@ -3714,6 +3737,14 @@ class TestFreeTierBudget(unittest.TestCase):
         """Two separate hard limits; either one can end the month."""
         self.assertTrue(digest.out_of_allowance(
             "active_ats", {"requests_remaining": 20, "jobs_remaining": 5}))
+
+    def test_job_credit_cost_cannot_cross_the_reserve(self):
+        quota = {"requests_remaining": 20, "jobs_remaining": 39,
+                 "reset_at": digest.time.time() + 3600}
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", quota, job_cost=digest.ACTIVE_ATS_PAGE))
+        self.assertFalse(digest.can_spend(
+            "active_ats", quota, cost=1, job_cost=digest.ACTIVE_ATS_PAGE))
 
     def test_an_unknown_allowance_is_spent_rather_than_assumed_empty(self):
         """First run, or a lost state file. Assuming empty would disable the

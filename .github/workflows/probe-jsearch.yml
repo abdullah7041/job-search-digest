@@ -101,7 +101,14 @@ jobs:
           printf 'Predicted RapidAPI cost: %s\n' "${costs[@]}"
 
       - name: Refuse unconfirmed or non-main paid probes
+        env:
+          FRESHNESS_QUERY: ${{ inputs.freshness_query }}
+          OVERLAP_QUERIES: ${{ inputs.overlap_queries }}
         run: |
+          if [[ -n "$FRESHNESS_QUERY" && -n "$OVERLAP_QUERIES" ]]; then
+            echo "Choose either freshness_query or overlap_queries, not both; no request was made." >&2
+            exit 1
+          fi
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "Paid RapidAPI probes are restricted to main; no request was made." >&2
             exit 1

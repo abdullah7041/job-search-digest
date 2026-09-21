@@ -220,6 +220,11 @@ class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
                         probe.index("Refuse unconfirmed or non-main paid probes"))
         self.assertNotIn("      bayt:", probe)
 
+    def test_probe_rejects_combined_jsearch_modes_before_any_spend(self):
+        probe = (Path(__file__).with_name(".github") / "workflows" /
+                 "probe-jsearch.yml").read_text(encoding="utf-8")
+        self.assertIn("Choose either freshness_query or overlap_queries", probe)
+
     def test_the_execute_job_outlasts_the_budgets_digest_holds_itself_to(self):
         """A job timeout cancels the job outright, so the state artifact is never
         packaged and seen.json never records cards Discord already holds --
