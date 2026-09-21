@@ -1839,12 +1839,8 @@ class TestApplyLinkRescue(unittest.TestCase):
 class TestJsearchPaging(unittest.TestCase):
     """Spending a fixed monthly request allowance across the day's queries.
 
-    Five consecutive days delivered nothing new: three queries, page one only,
-    ten results each over a 30-day window, so the same thirty postings
-    recirculated and every one was already in seen.json. A live probe on 3 Sep
-    2026 found the cursor pages and that all ten of page two were absent from
-    page one -- but also that the plan allows 200 requests a MONTH, so the
-    second page has to be rationed rather than always read.
+    The free plan allows 200 requests per month, so this digest reads only a
+    bounded, fair rotation of page-one queries. Cursor pages remain disabled.
     """
 
     def _page(self, ids, cursor="", remaining="150"):
@@ -1861,40 +1857,29 @@ class TestJsearchPaging(unittest.TestCase):
         }}
         return response
 
-    def test_the_default_budget_funds_one_page_per_query_plus_two_deep_reads(self):
-        """The budget is a slice of a monthly allowance, so it has to follow the
-        query list rather than sit at a number that silently stops paying for
-        deep reads the day a query is added."""
-        self.assertEqual(digest._request_budget(None),
-                         len(digest.AGGREGATOR_QUERIES) + 2)
+    def test_the_default_budget_selects_two_rotating_page_one_queries(self):
+        self.assertEqual(digest._request_budget(None), 2)
 
-    def test_a_budget_too_small_to_read_every_query_is_refused(self):
-        self.assertEqual(digest._request_budget("1"),
-                         len(digest.AGGREGATOR_QUERIES) + 2)
+    def test_zero_disables_jsearch_and_out_of_range_falls_back_to_two(self):
+        self.assertEqual(digest._request_budget("0"), 0)
+        self.assertEqual(digest._request_budget("4"), 4)
+        self.assertEqual(digest._request_budget("5"), 2)
 
-    def test_a_budget_that_only_covers_page_one_reads_page_one(self):
-        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 3, day=0), [])
+    def test_two_queries_rotate_without_a_second_page(self):
+        queries = ["a", "b", "c", "d"]
+        self.assertEqual(digest.jsearch_query_plan(queries, 2, day=0), ["a", "b"])
+        self.assertEqual(digest.jsearch_query_plan(queries, 2, day=1), ["c", "d"])
 
-    def test_spare_budget_buys_a_second_page(self):
-        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 5, day=0), ["a", "b"])
-
-    def test_the_deep_read_rotates_so_every_query_is_covered(self):
-        """Two of three queries get a second page. Fixing which two would leave
-        the third permanently shallow."""
-        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 5, day=1), ["b", "c"])
-        self.assertEqual(digest.jsearch_page_plan(["a", "b", "c"], 5, day=2), ["c", "a"])
-
-    def test_the_plan_never_asks_for_more_pages_than_there_are_queries(self):
-        self.assertEqual(digest.jsearch_page_plan(["a"], 5, day=0), ["a"])
-
-    def test_the_second_page_is_fetched_with_the_cursor_and_its_jobs_kept(self):
-        pages = [self._page(["1", "2"], cursor="CUR"), self._page(["3", "4"])]
+    def test_two_rotating_queries_never_fetch_a_second_page(self):
+        pages = [self._page(["1"], cursor="CUR"), self._page(["2"], cursor="CUR")]
         with mock.patch.object(digest.requests, "get", side_effect=pages) as get, \
-             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["a", "b", "c", "d"]), \
+             mock.patch.object(digest, "JSEARCH_DAILY_REQUESTS", 2), \
+             mock.patch.object(digest.datetime, "date", wraps=datetime.date) as date, \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
-            jobs = digest.fetch_jsearch("key")
-        self.assertEqual(len(jobs), 4)
-        self.assertIn("cursor=CUR", get.call_args_list[1].args[0])
+            date.today.return_value = datetime.date(2026, 9, 20)
+            digest.fetch_jsearch("key")
+        self.assertEqual(get.call_count, 2)
 
     def test_a_query_with_no_cursor_is_not_asked_for_a_second_page(self):
         with mock.patch.object(digest.requests, "get",
@@ -1904,19 +1889,18 @@ class TestJsearchPaging(unittest.TestCase):
             digest.fetch_jsearch("key")
         self.assertEqual(get.call_count, 1)
 
-    def test_a_nearly_exhausted_quota_stops_the_second_page(self):
-        """The allowance is monthly. Spending the last of it on extra pages
-        would leave the digest with no aggregator at all until it resets, so
-        the deep read yields before the reserve is touched."""
+    def test_a_nearly_exhausted_quota_stops_the_next_rotating_query(self):
+        """A low bootstrap response re-evaluates before the next planned call."""
         with mock.patch.object(digest.requests, "get",
                                side_effect=[self._page(["1"], cursor="CUR", remaining="5")]) as get, \
-             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer"]), \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["data engineer", "backend engineer"]), \
+             mock.patch.object(digest, "JSEARCH_DAILY_REQUESTS", 2), \
              mock.patch.object(digest.time, "sleep", lambda *_: None):
             digest.fetch_jsearch("key")
         self.assertEqual(get.call_count, 1)
 
     def test_the_remaining_allowance_is_logged(self):
-        """200 a month is 6.6 a day. Nothing anywhere reported the balance, so
+        """Nothing reported the balance, so
         the first sign of exhaustion would have been an empty digest."""
         with mock.patch.object(digest.requests, "get",
                                side_effect=[self._page(["1"], remaining="162")]), \
@@ -1927,6 +1911,37 @@ class TestJsearchPaging(unittest.TestCase):
         lines = [c.args[0] for c in logged.call_args_list if c.args]
         self.assertTrue(any("162 of 200" in line for line in lines),
                         f"no quota line in: {lines}")
+
+    def test_known_jsearch_reserve_pauses_without_a_request(self):
+        quota = {"requests_remaining": 40, "reset_at": digest.time.time() + 3600}
+        with mock.patch.object(digest.requests, "get") as get:
+            self.assertEqual(digest.fetch_jsearch("key", quota=quota), [])
+        get.assert_not_called()
+
+    def test_missing_jsearch_state_bootstraps_once_then_rechecks_the_reserve(self):
+        quota = {}
+        with mock.patch.object(digest.requests, "get",
+                               side_effect=[self._page(["1"], remaining="27")]) as get, \
+             mock.patch.object(digest, "AGGREGATOR_QUERIES", ["a", "b", "c", "d"]), \
+             mock.patch.object(digest, "JSEARCH_DAILY_REQUESTS", 2), \
+             mock.patch.object(digest.time, "sleep", lambda *_: None):
+            digest.fetch_jsearch("key", quota=quota)
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(quota["requests_remaining"], 27)
+        self.assertIn("observed_at", quota)
+
+    def test_jsearch_probe_is_one_page_and_records_its_quota(self):
+        response = mock.Mock()
+        response.status_code = 200
+        response.headers = {"x-ratelimit-requests-remaining": "80",
+                            "x-ratelimit-requests-reset": "3600"}
+        response.json.return_value = {"data": {"cursor": "unused", "jobs": []}}
+        quota = {}
+        with mock.patch.object(digest.requests, "get", return_value=response) as get:
+            self.assertEqual(digest.probe_jsearch("data engineer", "key", quota), 0)
+        get.assert_called_once()
+        self.assertEqual(quota["requests_remaining"], 80)
+        self.assertIn("observed_at", quota)
 
 
 class TestPaywalledPostingsAreNeverFetched(unittest.TestCase):
@@ -3195,6 +3210,13 @@ class TestApiQuotasSurviveTheRun(unittest.TestCase):
                          {"active_ats": {"jobs_remaining": 90},
                           "linkedin_api": {"jobs_remaining": 200}})
 
+    def test_jsearch_quota_state_round_trips_with_its_observation_time(self):
+        state = {"jsearch": {"requests_remaining": 27,
+                              "reset_at": 1790000000.0,
+                              "observed_at": 1789000000.0}}
+        digest.save_api_quotas(state)
+        self.assertEqual(digest.load_api_quotas(), state)
+
     def test_a_corrupt_file_does_not_stop_the_digest(self):
         with open(digest.ACTIVE_ATS_STATE_FILE, "w") as handle:
             handle.write("{not json")
@@ -3638,9 +3660,55 @@ class TestFreeTierBudget(unittest.TestCase):
         self.assertFalse(digest.out_of_allowance(
             "active_ats", {"requests_remaining": 20, "jobs_remaining": 200}))
 
+    def test_fresh_rapidapi_feeds_run_together_on_alternate_days(self):
+        self.assertEqual(digest.fresh_api_feeds(day=0),
+                         ("active_ats", "linkedin_api"))
+        self.assertEqual(digest.fresh_api_feeds(day=1), ())
+
+    def test_rotation_day_is_riyadh_not_the_runner_utc_date(self):
+        utc_evening = datetime.datetime(2026, 9, 20, 21, 30,
+                                         tzinfo=datetime.timezone.utc)
+        self.assertEqual(digest.riyadh_ordinal(utc_evening),
+                         datetime.date(2026, 9, 21).toordinal())
+
+    def test_scheduled_runs_default_to_rapidapi_but_manual_false_disables_it(self):
+        self.assertTrue(digest.rapidapi_enabled(None))
+        self.assertFalse(digest.rapidapi_enabled("false"))
+
+    def test_manual_probe_rejects_unknown_quota_state(self):
+        self.assertFalse(digest.can_spend("jsearch", {}, cost=1))
+
+    def test_manual_probe_rejects_a_cost_that_would_cross_the_reserve(self):
+        quota = {"requests_remaining": 42, "reset_at": digest.time.time() + 3600}
+        self.assertFalse(digest.can_spend("jsearch", quota, cost=3))
+        self.assertTrue(digest.can_spend("jsearch", quota, cost=2))
+
+    def test_an_unconfirmed_probe_makes_no_paid_request(self):
+        probe = mock.Mock(return_value=0)
+        with mock.patch.dict(digest.os.environ, {}, clear=True):
+            self.assertEqual(digest.run_paid_probe("jsearch", 1, probe, "key"), 1)
+        probe.assert_not_called()
+
+    def test_a_confirmed_probe_persists_only_its_quota_observation(self):
+        quotas = {"jsearch": {"requests_remaining": 42,
+                               "reset_at": digest.time.time() + 3600}}
+        probe = mock.Mock(return_value=0)
+        with mock.patch.dict(digest.os.environ, {"CONFIRM_RAPIDAPI_SPEND": "true"},
+                             clear=True), \
+             mock.patch.object(digest, "load_api_quotas", return_value=quotas), \
+             mock.patch.object(digest, "save_api_quotas") as save:
+            self.assertEqual(digest.run_paid_probe("jsearch", 1, probe, "key"), 0)
+        probe.assert_called_once_with("key", quota=quotas["jsearch"])
+        save.assert_called_once_with(quotas)
+
     def test_a_feed_near_its_request_cap_is_held_back(self):
         self.assertTrue(digest.out_of_allowance(
             "active_ats", {"requests_remaining": 1, "jobs_remaining": 200}))
+
+    def test_the_exact_reserve_is_held_back_before_spending_it(self):
+        self.assertTrue(digest.out_of_allowance(
+            "active_ats", {"requests_remaining": 5, "jobs_remaining": 200,
+                           "reset_at": digest.time.time() + 3600}))
 
     def test_a_feed_near_its_job_cap_is_held_back(self):
         """Two separate hard limits; either one can end the month."""
@@ -3671,6 +3739,7 @@ class TestFreeTierBudget(unittest.TestCase):
         """The Indeed feed allows 50 requests where the others allow 25, so a
         single shared reserve would either waste one plan or overrun another."""
         self.assertIn("indeed", digest.FREE_TIER)
+        self.assertIn("jsearch", digest.FREE_TIER)
         self.assertIn("active_ats", digest.FREE_TIER)
         self.assertIn("linkedin_api", digest.FREE_TIER)
         # 25 a month does not cover a 30-day month at one call a day; 50 does.
@@ -3679,6 +3748,7 @@ class TestFreeTierBudget(unittest.TestCase):
         self.assertEqual(digest.FREE_TIER["active_ats"]["requests"], 25)
         self.assertEqual(digest.FREE_TIER["linkedin_api"]["requests"], 25)
         self.assertEqual(digest.FREE_TIER["indeed"]["requests"], 50)
+        self.assertEqual(digest.FREE_TIER["jsearch"]["reserve_requests"], 40)
         for feed, plan in digest.FREE_TIER.items():
             with self.subTest(feed=feed):
                 self.assertLess(plan["reserve_requests"], plan["requests"],
@@ -3710,6 +3780,15 @@ class TestQuotaResetIsRecorded(unittest.TestCase):
                                return_value=self._response(headers)):
             digest.fetch_active_ats("key", quota=quota)
         self.assertGreaterEqual(quota["reset_at"], before + 86400)
+
+    def test_observation_time_is_recorded_with_the_quota(self):
+        quota = {}
+        before = digest.time.time()
+        with mock.patch.object(digest.requests, "get",
+                               return_value=self._response({
+                                   "x-ratelimit-requests-remaining": "199"})):
+            digest.fetch_active_ats("key", quota=quota)
+        self.assertGreaterEqual(quota["observed_at"], before)
 
     def test_a_missing_reset_header_is_not_fatal(self):
         quota = {}
@@ -4014,12 +4093,20 @@ class TestConfirmedBoardsIsBounded(unittest.TestCase):
     def test_the_cap_bounds_what_one_run_reads(self):
         self.assertEqual(len(digest.confirmed_boards(self._boards(80), limit=5)), 5)
 
-    def test_the_cap_does_not_bind_at_todays_board_count(self):
-        """Stated as a property rather than a comment: this is a growth
-        backstop, and it must not be quietly rationing anything today."""
+    def test_overflow_rotates_so_every_board_is_served(self):
+        boards = self._boards(digest.MAX_BOARDS_PER_RUN + 1)
+        first = digest.confirmed_boards(boards)
+        for board in first:
+            boards[board["token"]]["last_read"] = "2026-09-21"
+        second = digest.confirmed_boards(boards)
+        self.assertEqual(len(first), digest.MAX_BOARDS_PER_RUN)
+        self.assertEqual({board["token"] for board in first + second}, set(boards))
+
+    def test_generated_board_state_is_served_by_the_bounded_rotation(self):
         boards = digest.load_boards() if os.path.exists(digest.BOARDS_FILE) else {}
-        self.assertLessEqual(len(digest.confirmed_boards(boards, limit=None)),
-                             digest.MAX_BOARDS_PER_RUN)
+        expected = min(len(digest.confirmed_boards(boards, limit=None)),
+                       digest.MAX_BOARDS_PER_RUN)
+        self.assertEqual(len(digest.confirmed_boards(boards)), expected)
 
     def test_the_least_recently_read_board_is_read_first(self):
         """Newest-first would starve exactly the boards discovered earliest and
