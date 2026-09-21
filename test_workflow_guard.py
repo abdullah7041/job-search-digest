@@ -188,6 +188,43 @@ class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
         self.assertIn("JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}",
                       self._digest_workflow())
 
+    def test_manual_dispatch_is_ats_only_unless_rapidapi_is_opted_in(self):
+        workflow = self._digest_workflow()
+        self.assertIn("use_rapidapi:", workflow)
+        self.assertIn("default: false", workflow)
+        self.assertIn("RAPIDAPI_ENABLED: ${{ github.event_name == 'schedule' || inputs.use_rapidapi }}",
+                      workflow)
+
+    def test_daily_and_paid_probe_share_one_quota_lock(self):
+        digest_workflow = self._digest_workflow()
+        probe = (Path(__file__).with_name(".github") / "workflows" /
+                 "probe-jsearch.yml").read_text(encoding="utf-8")
+        self.assertIn("group: rapidapi-quota", digest_workflow)
+        self.assertIn("group: rapidapi-quota", probe)
+
+    def test_paid_probe_requires_confirmation_and_commits_only_quota_state_on_main(self):
+        probe = (Path(__file__).with_name(".github") / "workflows" /
+                 "probe-jsearch.yml").read_text(encoding="utf-8")
+        self.assertIn("confirm_rapidapi_spend:", probe)
+        self.assertIn("default: false", probe)
+        self.assertIn("refs/heads/main", probe)
+        self.assertIn("CONFIRM_RAPIDAPI_SPEND: ${{ inputs.confirm_rapidapi_spend }}", probe)
+        self.assertIn("git add -- active_ats.json", probe)
+
+    def test_probe_displays_the_computed_cost_before_rejecting_unconfirmed_spend(self):
+        probe = (Path(__file__).with_name(".github") / "workflows" /
+                 "probe-jsearch.yml").read_text(encoding="utf-8")
+        self.assertIn("Show predicted RapidAPI cost", probe)
+        self.assertIn("overlap_count", probe)
+        self.assertLess(probe.index("Show predicted RapidAPI cost"),
+                        probe.index("Refuse unconfirmed or non-main paid probes"))
+        self.assertNotIn("      bayt:", probe)
+
+    def test_probe_rejects_combined_jsearch_modes_before_any_spend(self):
+        probe = (Path(__file__).with_name(".github") / "workflows" /
+                 "probe-jsearch.yml").read_text(encoding="utf-8")
+        self.assertIn("Choose either freshness_query or overlap_queries", probe)
+
     def test_the_execute_job_outlasts_the_budgets_digest_holds_itself_to(self):
         """A job timeout cancels the job outright, so the state artifact is never
         packaged and seen.json never records cards Discord already holds --
@@ -209,7 +246,7 @@ class TestDigestWorkflowPassesTheConfigItReads(unittest.TestCase):
         source = Path(__file__).with_name("digest.py").read_text(encoding="utf-8")
         read = set(re.findall(r'os\.environ\.get\(\s*"([A-Z0-9_]+)"', source))
         # Set by the runner itself, never by the workflow author.
-        read -= {"GITHUB_REPOSITORY"}
+        read -= {"GITHUB_REPOSITORY", "CONFIRM_RAPIDAPI_SPEND"}
         workflow = self._digest_workflow()
         missing = sorted(name for name in read if f"{name}: ${{{{" not in workflow)
         self.assertEqual(missing, [],

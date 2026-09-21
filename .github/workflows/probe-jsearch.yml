@@ -39,32 +39,34 @@ on:
         required: false
         default: false
         type: boolean
-      bayt:
-        description: "Probe Bayt for Saudi roles instead (1 request)"
-        required: false
-        default: false
-        type: boolean
       indeed:
         description: "Probe the Indeed feed for Saudi roles instead (1 request)"
         required: false
         default: false
         type: boolean
+      confirm_rapidapi_spend:
+        description: "Set false to preview cost without spending; rerun true to confirm"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: probe-jsearch
-  cancel-in-progress: true
+  group: rapidapi-quota
+  cancel-in-progress: false
 
 jobs:
   probe:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      CONFIRM_RAPIDAPI_SPEND: ${{ inputs.confirm_rapidapi_spend }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          persist-credentials: false
+          fetch-depth: 0
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
@@ -73,6 +75,48 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - run: python -m pip install --require-hashes -r requirements.txt
+
+      - name: Show predicted RapidAPI cost
+        env:
+          FRESHNESS_QUERY: ${{ inputs.freshness_query }}
+          OVERLAP_QUERIES: ${{ inputs.overlap_queries }}
+          ACTIVE_ATS: ${{ inputs.active_ats }}
+          LINKEDIN: ${{ inputs.linkedin }}
+          INDEED: ${{ inputs.indeed }}
+        run: |
+          costs=()
+          if [[ -n "$FRESHNESS_QUERY" ]]; then costs+=("JSearch freshness: 3 requests"); fi
+          if [[ -n "$OVERLAP_QUERIES" ]]; then
+            IFS=';' read -r -a overlap_queries <<< "$OVERLAP_QUERIES"
+            overlap_count=0
+            for query in "${overlap_queries[@]}"; do
+              if [[ -n "${query//[[:space:]]/}" ]]; then overlap_count=$((overlap_count + 1)); fi
+            done
+            costs+=("JSearch overlap: ${overlap_count} requests")
+          fi
+          if [[ "$ACTIVE_ATS" == "true" ]]; then costs+=("Active Jobs DB: 1 request"); fi
+          if [[ "$LINKEDIN" == "true" ]]; then costs+=("LinkedIn Job Search: 1 request"); fi
+          if [[ "$INDEED" == "true" ]]; then costs+=("Indeed: 1 request"); fi
+          if [[ ${#costs[@]} -eq 0 ]]; then costs=("JSearch response shape: 1 request"); fi
+          printf 'Predicted RapidAPI cost: %s\n' "${costs[@]}"
+
+      - name: Refuse unconfirmed or non-main paid probes
+        env:
+          FRESHNESS_QUERY: ${{ inputs.freshness_query }}
+          OVERLAP_QUERIES: ${{ inputs.overlap_queries }}
+        run: |
+          if [[ -n "$FRESHNESS_QUERY" && -n "$OVERLAP_QUERIES" ]]; then
+            echo "Choose either freshness_query or overlap_queries, not both; no request was made." >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Paid RapidAPI probes are restricted to main; no request was made." >&2
+            exit 1
+          fi
+          if [[ "$CONFIRM_RAPIDAPI_SPEND" != "true" ]]; then
+            echo "Set confirm_rapidapi_spend to true to authorize a paid probe." >&2
+            exit 1
+          fi
 
       # QUERY is read from the environment, never interpolated into the script
       # body: a ${{ }} expression inside `run` is substituted before the shell
@@ -103,14 +147,6 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: python digest.py --probe-linkedin
 
-      # A different vendor from the two Fantastic.jobs feeds, so a different
-      # response shape -- the row is printed verbatim rather than assumed.
-      - name: Ask Bayt what Saudi roles exist this week
-        if: ${{ inputs.bayt }}
-        env:
-          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
-        run: python digest.py --probe-bayt
-
       # Indeed reaches employers none of the other feeds do. Its datePosted
       # shares a name with JSearch's and nothing more, so it is measured.
       - name: Ask the Indeed feed what Saudi roles exist this week
@@ -120,7 +156,7 @@ jobs:
         run: python digest.py --probe-indeed
 
       - name: Read one live JSearch page and report its shape
-        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin && !inputs.bayt && !inputs.indeed }}
+        if: ${{ !inputs.overlap_queries && !inputs.freshness_query && !inputs.active_ats && !inputs.linkedin && !inputs.indeed }}
         env:
           QUERY: ${{ inputs.query }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
@@ -137,3 +173,24 @@ jobs:
         run: |
           IFS=';' read -r -a probe_queries <<< "$QUERIES"
           python digest.py --probe-queries "${probe_queries[@]}"
+
+      - name: Commit only the updated quota ledger
+        if: ${{ always() && github.ref == 'refs/heads/main' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- active_ats.json
+          if git diff --cached --quiet; then
+            echo "no quota state change"
+            exit 0
+          fi
+          git commit -m "update RapidAPI quota state [skip ci]"
+          for _ in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "Quota state could not be pushed after three safe retries." >&2
+          exit 1

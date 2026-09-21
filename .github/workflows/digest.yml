@@ -3,10 +3,16 @@ name: job-digest
 on:
   schedule:
     - cron: "0 4 * * *" # Daily target: 07:00 Riyadh; GitHub scheduling may be late.
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      use_rapidapi:
+        description: "Use metered RapidAPI sources for this manual digest"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
-  group: job-digest
+  group: rapidapi-quota
   cancel-in-progress: false
 
 jobs:
@@ -68,10 +74,11 @@ jobs:
           RANK_FALLBACK_MODELS: ${{ vars.RANK_FALLBACK_MODELS }}
           MIN_DELIVER_SCORE: ${{ vars.MIN_DELIVER_SCORE }}
           # The JSearch plan is 200 requests a MONTH and this run spends one per
-          # query plus rationed deep reads. digest.py has read this since Jul 2026
-          # and documented it as overridable, but it was never passed in, so the
-          # budget could not actually be lowered when the plan came close to dry.
+          # rotating page-one query. digest.py validates 0-4 and defaults to 2.
           JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}
+          # Scheduled runs use the quota planner. Manual dispatches default to
+          # direct employer boards only unless the operator explicitly opts in.
+          RAPIDAPI_ENABLED: ${{ github.event_name == 'schedule' || inputs.use_rapidapi }}
           # The age cutoff in days. Achievable only against a source that can
           # supply it: measured 7 Sep 2026, JSearch returns nothing at all
           # inside a week, while the ATS feed returns 0-1 day old postings.
