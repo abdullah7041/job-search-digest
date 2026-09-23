@@ -198,9 +198,9 @@ pillow==12.3.0 \
     --hash=sha256:fe3cca2e4e8a592be0f269a1ca4835c25199d9f3ce815c8491048f785b0a0198 \
     --hash=sha256:ffd0c5368496f41b0944be820fcb7a838aa6e623d250b01acf2643939c3f99d7
     # via reportlab
-pypdf==6.15.0 \
-    --hash=sha256:14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee \
-    --hash=sha256:d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79
+pypdf==6.19.0 \
+    --hash=sha256:7e5d6e730e7dae87d560a2cee218b852f6498c8be61966f3cd02ead971e48d14 \
+    --hash=sha256:bbc43aca292369ccc6cbc8a921991ecf2538a3587ab5a116eff06c321d647155
     # via -r requirements.in
 reportlab==5.0.0 \
     --hash=sha256:9d5a3affa84919e1111ede580031266a570e93b1ce388219621347965ff1d93c \
