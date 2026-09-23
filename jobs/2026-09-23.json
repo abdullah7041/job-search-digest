@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-23",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "workable:5700574",
+      "captured_at": "2026-09-23T00:00:00Z",
+      "source": "workable",
+      "source_id": "5700574",
+      "title": "Flutter Mobile Developer",
+      "company": "Innovationteam",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/innovationteam/j/7FDFD79889/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Mobile developer role requiring Flutter and native mobile experience; candidate builds web/LLM apps.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 15,
+          "max": 40,
+          "note": "Missing Flutter, Dart, Bloc/Provider, and native iOS/Android development."
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Experience is in web apps (React/Next.js) rather than mobile."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No formal degree requirement specified."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Located in Riyadh; acceptable experience tier."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Flutter Mobile Development Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-14T00:00:00.000Z",
+      "age_days": 9,
+      "jd": {
+        "status": "captured",
+        "text": "InnovationTeam is a forward-thinking technology company that specializes in providing innovative solutions to businesses. We are currently seeking a talented Flutter Mobile Developer to join our team onsite.\nAs a Flutter Mobile Developer at InnovationTeam, you will be responsible for developing, testing, and maintaining mobile applications using Flutter. You will work on new features, improve existing functionality, and help ensure the stability and performance of our apps. You will collaborate with cross-functional teams to understand project requirements, design user interfaces, and implement app features. Additionally, you will work closely with product managers, Back-end developer, QA engineers and UX designers to deliver high-quality, reliable, scalable, and user-friendly mobile applications.\nThis position requires a strong understanding of mobile development technologies and frameworks, as well as excellent problem-solving, debugging skills, and the ability to collaborate and support team members. The ideal candidate is highly motivated, detail-oriented, and has a passion for creating exceptional user experiences.\nAt InnovationTeam, we value innovation, collaboration, and continuous learning. We offer a flexible and inclusive work environment, where your contributions are valued, and opportunities for professional growth and development are provided.\nRequirements\nPlease note that the posting does not specify a minimum level of experience.\nAll levels of experience (Junior/Intermediate/Senior) are welcome to apply, but this is not a training or internship program; therefore, base understanding of the technology and a minimum of 1-2 years of previous experience is required.\nWhat you will do\nDevelop and maintain mobile applications using Flutter.\nDesign clean, scalable, and maintainable code.\nWork with backend teams to integrate APIs and services.\nReview code and help maintain high coding standards.\nTroubleshoot issues, fix bugs, and improve app performance\nParticipate in architecture discussions and technical decisions.\nSupport app releases and deployments to the app stores.\nWhat you should have\nStrong experience developing mobile apps using Flutter.\nGood understanding of mobile app architecture and best practices.\nExperience working with REST APIs and backend services.\nFamiliar with Git and modern development workflows.\nExperience with debugging and performance optimization.\nAbility to work well with cross-functional teams.\nExperience with native Android or iOS development.\nExperience with state management solutions such as Bloc, Provider, or Riverpod.\nExperience with CI/CD tools and automated builds.\nExperience working in Agile teams.",
+        "sha256": "1e421bf3f04967a332588465a9f42480138bca13672fb571b39e1bc9c475caae",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
