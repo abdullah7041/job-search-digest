@@ -2435,7 +2435,7 @@ class TestEndToEnd(unittest.TestCase):
                                    link_statuses=[digest.LINK_OPEN])
         body = "\n".join(posts)
         self.assertNotIn("jobleads.com", body)
-        self.assertIn("no new roles today", body)
+        self.assertIn("0 delivered today", body)
 
     def test_a_dropped_employer_is_probed_and_remembered(self):
         """The whole point: the cut discards these eight a day and never
@@ -2489,7 +2489,7 @@ class TestEndToEnd(unittest.TestCase):
         body = "\n".join(posts)
         self.assertNotIn("jobleads.com", body)
         self.assertNotIn("job-boards.greenhouse.io", body)
-        self.assertIn("no new roles today", body)
+        self.assertIn("0 delivered today", body)
         path = os.path.join(work, "seen.json")
         seen = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
         self.assertEqual(seen, {}, "a link verdict must not be remembered as a delivery")
@@ -2505,7 +2505,7 @@ class TestEndToEnd(unittest.TestCase):
                                    link_statuses=[digest.LINK_OPEN])
         body = "\n".join(posts)
         self.assertNotIn("jobleads.com", body)
-        self.assertIn("no new roles today", body)
+        self.assertIn("0 delivered today", body)
 
     def test_worker_only_quiet_day_does_not_call_an_absent_webhook(self):
         work = tempfile.mkdtemp(prefix="digest_quiet_")
@@ -2515,8 +2515,9 @@ class TestEndToEnd(unittest.TestCase):
             with mock.patch.dict(os.environ, {
                      "INTERACTIVE_WORKER_URL": "https://worker.test",
                      "WORKER_CALLBACK_SECRET": "secret",
+                     "RAPIDAPI_ENABLED": "false",
                  }, clear=True), \
-                 mock.patch.object(digest, "fetch_jsearch", return_value=[]), \
+                 mock.patch.object(digest, "fetch_jsearch", return_value=[]) as fetch_aggregator, \
                  mock.patch.object(digest, "COMPANIES", []), \
                  mock.patch.object(digest, "post_interactive_cards", return_value={"posted": ["heartbeat"], "existing": [], "failed": []}) as post_worker, \
                  mock.patch.object(digest, "post_discord") as post_webhook:
@@ -2526,9 +2527,84 @@ class TestEndToEnd(unittest.TestCase):
             shutil.rmtree(work)
 
         post_worker.assert_called_once()
-        self.assertIn("no new roles today", post_worker.call_args.kwargs["heartbeat"]["content"])
+        self.assertEqual(post_worker.call_args.args[2], [])
+        fetch_aggregator.assert_not_called()
+        self.assertIn("0 delivered today", post_worker.call_args.kwargs["heartbeat"]["content"])
         self.assertTrue(post_worker.call_args.kwargs["heartbeat"]["key"].startswith("heartbeat:"))
         post_webhook.assert_not_called()
+
+    def test_quiet_report_distinguishes_seen_only_from_below_floor_jobs(self):
+        cases = [
+            ({"newly_found": 0, "already_seen": 70, "below_floor": 0},
+             "70 seen before", "0 newly found", "0 below fit score 40"),
+            ({"newly_found": 14, "already_seen": 56, "below_floor": 14},
+             "56 seen before", "14 newly found", "14 below fit score 40"),
+        ]
+        for summary, *expected in cases:
+            with self.subTest(summary=summary), \
+                 mock.patch.object(digest, "post_discord") as post:
+                digest.post_heartbeat(
+                    "https://discord.test/webhook", "", "", "2026-09-27",
+                    880, 70, [], **summary,
+                    boards_read=64, boards_total=79, boards_skipped=15,
+                    paused_feeds=["jsearch", "active_ats", "linkedin_api"],
+                )
+
+            body = "\n".join(post.call_args.args[1])
+            self.assertIn("0 delivered", body)
+            for text in expected:
+                self.assertIn(text, body)
+            self.assertIn("Read 64 of 79 employer boards; 15 skipped", body)
+            self.assertIn("Quota-paused feeds: JSearch, Active ATS, LinkedIn", body)
+            self.assertNotIn("already sent", body)
+
+    def test_added_employer_boards_use_saudi_filters_identity_and_freshness(self):
+        added = {
+            (company["name"], company["source"], company["token"])
+            for company in digest.COMPANIES
+            if company["name"] in {"MinIO", "Scale AI", "Lucidya"}
+        }
+        self.assertEqual(added, {
+            ("MinIO", "greenhouse", "minio"),
+            ("Scale AI", "greenhouse", "scaleai"),
+            ("Lucidya", "workable", "lucidya"),
+        })
+
+        recent_date = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+        jobs = [
+            {"id": "minio-1", "title": "Senior Software Engineer",
+             "company": "MinIO", "location": "Hybrid - Riyadh, Saudi Arabia",
+             "source": "greenhouse", "token": "minio",
+             "url": "https://job-boards.greenhouse.io/minio/jobs/1",
+             "first_published": recent_date},
+            {"id": "scale-1", "title": "Senior Full-Stack Software Engineer",
+             "company": "Scale AI", "location": "Riyadh, Saudi Arabia",
+             "source": "greenhouse", "token": "scaleai",
+             "url": "https://job-boards.greenhouse.io/scaleai/jobs/1",
+             "first_published": recent_date},
+            {"id": "lucidya-1", "title": "Senior Software Engineer",
+             "company": "Lucidya", "location": "Riyadh, Saudi Arabia",
+             "source": "workable", "token": "lucidya",
+             "url": "https://apply.workable.com/lucidya/j/1/",
+             "first_published": recent_date},
+        ]
+        self.assertTrue(all(digest.matches_filters(job) for job in jobs))
+        self.assertEqual(len({digest.job_identity(job) for job in jobs}), 3)
+        today = datetime.date.today()
+        recent, stale = digest.split_by_age(jobs, 7, today)
+        self.assertEqual(len(recent), 3)
+        self.assertEqual(stale, [])
+        recent, stale = digest.split_by_age(
+            [dict(jobs[0], first_published=(today - datetime.timedelta(days=8)).isoformat())], 7, today)
+        self.assertEqual(recent, [])
+        self.assertEqual(len(stale), 1)
+
+    def test_non_saudi_posting_on_an_added_board_is_rejected(self):
+        job = {"id": "foreign", "title": "Senior Software Engineer",
+               "company": "MinIO", "location": "Dubai, UAE",
+               "source": "greenhouse", "token": "minio",
+               "url": "https://job-boards.greenhouse.io/minio/jobs/2"}
+        self.assertFalse(digest.matches_filters(job))
 
     def test_retryable_interactive_delivery_does_not_fall_back_or_mark_jobs_seen(self):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
@@ -2764,7 +2840,7 @@ class TestEndToEnd(unittest.TestCase):
         posts, _ = run_main(self.ENV, ranking, jobs=tomorrow, work=work)
 
         body = "\n".join(posts)
-        self.assertIn("no new roles today", body)
+        self.assertIn("0 delivered today", body)
         self.assertNotIn("Senior Software Engineer (AI Systems)", body)
 
     def test_a_relisted_posting_with_a_new_url_is_caught_by_its_description(self):
@@ -2778,7 +2854,7 @@ class TestEndToEnd(unittest.TestCase):
                     for job in REAL_JOBS]
         posts, _ = run_main(self.ENV, ranking, jobs=relisted, work=work)
 
-        self.assertIn("no new roles today", "\n".join(posts))
+        self.assertIn("0 delivered today", "\n".join(posts))
 
     def test_a_genuinely_new_posting_still_gets_through(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
@@ -3282,13 +3358,7 @@ class TestApiQuotasSurviveTheRun(unittest.TestCase):
 
 
 class TestPostingAge(unittest.TestCase):
-    """The cutoff the operator asked for: nothing older than a week.
-
-    first_published was written by every fetcher and read by NOTHING until now
-    (digest.py said so outright), so "freshness" meant only "not delivered
-    before". A posting could be four months old and count as new the first time
-    it was seen. That is how a closed HudHud Maps role from a month earlier
-    reached the 7 Sep digest.
+    """Every source uses the configured posting-age cutoff.
 
     Undated postings are KEPT and flagged, not dropped: Pinpoint publishes no
     date at all and Greenhouse only sometimes, so dropping would silently
@@ -3423,36 +3493,22 @@ class TestActiveAtsRealRowShape(unittest.TestCase):
         self.assertTrue(digest.matches_filters(job))
 
 
-class TestTheAgeGateSparesEmployerBoards(unittest.TestCase):
-    """Age is a proxy for "probably dead". True of an aggregator, false of a board.
-
-    An employer's own ATS lists only roles it is still hiring for and removes
-    them when it stops, so a 60-day-old Greenhouse posting is 60 days of a real
-    open vacancy. An aggregator index keeps serving a posting long after the
-    employer pulled it -- which is the whole reason a closed HudHud Maps role
-    reached the 7 Sep digest.
-
-    Measured live 7 Sep 2026 across the 169 postings on the directly-fetched
-    boards: 14 were 7 days old or less, 37 were 8-30 days, 73 were over 30 days
-    and 45 (all Tabby, via Pinpoint) carried no date at all. Gating them on age
-    would have discarded 73 open vacancies to solve a problem those boards do
-    not have. Liveness carries them instead: verify_link already drops a pulled
-    posting, and fetch_workable and fetch_ashby skip unpublished ones at fetch.
-    """
+class TestTheAgeGateAppliesToEmployerBoards(unittest.TestCase):
+    """Direct ATS listings still honor the digest's seven-day freshness rule."""
 
     def _job(self, source, first_published):
         return {"company": "Careem", "title": "Backend Engineer", "source": source,
                 "url": "https://boards.greenhouse.io/careem/jobs/1",
                 "first_published": first_published}
 
-    def test_an_old_posting_on_the_employers_own_board_is_kept(self):
+    def test_an_old_posting_on_an_employers_own_board_is_dropped(self):
         today = datetime.date(2026, 9, 7)
         for source in ("greenhouse", "ashby", "workable", "lever", "pinpoint"):
             with self.subTest(source=source):
                 fresh, stale = digest.split_by_age(
                     [self._job(source, "2026-06-01")], 7, today)
-                self.assertEqual(stale, [], f"{source} should not be age-gated")
-                self.assertEqual(fresh[0]["age_days"], 98)
+                self.assertEqual(fresh, [])
+                self.assertEqual(len(stale), 1, f"{source} should honor the age cutoff")
 
     def test_an_old_aggregator_posting_is_still_dropped(self):
         today = datetime.date(2026, 9, 7)
@@ -3467,26 +3523,6 @@ class TestTheAgeGateSparesEmployerBoards(unittest.TestCase):
         fresh, stale = digest.split_by_age([self._job("active_ats", "2026-06-01")], 7, today)
         self.assertEqual(fresh, [])
         self.assertEqual(len(stale), 1)
-
-    def test_the_exempt_posting_still_reports_its_real_age(self):
-        """Exempt from the cutoff, not from the truth: the card still says how
-        old it is, so nothing implies a week-old posting that is not one."""
-        today = datetime.date(2026, 9, 7)
-        fresh, _ = digest.split_by_age([self._job("greenhouse", "2026-08-01")], 7, today)
-        self.assertEqual(digest.age_label(fresh[0]["age_days"]), "posted 37 days ago")
-
-
-class TestDirectBoardSourcesStaysHonest(unittest.TestCase):
-    def test_it_names_exactly_the_per_company_fetchers(self):
-        """DIRECT_BOARD_SOURCES is written out by hand because it is defined
-        above FETCHERS. Adding a fetcher without adding it here would silently
-        age-gate a real employer board."""
-        self.assertEqual(digest.DIRECT_BOARD_SOURCES, frozenset(digest.FETCHERS))
-
-    def test_the_ats_index_is_an_employer_source_but_not_a_direct_board(self):
-        self.assertIn("active_ats", digest.EMPLOYER_SOURCES)
-        self.assertNotIn("active_ats", digest.DIRECT_BOARD_SOURCES)
-
 
 class TestActiveAtsExpiry(unittest.TestCase):
     """date_valid_through is the index saying the posting has expired.
@@ -3568,7 +3604,7 @@ class TestFetchLinkedin(unittest.TestCase):
         """An ATS row IS the employer's posting; a LinkedIn row is a relay of
         it. prefer_employer_postings must keep favouring the real board."""
         self.assertNotIn("linkedin_api", digest.EMPLOYER_SOURCES)
-        self.assertNotIn("linkedin_api", digest.DIRECT_BOARD_SOURCES)
+        self.assertNotIn("linkedin_api", digest.FETCHERS)
 
     def test_it_is_age_gated(self):
         today = datetime.date(2026, 9, 7)
@@ -3727,6 +3763,14 @@ class TestFreeTierBudget(unittest.TestCase):
     def test_a_feed_near_its_request_cap_is_held_back(self):
         self.assertTrue(digest.out_of_allowance(
             "active_ats", {"requests_remaining": 1, "jobs_remaining": 200}))
+
+    def test_a_paused_feed_is_recorded_once_for_the_heartbeat(self):
+        paused = []
+        quota = {"requests_remaining": 1, "jobs_remaining": 200}
+        for _ in range(2):
+            self.assertTrue(digest.out_of_allowance(
+                "active_ats", quota, paused_feeds=paused))
+        self.assertEqual(paused, ["active_ats"])
 
     def test_the_exact_reserve_is_held_back_before_spending_it(self):
         self.assertTrue(digest.out_of_allowance(
@@ -3895,7 +3939,7 @@ class TestFetchIndeed(unittest.TestCase):
 
     def test_it_is_age_gated_and_is_not_an_employer_source(self):
         self.assertNotIn("indeed", digest.EMPLOYER_SOURCES)
-        self.assertNotIn("indeed", digest.DIRECT_BOARD_SOURCES)
+        self.assertNotIn("indeed", digest.FETCHERS)
         today = datetime.date(2026, 9, 7)
         fresh, stale = digest.split_by_age(
             [{"source": "indeed", "first_published": "2026-06-01"}], 7, today)
