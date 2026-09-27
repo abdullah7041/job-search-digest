@@ -86,6 +86,9 @@ COMPANIES = [
     {"name": "Nana",     "source": "workable", "token": "nana"},
     {"name": "Rasan",    "source": "workable", "token": "rasan"},
     {"name": "Sary",     "source": "workable", "token": "sary"},
+    {"name": "MinIO",    "source": "greenhouse", "token": "minio"},
+    {"name": "Scale AI", "source": "greenhouse", "token": "scaleai"},
+    {"name": "Lucidya",  "source": "workable", "token": "lucidya"},
 ]
 
 # Saudi only. A job's location must contain one of these (case-insensitive).
@@ -621,7 +624,7 @@ def fetch_lever(c):
     return out
 
 
-def fetch_jsearch(api_key, paywalled=None, quota=None):
+def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
     """
     Query JSearch (RapidAPI Google-for-Jobs aggregator) for each AGGREGATOR_QUERIES entry.
     Returns jobs in the same shape as ATS fetchers so the shared filter/rank path works.
@@ -661,7 +664,7 @@ def fetch_jsearch(api_key, paywalled=None, quota=None):
         return []
 
     quota = quota if quota is not None else {}
-    if out_of_allowance("jsearch", quota):
+    if out_of_allowance("jsearch", quota, paused_feeds=paused_feeds):
         return []
 
     headers = {
@@ -815,7 +818,8 @@ def fetch_jsearch(api_key, paywalled=None, quota=None):
         riyadh_ordinal())
     bootstrap_allowed = True
     for query in selected_queries:
-        if out_of_allowance("jsearch", quota, allow_unknown=bootstrap_allowed):
+        if out_of_allowance("jsearch", quota, allow_unknown=bootstrap_allowed,
+                            paused_feeds=paused_feeds):
             log("JSearch: quota-paused; continuing without the aggregator")
             break
         jobs, _ = read_page(query)
@@ -1107,7 +1111,7 @@ def run_paid_probe(feed, cost, probe, *args, job_cost=0, **kwargs):
 
 
 def out_of_allowance(feed, quota, request_cost=1, job_cost=0,
-                     allow_unknown=True):
+                     allow_unknown=True, paused_feeds=None):
     """True when this feed should sit today's run out.
 
     Unknown reads as available, never as empty: a first run or a lost state
@@ -1124,10 +1128,15 @@ def out_of_allowance(feed, quota, request_cost=1, job_cost=0,
         # An unnamed feed has no known plan, so nothing here can say it is safe
         # to spend. Refusing is the conservative direction.
         log(f"WARN {feed}: no free-tier plan recorded; not spending")
+        if paused_feeds is not None and feed not in paused_feeds:
+            paused_feeds.append(feed)
         return True
     reset_at = quota.get("reset_at")
     if isinstance(reset_at, (int, float)) and time.time() >= reset_at:
-        return not allow_unknown
+        paused = not allow_unknown
+        if paused and paused_feeds is not None and feed not in paused_feeds:
+            paused_feeds.append(feed)
+        return paused
     unknown = False
     for counter, floor, cost in (("requests_remaining", plan["reserve_requests"], request_cost),
                                  ("jobs_remaining", plan["reserve_jobs"], job_cost)):
@@ -1137,11 +1146,15 @@ def out_of_allowance(feed, quota, request_cost=1, job_cost=0,
         if isinstance(remaining, int) and remaining - cost < floor:
             log(f"{feed}: {remaining} {counter.split('_')[0]} left this month, "
                 f"below the {floor} reserve; skipping")
+            if paused_feeds is not None and feed not in paused_feeds:
+                paused_feeds.append(feed)
             return True
         if not isinstance(remaining, int):
             unknown = True
     if unknown and not allow_unknown:
         log(f"{feed}: quota response omitted a remaining counter; pausing")
+        if paused_feeds is not None and feed not in paused_feeds:
+            paused_feeds.append(feed)
         return True
     return False
 
@@ -1188,7 +1201,7 @@ def save_api_quotas(quotas):
         json.dump(quotas, handle, indent=0, sort_keys=True)
 
 
-def fetch_active_ats(api_key, quota=None, max_age_days=None):
+def fetch_active_ats(api_key, quota=None, max_age_days=None, paused_feeds=None):
     """Read one page of Saudi technical roles from the employers' own ATSs.
 
     Measured 7 Sep 2026, same day and same country: JSearch returned ZERO jobs
@@ -1206,10 +1219,10 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None):
              + "&time_frame=" + str(days) + "d"
              + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
     return _fetch_fantastic("Active ATS", ACTIVE_ATS_HOST, "/active-ats", query,
-                            "active_ats", api_key, quota)
+                            "active_ats", api_key, quota, paused_feeds)
 
 
-def fetch_linkedin(api_key, quota=None, max_age_days=None):
+def fetch_linkedin(api_key, quota=None, max_age_days=None, paused_feeds=None):
     """Read one page of Saudi technical roles as LinkedIn itself lists them.
 
     Probed 7 Sep 2026: ten rows, all posted that day, nine of them genuinely
@@ -1235,7 +1248,7 @@ def fetch_linkedin(api_key, quota=None, max_age_days=None):
              + "&time_frame=" + str(days) + "d"
              + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
     return _fetch_fantastic("LinkedIn", LINKEDIN_API_HOST, "/active-jb", query,
-                            "linkedin_api", api_key, quota)
+                            "linkedin_api", api_key, quota, paused_feeds)
 
 
 def _age_window(max_age_days):
@@ -1261,7 +1274,7 @@ INDEED_HOST = "jobs-api14.p.rapidapi.com"
 INDEED_QUERY = "software engineer"
 
 
-def fetch_indeed(api_key, quota=None, max_age_days=None):
+def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
     """Read one page of Saudi roles from Indeed, which no other feed reaches.
 
     Probed 7 Sep 2026: 20 rows, 8 passing the filters, 7 of those published
@@ -1280,7 +1293,7 @@ def fetch_indeed(api_key, quota=None, max_age_days=None):
     if not api_key:
         return []
     quota = quota if quota is not None else {}
-    if out_of_allowance("indeed", quota):
+    if out_of_allowance("indeed", quota, paused_feeds=paused_feeds):
         return []
     url = ("https://" + INDEED_HOST + "/v2/indeed/search"
            + "?query=" + requests.utils.quote(INDEED_QUERY)
@@ -1381,7 +1394,8 @@ def _debit_unreported_quota(quota, recorded, request_cost=1, job_cost=0):
             quota[field] = max(0, remaining - cost)
 
 
-def _fetch_fantastic(name, host, path, query, source, api_key, quota):
+def _fetch_fantastic(name, host, path, query, source, api_key, quota,
+                     paused_feeds=None):
     """One page from a Fantastic.jobs feed, shaped into this pipeline's job dict.
 
     Both feeds share a vendor, a row shape and a plan: 250 JOBS and 25 REQUESTS
@@ -1396,7 +1410,8 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota):
     if not api_key:
         return []
     quota = quota if quota is not None else {}
-    if out_of_allowance(source, quota, job_cost=ACTIVE_ATS_PAGE):
+    if out_of_allowance(source, quota, job_cost=ACTIVE_ATS_PAGE,
+                        paused_feeds=paused_feeds):
         return []
     url = "https://" + host + path + query
     try:
@@ -2831,17 +2846,28 @@ def instability_warning(unstable):
     )
 
 
-def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, warnings):
+def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, warnings,
+                   *, newly_found=0, already_seen=0, stale=0, below_floor=0,
+                   boards_read=0, boards_total=0, boards_skipped=0,
+                   paused_feeds=()):
     """Confirm a quiet day out loud.
 
     A green workflow run with no new roles used to exit silently, which is
-    indistinguishable from a broken job. matched-but-seen is shown so you know
-    the pipeline reached real jobs and just had nothing new to add.
+    indistinguishable from a broken job. Seen postings stay separate from new
+    postings rejected by the fit floor.
     """
+    feed_names = {"jsearch": "JSearch", "active_ats": "Active ATS",
+                  "linkedin_api": "LinkedIn", "indeed": "Indeed"}
+    paused_names = ", ".join(feed_names.get(feed, feed) for feed in paused_feeds)
     lines = [
-        f"**Job digest — {today}** · no new roles today. "
-        f"Scanned {scanned} postings across {len(COMPANIES)} companies, "
-        f"{matched} matched your filters (already sent), 0 new."
+        f"**Job digest — {today}** · 0 delivered today.",
+        f"Scanned {scanned} postings; {matched} matched the filters: "
+        f"{already_seen} seen before, {newly_found} newly found; "
+        f"{stale} older than {MAX_JOB_AGE_DAYS}d, "
+        f"{below_floor} below fit score {MIN_DELIVER_SCORE}.",
+        f"Read {boards_read} of {boards_total} employer boards; "
+        f"{boards_skipped} skipped by the per-run cap or time budget.",
+        f"Quota-paused feeds: {paused_names or 'none'}.",
     ]
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     if worker_url:
@@ -2913,15 +2939,18 @@ def main():
     # technical. Their allowances are small, hard and metered per API, so each
     # carries its own counter in state rather than a shared assumption.
     quotas = load_api_quotas()
+    paused_feeds = []
     if use_rapidapi:
         all_jobs.extend(fetch_jsearch(rapidapi_key, paywalled,
-                                      quotas.setdefault("jsearch", {})))
+                                      quotas.setdefault("jsearch", {}),
+                                      paused_feeds=paused_feeds))
         fetchers = {"active_ats": fetch_active_ats,
                     "linkedin_api": fetch_linkedin,
                     "indeed": fetch_indeed}
         for feed in (*fresh_api_feeds(), "indeed"):
             quota = quotas.setdefault(feed, {})
-            all_jobs.extend(fetchers[feed](rapidapi_key, quota, MAX_JOB_AGE_DAYS))
+            all_jobs.extend(fetchers[feed](rapidapi_key, quota, MAX_JOB_AGE_DAYS,
+                                           paused_feeds=paused_feeds))
         save_api_quotas(quotas)
     else:
         log("RapidAPI disabled for this manual run; using direct employer ATS feeds")
@@ -2938,7 +2967,10 @@ def main():
     # fetch_company takes.
     board_by_pair = {(r["source"], r["token"]): k for k, r in boards.items()
                      if r.get("source")}
+    discovered_total = confirmed_boards(boards, limit=None)
+    boards_total = len(COMPANIES) + len(discovered_total)
     board_queue = COMPANIES + confirmed_boards(boards)
+    boards_read = 0
     read_boards = False
     for index, c in enumerate(board_queue):
         # COMPANIES is hand-curated and always read; only discovered boards are
@@ -2948,6 +2980,7 @@ def main():
             log(f"Run budget spent: {len(board_queue) - index} discovered "
                 "board(s) unread this run, least recently read first next run")
             break
+        boards_read += 1
         all_jobs.extend(fetch_company(c))
         key = board_by_pair.get((c["source"], c["token"]))
         if key:
@@ -2977,6 +3010,8 @@ def main():
     # expected to be empty.
     still_paid = [j for j in matched if on_paid_relister(apply_link(j))]
     matched = [j for j in matched if not on_paid_relister(apply_link(j))]
+    already_seen = sum(job_identity(job) in seen for job in matched)
+    newly_found = len(matched) - already_seen
     for job in still_paid:
         log(f"Paid relister past the fetch on {link_host(job['url'])}: "
             f"{job['company']} — {job['title']}")
@@ -3068,7 +3103,12 @@ def main():
 
     if not fresh:
         post_heartbeat(webhook, worker_url, worker_secret, today,
-                       len(all_jobs), len(matched), warnings)
+                       len(all_jobs), len(matched), warnings,
+                       already_seen=already_seen,
+                       newly_found=newly_found, stale=len(stale),
+                       boards_read=boards_read, boards_total=boards_total,
+                       boards_skipped=boards_total - boards_read,
+                       paused_feeds=paused_feeds)
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
@@ -3142,7 +3182,12 @@ def main():
             f"within the last {FLOOR_COOLDOWN_DAYS} days")
     if not fresh:
         post_heartbeat(webhook, worker_url, worker_secret, today,
-                       len(all_jobs), len(matched), warnings)
+                       len(all_jobs), len(matched), warnings,
+                       newly_found=newly_found, already_seen=already_seen,
+                       stale=len(stale),
+                       boards_read=boards_read, boards_total=boards_total,
+                       boards_skipped=boards_total - boards_read,
+                       paused_feeds=paused_feeds)
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
@@ -3190,7 +3235,13 @@ def main():
     if not fresh:
         save_seen(seen)
         post_heartbeat(webhook, worker_url, worker_secret, today,
-                       len(all_jobs), len(matched), warnings)
+                       len(all_jobs), len(matched), warnings,
+                       newly_found=newly_found, already_seen=already_seen,
+                       stale=len(stale),
+                       below_floor=len(below_floor),
+                       boards_read=boards_read, boards_total=boards_total,
+                       boards_skipped=boards_total - boards_read,
+                       paused_feeds=paused_feeds)
         save_stats(
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
@@ -3532,28 +3583,12 @@ def _max_job_age(raw):
 
 MAX_JOB_AGE_DAYS = _max_job_age(os.environ.get("MAX_JOB_AGE_DAYS"))
 
-# The boards this digest reads per company, as opposed to any index OF those
-# boards. Defined here rather than from FETCHERS because FETCHERS is built
-# further down; the two are asserted equal in the tests.
-DIRECT_BOARD_SOURCES = frozenset(
-    {"greenhouse", "ashby", "workable", "lever", "pinpoint"})
-
-
 def split_by_age(jobs, max_age_days, today=None):
     """Split postings into (fresh, stale) and record each one's age in days.
 
-    Age is a proxy for "probably dead". That holds for an index and not for a
-    board: an aggregator keeps serving a posting long after the employer pulled
-    it, which is how a closed HudHud Maps role reached the 7 Sep 2026 digest,
-    while an employer's own ATS lists only what it is still hiring for. So a
-    posting read directly from a company board is exempt -- measured live that
-    day, gating the 169 postings on those boards would have discarded 73 open
-    vacancies to solve a problem they do not have. Liveness carries them
-    instead: verify_link drops a pulled posting, and fetch_workable and
-    fetch_ashby skip unpublished ones at the fetch.
-
-    Exempt from the cutoff, never from the truth -- every posting still records
-    its real age, so the card cannot imply a freshness it does not have.
+    Every source uses the same freshness window. An open employer listing can
+    remain published long after it first appeared, but that does not make it a
+    newly posted role for this digest.
 
     An undated posting is FRESH, not stale. Pinpoint publishes no date at all
     and Greenhouse only sometimes, so dropping the undated would quietly remove
@@ -3573,8 +3608,7 @@ def split_by_age(jobs, max_age_days, today=None):
         # Ingestion delay and timezones can put a posting a few hours ahead.
         job["age_days"] = max(age, 0)
         too_old = job["age_days"] > max_age_days
-        (stale if too_old and job.get("source") not in DIRECT_BOARD_SOURCES
-         else fresh).append(job)
+        (stale if too_old else fresh).append(job)
     return fresh, stale
 
 
