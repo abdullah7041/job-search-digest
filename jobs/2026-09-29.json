@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-29",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9NDhmNjUxNmI5ZGY4MGVhMztjYz1zYQ==",
+      "captured_at": "2026-09-29T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9NDhmNjUxNmI5ZGY4MGVhMztjYz1zYQ==",
+      "title": "Software Engineer - Himmah Program",
+      "company": "Mozn",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://apply.workable.com/mozn-ai/j/CCD537811D/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong stack alignment in fullstack/AI integration, but hard requirement for degree is missing. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 35,
+          "max": 40,
+          "note": "Demonstrates React, TypeScript, Python, REST APIs, CI/CD, and AI/ML solution int"
+        },
+        "experience": {
+          "score": 24,
+          "max": 30,
+          "note": "Candidate has 1+ years building production applications and automations in Saudi"
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Hard requirement specifies Bachelor's or Master's in CS/related field."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Riyadh location matches candidate's base and target level."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Computer Science or Related Degree"
+      ],
+      "link_status": "open",
+      "first_published": "2026-09-28",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "About Mozn\n\nMOZN is a leading Enterprise AI company enabling organizations to make informed decisions in two critical domains: Financial Crime Prevention and Enterprise Knowledge Intelligence.\n\nWe’re a diverse, collaborative team of innovators united by a shared purpose: to build AI that delivers tangible business value, builds trust, and empowers people and organizations with augmented intelligence. Our culture is built on the relentless pursuit of excellence and meaningful impact.\n\nIf you’re passionate about working alongside exceptional talent on world-class AI, and you want the autonomy and runway to do the best work of your career, join us in shaping the future of intelligent enterprises.\n\nAbout the role\n\nWe are seeking a talented Software Engineer to join our AI-focused company. In this role, you will design and deliver scalable applications and platforms that power our AI-driven solutions. You will play a key role in building robust systems that integrate data, machine learning, and user interfaces to meet the needs of public and private sector clients in Saudi Arabia.\n\nWhat you'll do\n\nDeveloping and maintaining full stack applications with strong front-end and back-end capabilities\nDesigning user-friendly interfaces and integrate them with AI-powered back-end services\nCollaborating with data scientists, ML engineers, and stakeholders to embed AI solutions into software products\nEnsuring software systems are secure, scalable, and compliant with local regulations (e.g., PDPL)\nContributing to API development, microservices architecture, and seamless data/model integration\nSupporting consultation projects by tailoring software solutions to client requirements\nLeading best practices in coding standards, testing, and CI/CD pipelines\nMentoring junior engineers and contribute to continuous improvement of engineering practices\n\nQualifications\n\nBachelor’s or Master’s degree in Computer Science, Software Engineering, or related field\n1+ years of experience in full stack development and solution delivery\nExperience working in Saudi Arabia, delivering consultation services to public and private sector clients\nProficiency in modern front-end frameworks (React, Angular, Vue, etc) and back-end frameworks (Node.js, Django, etc)\nStrong skills in JavaScript/TypeScript, and Python\nKnowledge of microservices, APIs, and cloud-native development\nFamiliarity with AI/ML solution integration is a strong plus\nExperience with DevOps practices, CI/CD, and containerization\n\nBenefits\n\nYou will be at the forefront of an exciting time for the Middle East, joining a high-growth rocket-ship in an exciting space\nYou will be given a lot of responsibility and trust. We believe that the best results come when the people responsible for a function are given the freedom to do what they think is best\nThe fundamentals will be taken care of: competitive compensation, top-tier health insurance, and an enabling culture so that you can focus on what you do best\nYou will enjoy a fun and dynamic workplace working alongside some of the greatest minds in AI\nWe believe strength lies in difference, embracing all for who they are and empowered to be the best version of themselves",
+        "sha256": "b453d7e172e8224ff58c923fbaea0124302dbd7c33996fa8d589e4bc20e45178",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_NEllb19TVktkcEZPNDltSkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTa0psVURrNVpHcEhhR3N0VURCZlJtbEZhVU5ZTldSRVpHRXpZMlpHUjFST1JHSktTRGhuUjJWVmMxcFNaa0UyWWpsa1NsaHhlRzUwYkRGMFVVdHFkV014WW5VNFVrRjVablY1VUZwUFNrbDJSVFJCVkdOc00wcEVWMU4xVUhoaGJFbG1RVWM1T1RGSWRsOXNMVGhYYkhKSlRtTTBjMncxVm5GblVtVjViMDlZUkVKcWJGQVNGMkpLUXpkaGNUSXRSVTV4TmpsMU9GQTRablpOYzFGdkdpSkJSSE55T1daU05uUkVUVGMxZDFkSVdESkRXRlJDUTFGTVNEQlVlRFF4VHpaQg",
+      "captured_at": "2026-09-29T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_NEllb19TVktkcEZPNDltSkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTa0psVURrNVpHcEhhR3N0VURCZlJtbEZhVU5ZTldSRVpHRXpZMlpHUjFST1JHSktTRGhuUjJWVmMxcFNaa0UyWWpsa1NsaHhlRzUwYkRGMFVVdHFkV014WW5VNFVrRjVablY1VUZwUFNrbDJSVFJCVkdOc00wcEVWMU4xVUhoaGJFbG1RVWM1T1RGSWRsOXNMVGhYYkhKSlRtTTBjMncxVm5GblVtVjViMDlZUkVKcWJGQVNGMkpLUXpkaGNUSXRSVTV4TmpsMU9GQTRablpOYzFGdkdpSkJSSE55T1daU05uUkVUVGMxZDFkSVdESkRXRlJDUTFGTVNEQlVlRFF4VHpaQg",
+      "title": "Software Engineer - Python and K8s",
+      "company": "Jobgether",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://jobs.kss.sa/job/software-engineer-python-and-k8s-6ab6c4c07c62d",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 52,
+      "why": "Strong Python and automation background, but lacks Linux kernel/Kubernetes systems depth.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 22,
+          "max": 40,
+          "note": "Strong Python and CI/CD; lacks Linux kernel, Kubernetes, virtualization depth."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Has built Python automation pipelines, but lacks distributed infrastructure expe"
+        },
+        "education": {
+          "score": 8,
+          "max": 15,
+          "note": "Mentions Bachelor's or equivalent technical qualification."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh, Saudi Arabia based role."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Bachelor's Degree in STEM or Computer Science",
+        "Lack of Demonstrated Kubernetes and Containerization Experience",
+        "Missing Linux Systems Administration and Stack Experience"
+      ],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "captured",
+        "text": "This position is listed on behalf of a partner company, who manages all applications and next steps. Our partner is looking for a Software Engineer - Python and K8s based in Saudi Arabia.This role offers the opportunity to build open source software that transforms how complex information systems are operated across public clouds and private infrastructure. You will develop Python-based operations software designed to automate and simplify workloads running on Kubernetes. Working across the Linux stack, you will engage with technologies spanning networking, storage, virtualization, containers, and applications. The position combines software engineering rigor with a strong focus on reliability, scalability, testing, and operational excellence. You will collaborate with globally distributed engineering teams to deliver production-ready solutions for customers adopting modern cloud technologies. This is an ideal environment for engineers who enjoy distributed systems, open source development, and solving challenging infrastructure problems.AccountabilitiesDesign, develop, and maintain open source operations software using Python, with a focus on reliable and scalable workloads running on Kubernetes.Work across the Linux stack, including the kernel, networking, storage, virtualization, containers, and applications.Develop solutions that improve the reliability, automation, and operational efficiency of complex open source systems.Build and improve high-quality monitoring and alerting infrastructure to support reliable production operations.Simplify the operation of open source technologies for customers and the broader open source community.Apply sound software architecture, engineering, testing, documentation, and quality practices throughout the development lifecycle.Collaborate with other engineering teams to ensure products operate reliably, efficiently, and at production scale.Follow agile software development methodologies and contribute to effective development workflows.Share technical knowledge and coach colleagues where appropriate, helping strengthen engineering capabilities across the team.Contribute to a healthy, collaborative engineering culture within a globally distributed organization.Work remotely while participating in global company and team events, typically involving travel once or twice per year for up to two weeks.RequirementsBachelor’s degree or equivalent qualification in Computer Science, STEM, or a related technical field.Strong professional experience developing software with Python and an enthusiasm for solving technically challenging problems.Hands-on experience with Linux systems administration, package management, and production operations.Practical experience with at least one public cloud platform.Familiarity with Docker and Kubernetes and an understanding of containerized application environments.Strong understanding of software reliability principles and a commitment to designing and developing dependable systems.Interest in distributed systems and the ability to understand technologies across different layers of the Linux and cloud stack.Strong engineering discipline, including experience with software testing, maintainable code, and technical documentation.Good organization and time management skills, with a focus on delivering high-quality software within expected timelines.Strong collaboration and communication skills, with the ability to work effectively within a globally distributed engineering team.A genuine interest in open source software, cloud computing, and learning from technically strong colleagues.BenefitsFully distributed and remote work environment.Twice-yearly in-person team sprints and opportunities to collaborate with colleagues around the world.Personal learning and development budget of USD 2,000 per year.Annual compensation review.Performance-driven annual bonus or commission in addition to base compensation.Recognition and rewards programs.Annual holiday leave.Maternity and paternity leave.Employee Assistance Program.Opportunities to travel to new locations and meet colleagues globally.Priority Pass access and travel upgrades for eligible long-haul company events.Compensation considers geographical location, experience, and performance, with benefits adapted to local needs.How Jobgether WorksWe use an AI-powered matching process to ensure your application is reviewed quickly, objectively, and fairly against the role's core requirements. Our system identifies the top-fitting candidates, and this shortlist is then shared directly with the hiring company. The final decision and next steps (interviews, assessments) are managed by their internal team.We appreciate your interest and wish you the best! Why Apply Through Jobgether?Data Privacy Notice: By submitting your application, you acknowledge that Jobgether will process your personal data to evaluate your candidacy and share relevant information with the hiring employer. This processing is based on legitimate interest and pre-contractual measures under applicable data protection laws (including GDPR). You may exercise your rights (access, rectification, erasure, objection) at any time.We may use artificial intelligence (AI) tools to support parts of the hiring process, such as reviewing applications, analyzing resumes, or assessing responses and identifying potential inconsistencies or verification signals in application materials based on available information. These tools assist our recruitment team but do not replace human judgment. Final hiring decisions are ultimately made by humans. If you would like more information about how your data is processed, please contact us.",
+        "sha256": "68619ea147febae1ceac053982932d874d8f7e40e6e0d3ffd5b838af7e67776a",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
