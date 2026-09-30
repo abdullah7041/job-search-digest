@@ -980,5 +980,26 @@
 "tailor_failed": 0,
 "tailored": 0,
 "undated": 2
+},
+{
+"avg_score": 13.8,
+"below_floor": 7,
+"competitive": 0,
+"cooling": 0,
+"date": "2026-09-30",
+"deferred": 0,
+"delivered": 1,
+"dropped_stale": 12,
+"fetched": 706,
+"link_closed": 0,
+"link_unknown": 1,
+"matched": 73,
+"new": 8,
+"relisted": 0,
+"review": 0,
+"strong": 1,
+"tailor_failed": 0,
+"tailored": 0,
+"undated": 0
 }
 ]

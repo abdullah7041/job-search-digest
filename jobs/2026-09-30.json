@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-30",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "workable:6015554",
+      "captured_at": "2026-09-30T00:00:00Z",
+      "source": "workable",
+      "source_id": "6015554",
+      "title": "AI Engineer",
+      "company": "Foodics",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/foodics/j/9BDF0B39E6/",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 85,
+      "why": "Strong alignment on LLM application engineering, evaluation harnesses, and full-stack backend tooling in Riyadh.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Demonstrated LLM evaluation, guardrails, orchestration, and API backend integrat"
+        },
+        "experience": {
+          "score": 22,
+          "max": 30,
+          "note": "Built full-lifecycle LLM products, though software track started in 2025."
+        },
+        "education": {
+          "score": 11,
+          "max": 15,
+          "note": "No formal degree stated as a hard minimum barrier."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Matches Riyadh location and IC engineering scope cleanly."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-09-29T00:00:00.000Z",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Who Are We❓\nWe Are Foodics! a leading restaurant management ecosystem and payment tech provider. Founded in 2014 with headquarters in Riyadh and offices across 5 countries, including UAE, Egypt, Jordan and Kuwait. We are currently serving customers and partners in over 35 different countries worldwide. Our innovative products have successfully processed over 6 billion (yes, billion with a B) orders so far! making Foodics one of the most rapidly evolving SaaS companies to ever emerge from the MENA region. Also, Foodics has achieved three rounds of funding, with the latest raising $170 million in the largest SaaS funding round in MENA, boosting its innovation capabilities to better serve business owners.\nThe Job in a Nutshell💡\nYou will construct agentic AI architecture, leveraging large language models to orchestrate planning, execution, and tool interactions with minimal supervision. Working within a compact engineering team, you will build the core foundational infrastructure, spanning microservices, integration protocols, state management, tracing, and eval harnesses, ensuring systems are production-ready, reliable, and scalable.\nThis hands-on backend software engineering position focuses primarily on coding, testing, and system diagnostics. While prompt design is incorporated into the workflow, complex architectural challenges reside within the underlying infrastructure.\nWe welcome applicants across diverse seniority levels. Given that production-grade agentic engineering remains an emerging discipline, candidates bring varied expertise; candidate capability determines final level placement. Opportunities exist for early-career developers through veteran software architects.\nEngineering excellence remains mandatory across all levels. Junior engineers pair directly with senior mentors to own production components within three months, while senior engineers drive technical standards and architectural vision.\nWhat You Will Do ❓\nArchitect and maintain agent infrastructure, including orchestration logic, session handling, state management, and reliable backend service interfaces.\nDesign robust tool integrations and MCP servers featuring precise boundary definitions and comprehensive error recovery handlers.\nImplement end-to-end tracing and observability for model calls, retrieval, and tool executions adhering to OpenTelemetry GenAI standards.\nConstruct evaluation suites, benchmarks, and regression tests to validate model iterations and systematically capture production edge cases.\nPerform deep-dive root cause analysis on runtime failures, loops, context degradation, or hallucinated outputs to strengthen system resiliency.\nEnforce runtime guardrails, cost thresholds, RBAC permissions, output validation schemas, and human-in-the-loop validation triggers.\nMonitor industry advancements, emerging AI research, and architectural patterns, sharing technical insights across the engineering organization.\nWhat Are We Looking For❓\nEssential\nDeep software engineering expertise in a modern programming language, prioritizing algorithmic depth over superficial multi-language breadth.\nStrong computer science foundations in data structures, algorithms, memory allocation, and concurrent execution patterns.\nPractical experience with backend infrastructure: REST/gRPC APIs, relational/non-relational databases, caching tiers, message queues, and distributed systems resilience.\nProficiency with Git, automated testing frameworks, CI/CD pipelines, and writing clean, maintainable software.\nComprehensive mental model of LLM mechanics: context window constraints, tokenization, function calling protocols, non-deterministic behaviors, and hallucination management.\nDemonstrated history of delivering full-lifecycle technical projects across production environments, academic work, open source, or side initiatives.\nMethodical debugging skills with the ability to articulate systematic troubleshooting methodologies.\nStrong technical documentation and written communication skills to articulate complex distributed system behaviors.\nExpectations by Seniority Level\nCore requirements apply universally, with ownership and operational scale adjusting based on candidate seniority.\nEarly Career: Focuses on technical foundations, algorithmic problem-solving, and curiosity. Prior agentic experience is not required; mentorship is provided to expand scope over well-defined modules.\nMid-Level: Owns sub-systems end-to-end, translates ambiguous requirements into robust architecture, and demonstrates a proven track record of shipping and maintaining production services.\nSenior Level: Drives strategic architectural direction, possesses hands-on experience scaling non-deterministic systems, elevates team-wide engineering practices, and actively challenges technical assumptions.\nNice to Have\nHands-on experience developing application prototypes integrated with LLM APIs.\nFamiliarity with Model Context Protocol (MCP) or custom tool integrations.\nUnderstanding of vector database indexing, embedding generation, and retrieval pipelines (RAG).\nExperience with cloud infrastructure (AWS preferred), containerization (Docker/Kubernetes), telemetry, or IaC tooling.\nKnowledge of GenAI security paradigms, prompt injection mitigation, and threat modeling.\nActive open-source contributions or community engagement.\nOut of Scope\nExtensive experience with specific agent frameworks, given the nascent nature of the ecosystem.\nAcademic AI research background, specialized ML degrees, or mathematical derivation of backpropagation.\nDeep expertise in base model training or fine-tuning workflows.\nFlawless portfolio presentations; emphasis is placed on technical depth and problem-solving reasoning.\nStrictly conventional career trajectories; non-traditional and self-taught engineering backgrounds are evaluated equally.\nTechnical Standards & Architecture\nOur engineering environment adheres to industry standards and operational frameworks, with continuous learning embedded int",
+        "sha256": "8989688304fee4d67819858fe0b810e78a68ecd68a552d06a85fbdcbc48193c0",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
