@@ -5,14 +5,14 @@
 "reset_at": 1791393430.7651532
 },
 "indeed": {
-"observed_at": 1790763039.823487,
-"requests_remaining": 21,
-"reset_at": 1791406071.8234878
+"observed_at": 1790851111.9882445,
+"requests_remaining": 20,
+"reset_at": 1791406071.9882452
 },
 "jsearch": {
-"observed_at": 1790763037.3858984,
-"requests_remaining": 196,
-"reset_at": 1793185796.385899
+"observed_at": 1790851110.907716,
+"requests_remaining": 194,
+"reset_at": 1793185796.9077165
 },
 "linkedin_api": {
 "jobs_remaining": 50,

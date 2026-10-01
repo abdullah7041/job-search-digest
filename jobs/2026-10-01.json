@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-01",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_Qnl0UG5iMUM5WnVVTDJLWUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURGRCUms1WWRERm9ObkpYUjBWU2VqTjZUbGx2WVcxaU9EUkZWblpQVm1FNU1FNWlkVjlCT0U5VlQyUTBZbVJhVXpoRU1qUXlZMWhpVjJocFYzZFlVakZ2TUZBM2NXMUVOM2R4TkZwMVNIbG9aSEp0WDNZMFNGa3RVREpZYWxCRU5HSllOMjVGZDBwck9HVjZRa0ZWTm5WdllqWldSR3hYYlc1d2J6Z3hOek50V1ZSek5tZ1NGMGw2YVMxaGRFTTFSWEpIUzNWeU9GQjFaVmhqTkVGM0dpSkJSSE55T1daVE1WbGFVakprWkV4Qk9XeHBRVmh3TTJKeGJGODVOV0pFYzJoMw",
+      "captured_at": "2026-10-01T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_Qnl0UG5iMUM5WnVVTDJLWUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURGRCUms1WWRERm9ObkpYUjBWU2VqTjZUbGx2WVcxaU9EUkZWblpQVm1FNU1FNWlkVjlCT0U5VlQyUTBZbVJhVXpoRU1qUXlZMWhpVjJocFYzZFlVakZ2TUZBM2NXMUVOM2R4TkZwMVNIbG9aSEp0WDNZMFNGa3RVREpZYWxCRU5HSllOMjVGZDBwck9HVjZRa0ZWTm5WdllqWldSR3hYYlc1d2J6Z3hOek50V1ZSek5tZ1NGMGw2YVMxaGRFTTFSWEpIUzNWeU9GQjFaVmhqTkVGM0dpSkJSSE55T1daVE1WbGFVakprWkV4Qk9XeHBRVmh3TTJKeGJGODVOV0pFYzJoMw",
+      "title": "Digital transformation & Data Engineer",
+      "company": "Schneider Electric",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://jobxdubai.com/jobs/li-4471366673-digital-transformation-data-engineer",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 52,
+      "why": "Strong analytics, SQL, Python, and Power BI match, but hard Bachelor's requirement missing.",
+      "ranking_verified": true,
+      "track": "Data and analytics",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Strong match on SQL, Python, APIs, and Power BI dashboards."
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Has commercial analytics and data modeling since 2020; lacks enterprise ETL."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandates Bachelor's degree in Computer Science, IT, Engineering, or Data Science"
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Located in Riyadh, Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree in Relevant Field"
+      ],
+      "link_status": "unknown",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "captured",
+        "text": "Purpose\n\nDrive digital transformation by building data solutions, automating processes, and delivering insights, beside leading the data digital tools She/He will be responsible for enhancing the existed data accuracy and build the right procedures for the new data streaming in the way that improve business performance.\n\nIdeal Candidate\n\nSomeone who can combine: Business Understanding + Data Engineering + Analytics + Automation + AI\n\nKey Responsibilities\n\n• Design and support digital transformation Initiative in her/his area of responsibilities.\n\n• Build and maintain data pipelines and integrations.\n\n• Connect data from ERP, CRM, eCommerce, APIs, and other systems.\n\n• Develop datasets, dashboards, and KPIs using Power BI or through the existed reporting platforms.\n\n• Improve data quality, governance, and accessibility.\n\n• Identify automation opportunities and implement solutions.\n\n• Support AI expansion initiatives.\n\n• Collaborate with the different teams to translate requirements into solutions. Collaborate with Regional and Global teams to reflect and localize the data and digital transformation strategy.\n\nRequirements\n\n• Bachelor's degree in Computer Science, IT, Engineering, Data Science, or related field.\n\n• 2-4 years of experience in Data Engineering, Analytics, Digital Transformation or Systems Integration.\n\n• Strong SQL and database knowledge.\n\n• Knowledge with Python and APIs.\n\n• Experience with Power BI or similar BI tools.\n\n• Knowledge of cloud platforms (Azure, AWS, GCP).\n\n• Strong problem-solving and communication skills. English is a must\n\nRewards designed for you\n\nOur Total Rewards is our way of saying: We see you and we value you. It’s more than just pay and benefits—it’s a meaningful investment in you. It is designed to help you perform, grow, feel safe, and elevate your potential. The package helps you care for yourself and your family, plan your future, grow your skills and career, collaborate in an inclusive workplace, and contribute to your community. At Schneider Electric, we’re here for what matters most to you. Discover more at our Career Page.\n\n• Country-specific programs and initiatives may be available.\n\nLooking to make an IMPACT with your career?\n\nWhen you are thinking about joining a new team, culture matters. At Schneider Electric, our values and behaviors are the foundation for creating a great culture to support business success. We believe that our IMPACT values – Inclusion, Mastery, Purpose, Action, Curiosity, Teamwork – starts with us.\n\nIMPACT is also your invitation to join Schneider Electric where you can contribute to turning sustainability ambition into actions, no matter what role you play. It is a call to connect your career with the ambition of achieving a more resilient, efficient, and sustainable world.\n\nWe are looking for IMPACT Makers; exceptional people who turn sustainability ambitions into actions at the intersection of automation, electrification, and digitization. We celebrate IMPACT Makers and believe everyone has the potential to be one.\n\nBecome an IMPACT Maker with Schneider Electric – apply today!\n\n€40 billion global revenue\n\n+9% organic growth\n\n150 000+ employees in 100+ countries\n\nYou must submit an online application to be considered for any position with us. This position will be posted until filled.\n\nSchneider Electric aspires to be the most inclusive and caring company in the world, by providing equitable opportunities to everyone, everywhere, and ensuring all employees feel uniquely valued and safe to contribute their best. We mirror the diversity of the communities in which we operate, and ‘inclusion’ is one of our core values. We believe our differences make us stronger as a company and as individuals and we are committed to championing inclusivity in everything we do.\n\nAt Schneider Electric, we uphold the highest standards of ethics and compliance, and we believe that trust is a foundational value. Our Trust Charter is our Code of Conduct and demonstrates our commitment to ethics, safety, sustainability, quality and cybersecurity, underpinning every aspect of our business and our willingness to behave and respond respectfully and in good faith to all our stakeholders. You can find out more about our Trust Charter here\n\nSchneider Electric is an Equal Opportunity Employer. It is our policy to provide equal employment and advancement opportunities in the areas of recruiting, hiring, training, transferring, and promoting all qualified individuals regardless of race, religion, color, gender, disability, national origin, ancestry, age, military status, sexual orientation, marital status, or any other legally protected characteristic or conduct.\n\nShow more\n\nShow less",
+        "sha256": "c6f4e48a8d6267bc5cefd72942fb4e4b301bd31969614151aecb3cfe8f108993",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
