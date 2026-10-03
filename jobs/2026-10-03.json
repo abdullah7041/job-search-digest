@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-03",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9YjI5Y2Y2MmRhNDU3NjNiMDtjYz1zYQ==",
+      "captured_at": "2026-10-03T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9YjI5Y2Y2MmRhNDU3NjNiMDtjYz1zYQ==",
+      "title": "Senior Full-Stack Engineer - AI",
+      "company": "SoftwareOne",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://careers.softwareone.com/jobs/31010/job?utm_source=indeed_integration&iis=Job%20Board&iisn=Indeed&indeed-apply-token=73a2d2b2a8d6d5c0a62696875eaebd669103652d3f0c2cd5445d3e66b1592b0f",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Strong match for full-stack LLM/API integration, PostgreSQL/Redis, and SSE in Riyadh. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 35,
+          "max": 40,
+          "note": "Matches PostgreSQL, Redis, REST APIs, SSE, and LLM application integration."
+        },
+        "experience": {
+          "score": 23,
+          "max": 30,
+          "note": "Demonstrated full-stack AI delivery; OpenShift/Kubernetes enterprise containeriz"
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No mandatory degree specified in hard requirements."
+        },
+        "seniority_location": {
+          "score": 13,
+          "max": 15,
+          "note": "Hybrid role based in Riyadh, Saudi Arabia; bilingual Arabic/English."
+        }
+      },
+      "ceiling": "mid",
+      "blockers": [
+        "Lack of Extensive Enterprise Full-Stack Engineering Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-02",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Job Function: Services The role:\nAre you an experienced Full-Stack Engineer who enjoys building secure, scalable backend solutions and integrating modern AI capabilities into enterprise applications?\nDo you thrive in collaborative environments where you can work with real-time data, cloud-native technologies, and cross-functional teams to deliver reliable, business-critical solutions?\nReady to grow your career with a global AI and cloud leader, working on innovative technologies that make a real impact across industries and markets?\n\nPractical Information\n\nLocation: Riyadh, Saudi Arabia | Work Arrangement: Hybrid | Reports to: Service Line Delivery Lead | Contract type: Full-time | Visa Requirements: Valid Visa for KSA | Language Requirements: Fluent/professional English, written and verbal, Arabic is a strong plus\n\nWe are looking for a Senior Full-Stack Engineer with strong expertise in backend development, systems integration, and application deployment to help build and enhance enterprise AI-enabled solutions within a secure industrial environment. In this role, you will focus on developing robust backend services and APIs, enabling real-time data integration, ensuring application reliability, and supporting containerized deployments and production readiness. The ideal candidate is comfortable working with modern web architectures, enterprise integrations, AI/ML services, and container platforms such as OpenShift and Kubernetes.\n\nKey Responsibilities\n\nDesign, develop, and maintain secure backend services and APIs for enterprise web applications\nBuild and enhance application services for reporting, dashboards, notifications, user workflows, administrative functions, and AI-enabled capabilities\nIntegrate applications with enterprise data sources, operational platforms, document repositories, notification services, and existing backend systems\nDevelop and support real-time or near-real-time data flows using APIs, WebSockets, Server-Sent Events, message queues, and similar integration patterns\nCollaborate with AI and data teams to integrate model outputs, analytics services, RAG/LLM capabilities, and monitoring components into application workflows\nSupport containerized deployments using Docker and OpenShift/Kubernetes, leveraging Bitbucket/Git, CI/CD pipelines, release management, environment configuration, and deployment validation\nEnsure application reliability, security, and operational readiness through troubleshooting, logging, monitoring, performance optimization, patch releases, secure coding practices, testing, documentation, and close collaboration with architects, frontend engineers, DevOps, cybersecurity teams, and business stakeholders\n\nWhat we need to see from you:\nExtensive experience in full-stack or backend-focused enterprise application development, with strong expertise in designing and building scalable backend services using technologies such as Node.js, Java/Spring Boot, Python/FastAPI/Django, or similar frameworks\nStrong experience designing, developing, and documenting RESTful APIs, including secure API design, authentication, authorization, role-based access control, and enterprise integration patterns\nHands-on experience with relational and NoSQL databases, including PostgreSQL, MongoDB, Redis, TimescaleDB, or similar technologies\nExperience deploying and operating applications in containerized environments using Docker and OpenShift/Kubernetes, supported by a solid understanding of CI/CD pipelines, Git/Bitbucket workflows, code reviews, branching strategies, and release processes\nProven ability to troubleshoot production issues, performance bottlenecks, integration failures, and application reliability challenges in complex enterprise environments\nStrong understanding of application security, vulnerability remediation, and secure software development practices\nAbility to work effectively in structured enterprise environments, following established processes for documentation, testing, quality assurance, and formal acceptance procedures\n\nWhat we offer\n\nOur company benefits vary based on your location, but always include:\n\nGlobal company culture: We defined our 6 core values through our company culture (https://www.softwareone.com/en/our-story/our-values)\nA mentor who supports your successful start and is at your side with advice and action\nPresident’s Club: Recognition awarded by leadership and your peers\nLifelong education: A variety of training and development opportunities\nHire to Grow: We optimize our internal structures and feedback culture constantly to be your Employer of Choice, today and in future\n\nWhy SoftwareOne?:\n\nSoftwareOne is a global provider of software and cloud solutions. With a presence in over 70 countries and more than 12,000 professionals, we help organizations optimize software investments, modernize applications, and unlock the value of cloud, data, and AI.\n\nOur people are at the core of everything we do. We enable collaboration across borders, continuous learning, and opportunities to grow in a fast-evolving technology landscape. Whether your focus is on technology, customer success, or business operations, your ideas matter, and your contributions make a difference.\n\nJoin a global team where you can build your skills, work with leading technologies, and make a real impact for our customers.\n\nAccommodations:\nSoftwareOne welcomes applicants from all backgrounds and abilities to apply. If you require reasonable adjustments at any point during the recruitment process, email us at reasonable.accommodations@softwareone.com.\nPlease include the role for which you are applying and your country location. Someone from our organization that is not part of the decision-making process will be in touch to discuss your specific needs and we will make every effort to accommodate you. Any information shared will be stored securely and treated in the strictest of confidence in line with GDPR.\n\nAt SoftwareOne, we are committed to providing an environment o",
+        "sha256": "737d59243b1b3077bebfab264332fe0620f9d9e60768ff45f13fa8649abac936",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_SlpxV3pvNDUyWUxjaWxkbUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbTlITFVOTmJ6aFhRVEowTFVoelV6RlJWbVp0V2pkcFRtRlRTVVpQTmpScFJUWnBUSEpJZVVkc1dFcEJiMEYyWVZOWU1reFRWalJWT1VkVlpWTmpkak5LVTBkalVXdzJSVEYzTjBWdmRHcE5kMjlvYjBaQ09HbDRZemx4VVV4V1oxWldRV3N5Wlc0eWJXVjJhRGxpUkhsTmRqQkxZblpFU2kxTVlWUkpVM0JhYlVSeFR6Y1NGMVZ6ZWtGaGMwODFUVFZmU1hkT05GQXdXazlvTWxFd0dpSkJSSE55T1daU04waFpVRVJSWTIwdFpXMDBUVkp1WW5sUVNWWXRlV2gxT0hkMw",
+      "captured_at": "2026-10-03T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_SlpxV3pvNDUyWUxjaWxkbUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbTlITFVOTmJ6aFhRVEowTFVoelV6RlJWbVp0V2pkcFRtRlRTVVpQTmpScFJUWnBUSEpJZVVkc1dFcEJiMEYyWVZOWU1reFRWalJWT1VkVlpWTmpkak5LVTBkalVXdzJSVEYzTjBWdmRHcE5kMjlvYjBaQ09HbDRZemx4VVV4V1oxWldRV3N5Wlc0eWJXVjJhRGxpUkhsTmRqQkxZblpFU2kxTVlWUkpVM0JhYlVSeFR6Y1NGMVZ6ZWtGaGMwODFUVFZmU1hkT05GQXdXazlvTWxFd0dpSkJSSE55T1daU04waFpVRVJSWTIwdFpXMDBUVkp1WW5sUVNWWXRlV2gxT0hkMw",
+      "title": "Experienced Software Engineer",
+      "company": "Jobgether",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://jobs.kss.sa/job/experienced-software-engineer-6abb53ede59b5",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 67,
+      "why": "Decent software fit with no degree barrier, but requires proven multi-year engineering track record.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Strong in TypeScript, Python, and CI/CD; lacks PHP background."
+        },
+        "experience": {
+          "score": 17,
+          "max": 30,
+          "note": "Candidate's core software engineering starts in 2025 alongside automation projec"
+        },
+        "education": {
+          "score": 15,
+          "max": 15,
+          "note": "No degree required; prioritizes demonstrated engineering capability."
+        },
+        "seniority_location": {
+          "score": 5,
+          "max": 15,
+          "note": "Incomplete listing located in Riyadh, Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Limited Proven Professional Software Engineering Experience",
+        "Lack of Demonstrated Large-Scale Distributed Systems Experience"
+      ],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "incomplete",
+        "text": "This position is listed on behalf of a partner company, who manages all applications and next steps. Our partner is looking for an Experienced Software Engineer based in Saudi Arabia.This is an opportunity for an experienced software engineer to contribute to a global, distributed product ecosystem built around open-source technology and the open web. You’ll work across products and platforms used by a large, diverse user base, with opportunities to solve complex technical challenges at scale. The role combines hands-on engineering with thoughtful system design, debugging, performance optimization, and collaboration. You’ll work with modern development practices, including continuous integration, frequent deployments, and peer code review. AI is increasingly integrated into both product development and engineering workflows. The environment emphasizes autonomy, flexibility, learning, open-source contribution, and collaboration across international teams.AccountabilitiesDesign, build, improve, and maintain software across a diverse product ecosystem, contributing to products such as publishing, e-commerce, content management, and communication platforms. Develop reliable, scalable solutions while considering performance, maintainability, abstraction costs, and the needs of a large and diverse user base. Participate throughout the engineering lifecycle, from understanding problems and designing solutions through implementation, testing, code review, deployment, and ongoing improvement. Diagnose and resolve complex technical issues, approaching debugging systematically and understanding the layers of technology surrounding the systems you work on. Collaborate with globally distributed engineering teams through written communication, code reviews, technical discussions, and shared development practices. Contribute to open-source projects and engineering practices that encourage transparency, reuse, and community participation. Apply AI-assisted development tools and workflows where appropriate to improve engineering productivity and product development. Continuously learn, experiment, and adapt across programming languages, frameworks, architectures, and technical paradigms. RequirementsProven professional experience as a software engineer, with a track record of delivering production-quality software. Experience working with multiple programming languages, frameworks, and programming paradigms; familiarity with PHP and JavaScript is valuable, while the ability and willingness to become proficient in new technologies is important. Experience working at scale, whether through backend systems, performance engineering, distributed systems, or products serving a large and diverse user base. Strong understanding of software architecture, abstraction, system behavior, and the trade-offs between technical complexity and business or user value. Strong debugging and problem-solving abilities, with an interest in investigating complex technical challenges rather than simply addressing surface-level symptoms. High standards for code quality, maintainability, reliability, and attention to detail. Ability to work effectively in a fully distributed environment, collaborating asynchronously across teams, time zones, and communication channels. Comfortable participating in peer code review, continuous integration, frequent deployments, and iterative product development. Strong written and verbal communication skills, with the ability to explain technical decisions and collaborate constructively with colleagues. Willingness and ability to travel approximately 3–4 weeks per year for in-person team meetups. A degree is not specified as a mandatory requirement; demonstrated engineering experience and technical capability are central to the role. BenefitsFully remote work with a globally distributed team. Flexible work arrangements designed to allow employees to work when they are most productive. Open vacation policy. Competitive base salary with a stated global range of $70,000–$170,000 USD, paid in local currency; actual compensation may vary based on experience, skills, contribution, and location. Benefits packages that vary by country. Support for professional development, including coaching, learning opportunities, and covered work-related expenses. Opportunities for internal mobility across products and teams. Opportunities to contribute to open-source projects and work on widely used web products. Regular in-person team meetups, with travel expected approximately 3–4 weeks per year. Inclusive and collaborative working environment spanning more than 70 countries. How Jobgether WorksWe use an AI-powered matching process to ensure your application is reviewed quickly, objectively, and fairly against the role's core requirements. Our system identifies the top-fitting candidates, and this shortlist is then shared directly with the hiring company. The final decision and next steps (interviews, assessments) are managed by their internal team.We appreciate your interest and wish you the best! Why Apply Through Jobgether?Data Privacy Notice: By submitting your application, you acknowledge that Jobgether will process your personal data to evaluate your candidacy and share relevant information with the hiring employer. This processing is based on legitimate interest and pre-contractual measures under applicable data protection laws (including GDPR). You may exercise your rights (access, rectification, erasure, objection) at any time.We may use artificial intelligence (AI) tools to support parts of the hiring process, such as reviewing applications, analyzing resumes, or assessing responses and identifying potential inconsistencies or verification signals in application materials based on available information. These tools assist our recruitment team but do not replace human judgment. Final hiring decisions are ultimately made by humans. If you would like more information about how your data is processed, please con",
+        "sha256": "d04dac1c8c867dfa66c59ca948d79a5f22635d75ba986ee4c44eadf52a576af6",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_VnpOMlQzclV2TXctamJwX0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbUpUTUV4WldUWjBiRTR4ZW1aS04xOXpRV2xyTjFGMVJVdE1OVTFxV0d4S1J6VlpSRFUxU3pGSVUzTjVNMnBRTWs1b0xUZ3RRbUZuTVZoWFdtTmZhRTVTWjFOSFRFWmFhM0Z0UjBkaldHVmpRa2RXY1ZSMU5GQnlZMUJRTW1RMFluQjVaM05zZHpNMVRVOVVWbEZzZFhSVFVHRmhiMjltZDFoUmJrRnJjR2xxTVVsMFRFOFNGMWRqZWtGaGMyWmhTbG95UWpWUFRWQTRPVFpJWjFGbkdpSkJSSE55T1daU2NFUnZTbGhOUTJ0TFZFeHFUa2RXWms5TGEwbGtZbFpFTTJkMw",
+      "captured_at": "2026-10-03T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_VnpOMlQzclV2TXctamJwX0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTbUpUTUV4WldUWjBiRTR4ZW1aS04xOXpRV2xyTjFGMVJVdE1OVTFxV0d4S1J6VlpSRFUxU3pGSVUzTjVNMnBRTWs1b0xUZ3RRbUZuTVZoWFdtTmZhRTVTWjFOSFRFWmFhM0Z0UjBkaldHVmpRa2RXY1ZSMU5GQnlZMUJRTW1RMFluQjVaM05zZHpNMVRVOVVWbEZzZFhSVFVHRmhiMjltZDFoUmJrRnJjR2xxTVVsMFRFOFNGMWRqZWtGaGMyWmhTbG95UWpWUFRWQTRPVFpJWjFGbkdpSkJSSE55T1daU2NFUnZTbGhOUTJ0TFZFeHFUa2RXWms5TGEwbGtZbFpFTTJkMw",
+      "title": "Senior Engineer - AI Delivery",
+      "company": "شركة علم",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-engineer-ai-delivery-at-elm-company-4471920095",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong LLM delivery and evaluation fit, but requires a mandatory Bachelor's degree and MLOps. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 32,
+          "max": 40,
+          "note": "Demonstrates LLM APIs, evaluation pipelines, drift monitoring, and CI/CD; lacks "
+        },
+        "experience": {
+          "score": 21,
+          "max": 30,
+          "note": "Demonstrated AI product deployments; lighter on enterprise ML infrastructure man"
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandatory Bachelor's degree in CS/SE/AI is a real gap."
+        },
+        "seniority_location": {
+          "score": 5,
+          "max": 15,
+          "note": "Incomplete listing located in Riyadh, Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree in Relevant Field"
+      ],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "incomplete",
+        "text": "Overview\n\nJob Description\n\nJob Title\n\nSenior Engineer\n\nJob Code\n\n476244\n\nGrade\n\nI2\n\nGroup\n\nDivision\n\nResearch & AI\n\nDepartment\n\nApplied Research\n\nUnit\n\nDelivery\n\nROLE PURPOSE\n\nThe aim is to state the overall significance of the job from the organization’s perspective.\n\nThe role exists to support the transition of AI solutions from research and development into production by deploying and integrating AI models, monitoring their performance, and optimizing the required resources to ensure reliability, scalability, and operational efficiency. The role collaborates with Engineering, Evaluation, Infrastructure, and ODC teams to deliver secure, stable, and policy-compliant AI solutions.\n\nKey Accountabilities & Activities\n\nThis section describes the principal outputs required from the job.\n\nKey Accountabilities\n\nKey Activities\n\n• AI Model Deployment & Operations\n• Deploy ML and LLM models into production environments using containers and/or cloud services in line with approved technical requirements.\n• Configure deployment parameters, autoscaling, and runtime settings to support stable and scalable AI services.\n• Monitor production deployments and support resolution of operational issues affecting model availability and performance.\n• AI Performance & Resource Optimization\n• Monitor and optimize AI model performance, latency, error rates, resource utilization, and associated infrastructure costs.\n• Implement appropriate optimization techniques such as caching, pruning, quantization, resource quotas, and cost tuning.\n• Configure dashboards and alerts to provide visibility into model health, resource consumption, and output quality.\n• AI Solution Engineering & Integration\n• Develop AI solutions based on models and capabilities produced by GenAI and research teams.\n• Build service layers and APIs around AI models and package solutions for deployment using appropriate engineering frameworks.\n• Integrate AI solutions with required data sources, identity services, logging capabilities, and enterprise systems in line with Elm standards.\n• Model Lifecycle & Release Management\n• Support model lifecycle management through model registries, versioning, controlled releases, and safe rollback mechanisms.\n• Develop and maintain unit and integration tests to support reliable solution releases.\n• Establish and maintain CI/CD pipelines to automate testing, deployment, and release activities for AI solutions.\n• AI Evaluation & Validation\n• Conduct automated and human-in-the-loop assessments to evaluate AI model accuracy, reliability, and output quality against agreed metrics.\n• Monitor data and concept drift and support identification of model retraining or improvement requirements.\n• Prepare evaluation results highlighting identified risks, limitations, performance gaps, and recommended actions.\n• AI Infrastructure & Production Readiness\n• Coordinate with infrastructure teams to provision required GPU/CPU, storage, networking, and cloud resources for AI workloads.\n• Support the setup and integration of enabling technologies such as vector databases, feature stores, and model or prompt registries.\n• Support backup, recovery, resilience, and production-readiness requirements for deployed AI solutions.\n• Technical Delivery & ODC Collaboration\n• Coordinate with ODC teams on development, testing, and technical delivery activities in accordance with agreed delivery and quality requirements.\n• Review code, technical artifacts, and deliverables received from ODC teams to verify alignment with Elm’s technical and security standards.\n• Support consistent engineering practices, templates, and technical documentation across delivery teams and centers.\n• Technical Documentation & Knowledge Transfer\n• Develop and maintain technical documentation, deployment guides, runbooks, configurations, and operational procedures for AI solutions.\n• Document solution architecture, dependencies, configurations, and known operational considerations to support maintainability and continuity.\n• Support knowledge transfer to relevant engineering, infrastructure, and operational teams to enable effective solution support.\n• Policies, Processes & Procedures\n• Follow all relevant departmental policies, processes, standard operating procedures, and instructions so that work is carried out in a controlled and consistent manner.\n• Comply with all relevant safety, quality, and environmental management policies, procedures, and controls to ensure a healthy and safe work environment.\n• Information Security\n• Comply with all relevant information security practices and standards to ensure data integrity and confidentiality.\n\nJOB SPECIFICATIONS\n\nAcademic And Professional Qualifications\n\n• Bachelor’s degree in Computer Science, Software Engineering, Artificial Intelligence, Data Science, Computer Engineering, or a related field.\n• Professional certifications in Cloud Computing, MLOps, DevOps, Artificial Intelligence, or Machine Learning are considered an advantage.\n\nYears And Nature Of Experience\n\n• 2–4 years of relevant experience in AI/ML engineering, MLOps, software engineering, AI solution deployment, or related fields.",
+        "sha256": "0a261f672296f5cf032b43e873b02c58710dd57ae6b98f1d81b74aaa06a5001c",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    }
+  ]
+}
