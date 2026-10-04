@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-04",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_RVlIZDRxNTA3MDZaOU8tV0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURmhhTWpWMGIyWTViMVYwZUV0eFJXUjJWMjR0YTI4M2EwMU9aR1owT0V0QlEyZFhiSE40VjFwUFpsaG5OR3BITlVsSGNHOHhVM2x4V0RsU1FtcHZUbkF0T1Y5dk9WZFZabEJYU2toek4zUlhUbWt4TTBJeU5WbENkMDk1UkRGalVFSXRVMEowVm1KTVdEQmxORU5uVEhSa2VERk1URlY2ZUZZemJXUk1iV3htUmxWV2QxSVNGMmxwYWtOaGIzVjZURGxMUnpRdFJWQnBTa2hvTmtGUkdpSkJSSE55T1daVWVWZEliVXBLZW1KTWVHVm9VRW8xTlRoWE0wazBjVXN3Y25CQg",
+      "captured_at": "2026-10-04T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_RVlIZDRxNTA3MDZaOU8tV0FBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBURmhhTWpWMGIyWTViMVYwZUV0eFJXUjJWMjR0YTI4M2EwMU9aR1owT0V0QlEyZFhiSE40VjFwUFpsaG5OR3BITlVsSGNHOHhVM2x4V0RsU1FtcHZUbkF0T1Y5dk9WZFZabEJYU2toek4zUlhUbWt4TTBJeU5WbENkMDk1UkRGalVFSXRVMEowVm1KTVdEQmxORU5uVEhSa2VERk1URlY2ZUZZemJXUk1iV3htUmxWV2QxSVNGMmxwYWtOaGIzVjZURGxMUnpRdFJWQnBTa2hvTmtGUkdpSkJSSE55T1daVWVWZEliVXBLZW1KTWVHVm9VRW8xTlRoWE0wazBjVXN3Y25CQg",
+      "title": "Software Engineer - Open Source Contributions - Remote",
+      "company": "YO AI Labs",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/software-engineer-open-source-contributions-remote-at-yo-ai-labs-4471072654",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 68,
+      "why": "Strong Python/TypeScript skills match open-source SWE tasks, but lacks required multi-language (C++, Rust) background.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Demonstrates Python and TypeScript, but lacks Java, Rust, or C++."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "Solid software feature implementation and bug fixing evidence."
+        },
+        "education": {
+          "score": 15,
+          "max": 15,
+          "note": "No degree requirement stated."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Remote role matching Saudi Arabia location."
+        }
+      },
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "captured",
+        "text": "Software Engineer — Open Source Contributions\n\nRole Type: Contractor\n\nLocation: Remote\n\nSeeking experienced Software Engineers to contribute to open-source development projects supporting AI training. You'll work on real-world codebases involving feature development, debugging, refactoring, and performance optimization. No prior AI experience is required.\n\nKey Responsibilities\n\n• Develop and implement features in existing open-source projects.\n• Fix complex bugs and improve code reliability.\n• Refactor legacy code for better performance, scalability, and readability.\n• Apply algorithms and efficient problem-solving techniques.\n• Review and validate code against project standards.\n• Collaborate with remote contributors and document technical solutions.\n• Provide clear technical explanations of implementations.\n\nRequired Skills\n\n• Python 3\n• Java\n• Rust\n• C++\n• TypeScript\n• Algorithms & Problem Solving\n• Bug Fixing\n• Feature Implementation\n• Codebase Refactoring\n• Performance Optimization\n\nPreferred Qualifications\n\n• Strong proficiency in at least two programming languages.\n• Experience contributing to open-source projects.\n• Background in competitive programming or complex algorithmic problem solving.\n• Strong code review, documentation, and communication skills.\n• Ability to work independently in a remote environment.\n\nCompensation\n\nOutput-based: Payment is provided per completed task that meets project requirements. Minimum weekly submission requirements apply.\n\nStart Timeline\n\nRoles are typically filled within 48 hours. Selected candidates should be ready to begin within 24–48 hours after onboarding.",
+        "sha256": "e22722fc771cfbd7662d101b9518d90a5f9f92dd51353423c5b2ecf9690ddf5e",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
