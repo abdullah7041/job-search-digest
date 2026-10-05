@@ -6,7 +6,7 @@ linkedin.com/in/3binahmed | github.com/abdullah7041 | watheqai.app | abdullahfil
 
 ## SUMMARY
 
-AI Product Engineer building and deploying LLM-powered products and production automations end to end. Hands-on with evaluation pipelines, evidence-grounded output validation, AI observability, and serverless product delivery in Python and TypeScript. 6+ years in commercial operations and data analysis, with hands-on AI product engineering since 2025.
+Saudi AI Product Engineer building and deploying LLM-powered products and production automations end to end. Hands-on with evaluation pipelines, evidence-grounded output validation, AI observability, and serverless product delivery in Python and TypeScript. 6+ years in commercial operations and data analysis, with hands-on AI product engineering since 2025.
 
 ## EXPERIENCE
 

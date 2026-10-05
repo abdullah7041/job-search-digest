@@ -189,8 +189,9 @@ DEFAULT_PROFILE = {
 AGGREGATOR_QUERIES = [
     "software engineer Saudi Arabia",
     "data engineer Riyadh",
-    "machine learning engineer Saudi Arabia",
+    "LLM engineer Saudi Arabia",
     "backend engineer Saudi Arabia",
+    "AI product engineer Saudi Arabia",
 ]
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
 
@@ -1049,10 +1050,10 @@ def riyadh_ordinal(now=None):
 
 
 def fresh_api_feeds(day=None):
-    """Run the two 25-request fresh feeds together every other Riyadh day."""
+    """Stagger the two 25-request feeds; each runs every other Riyadh day."""
     if day is None:
         day = riyadh_ordinal()
-    return ("active_ats", "linkedin_api") if day % 2 == 0 else ()
+    return ("active_ats",) if day % 2 == 0 else ("linkedin_api",)
 
 
 def can_spend(feed, quota, cost=1, job_cost=0):
@@ -2764,6 +2765,20 @@ def load_stats():
     return data if isinstance(data, list) else []
 
 
+def source_yield(fetched, new=(), delivered=(), paused_feeds=(), sources=()):
+    """Attribute deduplicated fetched jobs, fresh candidates and accepted cards."""
+    counts = {feed: {"fetched": 0, "new": 0, "delivered": 0, "quota_paused": True}
+              for feed in paused_feeds}
+    for source in sources:
+        counts.setdefault(source, {"fetched": 0, "new": 0, "delivered": 0, "quota_paused": False})
+    for stage, jobs in (("fetched", fetched), ("new", new), ("delivered", delivered)):
+        for job in jobs:
+            row = counts.setdefault(job.get("source") or "unknown",
+                                    {"fetched": 0, "new": 0, "delivered": 0, "quota_paused": False})
+            row[stage] += 1
+    return counts
+
+
 def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
     """Record today's run and prune rows older than STATS_TTL_DAYS.
     avg_score is None on a no-new-jobs day (nothing was scored).
@@ -2784,6 +2799,10 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
         "new": new, "avg_score": avg_score,
     }
     row.update(metrics)
+    for source, counts in sorted(metrics.get("source_yield", {}).items()):
+        log(f"Source {source}: {counts['fetched']} fetched, {counts['new']} new, "
+            f"{counts['delivered']} delivered"
+            + ("; quota paused" if counts["quota_paused"] else ""))
     cutoff = (datetime.date.today() - datetime.timedelta(days=STATS_TTL_DAYS)).isoformat()
     pruned = [s for s in stats if s["date"] >= cutoff and s["date"] != today]
     pruned.append(row)
@@ -2940,14 +2959,17 @@ def main():
     # carries its own counter in state rather than a shared assumption.
     quotas = load_api_quotas()
     paused_feeds = []
+    attempted_sources = []
     if use_rapidapi:
+        scheduled_feeds = fresh_api_feeds()
+        attempted_sources.extend(("jsearch", *scheduled_feeds, "indeed"))
         all_jobs.extend(fetch_jsearch(rapidapi_key, paywalled,
                                       quotas.setdefault("jsearch", {}),
                                       paused_feeds=paused_feeds))
         fetchers = {"active_ats": fetch_active_ats,
                     "linkedin_api": fetch_linkedin,
                     "indeed": fetch_indeed}
-        for feed in (*fresh_api_feeds(), "indeed"):
+        for feed in (*scheduled_feeds, "indeed"):
             quota = quotas.setdefault(feed, {})
             all_jobs.extend(fetchers[feed](rapidapi_key, quota, MAX_JOB_AGE_DAYS,
                                            paused_feeds=paused_feeds))
@@ -2981,6 +3003,7 @@ def main():
                 "board(s) unread this run, least recently read first next run")
             break
         boards_read += 1
+        attempted_sources.append(c["source"])
         all_jobs.extend(fetch_company(c))
         key = board_by_pair.get((c["source"], c["token"]))
         if key:
@@ -3053,6 +3076,10 @@ def main():
         log(f"DROP older than {MAX_JOB_AGE_DAYS}d ({job['age_days']}d): "
             f"{job['company']} — {job['title']}")
     undated = sum(1 for j in fresh if j.get("age_days") is None)
+    # Keep the pre-verification candidates: subsequent filters mutate fresh.
+    # These counts mean unseen, non-cooling jobs inside the age gate, including
+    # undated postings, before link checks and ranking.
+    discovered_new = list(fresh)
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
         f"{len(relisted_copies)} relisted copies, {len(paywalled)} paywalled and refused "
         f"at the fetch, {len(stale)} older than {MAX_JOB_AGE_DAYS}d, "
@@ -3102,6 +3129,13 @@ def main():
     warnings = [drift_warning, ranker_warning]
 
     if not fresh:
+        save_stats(
+            stats, today, len(all_jobs), len(matched), 0, None,
+            link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
+            strong=0, review=0, tailored=0, tailor_failed=0,
+            delivered=0, source_yield=source_yield(all_jobs, discovered_new, paused_feeds=paused_feeds, sources=attempted_sources),
+        )
         post_heartbeat(webhook, worker_url, worker_secret, today,
                        len(all_jobs), len(matched), warnings,
                        already_seen=already_seen,
@@ -3109,12 +3143,6 @@ def main():
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
                        paused_feeds=paused_feeds)
-        save_stats(
-            stats, today, len(all_jobs), len(matched), 0, None,
-            link_closed=len(closed), link_unknown=unknown_count,
-            dropped_stale=len(stale), undated=undated,
-            strong=0, review=0, tailored=0, tailor_failed=0,
-        )
         log("No new matching jobs. Heartbeat sent.")
         return
 
@@ -3181,6 +3209,14 @@ def main():
         log(f"Cooling {job['company']} — {job['title']}: scored below the floor "
             f"within the last {FLOOR_COOLDOWN_DAYS} days")
     if not fresh:
+        save_stats(
+            stats, today, len(all_jobs), len(matched), 0, None,
+            link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
+            strong=0, competitive=0, review=0, tailored=0, tailor_failed=0,
+            delivered=0, source_yield=source_yield(all_jobs, discovered_new, paused_feeds=paused_feeds, sources=attempted_sources),
+            relisted=len(relisted), cooling=len(cooling),
+        )
         post_heartbeat(webhook, worker_url, worker_secret, today,
                        len(all_jobs), len(matched), warnings,
                        newly_found=newly_found, already_seen=already_seen,
@@ -3188,13 +3224,6 @@ def main():
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
                        paused_feeds=paused_feeds)
-        save_stats(
-            stats, today, len(all_jobs), len(matched), 0, None,
-            link_closed=len(closed), link_unknown=unknown_count,
-            dropped_stale=len(stale), undated=undated,
-            strong=0, competitive=0, review=0, tailored=0, tailor_failed=0,
-            relisted=len(relisted), cooling=len(cooling),
-        )
         # Cooling is named here because it is the one reason on this path that a
         # reader can act on: those postings are coming back, and a morning where
         # every candidate was one would otherwise read as a dead feed.
@@ -3234,6 +3263,15 @@ def main():
 
     if not fresh:
         save_seen(seen)
+        save_stats(
+            stats, today, len(all_jobs), len(matched), new_count, avg_score,
+            link_closed=len(closed), link_unknown=unknown_count,
+            dropped_stale=len(stale), undated=undated,
+            strong=0, review=0, tailored=0, tailor_failed=0,
+            delivered=0, source_yield=source_yield(all_jobs, discovered_new, paused_feeds=paused_feeds, sources=attempted_sources),
+            relisted=len(relisted), below_floor=len(below_floor),
+            cooling=len(cooling),
+        )
         post_heartbeat(webhook, worker_url, worker_secret, today,
                        len(all_jobs), len(matched), warnings,
                        newly_found=newly_found, already_seen=already_seen,
@@ -3242,14 +3280,6 @@ def main():
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
                        paused_feeds=paused_feeds)
-        save_stats(
-            stats, today, len(all_jobs), len(matched), new_count, avg_score,
-            link_closed=len(closed), link_unknown=unknown_count,
-            dropped_stale=len(stale), undated=undated,
-            strong=0, review=0, tailored=0, tailor_failed=0,
-            relisted=len(relisted), below_floor=len(below_floor),
-            cooling=len(cooling),
-        )
         log(f"All {len(below_floor)} new postings scored below {MIN_DELIVER_SCORE}. Heartbeat sent.")
         return
 
@@ -3344,6 +3374,19 @@ def main():
                 f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
             )
 
+    def record_delivery_stats(delivered_ids):
+        save_stats(
+            stats, today, len(all_jobs), len(matched), new_count, avg_score,
+            link_closed=len(closed), link_unknown=unknown_count,
+                dropped_stale=len(stale), undated=undated,
+            strong=len(strong), competitive=len(competitive), review=len(review),
+            tailored=0, tailor_failed=0,
+            delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
+            source_yield=source_yield(all_jobs, discovered_new,
+                                     [j for j in fresh if j["id"] in delivered_ids], paused_feeds, attempted_sources),
+            below_floor=len(below_floor), deferred=len(deferred),
+        )
+
     interactive_delivery_claimed = False
     delivery_failed = False
     delivered_ids = set()
@@ -3379,9 +3422,14 @@ def main():
             log(f"WARN interactive Discord delivery failed: {error}; falling back to webhook")
     if not interactive_delivery_claimed:
         if not webhook:
+            record_delivery_stats(set())
             log("FATAL interactive delivery failed and DISCORD_WEBHOOK_URL is not set")
             sys.exit(1)
-        post_discord(webhook, lines)
+        try:
+            post_discord(webhook, lines)
+        except (Exception, SystemExit):
+            record_delivery_stats(set())
+            raise
         # Reaching this line means Discord accepted every chunk: post_discord
         # exits non-zero on any status outside 200/204. The jobs are therefore
         # delivered, whichever channel carried them, and have to be remembered.
@@ -3396,15 +3444,7 @@ def main():
         if j["id"] in delivered_ids:
             remember(seen, j, today)
     save_seen(seen)
-    save_stats(
-        stats, today, len(all_jobs), len(matched), new_count, avg_score,
-        link_closed=len(closed), link_unknown=unknown_count,
-            dropped_stale=len(stale), undated=undated,
-        strong=len(strong), competitive=len(competitive), review=len(review),
-        tailored=0, tailor_failed=0,
-        delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
-        below_floor=len(below_floor), deferred=len(deferred),
-    )
+    record_delivery_stats(delivered_ids)
     log(f"Delivered {len(delivered_ids)} jobs. seen.json now holds {len(seen)} ids.")
     if delivery_failed:
         log("FATAL digest produced jobs but none were delivered; failing the run so it is visible")
@@ -3642,7 +3682,8 @@ ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
 ACTIVE_ATS_TITLE = (
     "software | developer | backend | 'back end' | frontend | 'front end' | "
     "'full stack' | fullstack | 'machine learning' | 'data scien':* | "
-    "'data engineer' | 'ai engineer' | 'ml engineer' | mlops | devops | sre | "
+    "'data engineer' | 'ai engineer' | 'llm' | 'ai product engineer' | "
+    "'ml engineer' | mlops | devops | sre | "
     "'site reliability' | 'platform engineer' | 'cloud engineer' | "
     "'solutions engineer' | 'solutions architect' | 'software architect' | "
     "'data architect' | 'automation engineer' | 'qa engineer' | 'test engineer'"

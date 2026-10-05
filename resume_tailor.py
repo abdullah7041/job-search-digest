@@ -14,6 +14,7 @@ import re
 import time
 
 from openrouter import chat_json, configured_chain
+from resume_render import LABEL_RE, _clean
 from resume_source import unsupported_facts, unsupported_terms, validate_tailored_resume, vocabulary
 
 
@@ -50,6 +51,7 @@ RESPONSE_SCHEMA = {
     "properties": {
         "headline": {"type": "string"},
         "summary": {"type": "string"},
+        "highlight_terms": {"type": "array", "maxItems": 8, "items": {"type": "string"}},
         "bullets": {
             "type": "array",
             "items": {
@@ -62,7 +64,7 @@ RESPONSE_SCHEMA = {
         "gaps": {"type": "array", "items": {"type": "string"}},
         "fit_notes": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["headline", "summary", "bullets", "gaps", "fit_notes"],
+    "required": ["headline", "summary", "highlight_terms", "bullets", "gaps", "fit_notes"],
     "additionalProperties": False,
 }
 
@@ -120,7 +122,10 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
         "relevance to the job's stated requirements. Keep at least two per role you keep.\n"
         "4. The headline is the candidate's current title, then an em dash, then the "
         "job's title, and nothing else: \"<current title> — <target title>\".\n"
-        "5. Rewrite the summary for this job. Open with the two or three things this job "
+        "5. Rewrite the summary for this job. Its first word must be exactly Saudi, "
+        "followed by a space. Choose the wording after Saudi for this job using only "
+        "evidence in the resume; no fixed professional title is required. Lead with "
+        "the two or three things this job "
         "asks for that the resume genuinely evidences, described in the resume's own "
         "words, and drop what this job does not care about. Three sentences at most, and "
         "every fact in it must already be in the resume. Returning the existing summary "
@@ -139,7 +144,11 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
         "sensible — the group this job cares about most first. Inside a line you may drop "
         "items the job has no use for and reorder the rest. You may not add an item, a "
         "word, or a group: a skills line is a list of claims, and anything new in one "
-        "reads as a skill the candidate never made. Keep the \"Label:\" prefix.\n\n"
+        "reads as a skill the candidate never made. Keep the \"Label:\" prefix.\n"
+        "10. highlight_terms: up to eight short skills or phrases appearing in both "
+        "the target title or job description and your completed resume. Choose specific "
+        "job-relevant terms, not whole sentences. Return all resume wording as plain "
+        "text, without Markdown or HTML; formatting is applied separately.\n\n"
         f"TARGET ROLE: {snapshot.get('title', '')} at {snapshot.get('company', '')}, "
         f"{snapshot.get('location', '')}\n\n"
         f"JOB DESCRIPTION:\n{(snapshot.get('jd', {}).get('text') or '')[:JD_CHARS]}\n\n"
@@ -160,6 +169,50 @@ def call_model(prompt: str, api_key: str, deadline: float) -> dict:
     return chat_json(prompt, RESPONSE_SCHEMA, "tailoring_plan", api_key,
                      TAILOR_MODEL, TAILOR_FALLBACKS, deadline,
                      provider=TAILOR_PROVIDER)
+
+
+def apply_highlights(document: dict, terms: list[str], snapshot: dict) -> dict:
+    """Add bounded emphasis without changing validated wording or existing labels."""
+    result = copy.deepcopy(document)
+    posting = snapshot.get("title", "") + " " + (snapshot.get("jd", {}).get("text") or "")
+    patterns = []
+    for term in terms[:8]:
+        if not isinstance(term, str) or not term.strip():
+            continue
+        # A skill such as C must not match C++ or C#, nor SQL PostgreSQL.
+        phrase = r"\s+".join(re.escape(word) for word in term.split())
+        pattern = re.compile(r"(?<![\w+#])" + phrase + r"(?![\w+#])", re.IGNORECASE)
+        if pattern.search(posting):
+            patterns.append(pattern)
+    patterns.sort(key=lambda pattern: len(pattern.pattern), reverse=True)
+    if not patterns:
+        return result
+    matcher = re.compile("|".join(pattern.pattern for pattern in patterns), re.IGNORECASE)
+
+    def emphasize(text, limit):
+        remaining = limit
+        def replace(match):
+            nonlocal remaining
+            if remaining <= 0:
+                return match.group(0)
+            remaining -= 1
+            return "**" + match.group(0) + "**"
+        # Existing emphasis (including labels) is never nested or counted as
+        # a new highlight. Each match retains the resume's exact spelling.
+        return "".join(part if part.startswith("**") else matcher.sub(replace, part)
+                       for part in re.split(r"(\*\*.+?\*\*)", text))
+
+    result["summary"] = emphasize(result["summary"], 3)
+    for section in result["sections"]:
+        if section["heading"] not in (*ACHIEVEMENT_LINE_SECTIONS, *SUBSET_LINE_SECTIONS):
+            continue
+        items = section["lines"] + [bullet for entry in section["entries"] for bullet in entry["bullets"]]
+        for item in items:
+            text = item["text"]
+            if item.get("emphasis") and "**" not in text:
+                text = LABEL_RE.sub(r"**\1**\2", text)
+            item["text"] = emphasize(text, 2)
+    return result
 
 
 def apply_plan(document: dict, plan: dict) -> dict:
@@ -328,6 +381,13 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
 
     for _ in range(MAX_ATTEMPTS):
         plan = call_model(build_prompt(document, snapshot, corrections), api_key, deadline)
+        markup_errors = []
+        wording = [plan.get("summary", "")] + [item["text"] for item in plan.get("bullets", [])]
+        if any(re.search(r"</?[A-Za-z][^>]*>", text) for text in wording):
+            markup_errors.append("Return plain resume text without HTML tags.")
+        plan["summary"] = _clean(plan.get("summary", ""))
+        for item in plan.get("bullets", []):
+            item["text"] = _clean(item["text"])
         checked = {
             "headline": plan.get("headline", ""),
             "summary": plan.get("summary", ""),
@@ -338,10 +398,12 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
                                           subset_refs=skills_refs,
                                           headline_terms=headline_terms,
                                           expected_headline=expected_headline,
-                                          master_summary=document["summary"])
+                                          master_summary=document["summary"],
+                                          require_saudi_start=True)
         errors += substance_failures(plan, document)
+        errors += markup_errors
         if not errors:
-            return (apply_plan(document, plan),
+            return (apply_highlights(apply_plan(document, plan), plan.get("highlight_terms", []), snapshot),
                     clean_gaps(plan, document, snapshot),
                     clean_fit_notes(plan, allowed, master_text))
         last_errors = errors

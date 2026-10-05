@@ -7,6 +7,7 @@ import hmac
 import importlib
 import importlib.util
 import base64
+import copy
 import json
 import os
 import tempfile
@@ -502,7 +503,8 @@ Arabic-first AI SaaS, live in production.
 def _plan(**overrides):
     plan = {
         "headline": "AI Product Engineer — Senior Machine Learning Engineer",
-        "summary": "AI Product Engineer with 5+ years across engineering, shipping production LLM systems.",
+        "summary": "Saudi AI Product Engineer with 5+ years across engineering, shipping production LLM systems.",
+        "highlight_terms": [],
         "bullets": [
             {"ref": "b1", "text": "Built an LLM evaluation pipeline that judge-scores prompt and model variants."},
             {"ref": "b2", "text": "Instrumented production monitoring with Sentry and real-time Telegram alerting."},
@@ -517,6 +519,64 @@ def _plan(**overrides):
     }
     plan.update(overrides)
     return plan
+
+
+class TestJobHighlights(unittest.TestCase):
+    def test_model_html_is_rejected_before_it_can_reach_the_pdf(self):
+        document = parse_resume(MASTER)
+        plan = _plan(summary="Saudi engineer using <b>LLM</b> systems.")
+        with mock.patch.object(resume_tailor, "call_model", return_value=plan):
+            with self.assertRaisesRegex(ValueError, "HTML"):
+                resume_tailor.tailor(document, make_snapshot(JOB, "2026-08-03T12:00:00Z"),
+                                     "key", source_refs(document), MASTER)
+
+    def test_summary_requires_saudi_but_not_a_fixed_role(self):
+        for summary in ("Saudi engineer building Python systems.", "Saudi analyst using SQL."):
+            self.assertEqual(validate_tailored_resume(
+                {"summary": summary}, {}, require_saudi_start=True), [])
+        for summary in ("Engineer in Saudi Arabia.", "Saudi-based engineer.", ""):
+            self.assertTrue(validate_tailored_resume(
+                {"summary": summary}, {}, require_saudi_start=True))
+
+    def test_highlights_preserve_words_and_labels_and_limit_each_line(self):
+        document = parse_resume("# Candidate\n## SUMMARY\nSaudi engineer using Python, SQL, C++ and LLMs.\n"
+                                "## SKILLS\n- **Tools:** Python, SQL, C++, LLMs.\n")
+        original = copy.deepcopy(document)
+        result = resume_tailor.apply_highlights(
+            document, ["Python", "SQL", "C++", "LLMs", "AWS"],
+            {"title": "Engineer", "jd": {"text": "Python SQL C++ LLMs AWS"}})
+        self.assertEqual(result["summary"].count("**"), 6)
+        line = result["sections"][0]["lines"][0]["text"]
+        self.assertTrue(line.startswith("**Tools:**"))
+        self.assertEqual(line.count("**"), 6)  # label plus two highlights
+        self.assertEqual(result["summary"].replace("**", ""), original["summary"])
+        self.assertEqual(line.replace("**", ""), original["sections"][0]["lines"][0]["text"].replace("**", ""))
+        self.assertEqual(document, original)
+
+    def test_highlights_match_phrases_longest_first_without_partial_skills(self):
+        document = parse_resume("# Candidate\n## SUMMARY\nSaudi engineer using Python, PostgreSQL, C++ and machine learning.\n")
+        result = resume_tailor.apply_highlights(
+            document, ["SQL", "C", "learning", "machine learning", "python", "missing"],
+            {"jd": {"text": "SQL C learning machine learning PYTHON missing"}})
+        self.assertEqual(result["summary"],
+                         "Saudi engineer using **Python**, PostgreSQL, C++ and **machine learning**.")
+
+    def test_terms_absent_from_the_posting_are_not_highlighted(self):
+        document = parse_resume("# Candidate\n## SUMMARY\nSaudi engineer using Python and SQL.\n")
+        result = resume_tailor.apply_highlights(document, ["Python", "SQL"], {"title": "Python engineer"})
+        self.assertEqual(result["summary"], "Saudi engineer using **Python** and SQL.")
+
+    def test_summary_pdf_contains_bold_font_and_no_markers(self):
+        from pypdf import PdfReader
+        document = parse_resume("# Candidate\n## SUMMARY\nSaudi engineer using Python.\n")
+        document = resume_tailor.apply_highlights(document, ["Python"], {"title": "Python engineer"})
+        reader = PdfReader(BytesIO(render_pdf(document)))
+        spans = []
+        reader.pages[0].extract_text(visitor_text=lambda text, cm, tm, font, size:
+                                     spans.append((text, str((font or {}).get("/BaseFont", "")))))
+        self.assertEqual(len(reader.pages), 1)
+        self.assertNotIn("**", reader.pages[0].extract_text())
+        self.assertTrue(any("Python" in text and "Bold" in font for text, font in spans))
 
 
 class TestResumeStructure(unittest.TestCase):
@@ -1345,6 +1405,23 @@ class TestRunnerDelivery(unittest.TestCase):
 
     def _snapshot(self):
         return make_snapshot(JOB, "2026-08-03T12:00:00Z")
+
+    def test_validated_tailoring_applies_highlights_to_the_delivered_pdf(self):
+        from pypdf import PdfReader
+        snapshot = make_snapshot(dict(JOB, description=JOB["description"]
+                                      + " Production LLM systems and evaluation pipelines."),
+                                 "2026-08-03T12:00:00Z")
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=_plan(highlight_terms=["LLM", "evaluation"])):
+            result = run_task({"input": {"job_snapshot": snapshot}, "status": "dispatched"})
+        self.assertTrue(result["tailored"])
+        page = PdfReader(BytesIO(base64.b64decode(result["pdf_base64"]))).pages[0]
+        spans = []
+        text = page.extract_text(visitor_text=lambda text, cm, tm, font, size:
+                                 spans.append((text, str((font or {}).get("/BaseFont", "")))))
+        self.assertIn("Saudi", text)
+        self.assertNotIn("**", text)
+        self.assertTrue(any("LLM" in text and "Bold" in font for text, font in spans))
 
     def test_gaps_reach_the_message_and_never_the_pdf(self):
         from pypdf import PdfReader

@@ -1863,7 +1863,7 @@ class TestJsearchPaging(unittest.TestCase):
     def test_zero_disables_jsearch_and_out_of_range_falls_back_to_two(self):
         self.assertEqual(digest._request_budget("0"), 0)
         self.assertEqual(digest._request_budget("4"), 4)
-        self.assertEqual(digest._request_budget("5"), 2)
+        self.assertEqual(digest._request_budget(str(len(digest.AGGREGATOR_QUERIES) + 1)), 2)
 
     def test_two_queries_rotate_without_a_second_page(self):
         queries = ["a", "b", "c", "d"]
@@ -2370,6 +2370,49 @@ class TestEndToEnd(unittest.TestCase):
 
         self.assertIn("https://job-boards.greenhouse.io/examplelabs/jobs/4412", body)
         self.assertNotIn("sa.linkedin.com", body)
+
+    def test_source_yield_is_persisted_for_delivery_and_empty_days(self):
+        posts, work = self._linkedin_run([digest.LINK_OPEN, digest.LINK_OPEN])
+        try:
+            with open(os.path.join(work, "stats.json")) as handle:
+                row = json.load(handle)[-1]
+            self.assertEqual(row["source_yield"]["jsearch"]["new"], 1)
+            self.assertEqual(row["source_yield"]["jsearch"]["delivered"], 1)
+            run_main(self.ENV, {}, jobs=[], work=work)
+            with open(os.path.join(work, "stats.json")) as handle:
+                row = json.load(handle)[-1]
+            self.assertEqual(row["delivered"], 0)
+            self.assertEqual(row["source_yield"]["jsearch"]["fetched"], 0)
+        finally:
+            shutil.rmtree(work)
+
+    def test_source_yield_survives_a_failed_heartbeat(self):
+        work = tempfile.mkdtemp(prefix="digest_failure_")
+        try:
+            with mock.patch.object(digest, "post_heartbeat", side_effect=RuntimeError("delivery down")):
+                with self.assertRaises(RuntimeError):
+                    run_main(self.ENV, {}, jobs=[], work=work)
+            with open(os.path.join(work, "stats.json")) as handle:
+                row = json.load(handle)[-1]
+            self.assertEqual(row["delivered"], 0)
+            self.assertIn("jsearch", row["source_yield"])
+        finally:
+            shutil.rmtree(work)
+
+    def test_source_yield_survives_a_failed_webhook_without_claiming_delivery(self):
+        work = tempfile.mkdtemp(prefix="digest_failure_")
+        try:
+            with mock.patch.object(digest, "post_discord", side_effect=SystemExit(1)), \
+                 mock.patch.object(digest, "settle_link", side_effect=lambda job: job.update(link_status=digest.LINK_OPEN)):
+                with self.assertRaises(SystemExit):
+                    run_main(self.ENV, {"jsearch_ln": {"score": 65, "why": "Supported role"}},
+                             jobs=[dict(self.LINKEDIN_JOB, description=FULL_JD)], work=work)
+            with open(os.path.join(work, "stats.json")) as handle:
+                row = json.load(handle)[-1]
+            self.assertEqual(row["source_yield"]["jsearch"]["new"], 1)
+            self.assertEqual(row["source_yield"]["jsearch"]["delivered"], 0)
+        finally:
+            shutil.rmtree(work)
 
     def test_the_days_row_counts_the_link_status_the_card_actually_shows(self):
         """The original link verified open and the rescued one came back
@@ -3706,6 +3749,50 @@ class TestNonSoftwareEngineeringIsRefused(unittest.TestCase):
                                 f"{title!r} must still reach the digest")
 
 
+class TestSourceYield(unittest.TestCase):
+    def test_fourteen_run_comparison_waits_for_real_data(self):
+        from scripts.compare_job_coverage import compare_coverage
+        baseline = [{"date": f"2026-09-{day:02d}", "fetched": 20, "new": 3, "delivered": 1}
+                    for day in range(1, 15)]
+        changed = [{"date": f"2026-10-{day:02d}", "fetched": 30, "new": 5, "delivered": 2,
+                    "source_yield": {"active_ats": {"fetched": 10, "new": 3, "delivered": 1,
+                                                    "quota_paused": False}}}
+                   for day in range(1, 15)]
+        self.assertEqual(compare_coverage(baseline + changed[:13])["status"], "pending")
+        report = compare_coverage(baseline + changed)
+        self.assertEqual(report["status"], "complete")
+        self.assertEqual(report["baseline"]["delivered_per_run"], 1)
+        self.assertEqual(report["after"]["delivered_per_run"], 2)
+        self.assertEqual(report["sources"]["active_ats"]["delivered"], 14)
+        self.assertEqual(compare_coverage(changed)["status"], "unavailable")
+
+    def test_source_counts_include_pauses_and_only_accepted_deliveries(self):
+        fetched = [{"source": "jsearch"}, {"source": "jsearch"}, {"source": "greenhouse"}]
+        self.assertEqual(digest.source_yield(
+            fetched, fetched[:1], [], ["active_ats"]), {
+                "jsearch": {"fetched": 2, "new": 1, "delivered": 0, "quota_paused": False},
+                "greenhouse": {"fetched": 1, "new": 0, "delivered": 0, "quota_paused": False},
+                "active_ats": {"fetched": 0, "new": 0, "delivered": 0, "quota_paused": True},
+            })
+
+    def test_rotation_covers_all_target_queries_without_more_requests(self):
+        queries = digest.AGGREGATOR_QUERIES
+        covered = set()
+        for day in range(len(queries)):
+            selection = digest.jsearch_query_plan(queries, 2, day)
+            self.assertEqual(len(selection), 2)
+            covered.update(selection)
+        self.assertEqual(covered, set(queries))
+        self.assertIn("LLM engineer Saudi Arabia", covered)
+        self.assertIn("AI product engineer Saudi Arabia", covered)
+
+    def test_fresh_feed_switches_at_riyadh_midnight(self):
+        before = datetime.datetime(2026, 10, 5, 20, 59, tzinfo=datetime.timezone.utc)
+        after = before + datetime.timedelta(minutes=1)
+        self.assertNotEqual(digest.fresh_api_feeds(digest.riyadh_ordinal(before)),
+                            digest.fresh_api_feeds(digest.riyadh_ordinal(after)))
+
+
 class TestFreeTierBudget(unittest.TestCase):
     """Every paid feed here runs on a free plan with hard monthly caps.
 
@@ -3719,10 +3806,10 @@ class TestFreeTierBudget(unittest.TestCase):
         self.assertFalse(digest.out_of_allowance(
             "active_ats", {"requests_remaining": 20, "jobs_remaining": 200}))
 
-    def test_fresh_rapidapi_feeds_run_together_on_alternate_days(self):
+    def test_fresh_rapidapi_feeds_are_staggered_on_alternate_days(self):
         self.assertEqual(digest.fresh_api_feeds(day=0),
-                         ("active_ats", "linkedin_api"))
-        self.assertEqual(digest.fresh_api_feeds(day=1), ())
+                         ("active_ats",))
+        self.assertEqual(digest.fresh_api_feeds(day=1), ("linkedin_api",))
 
     def test_rotation_day_is_riyadh_not_the_runner_utc_date(self):
         utc_evening = datetime.datetime(2026, 9, 20, 21, 30,

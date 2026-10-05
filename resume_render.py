@@ -38,7 +38,7 @@ def _bold(text: str, restore_label: bool = False) -> str:
     A rewritten bullet comes back from the model as plain text, so a skill
     group or project name would silently lose the emphasis the master resume
     gives it. The label is restored only for lines that were emphasised in the
-    master, so tailoring never introduces bold where the original had none.
+    master. Job-related emphasis is added separately after evidence validation.
     """
     markup = escape(text.replace("`", ""))
     if "**" in markup:
@@ -164,7 +164,7 @@ def _story(document: dict, size: float):
         story.append(Paragraph(escape(line), contact_style))
     if document["summary"]:
         story.append(Spacer(1, 5))
-        story.append(Paragraph(escape(document["summary"]), body_style))
+        story.append(Paragraph(_bold(document["summary"]), body_style))
 
     def bullet_list(items):
         return ListFlowable(

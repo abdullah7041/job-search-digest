@@ -222,7 +222,8 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
                              subset_refs: set[str] | None = None,
                              headline_terms: set[str] | None = None,
                              expected_headline: str | None = None,
-                             master_summary: str | None = None) -> list[str]:
+                             master_summary: str | None = None,
+                             require_saudi_start: bool = False) -> list[str]:
     """Return user-visible evidence failures; an empty list permits rendering.
 
     ``subset_refs`` names the refs whose rewrite must be a subset of its source
@@ -269,6 +270,8 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
         )
 
     summary = tailored.get("summary", "")
+    if require_saudi_start and not re.match(r"^Saudi\s+\S", summary):
+        errors.append("The summary must start with Saudi followed by job-specific wording.")
     if summary and allowed_terms is not None:
         # The summary draws on the whole resume, not one bullet, so it is
         # checked against the full master text rather than a single source.

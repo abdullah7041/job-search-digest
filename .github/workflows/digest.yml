@@ -74,7 +74,7 @@ jobs:
           RANK_FALLBACK_MODELS: ${{ vars.RANK_FALLBACK_MODELS }}
           MIN_DELIVER_SCORE: ${{ vars.MIN_DELIVER_SCORE }}
           # The JSearch plan is 200 requests a MONTH and this run spends one per
-          # rotating page-one query. digest.py validates 0-4 and defaults to 2.
+          # rotating page-one query. digest.py validates 0-5 and defaults to 2.
           JSEARCH_DAILY_REQUESTS: ${{ vars.JSEARCH_DAILY_REQUESTS }}
           # Scheduled runs use the quota planner. Manual dispatches default to
           # direct employer boards only unless the operator explicitly opts in.
