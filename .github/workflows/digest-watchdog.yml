@@ -26,13 +26,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          gh run list --workflow job-digest --status completed --limit 1 --json conclusion,updatedAt > latest-run.json
-          if [[ "$(jq length latest-run.json)" -eq 0 ]]; then
-            printf '{}' > latest-run.json
-          else
-            jq '.[0]' latest-run.json > latest-run-item.json
-            mv latest-run-item.json latest-run.json
-          fi
+          # A one-result query has returned stale run data despite today's
+          # successful digest. Read a bounded history and select locally.
+          gh run list --workflow digest.yml --branch main --status completed --limit 30 --json conclusion,status,createdAt,updatedAt > latest-run.json
           if python workflow_guard.py freshness --stats stats.json --run-json latest-run.json; then
             exit 0
           fi

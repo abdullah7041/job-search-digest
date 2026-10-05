@@ -8,18 +8,42 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from workflow_guard import (
     apply_state_artifact,
     build_failure_alert,
     freshness_report,
+    latest_completed_run,
     package_state_artifact,
     verify_state_artifact,
 )
 
 
 class WorkflowGuardTests(unittest.TestCase):
+    def test_run_selection_ignores_order_and_unfinished_runs(self):
+        old = {"status": "completed", "createdAt": "2026-10-01T10:00:00Z", "conclusion": "success"}
+        today = {"status": "completed", "createdAt": "2026-10-05T11:03:04Z", "conclusion": "success"}
+        running = {"status": "in_progress", "createdAt": "2026-10-05T17:00:00Z"}
+        self.assertEqual(latest_completed_run([old, running, today]), today)
+        self.assertEqual(latest_completed_run([]), {})
+        failed = dict(today, conclusion="failure", createdAt="2026-10-05T12:00:00Z")
+        self.assertEqual(latest_completed_run([today, failed]), failed)
+
+    def test_notification_identifies_itself_to_discord(self):
+        from workflow_guard import main
+        response = mock.MagicMock()
+        response.status = 204
+        response.__enter__.return_value = response
+        with mock.patch("workflow_guard.urllib.request.urlopen", return_value=response) as send, \
+             mock.patch.object(sys, "argv", ["workflow_guard.py", "notify", "--webhook", "https://discord.test/webhook",
+                                            "--workflow", "watchdog", "--stage", "freshness",
+                                            "--run-url", "https://github.com/example/run"]):
+            self.assertEqual(main(), 0)
+        request = send.call_args.args[0]
+        self.assertTrue(request.get_header("User-agent", "").startswith("DiscordBot ("))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name) / "repo"

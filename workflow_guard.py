@@ -110,6 +110,12 @@ def build_failure_alert(*, workflow: str, stage: str, run_url: str, timestamp: s
     }
 
 
+def latest_completed_run(runs: list[dict]) -> dict:
+    """Select by creation time rather than trusting the API's list order."""
+    return max((run for run in runs if isinstance(run, dict) and run.get("status") == "completed"),
+               key=lambda run: str(run.get("createdAt") or ""), default={})
+
+
 def freshness_report(stats_path: Path, latest_run: dict[str, object], day: dt.date) -> list[str]:
     """Report independently observable missing-digest signals for one Riyadh day."""
     problems = []
@@ -167,6 +173,8 @@ def _command_apply(args: argparse.Namespace) -> int:
 def _command_freshness(args: argparse.Namespace) -> int:
     day = dt.date.fromisoformat(args.day) if args.day else dt.datetime.now(RIYADH).date()
     latest_run = json.loads(Path(args.run_json).read_text(encoding="utf-8"))
+    if isinstance(latest_run, list):
+        latest_run = latest_completed_run(latest_run)
     problems = freshness_report(Path(args.stats), latest_run, day)
     print(json.dumps({"day": day.isoformat(), "problems": problems}, sort_keys=True))
     return 1 if problems else 0
@@ -182,7 +190,8 @@ def _command_notify(args: argparse.Namespace) -> int:
     request = urllib.request.Request(
         args.webhook,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json",
+                 "User-Agent": "DiscordBot (https://github.com/abdullah7041/job-search-digest, 1.0)"},
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=15) as response:
