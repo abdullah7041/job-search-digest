@@ -26,9 +26,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          # A one-result query has returned stale run data despite today's
-          # successful digest. Read a bounded history and select locally.
-          gh run list --workflow digest.yml --branch main --status completed --limit 30 --json conclusion,status,createdAt,updatedAt > latest-run.json
+          # Status-filtered history has omitted today's successful digest.
+          # Fetch unfiltered history; select main and completed runs locally.
+          gh api "repos/${{ github.repository }}/actions/workflows/digest.yml/runs?per_page=30" --jq '[.workflow_runs[] | select(.head_branch == "main") | {databaseId: .id, conclusion: .conclusion, status: .status, createdAt: .created_at, updatedAt: .updated_at}]' > latest-run.json
           if python workflow_guard.py freshness --stats stats.json --run-json latest-run.json; then
             exit 0
           fi

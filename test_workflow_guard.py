@@ -22,6 +22,31 @@ from workflow_guard import (
 
 
 class WorkflowGuardTests(unittest.TestCase):
+    def test_freshness_logs_the_selected_run_from_unfiltered_history(self):
+        from workflow_guard import main
+        import io
+        runs = [
+            {"databaseId": 1, "status": "completed", "conclusion": "success",
+             "createdAt": "2026-08-10T05:00:00Z", "updatedAt": "2026-08-10T05:01:00Z"},
+            {"databaseId": 3, "status": "in_progress", "createdAt": "2026-08-11T06:00:00Z"},
+            {"databaseId": 2, "status": "completed", "conclusion": "success",
+             "createdAt": "2026-08-11T05:00:00Z", "updatedAt": "2026-08-11T05:01:00Z"},
+        ]
+        run_json = self.root / "runs.json"
+        run_json.write_text(json.dumps(runs), encoding="utf-8")
+        output = io.StringIO()
+        with mock.patch.object(sys, "argv", ["workflow_guard.py", "freshness", "--stats",
+                                            str(self.root / "stats.json"), "--run-json",
+                                            str(run_json), "--day", "2026-08-11"]), \
+             mock.patch("sys.stdout", output):
+            self.assertEqual(main(), 0)
+        report = json.loads(output.getvalue())
+        self.assertEqual(report["latest_run"], runs[2])
+        self.assertEqual(report["problems"], [])
+        workflow = Path(".github/workflows/digest-watchdog.yml").read_text(encoding="utf-8")
+        self.assertIn("gh api", workflow)
+        self.assertNotIn("--status completed", workflow)
+
     def test_run_selection_ignores_order_and_unfinished_runs(self):
         old = {"status": "completed", "createdAt": "2026-10-01T10:00:00Z", "conclusion": "success"}
         today = {"status": "completed", "createdAt": "2026-10-05T11:03:04Z", "conclusion": "success"}

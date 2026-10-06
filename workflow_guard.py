@@ -176,7 +176,7 @@ def _command_freshness(args: argparse.Namespace) -> int:
     if isinstance(latest_run, list):
         latest_run = latest_completed_run(latest_run)
     problems = freshness_report(Path(args.stats), latest_run, day)
-    print(json.dumps({"day": day.isoformat(), "problems": problems}, sort_keys=True))
+    print(json.dumps({"day": day.isoformat(), "latest_run": latest_run, "problems": problems}, sort_keys=True))
     return 1 if problems else 0
 
 
