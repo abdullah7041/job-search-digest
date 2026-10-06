@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_LW9kQmt5SFFiOTJiQ2ljbkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTV2t0TFdOeVpHdFRTa010U2xKSVIza3hPRjlNTkhSaGNGaE5UMnhIZEZCeVh6VlpWVW8zYmtwRWFGY3lZbVZVY0MxTVoyVmtURXQ1Y0dWVFdGSmhjMGxtYUhZeVpXZE1ZbUZTVlVKc2FsSlFkbGhuTkRSaFoweHpWMWRDYW5Rd04wNXFZVWhVTWxaMlduVjBVRk5pVFRsaGRtaGtWSGRaVUVjdE1YQXRTbGhHY0ZwR1Z6QVNGMG81VkVWaGNsOXJUMUJxU2pWZlJWQndkRzV1ZDBGRkdpSkJSSE55T1daU1EwZzVSSGRIUm1sUGJGcHNRM0JqYkZKelZuZHVVRFo1VnpCbg",
+      "captured_at": "2026-10-06T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_LW9kQmt5SFFiOTJiQ2ljbkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTV2t0TFdOeVpHdFRTa010U2xKSVIza3hPRjlNTkhSaGNGaE5UMnhIZEZCeVh6VlpWVW8zYmtwRWFGY3lZbVZVY0MxTVoyVmtURXQ1Y0dWVFdGSmhjMGxtYUhZeVpXZE1ZbUZTVlVKc2FsSlFkbGhuTkRSaFoweHpWMWRDYW5Rd04wNXFZVWhVTWxaMlduVjBVRk5pVFRsaGRtaGtWSGRaVUVjdE1YQXRTbGhHY0ZwR1Z6QVNGMG81VkVWaGNsOXJUMUJxU2pWZlJWQndkRzV1ZDBGRkdpSkJSSE55T1daU1EwZzVSSGRIUm1sUGJGcHNRM0JqYkZKelZuZHVVRFo1VnpCbg",
+      "title": "Forward Deployed Engineer, KSA",
+      "company": "Telnyx",
+      "location": "الرياض, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/forward-deployed-engineer-ksa-at-telnyx-4449952404",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Excellent alignment with LLM APIs, gateways, observability, and commercial background in Riyadh. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 36,
+          "max": 40,
+          "note": "Proven LLM API integration, observability, guardrails, and Python/TypeScript."
+        },
+        "experience": {
+          "score": 24,
+          "max": 30,
+          "note": "Demonstrated full-lifecycle production software and client-facing commercial bac"
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Posting accepts equivalent experience to CS degree."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Perfect match for Riyadh enterprise forward deployed engineering."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 3+ Years Building and Shipping Production Software"
+      ],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "incomplete",
+        "text": "About Telnyx\n\nTelnyx is an industry leader that's not just imagining the future of global connectivity—we're building it. From architecting and amplifying the reach of a private, global, multi-cloud IP network, to bringing hyperlocal edge technology right to your fingertips through intuitive APIs, we're shaping a new era of seamless interconnection between people, devices, and applications.\n\nWe're driven by a desire to transform and modernize what's antiquated, automate the manual, and solve real-world problems through innovative connectivity solutions. As a testament to our success, we're proud to stand as a financially stable and profitable company. Our robust profitability allows us not only to invest in pioneering technologies but also to foster an environment of continuous learning and growth for our team.\n\nOur collective vision is a world where borderless connectivity fuels limitless innovation. By joining us, you can be part of laying the foundations for this interconnected future. We're currently seeking passionate individuals who are excited about the opportunity to contribute to an industry-shaping company while growing their own skills and careers.\n\nThe Role\n\nWe're building a local Enterprise Sales Pod in Riyadh — one AE and one Forward Deployed Engineer (FDE), working together to build a Telnyx enterprise business in your market. You'll embed directly with enterprise customers to architect and ship production systems on Telnyx's global network — voice, messaging, AI, and wireless.\n\nThis isn't about demoing products. It's about building real solutions that work at scale.\n\nYou'll work side-by-side with a dedicated Enterprise AE — not a demo resource, but a commercial partner who owns the named-account list, builds executive relationships, and closes the deal. You own the technical side: discovery, architecture, POC, and production go-live. You win together. No throw-over-the-wall.\n\nThe Pod Model\n\nEnterprise AE — owns the named-account list, builds executive relationships, gets in the room, owns commercial qualification and close, expands the account.\n\nForward Deployed Engineer — owns technical discovery, designs the architecture, builds the POC when gated, gets the first workload live, removes blockers and finds the next workload.\n\nWe sell the workload, not the SKU. Customers buy a production outcome — an AI contact center, a SOC/NOC agent, global communications, connected mobility, or enterprise inference — that runs on Telnyx primitives (voice, messaging, numbers, wireless, Voice AI, inference, agents, connectivity). You lead with the outcome conversation, not a product menu.\n\nWhat You'll Do\n\n• Embed with enterprise customers to understand their communications workflows, AI use cases, and integration challenges firsthand\n• Build and deploy custom implementations: AI Voice Assistants, Telnyx APIs (Voice, Messaging, Fax, Wireless), WebRTC\n• Run open-weight LLMs in customer environments — consume GLM, Kimi, DeepSeek, Qwen, and MiniMax through Telnyx Inference (OpenAI-compatible API; there's no model infrastructure for you to run), or deploy self-hosted stacks (Llama, Mistral, and region-specific models like Jais, ALLaM, or other Arabic-language sovereign models) behind your own serving engine when air-gapped or sovereign-cloud requirements demand it\n• Deploy and operate LiteLLM as the model gateway in customer environments: a unified OpenAI-compatible interface across self-hosted open-weight models and hosted providers, with routing, load balancing, retries and fallbacks, rate limits, and per-team virtual keys\n• Instrument and govern LLM usage through the gateway — cost tracking and budgets, caching, logging and observability (OpenTelemetry, Langfuse, or similar), and guardrails — so customers can see and control what their AI workloads are doing\n• Wire production observability for everything you ship — metrics, logs, traces, dashboards, and alerting (e.g. Prometheus + Grafana for metrics, OpenTelemetry for traces, Graylog or ELK for logs — or the customer's existing stack) — so you and the customer's ops team both know what \"healthy\" looks like and what pages whom when it isn't\n• Design model routing strategies for real-time voice workloads, balancing latency, cost, and quality, with sane fallback behavior when a provider degrades\n• Make the build-vs-buy case between self-hosted open-weight models and hosted frontier APIs, and keep the customer's application code portable across both\n• Adapt models to customer domains: prompt and RAG pipelines and evaluation harnesses for Arabic and English language use cases and KSA/GCC-specific regulatory environments (PDPL, Saudi data localization, cloud sovereignty requirements)\n• Lead POCs, pilots, and production launches from whiteboard to go-live\n• Own customer outcomes — stay engaged until the solution is live and stable\n• Collaborate directly with Product and Engineering to shape the roadmap based on field insights from Saudi Arabia and the broader GCC\n• Create clear technical documentation, runbooks, and maintainable solutions for handoff\n• Troubleshoot and resolve complex integration issues alongside customer teams\n\nWhat We're Looking For\n\n• CS degree or equivalent experience\n• 3+ years building and shipping production software — you've written code that real users depended on, you've been on-call for it, and you've debugged it when things broke. (A consulting background counts if this is also true of you.)\n• Proficiency in multiple languages: Python, Node.js/TypeScript, Go — you're more dangerous in some than others. (Telnyx Edge Compute — functions and stateful actors — is TypeScript, so that one pulls double duty.)\n• Practical understanding of what breaks in front of a model in production: provider rate limits and quotas, timeout and retry behavior, streaming, token accounting and cost attribution, and the failure modes that only show up under concurrency\n• Comfortable deploying containerized services on Kubernetes, with secrets m",
+        "sha256": "5e4df85a39863d33f074ebc399c98cc9bcec68f3d66eedcadebffaf8058a525c",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9MTI2YzA5YzYyYTUzYTQ3YTtjYz1zYQ==",
+      "captured_at": "2026-10-06T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9MTI2YzA5YzYyYTUzYTQ3YTtjYz1zYQ==",
+      "title": "AI Quality Assurance Engineer",
+      "company": "TAWANTECH",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://apply.workable.com/tawantech/j/E76856D6D4/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong domain match on AI evaluation/hallucination testing, but lacks required Bachelor's and 5+ years (capped: 2 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 34,
+          "max": 40,
+          "note": "Strong fit for LLM evaluation, bias/hallucination testing, CI/CD, and Python."
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "AI engineering started 2025; lacks 5+ years dedicated QA/ML testing."
+        },
+        "education": {
+          "score": 4,
+          "max": 15,
+          "note": "Mandatory Bachelor's degree requirement is a gap."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Matches location in Riyadh."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree in Relevant Field",
+        "Insufficient QA and AI/ML Testing Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-06",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Job Title: AI Quality Assurance Engineer\nExperience: 5+ Years\nJob Type: Full-Time\n\nJob Summary\nResponsible for ensuring the quality, reliability, accuracy, and performance of AI/ML solutions throughout the development lifecycle. The role develops and implements testing strategies for AI models, data pipelines, AI applications, and production deployments while ensuring solutions meet business, technical, security, and regulatory requirements.\n\nKey Responsibilities\n\nDevelop and execute comprehensive QA and testing strategies for AI/ML solutions.\nValidate AI models for accuracy, consistency, robustness, and performance.\nDesign test cases for machine learning models, AI applications, APIs, and data pipelines.\nPerform data quality, data validation, and data integrity testing.\nTest AI outputs for accuracy, bias, hallucination, reliability, and consistency where applicable.\nConduct regression, integration, functional, performance, and automated testing.\nEstablish quality gates and acceptance criteria for AI model deployment.\nMonitor model performance and identify model/data drift in production.\nCollaborate with Data Scientists, AI Engineers, Data Engineers, and Business stakeholders.\nAutomate testing processes and integrate QA activities into CI/CD pipelines.\nDocument defects, test results, risks, and remediation activities.\nSupport model governance, auditability, and compliance requirements.\n\nRequirements\n\nBachelor’s degree in Computer Science, Data Science, AI, Engineering, or a related field.\n5+ years of experience in QA, AI/ML testing, software testing, or data quality.\nStrong understanding of machine learning and AI lifecycle processes.\nExperience with Python and automated testing frameworks.\nKnowledge of SQL and data validation techniques.\nExperience with APIs, cloud platforms, CI/CD, and version control.\nUnderstanding of ML model evaluation metrics and model monitoring.\nStrong analytical, problem-solving, and communication skills.",
+        "sha256": "a16986e4883385c477a6d33056bfc896c6b6b2a8219c511821d88f8a35a2d116",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
