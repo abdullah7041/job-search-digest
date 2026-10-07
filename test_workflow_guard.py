@@ -1,3 +1,4 @@
+import contextlib
 import datetime as dt
 import hashlib
 import inspect
@@ -43,7 +44,9 @@ class WorkflowGuardTests(unittest.TestCase):
         report = json.loads(output.getvalue())
         self.assertEqual(report["latest_run"], runs[2])
         self.assertEqual(report["problems"], [])
-        workflow = Path(".github/workflows/digest-watchdog.yml").read_text(encoding="utf-8")
+        with contextlib.chdir(self.root):
+            workflow = (Path(__file__).with_name(".github") / "workflows" /
+                        "digest-watchdog.yml").read_text(encoding="utf-8")
         self.assertIn("gh api", workflow)
         self.assertNotIn("--status completed", workflow)
 
