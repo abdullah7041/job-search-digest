@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "workable:6176637",
+      "captured_at": "2026-10-07T00:00:00Z",
+      "source": "workable",
+      "source_id": "6176637",
+      "title": "AI Quality Assurance Engineer",
+      "company": "TAWANTECH",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/tawantech/j/E76856D6D4/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong AI evaluation match but missing mandatory bachelor's degree and 5+ years QA experience. (capped: 2 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 34,
+          "max": 40,
+          "note": "Strong match on AI eval, hallucination testing, CI/CD, and Python."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Hands-on AI eval since 2025; lacks 5+ years dedicated QA."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandatory bachelor's degree required; candidate holds technical diploma."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh location is an exact match."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree in Relevant Field",
+        "Insufficient QA and AI/ML Testing Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-06T00:00:00.000Z",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Job Title: AI Quality Assurance Engineer\nExperience: 5+ Years\nJob Type: Full-Time\nJob Summary\nResponsible for ensuring the quality, reliability, accuracy, and performance of AI/ML solutions throughout the development lifecycle. The role develops and implements testing strategies for AI models, data pipelines, AI applications, and production deployments while ensuring solutions meet business, technical, security, and regulatory requirements.\nKey Responsibilities\nDevelop and execute comprehensive QA and testing strategies for AI/ML solutions.\nValidate AI models for accuracy, consistency, robustness, and performance.\nDesign test cases for machine learning models, AI applications, APIs, and data pipelines.\nPerform data quality, data validation, and data integrity testing.\nTest AI outputs for accuracy, bias, hallucination, reliability, and consistency where applicable.\nConduct regression, integration, functional, performance, and automated testing.\nEstablish quality gates and acceptance criteria for AI model deployment.\nMonitor model performance and identify model/data drift in production.\nCollaborate with Data Scientists, AI Engineers, Data Engineers, and Business stakeholders.\nAutomate testing processes and integrate QA activities into CI/CD pipelines.\nDocument defects, test results, risks, and remediation activities.\nSupport model governance, auditability, and compliance requirements.\nRequirements\nBachelor’s degree in Computer Science, Data Science, AI, Engineering, or a related field.\n5+ years of experience in QA, AI/ML testing, software testing, or data quality.\nStrong understanding of machine learning and AI lifecycle processes.\nExperience with Python and automated testing frameworks.\nKnowledge of SQL and data validation techniques.\nExperience with APIs, cloud platforms, CI/CD, and version control.\nUnderstanding of ML model evaluation metrics and model monitoring.\nStrong analytical, problem-solving, and communication skills.",
+        "sha256": "d720005406b0027e0d1aad2550c3943b801548846458cbe62a12646653f64c96",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
