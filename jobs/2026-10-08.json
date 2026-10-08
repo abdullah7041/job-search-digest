@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9OWMwMDk3OWQ1NTQ0ZGQ4ZTtjYz1zYQ==",
+      "captured_at": "2026-10-08T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9OWMwMDk3OWQ1NTQ0ZGQ4ZTtjYz1zYQ==",
+      "title": "Senior AI Presales Specialist",
+      "company": "JODAYN",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://apply.workable.com/jodayn-1/j/EB0B449A0B/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong AI workflow and client-facing background, accepting equivalent experience for degree. (capped: 3 verified requirement gaps)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Demonstrates LLM architecture, PoC development, and technical workflows."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "Combines 6+ years commercial/sales with hands-on AI product building."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Accepts equivalent professional experience in lieu of degree."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh based, bilingual Arabic/English."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lack of Enterprise AI Presales and RFP Experience",
+        "Insufficient Years of Experience in Technology or Solution Engineering",
+        "Missing Relevant Bachelor's Degree"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-07",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "We are looking for a Senior AI Presales Specialist to support our commercial and business development activities across AI-related opportunities.\n\nThe role will work closely with clients, sales, business development, and AI technical teams to understand business challenges, identify AI use cases, develop high-level solution concepts, and lead technical presales activities across proposals, RFPs, presentations, demonstrations, and Proofs of Concept (PoCs).\n\nThe ideal candidate will bring strong AI technical expertise, solution consulting, and client-facing experience, with the ability to translate complex business requirements into practical and compelling AI solutions.\n\nRequirements\n\nLead client discovery sessions, workshops, and technical discussions to understand business and technical requirements.\nIdentify and assess AI use cases and opportunities that can deliver measurable business value.\nTranslate client requirements into high-level AI solution concepts and technical approaches.\nLead technical presales activities across AI opportunities.\nWork closely with sales and business development teams to shape and qualify AI opportunities.\nLead the technical contribution to RFPs, tenders, proposals, and bids.\nDevelop solution descriptions, technical approaches, assumptions, dependencies, and high-level implementation concepts.\nPrepare and deliver compelling AI presentations and solution demonstrations to technical and executive stakeholders.\nLead or support AI Proof-of-Concept (PoC) activities during the presales cycle.\nDevelop conceptual solution architectures, workflows, and technical diagrams.\nEvaluate and recommend relevant AI technologies, platforms, integrations, and approaches.\nCollaborate with AI architects, engineers, enterprise architects, cybersecurity, and delivery teams to validate proposed solutions.\nCommunicate technical concepts, capabilities, limitations, risks, and dependencies clearly to clients and internal stakeholders.\nSupport technical clarification meetings and client negotiations when required.\nStay current with emerging AI technologies, market trends, and enterprise AI use cases.\nDevelop reusable AI demonstrations, solution assets, technical content, and presales materials.\nMentor and provide guidance to junior team members where required.\n\nRequired Qualifications & Experience\n\nBachelor's degree in Computer Science, Artificial Intelligence, Software Engineering, Information Technology, or a related field, or equivalent professional experience.\n4+ years of professional experience in technology, consulting, solution engineering, presales, or a related field.\nStrong experience in AI Presales, AI Consulting, Solution Consulting, Solution Architecture, or Technical Presales.\nProven experience engaging directly with enterprise or government clients.\nStrong experience translating business requirements into technical solutions.\nExperience leading or contributing to complex technology sales opportunities.\nStrong experience with technical proposals, RFPs, tenders, and bid responses.\nExcellent presentation, communication, and stakeholder management skills.\nAbility to communicate effectively with both technical and executive-level stakeholders.\n\nTechnical Knowledge\n\nStrong practical knowledge of several of the following areas:\n\nGenerative AI\nLarge Language Models (LLMs)\nRetrieval-Augmented Generation (RAG)\nAI Agents\nMachine Learning\nNatural Language Processing (NLP)\nDocument Intelligence\nVector Databases\nAI APIs\nCloud AI Platforms\nEnterprise Integration\nData Platforms\nPrompt Engineering\nAI Security and Governance\nSolution Architecture\n\nHands-on AI development experience is beneficial, but the primary focus of the role is AI solutioning, presales, client engagement, and technical consulting.\n\nPreferred Experience\n\nExperience leading AI presales engagements for enterprise or government clients.\nExperience designing and presenting AI solutions to senior stakeholders.\nExperience leading AI demonstrations and PoCs.\nExperience with complex RFPs, tenders, and enterprise technology proposals.\nExperience working within IT consulting or technology services organisations.\nFamiliarity with enterprise architecture, cybersecurity, data platforms, and cloud environments.\nExperience mentoring junior presales or technical team members.\n\nKey Skills\n\nAI Presales\nSolution Consulting\nAI Solutioning\nClient Engagement\nRequirements Gathering\nTechnical Presentations\nRFP & Tender Management\nSolution Architecture\nAI Technologies\nStakeholder Management\nBusiness & Commercial Awareness\nTechnical Documentation\nProblem Solving\nCommunication & Negotiation\n\nWhat We’re Looking For\n\nWe are looking for a senior professional who can understand complex client challenges, identify where AI can create value, and translate those challenges into credible and compelling AI solutions.\n\nThe successful candidate should be comfortable leading client discussions, presenting to senior stakeholders, supporting complex sales opportunities, and working closely with technical teams to shape solutions from initial discovery through the presales stage.",
+        "sha256": "cf5d57ce6a933fc93104aaf98e9aa1be1777f651b29f69ae1f8e60c6d24cb0c0",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:6182080",
+      "captured_at": "2026-10-08T00:00:00Z",
+      "source": "workable",
+      "source_id": "6182080",
+      "title": "Product Manager - Storefront",
+      "company": "Salla",
+      "location": "Jeddah, Saudi Arabia",
+      "url": "https://apply.workable.com/salla/j/6FEBF88574/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 55,
+      "why": "Strong founder/AI/search alignment, but candidate targets IC engineering rather than PM. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Proven 0-to-1 Arabic search/discovery and AI prototyping experience."
+        },
+        "experience": {
+          "score": 16,
+          "max": 30,
+          "note": "Product experience is solo founder rather than 4-6y dedicated PM."
+        },
+        "education": {
+          "score": 13,
+          "max": 15,
+          "note": "No mandatory bachelor's degree specified."
+        },
+        "seniority_location": {
+          "score": 11,
+          "max": 15,
+          "note": "Jeddah location, candidate preferred Riyadh/remote."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 4–6 Years of Dedicated Product Management Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-08T00:00:00.000Z",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "At Salla, we are building the digital backbone of commerce in the region, empowering thousands of merchants to start, grow, and scale their businesses. We turn what's complex into something simple, powerful, and scalable.\nEvery Salla store runs on one storefront. When a buyer searches, opens a product, or reads a review, they decide whether to trust a store they may have never heard of. Every change you ship reaches thousands of stores at once.\nWe are looking for a Product Manager who builds with curiosity, clarity, and care. You own search, the product page, and reviews: how buyers find what they want, decide, and trust what they read. You work side by side with our data and AI teams and turn their models into decisions buyers feel and merchants see in their sales.\nCore Responsibilities:\nKnow Salla's buyers: how they shop across very different stores, and what makes them hesitate, compare, or leave. Bring their voice into every decision, along with the merchants whose sales depend on it.\nOwn search, the product page, and reviews end to end, from discovery to iteration, tied to buyer conversion and merchant sales.\nPartner with data and AI teams on ranking, query understanding, and semantic search. Decide what ships, to which stores, and how you measure it.\nDesign the product page around the buyer's decision: what they need to see, trust, and confirm before they buy.\nBuild reviews that buyers trust and merchants can use, including for stores with few or no reviews.\nExperiment by default and Ship safely across thousands of stores: staged rollouts, experiments, guardrails, and a way back.\nRun continuous discovery: talk to buyers and merchants regularly, watch real sessions, and test ideas with prototypes before committing engineering time.\nMake decisions with data: define the metrics that matter for each surface, read the funnel yourself, and let evidence, not opinion, settle debates.\nRequirements\n4–6 years of experience in Product Management , preferably owning Search, Discovery, Product Pages, Conversion, or other customer-facing product experiences within a live consumer or e-commerce product.\nProven experience driving product metrics and business outcomes , with the ability to explain what changed, why it changed, and how the impact was measured.\nAI-native mindset with hands-on experience using AI tools for data analysis, prototyping, research and interpreting product results.\nExperience working closely with Data Science and Machine Learning teams on Search, Ranking, or Recommendation with a clear understanding of product ownership and decision-making responsibilities.\nHands-on experience conducting User Research and Product Experiments, using insights to influence product decisions.\nStrong understanding of Arabic Search and Discovery , including Arabic spelling variations, dialects, transliteration, Arabic-English mixed queries, and search behavior.\nDemonstrated ownership of product outcomes , with the ability to work independently, take initiative, and move quickly in a fast-paced environment.\nYou simplify: you cut before you add.\nFluent in Arabic and English , both written and spoken.\nPreferred: Experience building a product, feature, or business from 0-to-1 , either as a founder, early-stage team member, or founding product team member.",
+        "sha256": "7f0c5bb8b6c8a0cd362069f1d5c0dc5742bf4a6b14fa5ff2b88bf59b99682096",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2401962054",
+      "captured_at": "2026-10-08T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2401962054",
+      "title": "Commercial Solutions Engineer, KSA",
+      "company": "Procore Technologies",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/commercial-solutions-engineer-ksa-at-procore-technologies-4475444319",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 52,
+      "why": "Relevant commercial and tech background, but lacks required 3-5+ years in B2B SaaS pre-sales.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 26,
+          "max": 40,
+          "note": "Has tech and data skills, lacks dedicated enterprise SaaS SE tooling."
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Strong commercial sales and AI engineering, but lacks B2B pre-sales tenure."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Accepts equivalent practical experience despite diploma."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Based in Riyadh, bilingual Arabic/English matches perfectly."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lack of B2B SaaS Pre-Sales or Senior Construction Management Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-07",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "We’re looking for a Commercial Solutions Engineer to join Procore’s Pre-Sales Solutions Engineering team. In this role, you’ll serve as a technical subject matter expert and champion throughout the acquisition sales cycle across the Kingdom of Saudi Arabia (KSA). Your primary goal will be to partner with regional sales teams and construction leaders to articulate Procore’s overall value proposition and drive platform adoption.\n\nAs a Commercial Solutions Engineer, you’ll partner with Account Executives, Product Specialists, and Customer Success teams to deliver value-based technical demonstrations and address prospects' complex business challenges. Use your deep technical aptitude, construction industry knowledge, and consultative presentation skills to demonstrate the ROI of digitizing project management processes. Join us to be a key catalyst in modernizing KSA's rapidly growing construction ecosystem\n\nThis position reports into the Director of Solutions Engineering and will be based in our Riyadh office (with initial EOR arrangement). We’re looking for someone to join us immediately. \n\n\nWhat you’ll do:\nOwn pre-sales technical support for prospects and partners across KSA from initial contact through product demonstration and close.\nCraft value-based product demonstrations and technical presentations that directly address local customer business challenges and accelerate Procore platform adoption.\nPartner closely with the regional Account Executive team to close new business by resolving prospects' technical, integration, and process hurdles.\nAct as a trusted customer advocate, helping Saudi construction organizations adopt international best practices around digital project management.\nCoordinate internal and external technical resources to support complex sales cycles and RFP technical responses.\nEnable and train new regional Account Executives to transform them into Procore product experts.\nCollaborate cross-functionally with Product, Marketing, and Customer Success teams to connect local market feedback directly with Procore's product roadmap.\n\nWhat we’re looking for: \nBachelor’s degree in Engineering, Construction Management, Computer Science, Information Technology, or equivalent practical experience.\n3–5+ years of experience in Sales Engineering/Pre-Sales within B2B SaaS, OR senior operational experience within the regional construction industry (e.g., BIM Manager, Digital Transformation Director, Projects Director, Contracts Manager).\nFluency in both Arabic and English is required, with exceptional written and verbal communication skills.\nDemonstrated ability to master complex software platforms, construction workflows, and emerging industry technologies.\nProven track record of delivering engaging, value-oriented product presentations to executives, project managers, and technical stakeholders.\nStrong analytical, consultative, and problem-solving skills to translate customer pain points into clear technical solutions.\nCollaborative mindset with a proven ability to work cross-functionally under tight go-to-market timelines.\nPassion for acting as a technology evangelist and driving digital transformation across the Middle East construction sector.",
+        "sha256": "bc7aeed66b46890cd15728a1dde607429dc0d901bf4f1a23c036f163c688f6e3",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2402342919",
+      "captured_at": "2026-10-08T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2402342919",
+      "title": "Senior Software Engineer - QuantumBlack, AI by McKinsey",
+      "company": "QuantumBlack, AI by McKinsey",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-quantumblack-ai-by-mckinsey-at-quantumblack-ai-by-mckinsey-4476794127",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 45,
+      "why": "Demands 7+ years of software development experience; candidate's hands-on SWE is recent.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Matches React, TypeScript, Python, SQL, REST APIs, and CI/CD."
+        },
+        "experience": {
+          "score": 8,
+          "max": 30,
+          "note": "Requires 7+ years in SWE; candidate started SWE/AI recently."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Posting accepts equivalent experience."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Based in Riyadh, matches location."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Short of 7+ Years Software Development Experience Requirement"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-07",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Who You'll Work With\n\nDriving lasting impact and building long-term capabilities with our clients is not easy work. You are the kind of person who thrives in a high performance/high reward culture - doing hard things, picking yourself up when you stumble, and having the resilience to try another way forward.\n\nIn return for your drive, determination, and curiosity, we'll provide the resources, mentorship, and opportunities you need to become a stronger leader faster than you ever thought possible. Your colleagues—at all levels—will invest deeply in your development, just as much as they invest in delivering exceptional results for clients. Every day, you'll receive apprenticeship, coaching, and exposure that will accelerate your growth in ways you won’t find anywhere else.\n\nWhen you join us, you will have:\n\nContinuous learning: Our learning and apprenticeship culture, backed by structured programs, is all about helping you grow while creating an environment where feedback is clear, actionable, and focused on your development. The real magic happens when you take the input from others to heart and embrace the fast-paced learning experience, owning your journey.\nA voice that matters: From day one, we value your ideas and contributions. You’ll make a tangible impact by offering innovative ideas and practical solutions, all while upholding our unwavering commitment to ethics and integrity. We not only encourage diverse perspectives, but they are critical in driving us toward the best possible outcomes.\nGlobal community: With colleagues across 65+ countries and over 100 different nationalities, our firm’s diversity fuels creativity and helps us come up with the best solutions for our clients. Plus, you’ll have the opportunity to learn from exceptional colleagues with diverse backgrounds and experiences.\nWorld-class benefits: On top of a competitive salary (based on your location, experience, and skills), we provide a comprehensive benefits package to enable holistic well-being for you and your family.\n\nYour Impact\n\nYou will work with clients across a wide range of sectors and industries, advising them on how to best leverage technology.\n\nYou will drive architectural design, make key technology decisions, and employ agile methodologies to build and deliver the next generation of products for our clients at scale.\n\nYou will also lead project workstreams, helping clients build their technical capabilities and foster a culture centered around engineering best practices, user-centricity, and Agile values.\n\nAs a core member of the team, you will take on responsibilities that include driving architectural design and making strategic technology decisions to shape next-generation products for various internal teams, ensuring that we remain at the forefront of technological innovation.\n\nAdditionally, you will be hands-on and co-creating solutions alongside our clients and their leadership, enabling you to grow into a recognized technology leader.\n\nYou will be part of the Tech & AI at McKinsey team in Riyadh/Doha or Dubai. This group brings together the best of McKinsey’s digital capabilities to help our clients use digital technology to transform their businesses.\n\nTech & AI at McKinsey is our tech delivery people unit. A global team of software, data and cloud engineers, passionate designers, technology architects, product owners, and leading technologists.\n\nYou will join a multidisciplinary community of developers, Agile coaches, designers, business strategists and experts. Together, we will design and create industry shaping products and tools for our clients.\n\nOur office culture is casual and social, with an emphasis on education and innovation. You will have the freedom to try new ideas and experiment in your role and will be guaranteed significant dedicated time to tinker, create, continuously learn and share cool new stuff. We also have a strong emphasis in our teams on mentoring others enabling them to grow and learn.\n\nChanging the world requires us to sit with our clients at times, so some travel is expected in this role.\n\nYour Qualifications and Skills\n\nUndergraduate or master’s degree; or equivalent experience\n7+ years of experience in software development, with significant full-stack web application development experience strongly preferred\nDemonstrated knowledge and hands-on experience across the full application stack with some of the following languages/frameworks: JavaScript, TypeScript, React, Angular, Vue, jQuery, Java, Sprint, C#, .NET, Node.js, SQL, MySQL, SQL Server, MongoDB, cloud-native databases, AWS, Azure, GCP, Jenkins, Docker, Circle CI, Travis\nExperience leading in Agile teams, including coaching and modeling Agile mindsets as part of sprint ceremonies, work definition and building developer capabilities\nExperience working collaboratively with technical and non-technical team members and stakeholders including modeling and coaching others to use engineering best practices such as design patterns, customer-centric design, test-driven development, code refactoring, code review, and OWASP Top 10 security awareness",
+        "sha256": "a56590aded2be04b7d5b78da42caf7e232bd5f20f5480d924401db1fe9c46214",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
