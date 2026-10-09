@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-09",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "jsearch:jsearch_WGhpdWFpV0RwYjRLUFFxRkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTakIxYUdoM1NqY3pVbFZVVVdjM2RISkVUMVJ0ZGxCTFkzWjROVmwzYlhOcFlXdFBOMlJwTVVWQ1drbFJSM1l5YzA5NGVHMDFVVEpYTW5GNFNreHNTMFJ5UWxaT2VVNTRaWEpZWTNCSmJqZ3dNamx0V0ZaUFRXOXlNWFJCUzNNdFgzQkZNM1JLTkZWR2JtMDRTMGhhTVhWcFNuWTBUbGhYTVZSdFZEZE9Xa2xUUVc5aGVIa1NGMDV6Y2tsaGNrOUdSbkJYWVhObFRWQnNObXBoTWxGSkdpSkJSSE55T1daUmRsSm5iME5PVkUxNk4xWm9Wa0ZtWkRSeVZESnJXWEJTUXpOQg",
+      "captured_at": "2026-10-09T00:00:00Z",
+      "source": "jsearch",
+      "source_id": "jsearch_WGhpdWFpV0RwYjRLUFFxRkFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTakIxYUdoM1NqY3pVbFZVVVdjM2RISkVUMVJ0ZGxCTFkzWjROVmwzYlhOcFlXdFBOMlJwTVVWQ1drbFJSM1l5YzA5NGVHMDFVVEpYTW5GNFNreHNTMFJ5UWxaT2VVNTRaWEpZWTNCSmJqZ3dNamx0V0ZaUFRXOXlNWFJCUzNNdFgzQkZNM1JLTkZWR2JtMDRTMGhhTVhWcFNuWTBUbGhYTVZSdFZEZE9Xa2xUUVc5aGVIa1NGMDV6Y2tsaGNrOUdSbkJYWVhObFRWQnNObXBoTWxGSkdpSkJSSE55T1daUmRsSm5iME5PVkUxNk4xWm9Wa0ZtWkRSeVZESnJXWEJTUXpOQg",
+      "title": "AI Integrations Engineer Automation + LLM",
+      "company": "Alrouf",
+      "location": "الدمام, Saudi Arabia",
+      "url": "https://www.jobilize.com/job/sa-dammam-ai-integrations-engineer-automation-llm-alrouf-hiring-now",
+      "salary": "",
+      "tier": "Competitive with gaps",
+      "score": 69,
+      "why": "Excellent alignment with bilingual LLM integration, Python automations, and Dammam location. (capped: description is a short teaser)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 34,
+          "max": 40,
+          "note": "Demonstrated Python, REST APIs, Git, bilingual RAG, LLM integrations."
+        },
+        "experience": {
+          "score": 22,
+          "max": 30,
+          "note": "Teaser: proven production automation and LLM application shipping."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No mandatory degree specified in teaser."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Dammam location matches perfectly."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Missing Docker Experience",
+        "Insufficient Track Record in Production Automations and Integrations"
+      ],
+      "link_status": "open",
+      "first_published": "",
+      "age_days": null,
+      "jd": {
+        "status": "captured",
+        "text": "AI Integrations Engineer (Automation + LLM)\nAI Integrations Engineer (Automation + LLM)\n\nBlend Python and API integrations with low‑code automation; ship production automations and build microservices and RAG KB.\nDepartment\n\nAI & Software\nLevel\n\nMid-Senior\nType\n\nFull-time or Contractor\nResponsibilties\n\nBuild automations (Zapier/Make) RFQ→CRM→notifications.\nIntegrate Salesforce/Odoo/M365/GWS/WhatsApp; Python FastAPI microservices.\nData Lake and ETL; bilingual RAG over internal docs; security and observability.\nRequirements\n\n3+ years delivering automations/integrations; Python, REST/JSON, Git, Docker.\nOpenAI API + LangChain/LlamaIndex; Zapier/Make; ERP/CRM integrations.\n#",
+        "sha256": "bc4fc31c4f411b8848163fde96c88f4ccb74766160e079db93fb77026ec4ca09",
+        "completeness_failures": [],
+        "grade": "teaser"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2404337492",
+      "captured_at": "2026-10-09T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2404337492",
+      "title": "Senior QA Engineer (Manual & Automation)",
+      "company": "Salla",
+      "location": "Makkah Al Mukarramah, Makkah Region, Saudi Arabia",
+      "url": "https://jobs.workable.com/view/6ZcGE4ZTxikkpRcdEMQijv/remote-senior-qa-engineer-(manual-%26-automation)-in-makkah-at-salla",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 52,
+      "why": "Strong TypeScript and CI automated testing, but lacks 5+ years dedicated QA ownership.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 26,
+          "max": 40,
+          "note": "Demonstrates TypeScript, CI testing, evaluation harnesses, and DevTools debuggin"
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Has strong test engineering practice, but lacks 5+ years dedicated QA."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No degree barrier stated in requirements."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Based in Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lack of 5+ Years Dedicated QA Experience",
+        "Missing Playwright Test Automation Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-08",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Salla is looking for a Senior QA Engineer to take ownership of product quality across our platform. In this role, you will be responsible for ensuring that every release meets our quality standards, and you will be accountable for making informed go/no-go release decisions based on risk and test results.\nYou will be expected to define the most suitable QA approach for our product and teams, including the testing strategy, tools, standards, and workflows. This approach should be flexible, not rigid: you will adapt the depth, type, and process of testing to fit each situation, whether it's an urgent hotfix, a major feature launch, or a high-risk change.\nThis is a hands-on role covering both manual and automated testing. You will work closely with engineering, product, and DevOps teams to review requirements, define test strategies, perform manual and exploratory testing, and build reliable test automation using Playwright.\nBeyond identifying and resolving defects, you will analyze their root causes and implement preventive measures to reduce recurring issues.\nResponsibilities\nOwn quality end to end, building it in early through requirement reviews, design discussions, and test strategy, through to the final go/no-go call on releases\nDefine and continuously refine the QA approach, including testing standards, workflows, tools, and quality metrics. Adapt testing depth, process, and priorities to risk, timeline, and context rather than applying a one-size-fits-all process\nDecide what needs testing, how deeply, and with which approach (functional, regression, API, UI, performance, security, usability). Decide what stays manual and what gets automated, and know when enough is enough\nPerform thorough manual and exploratory testing on new features, finding what scripts miss: edge cases, unexpected user behavior, UX problems, and the UI details users notice (layout, states, responsiveness)\nBuild and maintain Playwright (TypeScript/JavaScript) automation that runs in CI, catches real issues instead of just adding to a test count, and gives the team fast, trustworthy feedback\nReview code and pull requests properly: read them, question them, and push back when something isn't right\nTriage defects and investigate them in depth using browser DevTools (network, console, performance, storage) to find root causes, not just symptoms, and help the team prioritize what matters most\nPrevent recurring issues by identifying the pattern behind bugs, analyzing defect trends, and putting safeguards in place (tests, checks, process changes). Think ahead about how new features, scale, and changes will affect quality\nUse AI tools thoughtfully to speed up test creation, analysis, and debugging, and build AI-assisted workflows where they add value, while always validating the output\nCommunicate risks clearly to developers, product managers, and leadership, with a recommendation rather than just a report\nTake initiative to spot gaps in our processes, tools, or product and drive improvements, while mentoring other QA engineers and raising the quality mindset across the team\n5+ years of QA experience with real ownership of releases and quality decisions\nStrong experience in both manual and automated testing, and the judgment to balance the two\nSolid JavaScript and TypeScript skills, enough to write clean, maintainable Playwright automation and read application code with confidence\nHands-on experience with Playwright (or strong experience with a similar framework plus a willingness to go deep on Playwright)\nStrong command of Git and GitHub: branching, pull requests, code reviews, and working within CI pipelines \nDeep understanding of testing types, techniques, and test design, and the judgment to choose the right one \nFlexibility to adjust your approach to different situations, avoiding rigid processes while keeping quality standards high\nExperience testing web, mobile, and APIs\nComfort with browser DevTools for debugging and investigation\nPractical experience using AI in your work, and the critical thinking to know when to trust it and when not to\nA preventive mindset: you've fixed problems at their root, not just patched symptoms, and can give examples",
+        "sha256": "f5af316855d39f33beb1efae162f4d79db347a524484ade98665b00cae66735d",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:6183416",
+      "captured_at": "2026-10-09T00:00:00Z",
+      "source": "workable",
+      "source_id": "6183416",
+      "title": "Senior QA Engineer (Manual & Automation)",
+      "company": "Salla",
+      "location": "Makkah, Saudi Arabia",
+      "url": "https://apply.workable.com/salla/j/B431E1A886/",
+      "salary": "",
+      "tier": "Worth reviewing",
+      "score": 52,
+      "why": "Strong TypeScript and CI automated testing, but lacks 5+ years dedicated QA ownership.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 26,
+          "max": 40,
+          "note": "Demonstrates TypeScript, CI testing, evaluation harnesses, and DevTools debuggin"
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Has strong test engineering practice, but lacks 5+ years dedicated QA."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No degree barrier stated in requirements."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Based in Saudi Arabia."
+        }
+      },
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 5+ Years of Dedicated QA Experience",
+        "Missing Playwright Test Automation Experience"
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-08T00:00:00.000Z",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Salla is looking for a Senior QA Engineer to take ownership of product quality across our platform. In this role, you will be responsible for ensuring that every release meets our quality standards, and you will be accountable for making informed go/no-go release decisions based on risk and test results.\nYou will be expected to define the most suitable QA approach for our product and teams, including the testing strategy, tools, standards, and workflows. This approach should be flexible, not rigid: you will adapt the depth, type, and process of testing to fit each situation, whether it's an urgent hotfix, a major feature launch, or a high-risk change.\nThis is a hands-on role covering both manual and automated testing. You will work closely with engineering, product, and DevOps teams to review requirements, define test strategies, perform manual and exploratory testing, and build reliable test automation using Playwright.\nBeyond identifying and resolving defects, you will analyze their root causes and implement preventive measures to reduce recurring issues.\nResponsibilities\nOwn quality end to end, building it in early through requirement reviews, design discussions, and test strategy, through to the final go/no-go call on releases\nDefine and continuously refine the QA approach, including testing standards, workflows, tools, and quality metrics. Adapt testing depth, process, and priorities to risk, timeline, and context rather than applying a one-size-fits-all process\nDecide what needs testing, how deeply, and with which approach (functional, regression, API, UI, performance, security, usability). Decide what stays manual and what gets automated, and know when enough is enough\nPerform thorough manual and exploratory testing on new features, finding what scripts miss: edge cases, unexpected user behavior, UX problems, and the UI details users notice (layout, states, responsiveness)\nBuild and maintain Playwright (TypeScript/JavaScript) automation that runs in CI, catches real issues instead of just adding to a test count, and gives the team fast, trustworthy feedback\nReview code and pull requests properly: read them, question them, and push back when something isn't right\nTriage defects and investigate them in depth using browser DevTools (network, console, performance, storage) to find root causes, not just symptoms, and help the team prioritize what matters most\nPrevent recurring issues by identifying the pattern behind bugs, analyzing defect trends, and putting safeguards in place (tests, checks, process changes). Think ahead about how new features, scale, and changes will affect quality\nUse AI tools thoughtfully to speed up test creation, analysis, and debugging, and build AI-assisted workflows where they add value, while always validating the output\nCommunicate risks clearly to developers, product managers, and leadership, with a recommendation rather than just a report\nTake initiative to spot gaps in our processes, tools, or product and drive improvements, while mentoring other QA engineers and raising the quality mindset across the team\nRequirements\n5+ years of QA experience with real ownership of releases and quality decisions\nStrong experience in both manual and automated testing, and the judgment to balance the two\nSolid JavaScript and TypeScript skills, enough to write clean, maintainable Playwright automation and read application code with confidence\nHands-on experience with Playwright (or strong experience with a similar framework plus a willingness to go deep on Playwright)\nStrong command of Git and GitHub: branching, pull requests, code reviews, and working within CI pipelines\nDeep understanding of testing types, techniques, and test design, and the judgment to choose the right one\nFlexibility to adjust your approach to different situations, avoiding rigid processes while keeping quality standards high\nExperience testing web, mobile, and APIs\nComfort with browser DevTools for debugging and investigation\nPractical experience using AI in your work, and the critical thinking to know when to trust it and when not to\nA preventive mindset: you've fixed problems at their root, not just patched symptoms, and can give examples",
+        "sha256": "98193203dae4622515da959133957752c36375df6be44e02fd66e8b720be1bdd",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
