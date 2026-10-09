@@ -248,6 +248,38 @@ def _as_unclear(blocker: dict, reason: str) -> dict:
     }
 
 
+def valid_check_response(raw) -> bool:
+    """Validate the small check contract locally, before interpreting a verdict.
+
+    Provider schema enforcement is a request, not proof that the response obeyed
+    it. A malformed empty result must never read as a completed clean check.
+    """
+    if not isinstance(raw, dict) or set(raw) != set(CHECK_SCHEMA["required"]):
+        return False
+    for name, schema in CHECK_SCHEMA["properties"].items():
+        values = raw[name]
+        if not isinstance(values, list):
+            return False
+        item_schema = schema["items"]
+        for item in values:
+            if not isinstance(item, dict) or set(item) != set(item_schema["required"]):
+                return False
+            for field, field_schema in item_schema["properties"].items():
+                value = item[field]
+                if field == "evidence":
+                    if not isinstance(value, list):
+                        return False
+                    for evidence in value:
+                        if (not isinstance(evidence, dict) or set(evidence) != {"source", "snippet"}
+                                or evidence["source"] not in ("resume", "job_description")
+                                or not isinstance(evidence["snippet"], str)):
+                            return False
+                elif (not isinstance(value, str)
+                      or ("enum" in field_schema and value not in field_schema["enum"])):
+                    return False
+    return True
+
+
 def verify(raw: dict, job: dict, resume_text: str) -> dict:
     """Re-check every claim before any of it is allowed to change a score.
 
@@ -275,6 +307,8 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
     of their nine evidence snippets verified. A gate with that false-positive
     rate is worse than no gate.
     """
+    if not valid_check_response(raw):
+        return neutral_result("requirements check response was malformed")
     jd_text = job.get("description") or ""
     from_resume = vocabulary(resume_text, job.get("title", ""), job.get("company", ""))
 
@@ -361,9 +395,7 @@ def ceiling_band(blockers: list[dict]) -> str:
 # 91 to 46 -- well past the 67 Watheq gave the same posting. The lowest ceiling
 # wins and nothing accumulates.
 #
-# 69 is one point below STRONG_MATCH_MIN_SCORE and the top of the "competitive
-# with gaps" band, so a job with a real gap can still be delivered and read
-# honestly; it just cannot wear a "Strong matches" label.
+# Every verified gap ceiling is below the daily strong-match delivery floor.
 SEVERITY_CEILING = {"critical": 55, "high": 69, "medium": 79}
 
 # A stated degree, licence or certification the resume cannot show caps on its
