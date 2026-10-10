@@ -5,7 +5,7 @@ Daily job-search digest -> Discord.
 Pattern (same as the AI-news digest):
   gather  -> JSearch (RapidAPI, Google for Jobs aggregator) for breadth
              + company ATS APIs (Greenhouse, Ashby, Workable, Lever) for depth
-  filter  -> Saudi-only, senior+, title relevant, not seen before
+  filter  -> Saudi-only, mid-level/senior IC, confirmed publication within 7 days
   rank    -> one cheap OpenRouter call for score + one-line "why it fits"
              (deterministic keyword fallback if the ranker is missing or fails)
   deliver -> Discord webhook
@@ -14,7 +14,7 @@ Runs on GitHub Actions cron. No laptop needed.
 Secrets (GitHub repo -> Settings -> Secrets and variables -> Actions):
   DISCORD_WEBHOOK_URL   required
   RAPIDAPI_KEY          required for JSearch. Without it JSearch is skipped (ATS-only run).
-  OPENROUTER_API_KEY    optional. Without it, scoring is keyword-only.
+  OPENROUTER_API_KEY    required for verified fit; without it, status only.
 
 State:
   seen.json holds job ids already sent. The workflow commits it back after each
@@ -27,7 +27,7 @@ Profile:
   profile.json holds the candidate blurb, skill keywords, and target titles fed
   to the ranking model and the keyword fallback. Refresh it with PROFILE_REFRESH_PROMPT.md
   (manually, or via the monthly nudge) as your background/skills/target roles
-  change. Missing or corrupt profile.json falls back to DEFAULT_PROFILE below.
+  change. Missing or corrupt evidence suppresses job cards and reports status.
 """
 
 import os
@@ -44,7 +44,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
-from job_archive import (GRADE_TEASER, jd_grade, jd_requirements, jd_signal,
+from job_archive import (GRADE_FULL, GRADE_TEASER, jd_grade, jd_requirements, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 import fit_check
 from fit_check import check_jobs
@@ -115,12 +115,13 @@ TITLE_INCLUDE = [
     "front-end", "full stack", "fullstack", "full-stack", "ai ", " ai",
     "ml ", " ml", "machine learning", "data scien", "data engineer", "mlops",
     "devops", "sre", "site reliability", "platform", "automation",
+    "data analyst", "analytics", "business intelligence", "power bi",
     # NOT the bare word "architect": in Saudi Arabia that is a building
     # architect far more often than a software one. Name the software ones.
     "solutions architect", "software architect", "data architect",
     "cloud architect", "enterprise architect", "technical architect",
     "security architect",
-    "product manager", "technical product", "head of engineering", "solutions engineer",
+    "solutions engineer",
 ]
 
 # "Engineer" is not a software word here. Of 177 Saudi postings Bayt returned
@@ -145,12 +146,12 @@ TITLE_EXCLUDE_DISCIPLINE = [
 # Seniority filter: drop anything junior AND anything above senior IC.
 # The 2026-07-31 digest scored Lead/Staff/Team-Leader roles 85-98 because this
 # list only bounded seniority from below and profile.json said "senior or
-# above". Target is senior individual contributor; leadership tracks are out.
+# above". Target is mid-level and senior IC; leadership tracks are out.
 TITLE_EXCLUDE = [
     "junior", "intern", "internship", "graduate", "trainee", "tamheer",
     "associate", "entry", "fresh", "co-op", "apprentice", "student",
     "lead ", " lead", "leader", "staff", "principal", "head of", "director",
-    "chief", "vice president", " vp", "vp ", "engineering manager",
+    "chief", "vice president", " vp", "vp ", "manager", "management",
 ]
 
 # Candidate profile (blurb, skill keywords, target titles) drives both the
@@ -281,7 +282,7 @@ STRONG_MATCH_MIN_SCORE = 80
 # made honest it is where most genuinely relevant postings now land.
 COMPETITIVE_MIN_SCORE = 60
 
-def _score_floor(raw: str, default: int = 40) -> int:
+def _score_floor(raw: str, default: int = 80) -> int:
     """Read the delivery floor from the environment, tolerating a bad value.
 
     An unset repository variable renders as an empty string, and a mistyped one
@@ -307,10 +308,8 @@ def _score_floor(raw: str, default: int = 40) -> int:
 # was delivered no matter how poorly it scored, and the weak ones crowded out
 # the review tier. Override with a repository variable of the same name.
 #
-# Only a model score can send a job here. A keyword fallback number is not
-# evidence of a bad match — it is what the pipeline produces when the ranker is
-# down — and silently delivering nothing on a ranker outage would be worse than
-# delivering a noisy digest. See drop_below_floor().
+# Only verified model scores get low-score cooldowns. Fallback or incomplete
+# verification produces status only and leaves the posting retryable.
 MIN_DELIVER_SCORE = _score_floor(os.environ.get("MIN_DELIVER_SCORE") or "")
 
 # Per-job resume tailoring is an explicit Discord interaction handled by
@@ -330,8 +329,7 @@ JD_RANK_CHARS = 2600    # JD window per job inside the one ranking call
 # without evidencing anything. It can be reviewed, and it can be tailored
 # against with a warning, but it can never be a strong match: the score that
 # says so would be built on nothing. 69 is the top of the rubric's "adjacent
-# function, seniority mismatch, or several gaps" band, one point below the
-# strong-match line.
+# function, seniority mismatch, or several gaps" band, below the strong line.
 TEASER_SCORE_CAP = 69
 
 # A job whose stated hard requirements the resume cannot evidence is held down
@@ -430,16 +428,30 @@ def load_profile():
     try:
         with open(PROFILE_FILE, encoding="utf-8") as f:
             data = json.load(f)
-    except ValueError:
+    except (OSError, ValueError):
         log(f"WARN {PROFILE_FILE} is corrupt, using default profile")
         return DEFAULT_PROFILE
-    if not data.get("blurb") or not data.get("skill_keywords"):
+    if (not isinstance(data, dict)
+            or not isinstance(data.get("blurb"), str) or not data["blurb"].strip()
+            or not isinstance(data.get("skill_keywords"), list) or not data["skill_keywords"]
+            or not all(isinstance(k, str) and k.strip() for k in data["skill_keywords"])
+            or ("tracks" in data and (not isinstance(data["tracks"], list)
+                or not data["tracks"] or any(
+                    not isinstance(t, dict)
+                    or not all(isinstance(t.get(k), str) and t[k].strip() for k in ("name", "evidence"))
+                    or not isinstance(t.get("titles"), list) or not t["titles"]
+                    or not all(isinstance(title, str) and title.strip() for title in t["titles"])
+                    for t in data["tracks"])))):
         log(f"WARN {PROFILE_FILE} missing 'blurb' or 'skill_keywords', using default profile")
         return DEFAULT_PROFILE
     return data
 
 
 PROFILE = load_profile()
+
+
+def riyadh_today():
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date()
 
 
 def _get(url):
@@ -606,11 +618,7 @@ def fetch_lever(c):
     out = []
     for j in data:
         cats = j.get("categories") or {}
-        created = j.get("createdAt")
-        # Normalise epoch-ms to an ISO date so the seen.json TTL prune stays uniform.
-        published = ""
-        if isinstance(created, (int, float)):
-            published = datetime.datetime.utcfromtimestamp(created / 1000).date().isoformat()
+        published = _epoch_ms_date(j.get("createdAt"))
         out.append({
             "company": c["name"],
             "id": str(j.get("id")),
@@ -786,7 +794,7 @@ def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
                 "title":   (j.get("job_title") or "").strip(),
                 "location": location,
                 "url":     j.get("job_apply_link") or j.get("job_google_link") or "",
-                "first_published": (j.get("job_posted_at_datetime_utc") or "")[:10],
+            "first_published": str(publication_day(j.get("job_posted_at_datetime_utc")) or ""),
                 "source": "jsearch", "token": "",
                 "description": (j.get("job_description") or "").strip(),
                 # Google's knowledge-panel guess at the employer's site, present
@@ -1338,8 +1346,7 @@ def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
             # noticed the posting, which for the first row probed was today
             # against a publish date in June -- reading it would let a
             # months-old role pass a seven-day cutoff as same-day. No date at
-            # all is better than the wrong one: split_by_age keeps an undated
-            # posting and the card says the date is unknown.
+            # all is better than the wrong one: an undated posting is withheld.
             "first_published": _epoch_ms_date(row.get("datePublishedTimestamp")),
             "source": "indeed", "token": "",
             "description": str(row.get("description") or "").strip(),
@@ -1355,7 +1362,7 @@ def _epoch_ms_date(stamp):
         return ""
     try:
         return datetime.datetime.fromtimestamp(
-            stamp / 1000, datetime.timezone.utc).date().isoformat()
+            stamp / 1000, datetime.timezone(datetime.timedelta(hours=3))).date().isoformat()
     except (ValueError, OverflowError, OSError):
         return ""
 
@@ -1468,7 +1475,7 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota,
             "url": row.get("url") or "",
             # date_posted is when the employer published; date_created is when
             # Fantastic.jobs indexed it. The gate reads the employer's clock.
-            "first_published": str(row.get("date_posted") or "")[:10],
+            "first_published": str(publication_day(row.get("date_posted")) or ""),
             "source": source, "token": "",
             "description": (row.get("description_text") or "").strip(),
         })
@@ -1923,7 +1930,7 @@ def rank_jobs(jobs, api_key, evidence=None):
         "that rule a role out. It proves nothing about capability.\n\n"
         "Score each job 0-100 for fit to this candidate.\n"
         f"Use this strict evidence-based rubric: {weights}. "
-        "80+ means hireable today, 60-79 means competitive with gaps, below 60 "
+        "80+ means strong evidence-backed fit, 60-79 means competitive with gaps, below 60 "
         "means significant gaps. Never score above 90 unless every requirement "
         "the posting states is met with evidence from the candidate_evidence "
         "block. Reserve 95+ for a posting whose every stated requirement is met.\n"
@@ -1967,7 +1974,7 @@ def rank_jobs(jobs, api_key, evidence=None):
                            time.monotonic() + RANK_BUDGET_SECONDS,
                            provider=RANK_PROVIDER)
         return {
-            str(it["id"]): {"score": int(it["score"]), "why": str(it["why"])[:140],
+            str(it["id"]): {"score": it["score"], "why": it["why"],
                             "track": str(it.get("track") or "")[:60],
                             "categories": it.get("categories")}
             for it in answer["scores"]
@@ -2195,16 +2202,17 @@ def apply_ranking(jobs, ranking):
     for job in jobs:
         result = ranking.get(job["id"]) if isinstance(ranking, dict) else None
         try:
-            score = int(result["score"])
-            why = str(result["why"]).strip()[:140]
-            valid = 0 <= score <= 100 and bool(why)
+            score = result["score"]
+            why = result["why"]
+            valid = (type(score) is int and 0 <= score <= 100
+                     and isinstance(why, str) and bool(why.strip()))
         except (KeyError, TypeError, ValueError):
             valid = False
         if valid:
             # Categories are additive evidence, so a malformed set costs the
             # breakdown and never the score: the number is the model's own
             # judgement and does not depend on them.
-            job.update(score=score, why=why, ranking_verified=True,
+            job.update(score=score, why=why.strip()[:140], ranking_verified=True,
                        track=str(result.get("track") or "").strip()[:60],
                        categories=valid_categories(result.get("categories")))
         else:
@@ -2351,7 +2359,7 @@ def drop_below_floor(jobs):
     """
     kept, dropped = [], []
     for job in jobs:
-        if job.get("ranking_verified") and job["score"] < MIN_DELIVER_SCORE:
+        if job.get("ranking_verified") and job["score"] < max(MIN_DELIVER_SCORE, STRONG_MATCH_MIN_SCORE):
             dropped.append(job)
         else:
             kept.append(job)
@@ -2392,10 +2400,13 @@ def is_strong(job):
     its ceiling, and every ceiling sits below STRONG_MATCH_MIN_SCORE, so this is
     belt and braces rather than a second opinion.
     """
-    return bool(job["ranking_verified"]
+    check = job.get("fit_check") or {}
+    return bool(job.get("ranking_verified")
                 and job["score"] >= STRONG_MATCH_MIN_SCORE
-                and job.get("description")
-                and not (job.get("fit_check") or {}).get("blockers"))
+                and jd_grade(job.get("description") or "") == GRADE_FULL
+                and check.get("ceiling") == "high"
+                and not check.get("note")
+                and not check.get("blockers"))
 
 
 def split_tiers(jobs):
@@ -2797,6 +2808,7 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
     row = {
         "date": today, "fetched": fetched, "matched": matched,
         "new": new, "avg_score": avg_score,
+        "unverified_date": 0, "unverified_fit": 0,
     }
     row.update(metrics)
     for source, counts in sorted(metrics.get("source_yield", {}).items()):
@@ -2868,7 +2880,7 @@ def instability_warning(unstable):
 def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, warnings,
                    *, newly_found=0, already_seen=0, stale=0, below_floor=0,
                    boards_read=0, boards_total=0, boards_skipped=0,
-                   paused_feeds=()):
+                   paused_feeds=(), unverified_date=0, unverified_fit=0):
     """Confirm a quiet day out loud.
 
     A green workflow run with no new roles used to exit silently, which is
@@ -2883,7 +2895,9 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
         f"Scanned {scanned} postings; {matched} matched the filters: "
         f"{already_seen} seen before, {newly_found} newly found; "
         f"{stale} older than {MAX_JOB_AGE_DAYS}d, "
-        f"{below_floor} below fit score {MIN_DELIVER_SCORE}.",
+        f"{below_floor} below fit score {max(MIN_DELIVER_SCORE, STRONG_MATCH_MIN_SCORE)}.",
+        f"Excluded {unverified_date} with unverified posting dates; "
+        f"{unverified_fit} awaiting complete fit verification.",
         f"Read {boards_read} of {boards_total} employer boards; "
         f"{boards_skipped} skipped by the per-run cap or time budget.",
         f"Quota-paused feeds: {paused_names or 'none'}.",
@@ -2918,6 +2932,10 @@ def post_discord(webhook, lines):
 
 
 def main():
+    global PROFILE
+    PROFILE = load_profile()
+    evidence = load_resume_evidence()
+    evidence_ready = PROFILE is not DEFAULT_PROFILE and bool(evidence)
     webhook = os.environ.get("DISCORD_WEBHOOK_URL")
     worker_url = os.environ.get("INTERACTIVE_WORKER_URL")
     worker_secret = os.environ.get("WORKER_CALLBACK_SECRET")
@@ -2983,7 +3001,7 @@ def main():
     # them here is the entire payoff of that discovery: the posting arrives from
     # the employer with a free link and a complete JD, and
     # prefer_employer_postings drops the relisted copy without being told.
-    today_iso = datetime.date.today().isoformat()
+    today_iso = riyadh_today().isoformat()
     # Which discovered record a queue entry came from, so the loop can stamp
     # last_read without confirmed_boards having to widen the entry shape that
     # fetch_company takes.
@@ -3070,15 +3088,17 @@ def main():
     # a request per job. Deliberately NOT written to seen.json: the check is
     # free to repeat, and a posting dropped for age today must still be
     # deliverable if a source later reports a corrected, newer date for it.
-    # An undated posting stays and is labelled rather than dropped.
-    fresh, stale = split_by_age(fresh, MAX_JOB_AGE_DAYS)
+    fresh, age_rejected = split_by_age(fresh, MAX_JOB_AGE_DAYS)
+    unverified_dates = [j for j in age_rejected
+                        if j.get("age_days") is None or j["age_days"] < 0]
+    stale = [j for j in age_rejected if j not in unverified_dates]
     for job in stale:
         log(f"DROP older than {MAX_JOB_AGE_DAYS}d ({job['age_days']}d): "
             f"{job['company']} — {job['title']}")
-    undated = sum(1 for j in fresh if j.get("age_days") is None)
+    undated = sum(1 for j in unverified_dates if j.get("age_days") is None)
     # Keep the pre-verification candidates: subsequent filters mutate fresh.
-    # These counts mean unseen, non-cooling jobs inside the age gate, including
-    # undated postings, before link checks and ranking.
+    # These counts mean unseen, non-cooling jobs inside the confirmed age gate,
+    # before link checks and ranking.
     discovered_new = list(fresh)
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
         f"{len(relisted_copies)} relisted copies, {len(paywalled)} paywalled and refused "
@@ -3124,15 +3144,18 @@ def main():
     if closed:
         log(f"{len(closed)} of {checked} new jobs confirmed closed")
 
-    today = datetime.date.today().isoformat()
+    today = today_iso
 
     warnings = [drift_warning, ranker_warning]
+    if not evidence_ready:
+        warnings.append("Matching evidence unavailable: valid profile and master resume required; no job cards sent.")
 
     if not fresh:
         save_stats(
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
             dropped_stale=len(stale), undated=undated,
+            unverified_date=len(unverified_dates),
             strong=0, review=0, tailored=0, tailor_failed=0,
             delivered=0, source_yield=source_yield(all_jobs, discovered_new, paused_feeds=paused_feeds, sources=attempted_sources),
         )
@@ -3140,6 +3163,7 @@ def main():
                        len(all_jobs), len(matched), warnings,
                        already_seen=already_seen,
                        newly_found=newly_found, stale=len(stale),
+                       unverified_date=len(unverified_dates),
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
                        paused_feeds=paused_feeds)
@@ -3149,8 +3173,7 @@ def main():
     # A ranking built on a thin description is a worse outcome than a late one,
     # so enrichment is the last thing dropped and it degrades to whatever JD text
     # the fetchers already carried. jd_grade then labels those honestly as a
-    # teaser or a fragment, and cap_teaser_scores holds them out of the strong
-    # tier -- so a budget-starved run under-sells rather than over-sells.
+    # teaser or fragment; the final gate withholds those for a later retry.
     if time.monotonic() < run_deadline:
         enrich_descriptions(fresh)
     else:
@@ -3213,6 +3236,7 @@ def main():
             stats, today, len(all_jobs), len(matched), 0, None,
             link_closed=len(closed), link_unknown=unknown_count,
             dropped_stale=len(stale), undated=undated,
+            unverified_date=len(unverified_dates),
             strong=0, competitive=0, review=0, tailored=0, tailor_failed=0,
             delivered=0, source_yield=source_yield(all_jobs, discovered_new, paused_feeds=paused_feeds, sources=attempted_sources),
             relisted=len(relisted), cooling=len(cooling),
@@ -3221,6 +3245,7 @@ def main():
                        len(all_jobs), len(matched), warnings,
                        newly_found=newly_found, already_seen=already_seen,
                        stale=len(stale),
+                       unverified_date=len(unverified_dates),
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
                        paused_feeds=paused_feeds)
@@ -3232,34 +3257,38 @@ def main():
             "rescued link enrichment found. Heartbeat sent.")
         return
 
-    # Read once and passed to both passes, so "the ranker and the reality check
-    # scored the same evidence" is a property of the code rather than of two
-    # reads happening to agree.
-    evidence = load_resume_evidence()
-    ranking = rank_jobs(fresh, rank_key, evidence) if rank_key else None
-    if rank_key and ranking is None:
-        log("Ranker unavailable, using keyword scoring for this run")
+    # The same resume evidence drives ranking and the requirements check.
+    ranking = rank_jobs(fresh, rank_key, evidence) if rank_key and evidence_ready else None
+    if ranking is None:
+        warnings.append("Fit ranking unavailable; unverified matches are held for retry.")
     apply_ranking(fresh, ranking)
-    for job in cap_teaser_scores(fresh):
-        log(f"Capped {job['company']} — {job['title']} at {job['score']}: teaser, not a full JD")
-
-    # Captured before the delivery floor and the MAX_JOBS_IN_DIGEST cut below, so
-    # a stale profile shows up in the drift trend even on days the real drop is
-    # buried past the top 25 — or below the floor. check_drift compares this
-    # average against the prior window, and measuring it after a cut that
-    # removes exactly the low scores would make every run look healthy.
+    # Keep the pre-filter average: selective delivery must not hide source drift.
     new_count = len(fresh)
     avg_score = round(sum(j["score"] for j in fresh) / new_count, 1)
 
-    fresh, below_floor = drop_below_floor(fresh)
+    candidates, unverified = [], []
+    for job in fresh:
+        supported = (evidence_ready and job.get("ranking_verified")
+                     and jd_grade(job.get("description") or "") == GRADE_FULL)
+        (candidates if supported else unverified).append(job)
+    fresh, below_floor = drop_below_floor(candidates)
+    check_jobs(fresh, evidence, rank_key, RANK_MODEL, RANK_FALLBACKS,
+               RANK_PROVIDER, log)
+    for job in cap_blocked_scores(fresh):
+        gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
+        log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
+    fresh, capped_below_floor = drop_below_floor(fresh)
+    below_floor.extend(capped_below_floor)
+    eligible = []
+    for job in fresh:
+        (eligible if is_strong(job) else unverified).append(job)
+    fresh = eligible
     for job in below_floor:
-        log(f"Below floor {job['company']} — {job['title']}: fit {job['score']} "
-            f"< {MIN_DELIVER_SCORE}; skipped for {FLOOR_COOLDOWN_DAYS} days")
-        # A cooldown, not a retirement. This is a verdict on one score, and the
-        # archives show a score moving 35 points on an unchanged description --
-        # so it stops the same reject being re-ranked every morning without
-        # burying a real job for the full state TTL.
+        log(f"Below floor {job['company']} - {job['title']}: final fit {job['score']}; "
+            f"skipped for {FLOOR_COOLDOWN_DAYS} days")
         defer_below_floor(seen, job, today)
+    for job in unverified:
+        log(f"Held for fit verification: {job['company']} - {job['title']}")
 
     if not fresh:
         save_seen(seen)
@@ -3267,51 +3296,27 @@ def main():
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
             dropped_stale=len(stale), undated=undated,
-            strong=0, review=0, tailored=0, tailor_failed=0,
-            delivered=0, source_yield=source_yield(all_jobs, discovered_new, paused_feeds=paused_feeds, sources=attempted_sources),
-            relisted=len(relisted), below_floor=len(below_floor),
-            cooling=len(cooling),
+            unverified_date=len(unverified_dates), unverified_fit=len(unverified),
+            strong=0, competitive=0, review=0, tailored=0, tailor_failed=0,
+            delivered=0, source_yield=source_yield(all_jobs, discovered_new,
+                                                paused_feeds=paused_feeds, sources=attempted_sources),
+            relisted=len(relisted), below_floor=len(below_floor), cooling=len(cooling),
         )
         post_heartbeat(webhook, worker_url, worker_secret, today,
                        len(all_jobs), len(matched), warnings,
                        newly_found=newly_found, already_seen=already_seen,
-                       stale=len(stale),
-                       below_floor=len(below_floor),
+                       stale=len(stale), below_floor=len(below_floor),
+                       unverified_date=len(unverified_dates), unverified_fit=len(unverified),
                        boards_read=boards_read, boards_total=boards_total,
-                       boards_skipped=boards_total - boards_read,
-                       paused_feeds=paused_feeds)
-        log(f"All {len(below_floor)} new postings scored below {MIN_DELIVER_SCORE}. Heartbeat sent.")
+                       boards_skipped=boards_total - boards_read, paused_feeds=paused_feeds)
+        log("No fully verified strong matches. Heartbeat sent.")
         return
 
-    # One employer's batch must not be the whole morning. Applied after the
-    # floor so the cap spends its three places on roles worth delivering, and
-    # before the tier split so it is the employer's best three that survive.
+    # Only eligible jobs consume employer slots or the digest's overall limit.
     fresh, deferred = cap_per_company(fresh)
     for job in deferred:
-        # Deliberately NOT remembered, on the same reasoning as a paid-relister
-        # drop: a verdict on the shape of today's digest, not on the role.
         log(f"Deferred {job['company']} - {job['title']}: fit {job['score']}, "
             f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
-
-    # Between cap_per_company and split_tiers on purpose, and the position does
-    # three jobs at once. avg_score was taken above, so drift keeps measuring
-    # what it always measured. drop_below_floor already ran, so the cap can
-    # never CAUSE a job to be dropped or remembered as below-floor -- a capped
-    # job is delivered, flagged, and then remembered like any other delivery,
-    # which is what stops it being re-fetched and re-capped every morning. And
-    # split_tiers has not run, so a capped job is tiered on the score the cap
-    # left it rather than wearing a "Strong matches" label beside a fit 69.
-    # Every delivered job, not only the ones already scoring 80+. Scoped that
-    # way this pass produced exactly one low ceiling across 208 archived
-    # snapshots, because it never looked at the other 196 -- and a gap the
-    # ranker missed on a job it scored 78 is the gap most worth naming.
-    # MAX_CHECKED_JOBS and CHECK_BUDGET_SECONDS still bound it, and a job past
-    # either keeps a neutral result that caps nothing.
-    check_jobs(fresh, evidence, rank_key, RANK_MODEL, RANK_FALLBACKS,
-               RANK_PROVIDER, log)
-    for job in cap_blocked_scores(fresh):
-        gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
-        log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
 
     tiers = split_tiers(fresh)
     room = MAX_JOBS_IN_DIGEST
@@ -3350,8 +3355,7 @@ def main():
             resume_line = ""
             # Age leads the flags. The digest is asked for roles posted within a
             # week, so how old a posting is belongs on the card next to the
-            # claim -- and an undated one has to say so rather than let the
-            # reader assume the cutoff was enforced on it.
+            # claim. Only confirmed fresh publication dates reach delivery.
             flags = [age_label(j.get("age_days"))]
             if j.get("link_status") == LINK_UNKNOWN:
                 flags.append("link check inconclusive")
@@ -3379,12 +3383,13 @@ def main():
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
                 dropped_stale=len(stale), undated=undated,
+            unverified_date=len(unverified_dates),
             strong=len(strong), competitive=len(competitive), review=len(review),
             tailored=0, tailor_failed=0,
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
             source_yield=source_yield(all_jobs, discovered_new,
                                      [j for j in fresh if j["id"] in delivered_ids], paused_feeds, attempted_sources),
-            below_floor=len(below_floor), deferred=len(deferred),
+            below_floor=len(below_floor), deferred=len(deferred), unverified_fit=len(unverified),
         )
 
     interactive_delivery_claimed = False
@@ -3609,19 +3614,33 @@ def discover(names):
 # It reads. It never writes, never delivers and never touches seen.json.
 # Nothing older than this reaches the digest. first_published was written by
 # every fetcher and read by NOTHING before this, so "fresh" meant only "not
-# delivered before" -- a four-month-old posting counted as new the first time it
-# was seen, which is how a closed HudHud Maps role from a month earlier reached
-# the 7 Sep 2026 digest. Overridable, because the achievable cutoff depends
-# entirely on what the sources can supply.
+# delivered before". The configured window can tighten the seven-day policy;
+# no source's retrieval or update clock can establish a publication date.
 def _max_job_age(raw):
     try:
         value = int(str(raw).strip())
     except (TypeError, ValueError):
         return 7
-    return value if value > 0 else 7
+    return value if 0 < value <= 7 else 7
 
 
 MAX_JOB_AGE_DAYS = _max_job_age(os.environ.get("MAX_JOB_AGE_DAYS"))
+
+def publication_day(raw):
+    """Validate publication dates and convert timestamp dates to Riyadh."""
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    raw = raw.strip()
+    try:
+        if len(raw) == 10:
+            return datetime.date.fromisoformat(raw)
+        stamp = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if stamp.tzinfo is not None:
+            stamp = stamp.astimezone(datetime.timezone(datetime.timedelta(hours=3)))
+        return stamp.date()
+    except ValueError:
+        return None
+
 
 def split_by_age(jobs, max_age_days, today=None):
     """Split postings into (fresh, stale) and record each one's age in days.
@@ -3630,24 +3649,20 @@ def split_by_age(jobs, max_age_days, today=None):
     remain published long after it first appeared, but that does not make it a
     newly posted role for this digest.
 
-    An undated posting is FRESH, not stale. Pinpoint publishes no date at all
-    and Greenhouse only sometimes, so dropping the undated would quietly remove
-    those employers from the digest entirely. The card says the date is unknown
-    instead, which is the honest version of what is known.
+    Missing, invalid and future publication dates are excluded. Retrieval and
+    update dates never substitute for an employer publication date.
     """
-    today = today or datetime.date.today()
+    today = today or riyadh_today()
     fresh, stale = [], []
     for job in jobs:
-        raw = str(job.get("first_published") or "")[:10]
-        try:
-            age = (today - datetime.date.fromisoformat(raw)).days
-        except ValueError:
+        published = publication_day(job.get("first_published"))
+        if published is None:
             job["age_days"] = None
-            fresh.append(job)
+            stale.append(job)
             continue
-        # Ingestion delay and timezones can put a posting a few hours ahead.
-        job["age_days"] = max(age, 0)
-        too_old = job["age_days"] > max_age_days
+        age = (today - published).days
+        job["age_days"] = age
+        too_old = age < 0 or age > max_age_days
         (stale if too_old else fresh).append(job)
     return fresh, stale
 
@@ -3683,6 +3698,7 @@ ACTIVE_ATS_TITLE = (
     "software | developer | backend | 'back end' | frontend | 'front end' | "
     "'full stack' | fullstack | 'machine learning' | 'data scien':* | "
     "'data engineer' | 'ai engineer' | 'llm' | 'ai product engineer' | "
+    "'data analyst' | analytics | 'business intelligence' | 'power bi' | "
     "'ml engineer' | mlops | devops | sre | "
     "'site reliability' | 'platform engineer' | 'cloud engineer' | "
     "'solutions engineer' | 'solutions architect' | 'software architect' | "

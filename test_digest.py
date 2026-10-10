@@ -47,7 +47,7 @@ import job_archive  # noqa: E402
 # so a hardcoded date turns every end-to-end test into a time bomb that passes
 # until the fixture ages past the cutoff and then fails for a reason that has
 # nothing to do with the behaviour under test.
-RECENT = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+RECENT = (digest.riyadh_today() - datetime.timedelta(days=1)).isoformat()
 
 
 # The six jobs exactly as the 2026-07-31 digest delivered them (JSearch source,
@@ -268,6 +268,9 @@ REQUIREMENTS = (
     "LLM application development, and a track record shipping backend systems."
 )
 FULL_JD = BOILERPLATE + REQUIREMENTS
+# Delivery tests need full postings; title/location fixture checks are unchanged.
+REAL_JOBS = [dict(job, description=FULL_JD) for job in REAL_JOBS]
+CLEAN_CHECK = {"blockers": [], "unclear": [], "strengths": [], "ceiling": "high", "note": ""}
 
 # 497 characters of aggregator marketing copy, the length of the Pasqal quantum
 # posting that was delivered as a scored match on 2026-08-20.
@@ -993,7 +996,7 @@ class TestStrongPredicate(unittest.TestCase):
         is_strong(job)` anyway, so this pins that neither tier loses a
         duplicate."""
         weak = {"ranking_verified": True, "score": 40, "description": FULL_JD}
-        strong_job = {"ranking_verified": True, "score": 95, "description": FULL_JD}
+        strong_job = {"ranking_verified": True, "score": 95, "description": FULL_JD, "fit_check": CLEAN_CHECK}
 
         strong, competitive, review = digest.split_tiers([dict(weak), dict(weak)])
         self.assertEqual((len(strong), len(competitive), len(review)), (0, 0, 2))
@@ -1012,7 +1015,7 @@ class TestTierClassification(unittest.TestCase):
 
     def test_only_validated_high_score_with_jd_is_strong(self):
         jobs = [
-            {"id": "strong", "title": "Senior Software Engineer", "description": "Python LLM"},
+            {"id": "strong", "title": "Senior Software Engineer", "description": FULL_JD, "fit_check": CLEAN_CHECK},
             {"id": "low", "title": "Senior Data Engineer", "description": "SQL"},
             {"id": "no-jd", "title": "Senior Backend Engineer", "description": ""},
             {"id": "malformed", "title": "Senior AI Engineer", "description": "Python"},
@@ -1169,8 +1172,8 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
     Pass `work` from a previous call to run a second day against the seen.json
     and archives the first one wrote, which is how repeat delivery is tested.
 
-    `fit_checks` maps a job title to the fit_check result the reality pass
-    should attach; anything unnamed is left unchecked, which is the default.
+    `fit_checks` maps a job title to the requirements result. Default runs use
+    completed clean checks; explicit mappings leave unnamed jobs unverified.
 
     `digest.check_jobs` is patched unconditionally. No network escapes without
     it either -- `digest.requests` and `openrouter.requests` are the same module
@@ -1206,8 +1209,9 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
                                resume_chars=len(resume_text or ""),
                                api_key=api_key)
         for job in jobs_to_check:
-            job["fit_check"] = (fit_checks or {}).get(
-                job["title"], fit_check_module.neutral_result("not checked in test"))
+            job["fit_check"] = ({"blockers": [], "unclear": [], "strengths": [],
+                                 "ceiling": "high", "note": ""} if fit_checks is None else fit_checks.get(
+                job["title"], fit_check_module.neutral_result("not checked in test")))
 
     def fake_post(url, json=None, timeout=None):
         posts.append(json["content"])
@@ -1223,12 +1227,17 @@ def run_main(monkey_env, ranking, link_statuses=None, jobs=None, work=None,
             if os.path.exists(src):
                 shutil.copy(src, work)
     supplied = REAL_JOBS if jobs is None else jobs
+    blocked = digest.requests.Response()
+    blocked.status_code, blocked._content, blocked._content_consumed = 404, b"", True
+    blocked.url = "https://example.test"
+    offline_get = (contextlib.nullcontext() if isinstance(digest.requests.get, mock.Mock)
+                   else mock.patch.object(digest.requests, "get", return_value=blocked))
     old_cwd = os.getcwd()
     os.chdir(work)
     if link_statuses is None:
         link_statuses = [digest.LINK_OPEN] * len(supplied)
     try:
-        with mock.patch.dict(os.environ, monkey_env, clear=False), \
+        with offline_get, mock.patch.dict(os.environ, monkey_env, clear=False), \
              mock.patch.object(digest, "fetch_jsearch", return_value=[dict(j) for j in supplied]), \
              mock.patch.object(digest, "COMPANIES", list(companies)), \
              mock.patch.object(digest, "verify_link", side_effect=link_statuses), \
@@ -2291,11 +2300,8 @@ class TestDeliveryFloor(unittest.TestCase):
              "company": "C", "score": floor, "ranking_verified": True},
         ]
 
-    def test_the_floor_sits_below_the_competitive_band(self):
-        """Honest scoring moves a degree-gated role down 15-20 points. A floor
-        at the band boundary would drop exactly the roles the middle tier was
-        added to carry."""
-        self.assertLess(digest.MIN_DELIVER_SCORE, digest.COMPETITIVE_MIN_SCORE)
+    def test_the_floor_requires_strong_matches(self):
+        self.assertEqual(digest.MIN_DELIVER_SCORE, digest.STRONG_MATCH_MIN_SCORE)
 
     def test_only_scores_under_the_floor_are_dropped(self):
         kept, dropped = digest.drop_below_floor(self._jobs())
@@ -2579,9 +2585,9 @@ class TestEndToEnd(unittest.TestCase):
     def test_quiet_report_distinguishes_seen_only_from_below_floor_jobs(self):
         cases = [
             ({"newly_found": 0, "already_seen": 70, "below_floor": 0},
-             "70 seen before", "0 newly found", "0 below fit score 40"),
+             "70 seen before", "0 newly found", "0 below fit score 80"),
             ({"newly_found": 14, "already_seen": 56, "below_floor": 14},
-             "56 seen before", "14 newly found", "14 below fit score 40"),
+             "56 seen before", "14 newly found", "14 below fit score 80"),
         ]
         for summary, *expected in cases:
             with self.subTest(summary=summary), \
@@ -2653,7 +2659,7 @@ class TestEndToEnd(unittest.TestCase):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
 
         def retryable(_url, _secret, snapshots, **_kwargs):
@@ -2676,7 +2682,7 @@ class TestEndToEnd(unittest.TestCase):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
 
         def failed(_url, _secret, snapshots, **_kwargs):
@@ -2709,7 +2715,7 @@ class TestEndToEnd(unittest.TestCase):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
 
         def worker_delivery_raises(_url, _secret, snapshots, **kwargs):
@@ -2743,7 +2749,7 @@ class TestEndToEnd(unittest.TestCase):
         env = dict(self.ENV, INTERACTIVE_WORKER_URL="https://worker.test", WORKER_CALLBACK_SECRET="secret")
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
 
         def partial(_url, _secret, snapshots, **_kwargs):
@@ -2774,7 +2780,7 @@ class TestEndToEnd(unittest.TestCase):
                    WORKER_CALLBACK_SECRET="secret")
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
 
         def partial(_url, _secret, snapshots, **_kwargs):
@@ -2798,7 +2804,7 @@ class TestEndToEnd(unittest.TestCase):
         jobs = [dict(REAL_JOBS[1], id=f"jsearch_cap{i}", company="Innovationteam",
                      title=f"Senior Backend Engineer {i}",
                      url=f"https://jobs.example.com/cap/{i}") for i in range(4)]
-        ranking = {f"jsearch_cap{i}": {"score": 90 - i * 5,
+        ranking = {f"jsearch_cap{i}": {"score": 95 - i * 2,
                                        "why": "Senior IC backend role, requirements covered"}
                    for i in range(4)}
         with mock.patch.object(digest, "rescue_apply_link"):
@@ -2814,7 +2820,7 @@ class TestEndToEnd(unittest.TestCase):
 
     def test_full_run_archives_jobs_without_auto_tailoring(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+                   "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"}}
         posts, work = run_main(self.ENV, ranking)
         body = "\n".join(posts)
         # Only the two senior IC roles delivered
@@ -2825,13 +2831,13 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn(f"**{digest.TIER_STRONG}**", body)
         # 74 is the rubric's "competitive with gaps" band. It used to read as
         # "Worth reviewing", which undersold a real match with a real gap.
-        self.assertIn(f"**{digest.TIER_COMPETITIVE}**", body)
+        self.assertNotIn(f"**{digest.TIER_COMPETITIVE}**", body)
         # Tailoring is explicit through a Discord button; daily delivery is
         # never allowed to spend credits or leave a resume in the repository.
         self.assertNotIn("tailored resume:", body)
         self.assertFalse(os.path.exists(os.path.join(work, "tailored")))
         # Every posted job keeps its full JD in a durable daily archive.
-        archive_date = datetime.date.today().isoformat()
+        archive_date = digest.riyadh_today().isoformat()
         with open(os.path.join(work, "jobs", f"{archive_date}.json"), encoding="utf-8") as handle:
             archive = json.load(handle)
         self.assertEqual({item["source_id"] for item in archive["jobs"]}, {"jsearch_b", "jsearch_e"})
@@ -2849,7 +2855,7 @@ class TestEndToEnd(unittest.TestCase):
     def test_unknown_link_is_reviewable_and_only_strong_is_tailored(self):
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
         posts, work = run_main(
             self.ENV,
@@ -2862,8 +2868,8 @@ class TestEndToEnd(unittest.TestCase):
         with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
             stats = json.load(handle)
         self.assertEqual(stats[-1]["link_unknown"], 1)
-        self.assertEqual(stats[-1]["strong"], 1)
-        self.assertEqual(stats[-1]["competitive"], 1)
+        self.assertEqual(stats[-1]["strong"], 2)
+        self.assertEqual(stats[-1]["competitive"], 0)
         self.assertEqual(stats[-1]["review"], 0)
 
     def test_the_same_posting_under_a_new_id_is_not_delivered_twice(self):
@@ -2871,7 +2877,7 @@ class TestEndToEnd(unittest.TestCase):
         never matched and 65 of the first 122 aggregator cards were repeats. One
         JAL frontend role arrived on 9 days under 11 ids."""
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+                   "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"}}
         posts, work = run_main(self.ENV, ranking)
         self.assertIn("Senior Software Engineer (AI Systems)", "\n".join(posts))
 
@@ -2890,7 +2896,7 @@ class TestEndToEnd(unittest.TestCase):
         """Jooble relisted one posting under two of its own ids in the first 11
         archived days. The description is the last thing that does not move."""
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+                   "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"}}
         _, work = run_main(self.ENV, ranking)
 
         relisted = [dict(job, id=f"{job['id']}_new", url=f"{job['url']}-relisted-elsewhere")
@@ -2901,7 +2907,7 @@ class TestEndToEnd(unittest.TestCase):
 
     def test_a_genuinely_new_posting_still_gets_through(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-                   "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"}}
+                   "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"}}
         _, work = run_main(self.ENV, ranking)
 
         fresh_job = dict(REAL_JOBS[1], id="jsearch_brand_new",
@@ -2916,7 +2922,7 @@ class TestEndToEnd(unittest.TestCase):
     def test_closed_link_is_not_delivered_or_seen(self):
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-            "jsearch_e": {"score": 74, "why": "Senior IC data role, some gaps"},
+            "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
         posts, work = run_main(
             self.ENV,
@@ -2933,12 +2939,12 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual({k for k in seen if not k.startswith(digest.JD_SEEN_PREFIX)},
                          {"url:https://example.com/e"})
 
-    def test_gemini_down_keyword_fallback_still_delivers(self):
+    def test_ranker_down_holds_jobs_for_retry(self):
         posts, work = run_main(self.ENV, None)
         body = "\n".join(posts)
-        self.assertIn("Senior Software Engineer (AI Systems)", body)
-        self.assertIn("fit ", body)
-        self.assertNotIn("tailored resume:", body)  # tailor also failed -> no links, no crash
+        self.assertNotIn("**Senior Software Engineer (AI Systems)**", body)
+        self.assertIn("awaiting complete fit verification", body)
+        self.assertNotIn("tailored resume:", body)
 
     def test_a_job_below_the_floor_is_neither_delivered_nor_offered_again(self):
         """The Datamatics role stops being a card.
@@ -2965,62 +2971,20 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("url:https://example.com/e", seen,
                          "a below-floor score must not be remembered as a delivery")
 
-    def test_a_blocked_job_is_delivered_flagged_rather_than_dropped(self):
-        """The whole point of plan 018B, end to end.
-
-        A job the ranker loved (93) but whose stated hard requirements the
-        resume cannot evidence must still reach the reader -- capped, tiered
-        down and carrying its blockers. The complaint was "the card lied", not
-        "show me fewer jobs", and drop_below_floor has already run by the time
-        the cap lands, so a capped score can never remove a job or get it
-        remembered.
-        """
-        ranking = {
-            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-        }
-        blocked = {
-            "blockers": [
-                {"title": "No BigQuery or GCP evidence", "severity": "high"},
-                {"title": "No Bachelor's degree in Computer Science", "severity": "high"},
-            ],
-            "unclear": [], "strengths": [], "ceiling": "low", "note": "",
-        }
-
-        posts, work = run_main(
-            self.ENV, ranking,
+    def test_a_blocked_job_is_excluded_after_qualification_caps(self):
+        ranking = {"jsearch_b": {"score": 93, "why": "Supported role"}}
+        blocked = dict(CLEAN_CHECK, ceiling="low", blockers=[
+            {"title": "Required qualification absent", "severity": "high"}])
+        posts, work = run_main(self.ENV, ranking,
             fit_checks={"Senior Software Engineer (AI Systems)": blocked})
-
-        body = "\n".join(posts)
-        self.assertIn("Senior Software Engineer (AI Systems)", body,
-                      "a capped job must still be delivered")
-        self.assertIn(f"fit {fit_check_module.SEVERITY_CEILING['high']}", body)
-        self.assertIn("2 verified requirement gaps", body)
-        # The gaps themselves, on the card. A capped score with nothing naming
-        # what capped it is the complaint that started this.
-        self.assertIn("No Bachelor's degree in Computer Science", body)
-
+        self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertIn("url:https://example.com/b", seen,
-                      "delivered jobs are remembered normally")
-
-        # Selected by title, not by index: the jobs the ranking left out fall
-        # back to keyword_score, which can exceed a capped 69 and sort above it.
-        snapshot = self._snapshot(work, "Senior Software Engineer (AI Systems)")
-        self.assertEqual(snapshot["tier"], digest.TIER_COMPETITIVE,
-                         "a capped job must not wear a Strong matches label, and "
-                         "a real match with a real gap is not merely 'worth reviewing'")
-        self.assertEqual(snapshot["ceiling"], "low")
-        self.assertEqual(len(snapshot["blockers"]), 2)
-
-        card = job_archive.job_card_payload(snapshot)
-        self.assertIn("2 verified gap(s)", card["embeds"][0]["footer"]["text"])
-        gaps = [f for f in card["embeds"][0]["fields"] if f["name"].startswith("Gaps")]
-        self.assertEqual(len(gaps), 1, "the blockers must be readable on the card")
-        self.assertIn("No BigQuery or GCP evidence", gaps[0]["value"])
+        self.assertIn("floor:url:https://example.com/b", seen)
+        self.assertNotIn("url:https://example.com/b", seen)
 
     def _snapshot(self, work, title):
-        path = os.path.join(work, "jobs", datetime.date.today().isoformat() + ".json")
+        path = os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json")
         with open(path, encoding="utf-8") as handle:
             snapshots = json.load(handle)["jobs"]
         return next(s for s in snapshots if s["title"] == title)
@@ -3044,8 +3008,8 @@ class TestEndToEnd(unittest.TestCase):
 
         checked = LAST_CHECK_CALL["titles"]
         self.assertIn("Senior Software Engineer (AI Systems)", checked)
-        self.assertGreater(len(checked), 1,
-                           "every delivered job should be checked, not only the strong tier")
+        self.assertEqual(len(checked), 1,
+                         "only validated scores eligible for delivery need a paid check")
         # Pinned against the cards actually sent rather than a title list, so a
         # change to the fixture cannot quietly narrow what this asserts.
         body = "\n".join(posts)
@@ -3055,20 +3019,13 @@ class TestEndToEnd(unittest.TestCase):
         self.assertGreater(LAST_CHECK_CALL["resume_chars"], 0,
                            "the check must receive resume evidence to check against")
 
-    def test_an_unchecked_job_says_so_rather_than_looking_clean(self):
-        """The cost of checking everything: "unknown" is now the ordinary
-        outcome for a job past the budget, and it renders identically to one
-        checked and found clean unless the card says otherwise."""
-        ranking = {
-            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
-        }
-
-        posts, work = run_main(self.ENV, ranking)
-
-        self.assertIn("requirements not checked", "\n".join(posts))
-        snapshot = self._snapshot(work, "Senior Software Engineer (AI Systems)")
-        card = job_archive.job_card_payload(snapshot)
-        self.assertIn("Requirements not checked", card["embeds"][0]["footer"]["text"])
+    def test_an_unchecked_job_is_held_for_retry(self):
+        ranking = {"jsearch_b": {"score": 93, "why": "Supported role"}}
+        posts, work = run_main(self.ENV, ranking, fit_checks={})
+        self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
+        self.assertIn("awaiting complete fit verification", "\n".join(posts))
+        with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), {})
 
     def test_a_high_ceiling_job_keeps_its_score_and_tier(self):
         ranking = {
@@ -3140,7 +3097,8 @@ class TestEndToEnd(unittest.TestCase):
             os.environ.pop("OPENROUTER_API_KEY", None)
             posts, work = run_main(env, None)
         body = "\n".join(posts)
-        self.assertIn("Senior Software Engineer (AI Systems)", body)
+        self.assertNotIn("**Senior Software Engineer (AI Systems)**", body)
+        self.assertIn("awaiting complete fit verification", body)
         self.assertNotIn("tailored resume:", body)
         self.assertFalse(os.path.exists(os.path.join(work, "tailored")))
 
@@ -3403,9 +3361,7 @@ class TestApiQuotasSurviveTheRun(unittest.TestCase):
 class TestPostingAge(unittest.TestCase):
     """Every source uses the configured posting-age cutoff.
 
-    Undated postings are KEPT and flagged, not dropped: Pinpoint publishes no
-    date at all and Greenhouse only sometimes, so dropping would silently
-    remove those employers entirely.
+    Missing, invalid and future dates are excluded for every source.
     """
 
     def _job(self, first_published, **kw):
@@ -3430,30 +3386,31 @@ class TestPostingAge(unittest.TestCase):
         fresh, _ = digest.split_by_age([self._job("2026-08-31")], 7, today)
         self.assertEqual(len(fresh), 1)
 
-    def test_an_undated_posting_is_kept_and_marked(self):
+    def test_an_undated_posting_is_excluded_and_marked(self):
         """Pinpoint publishes no date. Dropping would remove Tabby entirely."""
         today = datetime.date(2026, 9, 7)
         fresh, stale = digest.split_by_age([self._job("", source="pinpoint")], 7, today)
-        self.assertEqual(stale, [])
-        self.assertEqual(len(fresh), 1)
-        self.assertIsNone(fresh[0]["age_days"])
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(stale), 1)
+        self.assertIsNone(stale[0]["age_days"])
 
-    def test_an_unparseable_date_is_treated_as_undated_not_as_stale(self):
+    def test_an_unparseable_date_is_excluded(self):
         today = datetime.date(2026, 9, 7)
         fresh, stale = digest.split_by_age([self._job("not-a-date")], 7, today)
-        self.assertEqual(stale, [])
-        self.assertIsNone(fresh[0]["age_days"])
+        self.assertEqual(fresh, [])
+        self.assertIsNone(stale[0]["age_days"])
 
     def test_the_age_is_recorded_so_the_card_can_show_it(self):
         today = datetime.date(2026, 9, 7)
         fresh, _ = digest.split_by_age([self._job("2026-09-04")], 7, today)
         self.assertEqual(fresh[0]["age_days"], 3)
 
-    def test_a_future_date_is_not_negative_age(self):
+    def test_a_future_date_is_excluded(self):
         """Timezones and ingestion delay can put a posting a few hours ahead."""
         today = datetime.date(2026, 9, 7)
-        fresh, _ = digest.split_by_age([self._job("2026-09-08")], 7, today)
-        self.assertEqual(fresh[0]["age_days"], 0)
+        fresh, rejected = digest.split_by_age([self._job("2026-09-08")], 7, today)
+        self.assertEqual(fresh, [])
+        self.assertEqual(rejected[0]["age_days"], -1)
 
 
 class TestPostingAgeLabel(unittest.TestCase):
@@ -3473,7 +3430,7 @@ class TestTheCardStatesThePostingAge(unittest.TestCase):
         shutil.rmtree(work, ignore_errors=True)
         self.assertIn("posted yesterday", "\n".join(posts))
 
-    def test_an_undated_card_says_the_date_is_unknown(self):
+    def test_an_undated_card_is_excluded(self):
         """Pinpoint publishes no date. The card must not imply the cutoff was
         enforced on a posting whose age nobody knows."""
         job = dict(REAL_JOBS[0], title="Senior AI Engineer", first_published="")
@@ -3481,7 +3438,7 @@ class TestTheCardStatesThePostingAge(unittest.TestCase):
         posts, work = run_main(TestEndToEnd.ENV, ranking, jobs=[job],
                                link_statuses=[digest.LINK_OPEN])
         shutil.rmtree(work, ignore_errors=True)
-        self.assertIn("posting date unknown", "\n".join(posts))
+        self.assertIn("1 with unverified posting dates", "\n".join(posts))
 
 
 class TestActiveAtsRealRowShape(unittest.TestCase):
@@ -4170,7 +4127,7 @@ class TestTheRunBudgetLosesWorkNotTheDigest(unittest.TestCase):
 
     def _run_with_no_budget(self, **kwargs):
         with mock.patch.object(digest, "RUN_BUDGET_SECONDS", -1):
-            return run_main(self.ENV, {}, **kwargs)
+            return run_main(self.ENV, {"jsearch_b": {"score": 90, "why": "Supported role"}}, **kwargs)
 
     def test_a_spent_budget_still_delivers_and_still_records_what_it_sent(self):
         """The one thing the budget must never cost. A run that delivers and
@@ -4419,7 +4376,7 @@ class TestTheRankingContract(unittest.TestCase):
     def test_the_band_anchors_are_watheqs(self):
         prompt = self._prompt()["prompt"]
 
-        self.assertIn("80+ means hireable today", prompt)
+        self.assertIn("80+ means strong evidence-backed fit", prompt)
         self.assertIn("60-79 means competitive with gaps", prompt)
         self.assertIn("below 60 means significant gaps", prompt)
 

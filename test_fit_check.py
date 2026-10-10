@@ -228,7 +228,7 @@ class TestNeutralResult(unittest.TestCase):
             with self.subTest(junk=junk):
                 result = fit_check.verify(junk, JOB, RESUME)
                 self.assertEqual(result["blockers"], [])
-                self.assertEqual(result["ceiling"], "high")
+                self.assertEqual(result["ceiling"], "unknown")
 
     def test_without_a_resume_every_job_is_marked_unchecked(self):
         jobs = [dict(JOB, score=90), dict(JOB, score=85)]
@@ -389,10 +389,9 @@ class TestTheGapCeiling(unittest.TestCase):
             self.assertLess(ceiling, digest.STRONG_MATCH_MIN_SCORE)
         self.assertLess(fit_check.CREDENTIAL_CEILING, digest.STRONG_MATCH_MIN_SCORE)
 
-    def test_a_capped_job_still_lands_above_the_delivery_floor(self):
-        """A ceiling must annotate a card, not delete it. The complaint was
-        "the card lied", not "show me fewer jobs"."""
+    def test_a_capped_job_is_below_the_delivery_floor(self):
+        """Verified qualification gaps prevent strong-match delivery."""
         import digest
         for ceiling in list(fit_check.SEVERITY_CEILING.values()) + [
                 fit_check.CREDENTIAL_CEILING]:
-            self.assertGreaterEqual(ceiling, digest.MIN_DELIVER_SCORE)
+            self.assertLess(ceiling, digest.MIN_DELIVER_SCORE)

@@ -6,18 +6,19 @@ linkedin.com/in/3binahmed | github.com/abdullah7041 | watheqai.app | abdullahfil
 
 ## SUMMARY
 
-Saudi AI Product Engineer building and deploying LLM-powered products and production automations end to end. Hands-on with evaluation pipelines, evidence-grounded output validation, AI observability, and serverless product delivery in Python and TypeScript. 6+ years in commercial operations and data analysis, with hands-on AI product engineering since 2025.
+Saudi AI Product Engineer building and deploying LLM-powered products and production automations end to end. Hands-on with evaluation pipelines, evidence-grounded output validation, AI observability, and serverless delivery in Python and TypeScript. Commercial operations and analytics since March 2020; AI product engineering since August 2025.
 
 ## EXPERIENCE
 
 ### Founder & AI Product Engineer - Watheq | Saudi Arabia | Aug 2025 - Present
 
-Private-beta bilingual AI resume optimization and job-matching platform for the Saudi market.
+Arabic-first bilingual AI resume optimization and job-matching platform deployed in production for the Saudi market.
 
 - Built and deployed the product solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security, Upstash Redis rate limiting, OpenRouter/Gemini, and server-side PDF generation.
-- Designed LLM workflows for resume parsing, job matching, gap analysis, interview-question generation, and evidence-constrained resume improvement, with Zod validation and anti-hallucination output rules.
+- Implemented credit-based monetization, guest rate limiting, and Moyasar payment gateway integration with 3DS flows.
+- Designed LLM workflows for bilingual resume parsing with Arabic/Hijri dates, job matching, gap analysis, interview questions, and evidence-constrained improvement, with Zod validation and anti-hallucination rules.
 - Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows to catch regressions and quality drift.
-- Engineered bilingual PDF/DOCX processing with English/Arabic detection, OCR fallback for scanned resumes, structured JSON output, and deterministic recovery when AI parsing fails.
+- Engineered bilingual PDF/DOCX processing with Arabic/Hijri date handling, English/Arabic detection, OCR fallback, structured JSON output, and deterministic recovery when AI parsing fails.
 - Built real-time optimization progress over server-sent events and ATS-safe selectable-text PDF exports for both Arabic and English resumes.
 - Added AI/application observability with Sentry, Telegram alerts, OpenRouter metadata, GitHub Actions, and quality gates spanning linting, type checks, tests, builds, localization validation, and AI evaluations.
 
@@ -54,7 +55,7 @@ Industrial pipefitting plus field quality and safety inspection under internatio
 
 ## SKILLS
 
-- **AI & LLM:** LLM application engineering, evaluation/gold sets, prompt engineering, agentic workflows, output validation and guardrails, OpenRouter, Gemini, Claude APIs
+- **AI & LLM:** LLM application engineering, evaluation/gold sets, prompt engineering, agentic workflows, output validation and guardrails, OpenRouter, Gemini, Claude APIs, RAG concepts, n8n (listed skill)
 - **Engineering:** Python, TypeScript, SQL, React, Next.js, Vite, Tailwind CSS, Zod, Supabase/PostgreSQL, REST APIs, Netlify Functions, Upstash Redis, Cloudflare, GitHub Actions CI/CD, Sentry, Git
 - **Data & Analytics:** Power BI, advanced Excel, data modeling, customer segmentation, competitor/pricing analysis, walk-forward backtesting
 
