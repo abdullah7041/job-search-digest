@@ -220,6 +220,13 @@ class TestStrictCheckResponses(unittest.TestCase):
 
 
 class TestRefreshedResumeExport(unittest.TestCase):
+    def test_strict_policy_suite_is_run_before_both_release_paths(self):
+        from pathlib import Path
+        for workflow in ("ci.yml", "digest.yml"):
+            with self.subTest(workflow=workflow):
+                source = Path(fixtures.REPO, ".github", "workflows", workflow).read_text(encoding="utf-8")
+                self.assertIn("test_strict_alerts.py", source)
+
     def test_profile_and_master_share_truthful_new_evidence(self):
         from pathlib import Path
         root = Path(fixtures.REPO)
