@@ -67,6 +67,19 @@ def answer(blockers=(), unclear=(), strengths=()):
 
 
 class TestBlockerVerification(unittest.TestCase):
+    def test_mixed_degree_clauses_follow_the_specific_qualification(self):
+        for description, expected in (
+            ("Minimum qualifications: Bachelor's degree in Computer Science, master's degree preferred.", 1),
+            ("Minimum qualifications: Bachelor's degree in Computer Science,master's degree preferred.", 1),
+            ("Bachelor's degree in Computer Science or equivalent practical experience is required.", 0),
+            ("Bachelor's degree in Computer Science preferred, must have practical Python experience.", 0),
+            ("Bachelor's degree in Computer Science is not required.", 0),
+        ):
+            with self.subTest(description=description):
+                result = fit_check.verify(answer(blockers=[blocker("Degree absent",
+                    "Bachelor's degree in Computer Science")]), dict(JOB, description=description), RESUME)
+                self.assertEqual(len(result["blockers"]), expected)
+
     def test_preferred_degree_is_not_a_mandatory_blocker(self):
         job = dict(JOB, description="Bachelor's degree in Computer Science preferred.")
         result = fit_check.verify(answer(blockers=[blocker("Degree absent",
@@ -156,6 +169,12 @@ class TestBlockerVerification(unittest.TestCase):
 
 
 class TestStrengthVerification(unittest.TestCase):
+    def test_background_quote_cannot_append_an_unstated_tool(self):
+        result = fit_check.verify(answer(strengths=[strength("LLM evaluation pipeline",
+            "Built an LLM evaluation pipeline that judge-scores prompt, temperature, and model variants Kubernetes")]),
+            JOB, RESUME)
+        self.assertEqual(result["strengths"], [])
+
     def test_unrelated_project_quote_cannot_promote_a_listed_RAG_skill(self):
         result = fit_check.verify(answer(strengths=[strength("Production RAG systems",
             "Built an LLM evaluation pipeline that judge-scores prompt")]), JOB, RESUME)

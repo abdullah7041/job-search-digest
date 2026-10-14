@@ -478,6 +478,35 @@ class TestInteractiveWorkflowWiring(unittest.TestCase):
 
 
 class TestSourceBoundClaims(unittest.TestCase):
+    def test_unknown_tool_at_sentence_start_or_after_a_boundary_is_rejected(self):
+        source = "Built and deployed the production product solo with React 19 and TypeScript."
+        for text in ("Kubernetes powered the product.", "Built the product. Kubernetes powered it."):
+            with self.subTest(text=text):
+                self.assertTrue(validate_tailored_resume(
+                    {"bullets": [{"text": text, "source_refs": ["b1"]}]},
+                    {"b1": source}, vocabulary(source), source))
+
+    def test_slash_separated_tools_can_be_named_separately_from_the_same_source(self):
+        source = "Built the product with OpenRouter/Gemini."
+        self.assertEqual(validate_tailored_resume(
+            {"bullets": [{"text": "Built the product with OpenRouter and Gemini.", "source_refs": ["b1"]}]},
+            {"b1": source}, vocabulary(source), source), [])
+
+    def test_actual_tailoring_rejects_reassigned_dates_and_production_listed_skills(self):
+        with open(os.path.join(os.path.dirname(__file__), "resume.md"), encoding="utf-8") as handle:
+            master = handle.read()
+        document = parse_resume(master)
+        bullets = [{"ref": ref, "text": text} for ref, text in source_refs(document).items()
+                   if ref not in resume_tailor.subset_line_refs(document)][:16]
+        snapshot = make_snapshot(dict(JOB, title="Software Engineer"), "2026-10-14T00:00:00Z")
+        for summary in ("Saudi software engineer since March 2020.",
+                        "Saudi AI engineer with production RAG and n8n implementations."):
+            plan = {"headline": "AI Product Engineer — Software Engineer", "summary": summary,
+                    "bullets": bullets, "gaps": [], "fit_notes": [], "highlight_terms": []}
+            with self.subTest(summary=summary), mock.patch.object(resume_tailor, "call_model", return_value=plan):
+                with self.assertRaisesRegex(ValueError, "evidence check"):
+                    resume_tailor.tailor(document, snapshot, "key", source_refs(document), master)
+
     def test_skill_list_cannot_supply_a_new_tool_to_an_achievement(self):
         errors = validate_tailored_resume(
             {"bullets": [{"text": "Built Python pipelines with Sentry.", "source_refs": ["b1"]}]},
@@ -1522,6 +1551,24 @@ class TestRunnerDelivery(unittest.TestCase):
 
 
 class TestAlignmentComparison(unittest.TestCase):
+    def test_a_nearly_matching_quote_with_an_added_tool_cannot_raise_the_estimate(self):
+        raw = self.comparison(changes=[{
+            "source_ref": "b1", "jd_quote": "monitoring model quality, documenting decisions",
+            "after_quote": "Built an LLM evaluation pipeline that judge-scores prompt and model variants. Kubernetes"}])
+        result = self.run_comparison(raw)
+        self.assertIn("Alignment comparison unavailable", result["content"])
+        self.assertNotIn("Kubernetes", result["content"])
+
+    def test_formatting_only_changes_do_not_raise_alignment(self):
+        before = parse_resume(MASTER)
+        final = copy.deepcopy(before)
+        final["sections"][0]["entries"][0]["bullets"][0]["text"] = (
+            "Built an **LLM** evaluation pipeline that judge-scores prompt and model variants.")
+        with mock.patch.object(resume_tailor, "chat_json", return_value=self.comparison()):
+            result = resume_tailor.compare_alignment(before, final,
+                make_snapshot(JOB, "2026-10-14T00:00:00Z"), "key", MASTER)
+        self.assertEqual((result["before"], result["after"]), (70, 70))
+
     def comparison(self, **updates):
         raw = {
             "before_score": 70, "after_score": 76,

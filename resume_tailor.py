@@ -16,7 +16,7 @@ import requests
 
 from openrouter import chat_json, configured_chain
 from resume_render import LABEL_RE, _clean
-from resume_source import (MATCH_CATEGORIES, snippet_supported, unsupported_facts,
+from resume_source import (MATCH_CATEGORIES, quote_supported, snippet_supported, unsupported_facts,
                            unsupported_terms, validate_tailored_resume, vocabulary)
 from fit_check import CHECK_SCHEMA, blocked_score_ceiling, verify as verify_fit
 
@@ -153,7 +153,10 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
         "Keep experience dates attached to their original career track. Commercial analytics "
         "experience is not software engineering experience. Listed knowledge such as RAG "
         "concepts or n8n is not a claim of shipped implementations. Never promote it into "
-        "an achievement or claim model training from LLM application/evaluation work.\n"
+        "an achievement or claim model training from LLM application/evaluation work. "
+        "Copy any dated or years-of-experience clause in the summary from its original source "
+        "wording, preserving the career track; the summary uses demonstrated work rather than "
+        "knowledge appearing only in the skills list.\n"
         "6. gaps: the job's real requirements that this resume does not evidence. Name the "
         "specific missing framework, platform, or credential. Never list ordinary English "
         "words. Three to five items, empty if there are genuinely none.\n"
@@ -447,9 +450,11 @@ def compare_alignment(original: dict, final: dict, snapshot: dict,
         for item in raw.get("changes", [])[:3]:
             ref, quote = item.get("source_ref"), item.get("after_quote", "")
             if (ref in original_refs and ref in final_refs
-                    and snippet_supported(item.get("jd_quote", ""), jd_text)
-                    and snippet_supported(quote, original_refs[ref])
-                    and snippet_supported(quote, final_refs[ref])):
+                    and quote_supported(item.get("jd_quote", ""), jd_text)
+                    and quote_supported(quote, original_refs[ref])
+                    and quote_supported(quote, final_refs[ref])
+                    and not unsupported_facts(quote, original_refs[ref])
+                    and not unsupported_facts(quote, final_refs[ref])):
                 changes.append(quote)
         ceiling = blocked_score_ceiling(check["blockers"])
         if snapshot.get("ranking_verified") and snapshot.get("blockers"):
