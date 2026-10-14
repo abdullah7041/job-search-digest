@@ -67,6 +67,25 @@ def answer(blockers=(), unclear=(), strengths=()):
 
 
 class TestBlockerVerification(unittest.TestCase):
+    def test_preferred_degree_is_not_a_mandatory_blocker(self):
+        job = dict(JOB, description="Bachelor's degree in Computer Science preferred.")
+        result = fit_check.verify(answer(blockers=[blocker("Degree absent",
+            "Bachelor's degree in Computer Science")]), job, RESUME)
+        self.assertEqual(result["blockers"], [])
+        self.assertEqual(result["unclear"], [])
+
+    def test_degree_accepting_equivalent_experience_is_not_a_degree_blocker(self):
+        job = dict(JOB, description="Bachelor's degree in Computer Science or equivalent practical experience.")
+        result = fit_check.verify(answer(blockers=[blocker("Degree absent",
+            "Bachelor's degree in Computer Science")]), job, RESUME)
+        self.assertEqual(result["blockers"], [])
+
+    def test_a_required_degree_is_not_optional_because_another_degree_is_preferred(self):
+        job = dict(JOB, description="Bachelor's degree in Computer Science required, a master's degree is preferred.")
+        result = fit_check.verify(answer(blockers=[blocker("Required degree absent",
+            "Bachelor's degree in Computer Science")]), job, RESUME)
+        self.assertEqual(len(result["blockers"]), 1)
+
     def test_a_blocker_citing_real_job_text_survives(self):
         result = fit_check.verify(answer(blockers=[
             blocker("No Bachelor's degree in Computer Science",
@@ -137,9 +156,25 @@ class TestBlockerVerification(unittest.TestCase):
 
 
 class TestStrengthVerification(unittest.TestCase):
+    def test_unrelated_project_quote_cannot_promote_a_listed_RAG_skill(self):
+        result = fit_check.verify(answer(strengths=[strength("Production RAG systems",
+            "Built an LLM evaluation pipeline that judge-scores prompt")]), JOB, RESUME)
+        self.assertEqual(result["strengths"], [])
+    def test_listed_knowledge_is_not_demonstrated_implementation_evidence(self):
+        result = fit_check.verify(answer(strengths=[
+            strength("Demonstrated RAG and n8n", "AI & LLM: prompt engineering, evaluation pipelines, RAG concepts, n8n")]),
+            JOB, RESUME)
+        self.assertEqual(result["strengths"], [])
+
+    def test_job_text_does_not_prove_a_tool_even_when_it_is_listed_in_the_resume(self):
+        job = dict(JOB, description="Requirements: production RAG concepts and n8n workflows.")
+        result = fit_check.verify(answer(strengths=[strength("Production RAG and n8n",
+            "production RAG concepts and n8n workflows", source="job_description")]), job, RESUME)
+        self.assertEqual(result["strengths"], [])
+
     def test_a_strength_citing_the_resume_survives(self):
         result = fit_check.verify(answer(strengths=[
-            strength("Strong SQL and PostgreSQL", "Supabase (PostgreSQL) with role-based access control")]),
+            strength("PostgreSQL integration", "Supabase (PostgreSQL) with role-based access control")]),
             JOB, RESUME)
         self.assertEqual(len(result["strengths"]), 1)
 

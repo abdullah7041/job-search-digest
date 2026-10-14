@@ -13,6 +13,11 @@ import fit_check
 
 
 CLEAN = {"blockers": [], "unclear": [], "strengths": [], "ceiling": "high", "note": ""}
+VIABLE = dict(CLEAN, strengths=[{
+    "title": "Shipped TypeScript applications",
+    "why_it_matters": "The role builds applications",
+    "evidence": [{"source": "resume", "snippet": "Built and deployed the product solo with React 19, TypeScript"}],
+}])
 
 
 class TestStrictAlerts(unittest.TestCase):
@@ -25,7 +30,8 @@ class TestStrictAlerts(unittest.TestCase):
 
     def run_jobs(self, jobs, scores, checks=None, env=None, work=None):
         ranking = None if scores is None else {
-            job["id"]: {"score": scores[job["id"]], "why": "Resume-backed application engineering"}
+            job["id"]: {"score": scores[job["id"]], "why": "Resume-backed application engineering",
+                        "track": "Software engineering, front and back"}
             for job in jobs if job["id"] in scores}
         checks = checks if checks is not None else {j["title"]: CLEAN for j in jobs}
         blocked = digest.requests.Response()
@@ -54,7 +60,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertIn("**Software Engineer 80**", body)
         self.assertIn("**Software Engineer 81**", body)
         self.assertNotIn("url:https://example.test/79", seen)
-        self.assertIn("floor:url:https://example.test/79", seen)
+        self.assertNotIn("floor:url:https://example.test/79", seen)
 
     def test_keyword_fallback_is_not_delivered_or_cooled(self):
         body, row, seen, _ = self.run_jobs([self.job()], None)
@@ -74,6 +80,80 @@ class TestStrictAlerts(unittest.TestCase):
         with mock.patch.object(digest, "MIN_DELIVER_SCORE", 40):
             _, row, _, _ = self.run_jobs([self.job()], {"match": 79})
         self.assertEqual(row["delivered"], 0)
+
+    def test_no_strong_matches_delivers_best_five_verified_viable_jobs(self):
+        jobs = [self.job(str(n), company=f"Employer {n}") for n in (42, 50, 60, 65, 70, 75, 79)]
+        checks = {j["title"]: VIABLE for j in jobs}
+        body, row, seen, _ = self.run_jobs(jobs, {str(n): n for n in (42, 50, 60, 65, 70, 75, 79)}, checks)
+        self.assertEqual(row["delivered"], 5)
+        self.assertEqual(row["fallback_delivered"], 5)
+        self.assertIn("Closest viable matches", body)
+        self.assertNotIn("**Software Engineer 50**", body)
+        self.assertIn("**Software Engineer 79**", body)
+        self.assertNotIn("floor:url:https://example.test/50", seen)
+        self.assertNotIn("url:https://example.test/50", seen)
+
+    def test_fewer_than_five_viable_jobs_are_delivered_without_padding(self):
+        jobs = [self.job("viable"), self.job("wrong"), self.job("blocked"), self.job("unclear")]
+        checks = {j["title"]: VIABLE for j in jobs}
+        checks[jobs[2]["title"]] = dict(CLEAN, ceiling="mid", blockers=[{
+            "type": "education_certification_gap", "severity": "medium", "title": "Required degree absent"}])
+        checks[jobs[3]["title"]] = dict(VIABLE, unclear=[{"topic": "Minimum experience", "reason": "Unproven"}])
+        body, row, seen, _ = self.run_jobs(jobs,
+            {"viable": 55, "wrong": 39, "blocked": 79, "unclear": 78}, checks)
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertIn("**Software Engineer viable**", body)
+        self.assertNotIn("**Software Engineer blocked**", body)
+        self.assertNotIn("floor:url:https://example.test/unclear", seen)
+
+    def test_fallback_requires_resume_evidence_not_just_a_clean_check(self):
+        _, row, seen, _ = self.run_jobs([self.job()], {"match": 79})
+        self.assertEqual(row["delivered"], 0)
+        self.assertEqual(seen, {})
+
+    def test_any_strong_match_suppresses_fallback_without_cooling_viable_jobs(self):
+        jobs = [self.job("strong"), self.job("viable")]
+        checks = {j["title"]: VIABLE for j in jobs}
+        body, row, seen, _ = self.run_jobs(jobs, {"strong": 80, "viable": 79}, checks)
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["fallback_delivered"], 0)
+        self.assertNotIn("**Software Engineer viable**", body)
+        self.assertNotIn("floor:url:https://example.test/viable", seen)
+
+    def test_fallback_employer_limit_does_not_consume_other_employer_slots(self):
+        jobs = [self.job(str(n), company="One Employer" if n > 74 else f"Employer {n}")
+                for n in (79, 78, 77, 76, 75, 74, 73)]
+        body, row, _, _ = self.run_jobs(jobs, {j["id"]: int(j["id"]) for j in jobs},
+                                      {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["delivered"], 5)
+        self.assertNotIn("**Software Engineer 76**", body)
+        self.assertIn("**Software Engineer 73**", body)
+
+    def test_interactive_fallback_preserves_evidence_and_marks_only_accepted_jobs(self):
+        jobs = [self.job("best", company="Employer A"), self.job("next", company="Employer B")]
+        received = []
+        def deliver(_url, _secret, snapshots, **kwargs):
+            received.extend(snapshots)
+            return {"posted": [snapshots[0]["job_key"]], "existing": [],
+                    "in_progress": [], "retryable": [snapshots[1]["job_key"]], "failed": []}
+        env = dict(fixtures.TestEndToEnd.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
+                   WORKER_CALLBACK_SECRET="test-secret")
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=deliver):
+            _, row, seen, _ = self.run_jobs(jobs, {"best": 79, "next": 70},
+                                           {j["title"]: VIABLE for j in jobs}, env)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertEqual(received[0]["tier"], "Closest viable matches")
+        self.assertEqual(received[0]["match_evidence"][0]["resume_quote"],
+                         "Built and deployed the product solo with React 19, TypeScript")
+        self.assertNotIn("url:https://example.test/next", seen)
+        self.assertNotIn("floor:url:https://example.test/next", seen)
+
+    def test_junior_software_allowed_but_junior_analytics_and_internships_excluded(self):
+        for title in ("Junior Software Engineer", "Associate AI Engineer", "Entry Level Backend Developer"):
+            self.assertTrue(digest.matches_filters(self.job(title=title)), title)
+        for title in ("Junior Data Analyst", "Software Engineering Intern", "AI Graduate Trainee"):
+            self.assertFalse(digest.matches_filters(self.job(title=title)), title)
 
     def test_qualification_cap_is_applied_before_delivery(self):
         job = self.job()

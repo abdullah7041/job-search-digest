@@ -248,6 +248,12 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         # number, which is the whole complaint that produced them.
         "track": job.get("track", ""),
         "categories": job.get("categories") or {},
+        "match_evidence": [
+            {"title": strength["title"], "resume_quote": quote["snippet"][:180]}
+            for strength in (job.get("fit_check") or {}).get("strengths") or []
+            for quote in strength.get("evidence") or []
+            if quote.get("source") == "resume" and quote.get("snippet")
+        ][:3],
         # Additive, like the jd.grade field below: schema_version stays 1 so a
         # same-day append to an archive written before these existed still
         # merges. Readers must treat a missing ceiling as "unknown".
@@ -317,6 +323,11 @@ def job_card_payload(snapshot: dict) -> dict:
         {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
         {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
     ]
+    if snapshot.get("match_evidence"):
+        fields.append({"name": "Background evidence",
+                       "value": "\n".join(f"• {item['title']}: {item['resume_quote']}"
+                                          for item in snapshot["match_evidence"])[:1024],
+                       "inline": False})
     if blockers:
         # In a field rather than crammed into the footer: these are the whole
         # reason the score was capped, so they have to be readable.

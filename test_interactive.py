@@ -475,6 +475,29 @@ class TestInteractiveWorkflowWiring(unittest.TestCase):
         text = self._workflow_text()
         for name in ("INTERACTIVE_WORKER_URL", "WORKER_CALLBACK_SECRET", "TASK_ID"):
             self.assertIn(f"{name}:", text)
+
+
+class TestSourceBoundClaims(unittest.TestCase):
+    def test_skill_list_cannot_supply_a_new_tool_to_an_achievement(self):
+        errors = validate_tailored_resume(
+            {"bullets": [{"text": "Built Python pipelines with Sentry.", "source_refs": ["b1"]}]},
+            {"b1": "Built Python pipelines."}, vocabulary("Built Python pipelines. Sentry"),
+            "Built Python pipelines. Sentry (listed skill)")
+        self.assertTrue(errors)
+
+    def test_a_year_inside_a_date_does_not_prove_years_of_experience(self):
+        errors = validate_tailored_resume(
+            {"summary": "Saudi software engineer with 6 years of experience.", "bullets": []},
+            {}, vocabulary("Saudi software engineer with years of experience since 2016."),
+            "Saudi software engineer with experience since 2016.")
+        self.assertTrue(errors)
+
+    def test_an_amount_does_not_support_a_percentage(self):
+        errors = validate_tailored_resume(
+            {"bullets": [{"text": "Improved sales by 60%.", "source_refs": ["b1"]}]},
+            {"b1": "Improved sales by 60 units."})
+        self.assertTrue(errors)
+
 MASTER = """# ADA LOVELACE
 **AI Product Engineer**
 Riyadh, Saudi Arabia · ada@example.test
@@ -1402,6 +1425,10 @@ class TestRunnerDelivery(unittest.TestCase):
                                   return_value=(parse_resume(MASTER), MASTER))
         patch.start()
         self.addCleanup(patch.stop)
+        # Alignment is a separate external model call, isolated in these PDF tests.
+        transport = mock.patch.object(resume_tailor, "chat_json", side_effect=ValueError("offline comparison"))
+        transport.start()
+        self.addCleanup(transport.stop)
 
     def _snapshot(self):
         return make_snapshot(JOB, "2026-08-03T12:00:00Z")
@@ -1492,6 +1519,75 @@ class TestRunnerDelivery(unittest.TestCase):
 
         self.assertNotIn("implementation slice", result["content"])
         self.assertLessEqual(len(result["content"]), interactive_runner.MESSAGE_LIMIT)
+
+
+class TestAlignmentComparison(unittest.TestCase):
+    def comparison(self, **updates):
+        raw = {
+            "before_score": 70, "after_score": 76,
+            "changes": [{"source_ref": "b1", "jd_quote": "monitoring model quality, documenting decisions",
+                         "after_quote": "Built an LLM evaluation pipeline that judge-scores prompt and model variants."}],
+            "fit_check": {"blockers": [], "unclear": [], "strengths": []},
+        }
+        raw.update(updates)
+        return raw
+
+    def run_comparison(self, raw, renderer=None, plan=None, snapshot=None):
+        with mock.patch.object(interactive_runner, "_master_document",
+                               side_effect=lambda *args: (parse_resume(MASTER), MASTER)), \
+             mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=plan or _plan()), \
+             mock.patch.object(resume_tailor, "chat_json", side_effect=raw if isinstance(raw, Exception) else None,
+                               return_value=raw), \
+             mock.patch.object(interactive_runner, "render_pdf", side_effect=renderer or render_pdf):
+            return run_task({"input": {"job_snapshot": snapshot or make_snapshot(JOB, "2026-10-14T00:00:00Z")}})
+
+    def test_validated_comparison_accompanies_the_pdf_without_changing_job_fit(self):
+        result = self.run_comparison(self.comparison())
+        self.assertTrue(result["tailored"])
+        self.assertIn("70 → 76", result["content"])
+        self.assertIn("alignment estimate", result["content"])
+        self.assertTrue(result["pdf_base64"])
+
+    def test_failure_and_malformed_scores_still_deliver_the_checked_resume(self):
+        for raw in (ValueError("unavailable"), RuntimeError("provider failed"), self.comparison(after_score=True),
+                    self.comparison(after_score=101), self.comparison(changes=[])):
+            with self.subTest(raw=str(raw)[:45]):
+                result = self.run_comparison(raw)
+                self.assertTrue(result["tailored"])
+                self.assertTrue(result["pdf_base64"])
+                self.assertIn("Alignment comparison unavailable", result["content"])
+                self.assertNotIn("70 → 76", result["content"])
+
+    def test_renderer_removed_evidence_cannot_support_a_score_increase(self):
+        def trim_and_render(document):
+            entry = document["sections"][0]["entries"][0]
+            entry["bullets"] = [b for b in entry["bullets"] if b["ref"] != "b2"]
+            return render_pdf(document)
+        raw = self.comparison(changes=[{
+            "source_ref": "b2", "jd_quote": "monitoring model quality, documenting decisions",
+            "after_quote": "Instrumented production monitoring with Sentry and real-time Telegram alerting."}])
+        result = self.run_comparison(raw, renderer=trim_and_render)
+        self.assertTrue(result["tailored"])
+        self.assertIn("Alignment comparison unavailable", result["content"])
+
+    def test_unchanged_and_lower_estimates_are_reported_without_inflation(self):
+        for after in (70, 65):
+            with self.subTest(after=after):
+                result = self.run_comparison(self.comparison(after_score=after, changes=[]))
+                self.assertIn(f"70 → {after}", result["content"])
+
+    def test_verified_degree_gap_caps_both_estimates_and_remains_visible(self):
+        description = JOB["description"] + "\nMinimum qualifications: Bachelor's degree in Computer Science."
+        snapshot = make_snapshot(dict(JOB, description=description), "2026-10-14T00:00:00Z")
+        raw = self.comparison(before_score=85, after_score=95, fit_check={
+            "strengths": [], "unclear": [], "blockers": [{
+                "type": "education_certification_gap", "severity": "medium", "title": "Required bachelor's degree absent",
+                "explanation": "The source resume does not demonstrate this qualification.",
+                "evidence": [{"source": "job_description", "snippet": "Bachelor's degree in Computer Science"}]}]})
+        result = self.run_comparison(raw, snapshot=snapshot)
+        self.assertIn("69 → 69", result["content"])
+        self.assertIn("Required bachelor's degree absent", result["content"])
 
 
 if __name__ == "__main__":

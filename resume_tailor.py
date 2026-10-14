@@ -12,10 +12,13 @@ import copy
 import json
 import re
 import time
+import requests
 
 from openrouter import chat_json, configured_chain
 from resume_render import LABEL_RE, _clean
-from resume_source import unsupported_facts, unsupported_terms, validate_tailored_resume, vocabulary
+from resume_source import (MATCH_CATEGORIES, snippet_supported, unsupported_facts,
+                           unsupported_terms, validate_tailored_resume, vocabulary)
+from fit_check import CHECK_SCHEMA, blocked_score_ceiling, verify as verify_fit
 
 
 # Tailoring is long-form generation under hard truth constraints, and the
@@ -45,6 +48,23 @@ MAX_ATTEMPTS = 2
 # budget spans every attempt and every retry, so the runner always gets to
 # answer — even when the answer is that tailoring ran out of time.
 BUDGET_SECONDS = 210
+COMPARISON_BUDGET_SECONDS = 90
+
+COMPARISON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "before_score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "after_score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "changes": {"type": "array", "maxItems": 3, "items": {
+            "type": "object", "properties": {
+                "source_ref": {"type": "string"}, "jd_quote": {"type": "string"},
+                "after_quote": {"type": "string"}},
+            "required": ["source_ref", "jd_quote", "after_quote"], "additionalProperties": False}},
+        "fit_check": CHECK_SCHEMA,
+    },
+    "required": ["before_score", "after_score", "changes", "fit_check"],
+    "additionalProperties": False,
+}
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -130,6 +150,10 @@ def build_prompt(document: dict, snapshot: dict, corrections: list[str] | None =
         "words, and drop what this job does not care about. Three sentences at most, and "
         "every fact in it must already be in the resume. Returning the existing summary "
         "unchanged is a failure: it is written for a different job.\n"
+        "Keep experience dates attached to their original career track. Commercial analytics "
+        "experience is not software engineering experience. Listed knowledge such as RAG "
+        "concepts or n8n is not a claim of shipped implementations. Never promote it into "
+        "an achievement or claim model training from LLM application/evaluation work.\n"
         "6. gaps: the job's real requirements that this resume does not evidence. Name the "
         "specific missing framework, platform, or credential. Never list ordinary English "
         "words. Three to five items, empty if there are genuinely none.\n"
@@ -355,6 +379,92 @@ def clean_fit_notes(plan: dict, allowed: set[str], master_text: str) -> list[str
             continue
         notes.append(note)
     return notes[:3]
+
+
+def _alignment_view(document: dict) -> dict:
+    """Compare the final visible wording, omitting contact details and internal source text."""
+    def item_view(item):
+        return {"ref": item["ref"], "text": _clean(item["text"])}
+    return {"summary": _clean(document["summary"]), "sections": [
+        {"heading": section["heading"], "intro": section.get("intro", ""),
+         "entries": [{"title": entry["title"], "meta": entry["meta"], "lead": entry["lead"],
+                      "bullets": [item_view(b) for b in entry["bullets"]]}
+                     for entry in section["entries"]],
+         "lines": [item_view(line) for line in section["lines"]]}
+        for section in document["sections"]]}
+
+
+def compare_alignment(original: dict, final: dict, snapshot: dict,
+                      api_key: str, master_text: str) -> dict | None:
+    """One paired estimate, guarded by source evidence and unchanged qualification caps."""
+    from job_archive import GRADE_FULL, snapshot_grade
+    if snapshot_grade(snapshot) != GRADE_FULL:
+        return None
+    before, after = _alignment_view(original), _alignment_view(final)
+    jd_text = snapshot.get("jd", {}).get("text") or ""
+    weights = ", ".join(f"{name} {weight}" for name, weight in MATCH_CATEGORIES.items())
+    prompt = (
+        "Compare original and final CV presentation for the SAME candidate and SAME job. "
+        f"Use the existing 0-100 fit rubric: {weights}. 80+ is strong demonstrated alignment, "
+        "60-79 is competitive with gaps; below 60 indicates significant gaps. "
+        "These are CV alignment estimates, not hiring or ATS probabilities. "
+        "Assess both in this one call, on exactly the same requirements and qualifications. "
+        "Formatting, a copied target title, or keyword repetition alone earns no increase. "
+        "Accept equal or lower after scores. Never invent requirements. "
+        "Use experience/projects as demonstrated evidence, not summary/skills keywords alone. "
+        "Actual experience dates, education, seniority and location remain unchanged. "
+        "Do not transfer analytics years into software experience or credit model training "
+        "from LLM application work. Listed RAG/n8n knowledge is not shipped implementation. "
+        "For every claimed presentation gain, cite a source_ref from an EXPERIENCE or PROJECT "
+        "achievement, a verbatim jd_quote and an after_quote still present in the final CV. "
+        "Provide fit_check against the original master: blockers are ONLY hard requirements "
+        "the JD states that this candidate lacks. Preferred qualifications or degrees accepting "
+        "equivalent experience are not degree blockers. Cite verbatim evidence with source set "
+        "to resume or job_description. Put ambiguities in unclear. Keep strengths and blockers "
+        "under 12-word titles and 30-word explanations. Never predict an employer decision.\n"
+        f"TARGET: {snapshot.get('title', '')} at {snapshot.get('company', '')}, "
+        f"{snapshot.get('location', '')}\nJOB DESCRIPTION:\n{jd_text}\n"
+        f"ORIGINAL:\n{json.dumps(before, ensure_ascii=False)}\n"
+        f"FINAL PDF CONTENT:\n{json.dumps(after, ensure_ascii=False)}"
+    )
+    try:
+        raw = chat_json(prompt, COMPARISON_SCHEMA, "cv_alignment_comparison", api_key,
+                        TAILOR_MODEL, TAILOR_FALLBACKS,
+                        time.monotonic() + COMPARISON_BUDGET_SECONDS, provider=TAILOR_PROVIDER)
+        scores = [raw["before_score"], raw["after_score"]]
+        if any(type(score) is not int or not 0 <= score <= 100 for score in scores):
+            return None
+        job = {"title": snapshot.get("title", ""), "company": snapshot.get("company", ""),
+               "description": jd_text}
+        check = verify_fit(raw["fit_check"], job, master_text)
+        if check["note"] or check["unclear"]:
+            return None
+        original_refs = {b["ref"]: b["source"] for section in original["sections"]
+                         for entry in section["entries"] for b in entry["bullets"]}
+        final_refs = {b["ref"]: _clean(b["text"]) for section in final["sections"]
+                      for entry in section["entries"] for b in entry["bullets"]}
+        changes = []
+        for item in raw.get("changes", [])[:3]:
+            ref, quote = item.get("source_ref"), item.get("after_quote", "")
+            if (ref in original_refs and ref in final_refs
+                    and snippet_supported(item.get("jd_quote", ""), jd_text)
+                    and snippet_supported(quote, original_refs[ref])
+                    and snippet_supported(quote, final_refs[ref])):
+                changes.append(quote)
+        ceiling = blocked_score_ceiling(check["blockers"])
+        if snapshot.get("ranking_verified") and snapshot.get("blockers"):
+            ceiling = min(ceiling if ceiling is not None else 100, snapshot["score"])
+        if ceiling is not None:
+            scores = [min(score, ceiling) for score in scores]
+        if before == after:
+            scores[1] = scores[0]
+        if scores[1] > scores[0] and not changes:
+            return None
+        return {"before": scores[0], "after": scores[1], "changes": changes,
+                "gaps": list(dict.fromkeys([b["title"] for b in check["blockers"]]
+                                           + (snapshot.get("blockers") or [])))}
+    except (ValueError, KeyError, TypeError, AttributeError, requests.RequestException):
+        return None
 
 
 def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str],

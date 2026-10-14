@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import re
 
+MATCH_CATEGORIES = {"hard_skills": 40, "experience": 30, "education": 15, "seniority_location": 15}
+
 
 HARD_FACT_RE = re.compile(r"\d[\d,]*(?:\.\d+)?%?")
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9+#./&'’_-]*")
@@ -60,8 +62,20 @@ def vocabulary(*texts: str) -> set[str]:
     """Every word the model is permitted to treat as established fact."""
     words: set[str] = set()
     for text in texts:
-        words.update(word.lower() for word in WORD_RE.findall(_normalise(text)))
+        words.update(word.lower().strip(".,") for word in WORD_RE.findall(_normalise(text)))
     return words
+
+
+def achievement_evidence(resume_text: str) -> str:
+    """Experience and project sections demonstrate work; summary/skills sections do not."""
+    lines, active = [], False
+    for line in resume_text.splitlines():
+        if line.startswith("## "):
+            heading = line[3:].strip().upper()
+            active = heading == "EXPERIENCE" or "PROJECT" in heading
+        if active:
+            lines.append(line)
+    return "\n".join(lines)
 
 
 # A quoted snippet shorter than this is too thin to prove anything. "Strong SQL"
@@ -125,10 +139,10 @@ def snippet_supported(snippet: str, source: str) -> bool:
 
 def unsupported_facts(text: str, evidence: str) -> list[str]:
     """Numbers in a rewritten bullet that its cited source does not contain."""
-    haystack = _normalise(evidence)
+    known = set(HARD_FACT_RE.findall(_normalise(evidence)))
     missing = []
     for fact in HARD_FACT_RE.findall(_normalise(text)):
-        if fact.rstrip("%") and fact not in haystack:
+        if fact not in known:
             missing.append(fact)
     return missing
 
@@ -248,7 +262,8 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
         for fact in unsupported_facts(text, evidence):
             errors.append(f"Bullet {index} contains unsupported hard fact {fact}.")
         if allowed_terms is not None:
-            for term in unsupported_terms(text, allowed_terms):
+            # A named tool elsewhere in the CV does not prove its use in this achievement.
+            for term in unsupported_terms(text, vocabulary(evidence)):
                 errors.append(f"Bullet {index} claims unsupported term {term}.")
         if any(ref in subset_refs for ref in refs):
             for word in subset_failures(text, evidence):

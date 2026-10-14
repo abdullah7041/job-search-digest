@@ -5,7 +5,7 @@ Daily job-search digest -> Discord.
 Pattern (same as the AI-news digest):
   gather  -> JSearch (RapidAPI, Google for Jobs aggregator) for breadth
              + company ATS APIs (Greenhouse, Ashby, Workable, Lever) for depth
-  filter  -> Saudi-only, mid-level/senior IC, confirmed publication within 7 days
+  filter  -> Saudi-only, track-specific IC levels, confirmed publication within 7 days
   rank    -> one cheap OpenRouter call for score + one-line "why it fits"
              (deterministic keyword fallback if the ranker is missing or fails)
   deliver -> Discord webhook
@@ -49,6 +49,7 @@ from job_archive import (GRADE_FULL, GRADE_TEASER, jd_grade, jd_requirements, jd
 import fit_check
 from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
+from resume_source import MATCH_CATEGORIES
 
 # ------------------------------- CONFIG -------------------------------------
 # Each company names its ATS in "source":
@@ -143,13 +144,13 @@ TITLE_EXCLUDE_DISCIPLINE = [
     "planning engineer", "sales engineer", "bridge", "construction",
 ]
 
-# Seniority filter: drop anything junior AND anything above senior IC.
+# Role levels are track-specific: early-career software/AI and experienced analytics.
 # The 2026-07-31 digest scored Lead/Staff/Team-Leader roles 85-98 because this
 # list only bounded seniority from below and profile.json said "senior or
 # above". Target is mid-level and senior IC; leadership tracks are out.
 TITLE_EXCLUDE = [
-    "junior", "intern", "internship", "graduate", "trainee", "tamheer",
-    "associate", "entry", "fresh", "co-op", "apprentice", "student",
+    "intern", "internship", "graduate", "trainee", "tamheer",
+    "co-op", "apprentice", "student",
     "lead ", " lead", "leader", "staff", "principal", "head of", "director",
     "chief", "vice president", " vp", "vp ", "manager", "management",
 ]
@@ -189,10 +190,11 @@ DEFAULT_PROFILE = {
 # out of 200, so a query earns its place on that number or not at all.
 AGGREGATOR_QUERIES = [
     "software engineer Saudi Arabia",
-    "data engineer Riyadh",
+    "data analyst Saudi Arabia",
     "LLM engineer Saudi Arabia",
     "backend engineer Saudi Arabia",
     "AI product engineer Saudi Arabia",
+    "business intelligence Power BI Saudi Arabia",
 ]
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
 
@@ -263,6 +265,7 @@ RANK_BUDGET_SECONDS = 120
 RUN_BUDGET_SECONDS = 600
 
 MAX_JOBS_IN_DIGEST = 25
+MAX_FALLBACK_JOBS = 5
 # Discovered boards read per run, on top of the hand-curated COMPANIES list,
 # which is never rationed. Board discovery adds entries every week and has no
 # ceiling of its own, so without this the company loop grows without bound
@@ -303,13 +306,9 @@ def _score_floor(raw: str, default: int = 80) -> int:
     return value
 
 
-# Below this, a job is not delivered at all. The tiers only ever decided which
-# heading a job appeared under, so every posting that cleared the hard filters
-# was delivered no matter how poorly it scored, and the weak ones crowded out
-# the review tier. Override with a repository variable of the same name.
-#
-# Only verified model scores get low-score cooldowns. Fallback or incomplete
-# verification produces status only and leaves the posting retryable.
+# Strong-match threshold. A separate top-five policy selects fully verified
+# same-track jobs below 80 only when no strong match qualifies. Scores below 40
+# and verified blockers receive cooldowns; incomplete evidence remains retryable.
 MIN_DELIVER_SCORE = _score_floor(os.environ.get("MIN_DELIVER_SCORE") or "")
 
 # Per-job resume tailoring is an explicit Discord interaction handled by
@@ -1565,6 +1564,9 @@ def matches_filters(job):
         return False
     if any(k in title for k in TITLE_EXCLUDE_DISCIPLINE):
         return False
+    if (any(k in title for k in ("junior", "associate", "entry", "fresh"))
+            and any(k in title for k in ("data analyst", "analytics", "business intelligence", "power bi"))):
+        return False
     if not any(k in title for k in TITLE_INCLUDE):
         return False
     return True
@@ -1753,12 +1755,7 @@ def keyword_score(job):
 # weights Watheq uses. Ported from its MATCH_SCORING_RUBRIC, and education is
 # the one that matters most here: it is the dimension a candidate with no
 # bachelor's degree keeps being scored against, and it was never asked about.
-RANK_CATEGORIES = {
-    "hard_skills": 40,
-    "experience": 30,
-    "education": 15,
-    "seniority_location": 15,
-}
+RANK_CATEGORIES = MATCH_CATEGORIES
 
 _CATEGORY_SCORE = {
     "type": "object",
@@ -1929,6 +1926,9 @@ def rank_jobs(jobs, api_key, evidence=None):
         "The preferences block states what the candidate wants and the constraints "
         "that rule a role out. It proves nothing about capability.\n\n"
         "Score each job 0-100 for fit to this candidate.\n"
+        "Use the exact target track name in track; use an empty track for unrelated work. "
+        "Junior and associate AI/application/software roles are valid targets when their "
+        "requirements fit the candidate. Analytics targets are mid-level and senior IC.\n"
         f"Use this strict evidence-based rubric: {weights}. "
         "80+ means strong evidence-backed fit, 60-79 means competitive with gaps, below 60 "
         "means significant gaps. Never score above 90 unless every requirement "
@@ -2389,6 +2389,7 @@ def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
 TIER_STRONG = "Strong matches"
 TIER_COMPETITIVE = "Competitive with gaps"
 TIER_REVIEW = "Worth reviewing"
+TIER_CLOSEST = "Closest viable matches"
 
 
 def is_strong(job):
@@ -2402,11 +2403,29 @@ def is_strong(job):
     """
     check = job.get("fit_check") or {}
     return bool(job.get("ranking_verified")
-                and job["score"] >= STRONG_MATCH_MIN_SCORE
+                and job["score"] >= max(MIN_DELIVER_SCORE, STRONG_MATCH_MIN_SCORE)
                 and jd_grade(job.get("description") or "") == GRADE_FULL
                 and check.get("ceiling") == "high"
                 and not check.get("note")
+                and not check.get("unclear")
                 and not check.get("blockers"))
+
+
+def is_viable(job):
+    """A same-track fallback backed by resume evidence and a clean requirements check."""
+    check = job.get("fit_check") or {}
+    tracks = {track["name"] for track in PROFILE.get("tracks", [])}
+    return bool(job.get("ranking_verified")
+                and 40 <= job["score"] < STRONG_MATCH_MIN_SCORE
+                and job.get("track") in tracks
+                and jd_grade(job.get("description") or "") == GRADE_FULL
+                and check.get("ceiling") == "high"
+                and not check.get("note")
+                and not check.get("blockers")
+                and not check.get("unclear")
+                and any(e.get("source") == "resume" and e.get("snippet")
+                        for strength in check.get("strengths") or []
+                        for e in strength.get("evidence") or []))
 
 
 def split_tiers(jobs):
@@ -2809,6 +2828,7 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
         "date": today, "fetched": fetched, "matched": matched,
         "new": new, "avg_score": avg_score,
         "unverified_date": 0, "unverified_fit": 0,
+        "fallback_delivered": 0,
     }
     row.update(metrics)
     for source, counts in sorted(metrics.get("source_yield", {}).items()):
@@ -2895,7 +2915,7 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
         f"Scanned {scanned} postings; {matched} matched the filters: "
         f"{already_seen} seen before, {newly_found} newly found; "
         f"{stale} older than {MAX_JOB_AGE_DAYS}d, "
-        f"{below_floor} below fit score {max(MIN_DELIVER_SCORE, STRONG_MATCH_MIN_SCORE)}.",
+        f"{below_floor} rejected for role or qualification mismatch.",
         f"Excluded {unverified_date} with unverified posting dates; "
         f"{unverified_fit} awaiting complete fit verification.",
         f"Read {boards_read} of {boards_total} employer boards; "
@@ -3271,20 +3291,29 @@ def main():
         supported = (evidence_ready and job.get("ranking_verified")
                      and jd_grade(job.get("description") or "") == GRADE_FULL)
         (candidates if supported else unverified).append(job)
-    fresh, below_floor = drop_below_floor(candidates)
+    # Scores below 40 are the rubric's wrong-function band. Check other scores
+    # before selecting strong matches or the closest viable fallback.
+    fresh = [job for job in candidates if job["score"] >= 40]
+    below_floor = [job for job in candidates if job["score"] < 40]
     check_jobs(fresh, evidence, rank_key, RANK_MODEL, RANK_FALLBACKS,
                RANK_PROVIDER, log)
     for job in cap_blocked_scores(fresh):
         gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
         log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
-    fresh, capped_below_floor = drop_below_floor(fresh)
-    below_floor.extend(capped_below_floor)
-    eligible = []
+    strong_candidates, viable = [], []
     for job in fresh:
-        (eligible if is_strong(job) else unverified).append(job)
-    fresh = eligible
+        if (job.get("fit_check") or {}).get("blockers"):
+            below_floor.append(job)
+        elif is_strong(job):
+            strong_candidates.append(job)
+        elif is_viable(job):
+            viable.append(job)
+        else:
+            unverified.append(job)
+    strong_mode = bool(strong_candidates)
+    fresh = strong_candidates if strong_mode else viable
     for job in below_floor:
-        log(f"Below floor {job['company']} - {job['title']}: final fit {job['score']}; "
+        log(f"Rejected {job['company']} - {job['title']}: final fit {job['score']}; "
             f"skipped for {FLOOR_COOLDOWN_DAYS} days")
         defer_below_floor(seen, job, today)
     for job in unverified:
@@ -3309,7 +3338,7 @@ def main():
                        unverified_date=len(unverified_dates), unverified_fit=len(unverified),
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read, paused_feeds=paused_feeds)
-        log("No fully verified strong matches. Heartbeat sent.")
+        log("No fully verified strong or viable matches. Heartbeat sent.")
         return
 
     # Only eligible jobs consume employer slots or the digest's overall limit.
@@ -3318,20 +3347,17 @@ def main():
         log(f"Deferred {job['company']} - {job['title']}: fit {job['score']}, "
             f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
 
-    tiers = split_tiers(fresh)
-    room = MAX_JOBS_IN_DIGEST
-    delivered = []
-    for name, group in zip((TIER_STRONG, TIER_COMPETITIVE, TIER_REVIEW), tiers):
-        group.sort(key=lambda x: x["score"], reverse=True)
-        # Best-scoring tier first, so the cut falls on the weakest jobs rather
-        # than on whichever tier happened to be listed last.
-        group[:] = group[:room]
-        room -= len(group)
-        for job in group:
-            job["tier"] = name
-        delivered.extend(group)
-    strong, competitive, review = tiers
-    fresh = delivered
+    fresh.sort(key=lambda job: (-job["score"], job["id"]))
+    limit = MAX_JOBS_IN_DIGEST if strong_mode else MAX_FALLBACK_JOBS
+    deferred.extend(fresh[limit:])
+    if strong_mode:
+        deferred.extend(viable)
+    fresh = fresh[:limit]
+    for job in fresh:
+        job["tier"] = TIER_STRONG if strong_mode else TIER_CLOSEST
+    strong = fresh if strong_mode else []
+    competitive = [] if strong_mode else [j for j in fresh if j["score"] >= COMPETITIVE_MIN_SCORE]
+    review = [] if strong_mode else [j for j in fresh if j["score"] < COMPETITIVE_MIN_SCORE]
 
     # Persist full job/JD evidence before delivery. A later button click can
     # therefore tailor the actual captured posting rather than its title.
@@ -3339,6 +3365,8 @@ def main():
     write_snapshots(fresh, today)
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
+    if not strong_mode:
+        lines.append("No verified 80+ matches; these are the closest viable roles, with their actual fit scores.")
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     by_company = {}
     for j in fresh:
@@ -3377,6 +3405,12 @@ def main():
                 f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
                 f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
             )
+            if not strong_mode:
+                for strength in check.get("strengths") or []:
+                    quotes = [e["snippet"] for e in strength.get("evidence") or [] if e.get("source") == "resume"]
+                    if quotes:
+                        lines.append(f"  Background evidence: {strength['title']} — {quotes[0][:180]}")
+                        break
 
     def record_delivery_stats(delivered_ids):
         save_stats(
@@ -3387,6 +3421,7 @@ def main():
             strong=len(strong), competitive=len(competitive), review=len(review),
             tailored=0, tailor_failed=0,
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
+            fallback_delivered=0 if strong_mode else len(delivered_ids),
             source_yield=source_yield(all_jobs, discovered_new,
                                      [j for j in fresh if j["id"] in delivered_ids], paused_feeds, attempted_sources),
             below_floor=len(below_floor), deferred=len(deferred), unverified_fit=len(unverified),

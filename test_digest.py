@@ -105,9 +105,9 @@ class TestFilters(unittest.TestCase):
             job = {"title": title, "location": "Riyadh, Saudi Arabia"}
             self.assertTrue(digest.matches_filters(job), title)
 
-    def test_junior_still_dropped(self):
+    def test_junior_software_is_a_valid_early_career_target(self):
         job = {"title": "Junior Software Engineer", "location": "Riyadh, Saudi Arabia"}
-        self.assertFalse(digest.matches_filters(job))
+        self.assertTrue(digest.matches_filters(job))
 
     def test_location_conflict(self):
         self.assertTrue(digest.location_conflict("Staff Data Engineer (Bangkok based, relocation provided)"))
@@ -2585,9 +2585,9 @@ class TestEndToEnd(unittest.TestCase):
     def test_quiet_report_distinguishes_seen_only_from_below_floor_jobs(self):
         cases = [
             ({"newly_found": 0, "already_seen": 70, "below_floor": 0},
-             "70 seen before", "0 newly found", "0 below fit score 80"),
+             "70 seen before", "0 newly found", "0 rejected for role or qualification mismatch"),
             ({"newly_found": 14, "already_seen": 56, "below_floor": 14},
-             "56 seen before", "14 newly found", "14 below fit score 80"),
+             "56 seen before", "14 newly found", "14 rejected for role or qualification mismatch"),
         ]
         for summary, *expected in cases:
             with self.subTest(summary=summary), \
@@ -2946,14 +2946,8 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("awaiting complete fit verification", body)
         self.assertNotIn("tailored resume:", body)
 
-    def test_a_job_below_the_floor_is_neither_delivered_nor_offered_again(self):
-        """The Datamatics role stops being a card.
-
-        Under a cooldown rather than the 120-day state TTL. The archives hold
-        one description scored 40, 40, 40, 45, 50, 50 and 75 unchanged, so one
-        bad number must not retire a real job until January -- but it must not
-        cost a re-fetch, a re-enrichment and a re-rank every morning either.
-        """
+    def test_a_below_80_job_without_viability_evidence_is_held_without_cooldown(self):
+        """An unverified fallback stays retryable rather than receiving a score-only cooldown."""
         ranking = {
             "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
             "jsearch_e": {"score": digest.MIN_DELIVER_SCORE - 1,
@@ -2967,7 +2961,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("Senior Data Architect", body)
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.com/e", seen)
+        self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.com/e", seen)
         self.assertNotIn("url:https://example.com/e", seen,
                          "a below-floor score must not be remembered as a delivery")
 
@@ -3087,7 +3081,8 @@ class TestEndToEnd(unittest.TestCase):
             row = json.load(handle)[-1]
         self.assertEqual(row["avg_score"], round((93 + rejected) / 2, 1))
         self.assertEqual(row["new"], 2)
-        self.assertEqual(row["below_floor"], 1)
+        self.assertEqual(row["below_floor"], 0)
+        self.assertEqual(row["unverified_fit"], 1)
         self.assertEqual(row["delivered"], 1)
 
     def test_no_ranker_key_no_tailoring(self):
