@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-14",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2413262706",
+      "captured_at": "2026-10-14T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2413262706",
+      "title": "Remote Junior Front-End Developer",
+      "company": "PULSE (MENA)",
+      "location": "Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/remote-junior-front-end-developer-at-pulse-mena-4479257692",
+      "salary": "",
+      "tier": "Strong matches",
+      "score": 88,
+      "why": "Entry-level front-end role welcoming self-taught candidates matches React and TypeScript experience.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Demonstrated React, JavaScript, TypeScript, and modern responsive web developmen"
+        },
+        "experience": {
+          "score": 28,
+          "max": 30,
+          "note": "Shipped production web application exceeding junior/entry expectations."
+        },
+        "education": {
+          "score": 15,
+          "max": 15,
+          "note": "Meets high school diploma / equivalent requirement."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Remote in Saudi Arabia; junior level fits perfectly."
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "high",
+      "blockers": [],
+      "link_status": "open",
+      "first_published": "2026-10-14",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Position Overview\n\nWe are seeking a motivated, creative, and detail-oriented Junior Front-End Developer to join our remote software development team.\n\nThis entry-level position focuses on building, updating, testing, and maintaining user-friendly websites and web applications. The successful candidate will collaborate with developers, designers, and other team members to create responsive interfaces, implement visual designs, resolve basic technical issues, and improve the overall user experience.\n\nThe ideal candidate has foundational knowledge of HTML, CSS, and JavaScript, enjoys solving problems, and is enthusiastic about learning modern front-end development technologies.\n\nPrevious professional software development experience is not required. Training, mentorship, code reviews, and ongoing technical guidance will be provided. Recent graduates, self-taught developers, coding bootcamp graduates, and career changers are encouraged to apply.\n\nKey Responsibilities\n\nFront-End Website Development\n\nAssist with developing and maintaining websites and web applications.\nWrite clean, organized, and readable HTML, CSS, and JavaScript.\nBuild reusable user-interface elements under the guidance of senior developers.\nConvert approved design mockups into functional web pages.\nImplement navigation menus, forms, buttons, and interactive components.\nUpdate existing pages and features according to project requirements.\nFollow established coding standards and development practices.\nMaintain accurate documentation of completed development tasks.\n\nResponsive Web Design\n\nDevelop layouts that adapt to desktop, tablet, and mobile screens.\nApply responsive design techniques using CSS and modern layout tools.\nTest interfaces across different screen sizes and browsers.\nIdentify and correct basic layout, alignment, and styling issues.\nSupport consistent visual presentation across web pages.\nCollaborate with designers to implement approved design specifications.\nHelp maintain accessible and user-friendly interfaces.\n\nJavaScript & Interactive Features\n\nAssist with implementing interactive website functionality.\nWrite and update JavaScript for basic front-end features.\nWork with forms, events, and dynamic page content.\nSupport basic client-side data validation.\nIdentify and resolve simple JavaScript errors.\nLearn to integrate front-end components with approved APIs.\nFollow established practices for readable and maintainable code.\n\nFront-End Frameworks & Libraries\n\nAssist with developing features using frameworks or libraries such as React, Vue, or Angular, depending on project requirements.\nLearn component-based development and reusable interface patterns.\nSupport updates to existing application components.\nFollow established project structures and coding conventions.\nParticipate in guided technical tasks and collaborative development.\nApply feedback from senior developers and code reviews.\n\nTesting & Debugging\n\nTest websites and applications for functionality and usability.\nIdentify visual defects, broken links, and basic functionality issues.\nUse browser developer tools to investigate front-end errors.\nAssist with debugging HTML, CSS, and JavaScript.\nVerify that completed changes meet assigned requirements.\nDocument issues and communicate findings to the development team.\nRetest corrected features before submitting work for review.\n\nUser Experience & Accessibility\n\nCollaborate with designers to create clear and intuitive interfaces.\nSupport consistent typography, spacing, colors, and layouts.\nFollow established accessibility and usability guidelines.\nAssist with improving navigation and content presentation.\nApply semantic HTML and basic accessibility practices.\nSupport improvements to page responsiveness and loading performance.\nConsider user feedback when implementing approved interface changes.\n\nVersion Control & Development Workflow\n\nUse Git or other approved version-control tools.\nMaintain organized code changes and descriptive commit messages.\nAssist with creating and updating development branches.\nParticipate in pull requests and code reviews.\nFollow established procedures for testing and submitting changes.\nMaintain clear documentation of assigned tasks and updates.\nLearn team development workflows and collaboration practices.\n\nDocumentation & Technical Support\n\nMaintain basic technical notes and development documentation.\nUpdate task trackers and report progress on assigned features.\nAssist with documenting interface components and code changes.\nReview development instructions and project requirements.\nReport technical issues or unclear requirements promptly.\nSupport routine website maintenance and content updates.\nComplete additional development assignments under supervision.\n\nRemote Team Collaboration\n\nCommunicate professionally through email, chat, and virtual meetings.\nCollaborate with developers, designers, project coordinators, and other team members.\nParticipate in virtual standups, onboarding, training, and code reviews.\nProvide updates on assigned development tasks.\nAsk questions when technical requirements are unclear.\nApply feedback to improve coding quality and problem-solving skills.\nWork independently while meeting project deadlines and quality expectations.\n\nRequired Qualifications\n\nHigh school diploma, GED, or equivalent.\nFoundational knowledge of HTML, CSS, and JavaScript.\nBasic understanding of responsive web design.\nFamiliarity with web browsers and browser developer tools.\nAbility to read, understand, and modify basic front-end code.\nStrong attention to detail and problem-solving abilities.\nGood written and verbal communication skills.\nWillingness to learn modern development tools and frameworks.\nAbility to follow technical instructions and coding standards.\nBasic understanding of website structure and user-interface design.\nGood organizational and time-management skills.\nAbility to work independently in a remote environment.\nDependable and professional work habits.\nReliable internet conn",
+        "sha256": "30055951236dfcc5b074be9ad53d2b093d8628d689c4cb6f1b2f6805f51228e5",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
