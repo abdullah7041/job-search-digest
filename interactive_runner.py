@@ -74,7 +74,7 @@ def _master_document(resume_path: str = "resume.md") -> tuple[dict, str]:
     return parse_resume(resume), resume
 
 
-def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, list[str], list[str], str, str]:
+def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, list[str], list[str], str, str, dict | None]:
     """Tailor the master resume to one captured JD and render it to one page.
 
     Returns the PDF, the gaps, the fit notes, a note explaining any degradation,
@@ -87,9 +87,9 @@ def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
         return base64.b64encode(render_pdf(document)).decode("ascii"), [], [], \
-            "OPENROUTER_API_KEY is not configured, so this is the untailored master resume.", name
+            "OPENROUTER_API_KEY is not configured, so this is the untailored master resume.", name, None
 
-    from resume_tailor import tailor
+    from resume_tailor import compare_alignment, tailor
 
     try:
         tailored, gaps, fit_notes = tailor(document, snapshot, api_key,
@@ -97,8 +97,17 @@ def _tailored_pdf(snapshot: dict, resume_path: str = "resume.md") -> tuple[str, 
     except (ValueError, KeyError, TypeError, requests.RequestException) as error:
         fresh, _ = _master_document(resume_path)
         return base64.b64encode(render_pdf(fresh)).decode("ascii"), [], [], \
-            f"Tailoring did not pass its own checks, so this is the untailored master resume. Reason: {str(error)[:300]}", name
-    return base64.b64encode(render_pdf(tailored)).decode("ascii"), gaps, fit_notes, "", name
+            f"Tailoring did not pass its own checks, so this is the untailored master resume. Reason: {str(error)[:300]}", name, None
+    # Rendering can trim the document: score exactly what the attachment contains.
+    pdf = render_pdf(tailored)
+    try:
+        comparison = compare_alignment(document, tailored, snapshot, api_key, resume)
+    except Exception as error:
+        _log(f"Alignment comparison unavailable ({type(error).__name__}).")
+        comparison = None
+    if comparison:
+        gaps = list(dict.fromkeys(comparison["gaps"] + gaps))
+    return base64.b64encode(pdf).decode("ascii"), gaps, fit_notes, "", name, comparison
 
 
 def _slug(value: str, titlecase: bool = False) -> str:
@@ -144,19 +153,28 @@ TEASER_WARNING = (
 
 
 def _message(title: str, company: str, gaps: list[str], fit_notes: list[str],
-             note: str, warnings: list[str] | None = None) -> str:
+             note: str, warnings: list[str] | None = None, comparison: dict | None = None) -> str:
     """Everything the candidate needs to read, and nothing an employer sees."""
     lines = [f"Tailored one-page CV for **{title}** at **{company}**, built from your confirmed master resume."]
     if note:
         lines.append(f"\n:warning: {note}")
     for warning in warnings or []:
         lines.append(f"\n:warning: {warning}")
-    if fit_notes:
-        lines.append("\n**Why you fit**")
-        lines.extend(f"- {note}" for note in fit_notes)
+    if not note:
+        if comparison:
+            lines.append(f"\n**CV alignment estimate:** {comparison['before']} → {comparison['after']}/100.")
+            lines.append("Presentation estimate, not hiring probability; job-fit score and qualifications remain unchanged.")
+        else:
+            lines.append("\nAlignment comparison unavailable.")
     if gaps:
         lines.append("\n**Gaps to expect in the interview**")
-        lines.extend(f"- {gap}" for gap in gaps)
+        lines.extend(f"- {gap[:160]}" for gap in gaps[:5])
+    if fit_notes:
+        lines.append("\n**Why you fit**")
+        lines.extend(f"- {fit_note[:160]}" for fit_note in fit_notes[:3])
+    if comparison and comparison["after"] > comparison["before"]:
+        lines.append("\n**Evidence highlighted for this job**")
+        lines.extend(f"- {change[:160]}" for change in comparison["changes"][:2])
     if gaps or fit_notes:
         lines.append("\nThese notes are not in the PDF. The attachment is ready to send.")
     return "\n".join(lines)[:MESSAGE_LIMIT]
@@ -257,10 +275,10 @@ def run_task(task: dict, **resolvers) -> dict:
     warnings = [TEASER_WARNING] if snapshot_grade(snapshot) == GRADE_TEASER else []
     if JD_PROVENANCE_NOTE.get(provenance):
         warnings.append(JD_PROVENANCE_NOTE[provenance])
-    pdf_base64, gaps, fit_notes, note, name = _tailored_pdf(snapshot)
+    pdf_base64, gaps, fit_notes, note, name, comparison = _tailored_pdf(snapshot)
     return {
         "status": "completed",
-        "content": _message(title, company, gaps, fit_notes, note, warnings),
+        "content": _message(title, company, gaps, fit_notes, note, warnings, comparison),
         "job_key": snapshot["job_key"],
         "jd_sha256": actual_digest,
         "jd_source": provenance,

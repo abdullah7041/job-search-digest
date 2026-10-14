@@ -475,6 +475,58 @@ class TestInteractiveWorkflowWiring(unittest.TestCase):
         text = self._workflow_text()
         for name in ("INTERACTIVE_WORKER_URL", "WORKER_CALLBACK_SECRET", "TASK_ID"):
             self.assertIn(f"{name}:", text)
+
+
+class TestSourceBoundClaims(unittest.TestCase):
+    def test_unknown_tool_at_sentence_start_or_after_a_boundary_is_rejected(self):
+        source = "Built and deployed the production product solo with React 19 and TypeScript."
+        for text in ("Kubernetes powered the product.", "Built the product. Kubernetes powered it."):
+            with self.subTest(text=text):
+                self.assertTrue(validate_tailored_resume(
+                    {"bullets": [{"text": text, "source_refs": ["b1"]}]},
+                    {"b1": source}, vocabulary(source), source))
+
+    def test_slash_separated_tools_can_be_named_separately_from_the_same_source(self):
+        source = "Built the product with OpenRouter/Gemini."
+        self.assertEqual(validate_tailored_resume(
+            {"bullets": [{"text": "Built the product with OpenRouter and Gemini.", "source_refs": ["b1"]}]},
+            {"b1": source}, vocabulary(source), source), [])
+
+    def test_actual_tailoring_rejects_reassigned_dates_and_production_listed_skills(self):
+        with open(os.path.join(os.path.dirname(__file__), "resume.md"), encoding="utf-8") as handle:
+            master = handle.read()
+        document = parse_resume(master)
+        bullets = [{"ref": ref, "text": text} for ref, text in source_refs(document).items()
+                   if ref not in resume_tailor.subset_line_refs(document)][:16]
+        snapshot = make_snapshot(dict(JOB, title="Software Engineer"), "2026-10-14T00:00:00Z")
+        for summary in ("Saudi software engineer since March 2020.",
+                        "Saudi AI engineer with production RAG and n8n implementations."):
+            plan = {"headline": "AI Product Engineer — Software Engineer", "summary": summary,
+                    "bullets": bullets, "gaps": [], "fit_notes": [], "highlight_terms": []}
+            with self.subTest(summary=summary), mock.patch.object(resume_tailor, "call_model", return_value=plan):
+                with self.assertRaisesRegex(ValueError, "evidence check"):
+                    resume_tailor.tailor(document, snapshot, "key", source_refs(document), master)
+
+    def test_skill_list_cannot_supply_a_new_tool_to_an_achievement(self):
+        errors = validate_tailored_resume(
+            {"bullets": [{"text": "Built Python pipelines with Sentry.", "source_refs": ["b1"]}]},
+            {"b1": "Built Python pipelines."}, vocabulary("Built Python pipelines. Sentry"),
+            "Built Python pipelines. Sentry (listed skill)")
+        self.assertTrue(errors)
+
+    def test_a_year_inside_a_date_does_not_prove_years_of_experience(self):
+        errors = validate_tailored_resume(
+            {"summary": "Saudi software engineer with 6 years of experience.", "bullets": []},
+            {}, vocabulary("Saudi software engineer with years of experience since 2016."),
+            "Saudi software engineer with experience since 2016.")
+        self.assertTrue(errors)
+
+    def test_an_amount_does_not_support_a_percentage(self):
+        errors = validate_tailored_resume(
+            {"bullets": [{"text": "Improved sales by 60%.", "source_refs": ["b1"]}]},
+            {"b1": "Improved sales by 60 units."})
+        self.assertTrue(errors)
+
 MASTER = """# ADA LOVELACE
 **AI Product Engineer**
 Riyadh, Saudi Arabia · ada@example.test
@@ -1402,6 +1454,10 @@ class TestRunnerDelivery(unittest.TestCase):
                                   return_value=(parse_resume(MASTER), MASTER))
         patch.start()
         self.addCleanup(patch.stop)
+        # Alignment is a separate external model call, isolated in these PDF tests.
+        transport = mock.patch.object(resume_tailor, "chat_json", side_effect=ValueError("offline comparison"))
+        transport.start()
+        self.addCleanup(transport.stop)
 
     def _snapshot(self):
         return make_snapshot(JOB, "2026-08-03T12:00:00Z")
@@ -1492,6 +1548,93 @@ class TestRunnerDelivery(unittest.TestCase):
 
         self.assertNotIn("implementation slice", result["content"])
         self.assertLessEqual(len(result["content"]), interactive_runner.MESSAGE_LIMIT)
+
+
+class TestAlignmentComparison(unittest.TestCase):
+    def test_a_nearly_matching_quote_with_an_added_tool_cannot_raise_the_estimate(self):
+        raw = self.comparison(changes=[{
+            "source_ref": "b1", "jd_quote": "monitoring model quality, documenting decisions",
+            "after_quote": "Built an LLM evaluation pipeline that judge-scores prompt and model variants. Kubernetes"}])
+        result = self.run_comparison(raw)
+        self.assertIn("Alignment comparison unavailable", result["content"])
+        self.assertNotIn("Kubernetes", result["content"])
+
+    def test_formatting_only_changes_do_not_raise_alignment(self):
+        before = parse_resume(MASTER)
+        final = copy.deepcopy(before)
+        final["sections"][0]["entries"][0]["bullets"][0]["text"] = (
+            "Built an **LLM** evaluation pipeline that judge-scores prompt and model variants.")
+        with mock.patch.object(resume_tailor, "chat_json", return_value=self.comparison()):
+            result = resume_tailor.compare_alignment(before, final,
+                make_snapshot(JOB, "2026-10-14T00:00:00Z"), "key", MASTER)
+        self.assertEqual((result["before"], result["after"]), (70, 70))
+
+    def comparison(self, **updates):
+        raw = {
+            "before_score": 70, "after_score": 76,
+            "changes": [{"source_ref": "b1", "jd_quote": "monitoring model quality, documenting decisions",
+                         "after_quote": "Built an LLM evaluation pipeline that judge-scores prompt and model variants."}],
+            "fit_check": {"blockers": [], "unclear": [], "strengths": []},
+        }
+        raw.update(updates)
+        return raw
+
+    def run_comparison(self, raw, renderer=None, plan=None, snapshot=None):
+        with mock.patch.object(interactive_runner, "_master_document",
+                               side_effect=lambda *args: (parse_resume(MASTER), MASTER)), \
+             mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "key"}), \
+             mock.patch.object(resume_tailor, "call_model", return_value=plan or _plan()), \
+             mock.patch.object(resume_tailor, "chat_json", side_effect=raw if isinstance(raw, Exception) else None,
+                               return_value=raw), \
+             mock.patch.object(interactive_runner, "render_pdf", side_effect=renderer or render_pdf):
+            return run_task({"input": {"job_snapshot": snapshot or make_snapshot(JOB, "2026-10-14T00:00:00Z")}})
+
+    def test_validated_comparison_accompanies_the_pdf_without_changing_job_fit(self):
+        result = self.run_comparison(self.comparison())
+        self.assertTrue(result["tailored"])
+        self.assertIn("70 → 76", result["content"])
+        self.assertIn("alignment estimate", result["content"])
+        self.assertTrue(result["pdf_base64"])
+
+    def test_failure_and_malformed_scores_still_deliver_the_checked_resume(self):
+        for raw in (ValueError("unavailable"), RuntimeError("provider failed"), self.comparison(after_score=True),
+                    self.comparison(after_score=101), self.comparison(changes=[])):
+            with self.subTest(raw=str(raw)[:45]):
+                result = self.run_comparison(raw)
+                self.assertTrue(result["tailored"])
+                self.assertTrue(result["pdf_base64"])
+                self.assertIn("Alignment comparison unavailable", result["content"])
+                self.assertNotIn("70 → 76", result["content"])
+
+    def test_renderer_removed_evidence_cannot_support_a_score_increase(self):
+        def trim_and_render(document):
+            entry = document["sections"][0]["entries"][0]
+            entry["bullets"] = [b for b in entry["bullets"] if b["ref"] != "b2"]
+            return render_pdf(document)
+        raw = self.comparison(changes=[{
+            "source_ref": "b2", "jd_quote": "monitoring model quality, documenting decisions",
+            "after_quote": "Instrumented production monitoring with Sentry and real-time Telegram alerting."}])
+        result = self.run_comparison(raw, renderer=trim_and_render)
+        self.assertTrue(result["tailored"])
+        self.assertIn("Alignment comparison unavailable", result["content"])
+
+    def test_unchanged_and_lower_estimates_are_reported_without_inflation(self):
+        for after in (70, 65):
+            with self.subTest(after=after):
+                result = self.run_comparison(self.comparison(after_score=after, changes=[]))
+                self.assertIn(f"70 → {after}", result["content"])
+
+    def test_verified_degree_gap_caps_both_estimates_and_remains_visible(self):
+        description = JOB["description"] + "\nMinimum qualifications: Bachelor's degree in Computer Science."
+        snapshot = make_snapshot(dict(JOB, description=description), "2026-10-14T00:00:00Z")
+        raw = self.comparison(before_score=85, after_score=95, fit_check={
+            "strengths": [], "unclear": [], "blockers": [{
+                "type": "education_certification_gap", "severity": "medium", "title": "Required bachelor's degree absent",
+                "explanation": "The source resume does not demonstrate this qualification.",
+                "evidence": [{"source": "job_description", "snippet": "Bachelor's degree in Computer Science"}]}]})
+        result = self.run_comparison(raw, snapshot=snapshot)
+        self.assertIn("69 → 69", result["content"])
+        self.assertIn("Required bachelor's degree absent", result["content"])
 
 
 if __name__ == "__main__":

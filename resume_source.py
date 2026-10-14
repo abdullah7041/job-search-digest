@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import re
 
+MATCH_CATEGORIES = {"hard_skills": 40, "experience": 30, "education": 15, "seniority_location": 15}
+
 
 HARD_FACT_RE = re.compile(r"\d[\d,]*(?:\.\d+)?%?")
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9+#./&'’_-]*")
@@ -38,6 +40,10 @@ NEUTRAL_TERMS = {
     "engineering", "developer", "analyst", "manager", "product", "data",
     "software", "machine", "learning", "artificial", "intelligence", "science",
     "scientist", "full", "stack", "backend", "frontend", "cloud", "systems",
+    "built", "build", "shipped", "delivered", "deliver", "reduced", "designed",
+    "developed", "implemented", "instrumented", "engineered", "improved", "created",
+    "maintained", "integrated", "produced", "produce", "kept", "cut", "segmented",
+    "direct", "strong", "production", "experience", "no", "not", "this", "your",
 }
 
 
@@ -60,8 +66,32 @@ def vocabulary(*texts: str) -> set[str]:
     """Every word the model is permitted to treat as established fact."""
     words: set[str] = set()
     for text in texts:
-        words.update(word.lower() for word in WORD_RE.findall(_normalise(text)))
+        for word in WORD_RE.findall(_normalise(text)):
+            words.update(part.lower().strip(".,") for part in [word] + word.split("/"))
     return words
+
+
+def achievement_evidence(resume_text: str) -> str:
+    """Experience and project sections demonstrate work; summary/skills sections do not."""
+    lines, active = [], False
+    for line in resume_text.splitlines():
+        if line.startswith("## "):
+            heading = line[3:].strip().upper()
+            active = heading == "EXPERIENCE" or "PROJECT" in heading
+        if active:
+            lines.append(line)
+    return "\n".join(lines)
+
+
+def summary_evidence(resume_text: str) -> str:
+    """Keep confirmed facts and work context, excluding the self-reported skills list."""
+    lines, skills = [], False
+    for line in resume_text.splitlines():
+        if line.startswith("## "):
+            skills = line[3:].strip().upper() == "SKILLS"
+        if not skills:
+            lines.append(line)
+    return "\n".join(lines)
 
 
 # A quoted snippet shorter than this is too thin to prove anything. "Strong SQL"
@@ -123,12 +153,18 @@ def snippet_supported(snippet: str, source: str) -> bool:
     return len(words & known) / len(words) >= SNIPPET_OVERLAP
 
 
+def quote_supported(quote: str, source: str) -> bool:
+    """New comparison quotes must be contiguous, with harmless typography normalized."""
+    text = _snippet_text(_normalise(quote))
+    return bool(len(text) >= MIN_SNIPPET_CHARS and text in _snippet_text(_normalise(source)))
+
+
 def unsupported_facts(text: str, evidence: str) -> list[str]:
     """Numbers in a rewritten bullet that its cited source does not contain."""
-    haystack = _normalise(evidence)
+    known = set(HARD_FACT_RE.findall(_normalise(evidence)))
     missing = []
     for fact in HARD_FACT_RE.findall(_normalise(text)):
-        if fact.rstrip("%") and fact not in haystack:
+        if fact not in known:
             missing.append(fact)
     return missing
 
@@ -144,13 +180,11 @@ def unsupported_terms(text: str, allowed: set[str]) -> list[str]:
     found = []
     for match in WORD_RE.finditer(text):
         word = match.group(0)
-        preceding = text[: match.start()]
-        if SENTENCE_START_RE.search(preceding) or not preceding.strip():
-            continue
         looks_named = (
             (word.isupper() and len(word) >= 2)
             or re.search(r"[a-z][A-Z]", word) is not None
             or word[:1].isupper()
+            or any(char.isdigit() for char in word)
         )
         key = word.lower().strip(".,")
         if looks_named and key not in allowed and key not in NEUTRAL_TERMS:
@@ -248,7 +282,8 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
         for fact in unsupported_facts(text, evidence):
             errors.append(f"Bullet {index} contains unsupported hard fact {fact}.")
         if allowed_terms is not None:
-            for term in unsupported_terms(text, allowed_terms):
+            # A named tool elsewhere in the CV does not prove its use in this achievement.
+            for term in unsupported_terms(text, vocabulary(evidence)):
                 errors.append(f"Bullet {index} claims unsupported term {term}.")
         if any(ref in subset_refs for ref in refs):
             for word in subset_failures(text, evidence):
@@ -278,8 +313,22 @@ def validate_tailored_resume(tailored: dict, sources: dict[str, str],
         joined = master_text if master_text is not None else " ".join(sources.values())
         for fact in unsupported_facts(summary, joined):
             errors.append(f"The summary contains unsupported hard fact {fact}.")
-        for term in unsupported_terms(summary, allowed_terms):
+        grounded = summary_evidence(joined)
+        known = vocabulary(grounded)
+        for term in unsupported_terms(summary, known):
             errors.append(f"The summary claims unsupported term {term}.")
+        listed_only = vocabulary(joined) - known
+        for word in WORD_RE.findall(_normalise(summary)):
+            if word.lower().strip(".,") in listed_only:
+                errors.append(f"The summary promotes listed-only knowledge {word} into work evidence.")
+        # A date/experience total cannot move from analytics or a backtest into
+        # software work. Preserve the wording of its original factual clause.
+        for clause in re.split(r"[.;!?\n]|,\s+", summary):
+            dated = re.search(r"\bsince\s+(?:[A-Za-z]+\s+)?\d{4}\b", clause, re.I)
+            span = re.search(r"\b\d+\+?\s*[-–— ]\s*(?:years?|months?)\b.*", clause, re.I)
+            claim = clause.strip().removeprefix("Saudi ") if dated else (span.group() if span else "")
+            if claim and _snippet_text(_normalise(claim)) not in _snippet_text(_normalise(grounded)):
+                errors.append("Keep dated/experience claims in their original source wording and career track.")
     if summary and sentence_count(summary) > SUMMARY_MAX_SENTENCES:
         errors.append(
             f"The summary runs to {sentence_count(summary)} sentences; "

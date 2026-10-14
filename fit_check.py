@@ -28,7 +28,8 @@ import time
 
 from job_archive import jd_requirements, jd_signal
 from openrouter import chat_json
-from resume_source import snippet_supported, unsupported_terms, vocabulary
+from resume_source import (achievement_evidence, quote_supported, snippet_supported,
+                           unsupported_facts, unsupported_terms, vocabulary)
 
 # Only the risk types this pipeline can actually see. Watheq's list also carries
 # language/localisation and career-pattern types that need a fuller profile than
@@ -191,7 +192,9 @@ def build_prompt(job: dict, resume_text: str) -> str:
         "Rules:\n"
         "- A blocker is a HARD requirement this posting states that the resume "
         "does not evidence. A requirement written as 'preferred', 'nice to have' "
-        "or 'a plus' is not a blocker. At most three, most severe first.\n"
+        "or 'a plus' is not a blocker. A degree accepting equivalent experience "
+        "is not a missing-degree blocker; assess any stated experience requirement separately. "
+        "At most three, most severe first.\n"
         "- The 'Stated requirements' list, when present, is where this posting "
         "says what it demands. It is read from the whole posting, so a "
         "requirement there counts even if the text above never repeats it.\n"
@@ -310,7 +313,8 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
     if not valid_check_response(raw):
         return neutral_result("requirements check response was malformed")
     jd_text = job.get("description") or ""
-    from_resume = vocabulary(resume_text, job.get("title", ""), job.get("company", ""))
+    demonstrated = achievement_evidence(resume_text)
+    from_resume = vocabulary(demonstrated)
 
     blockers, unclear, strengths = [], [], []
 
@@ -335,6 +339,26 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
             unclear.append(_as_unclear(
                 item, "Nothing quoted from the posting shows it requires this."))
             continue
+        # Read the complete clause, since a quote can omit "preferred" or the
+        # degree's equivalent-experience alternative at its end.
+        clauses = [clause for clause in re.split(r"\n|[;,]\s*|(?<=\.)\s+|\s+(?:and|but|while)\s+", jd_text, flags=re.I)
+                   if any(quote_supported(e["snippet"], clause) for e in evidence
+                          if e["source"] == "job_description")]
+        def optional(clause):
+            if re.search(r"\bnot required\b", clause, re.I):
+                return True
+            if (item.get("type") == "education_certification_gap"
+                    and re.search(r"\bor\s+equivalent\b.*\bexperience\b", clause, re.I)):
+                return True
+            if re.search(r"\b(?:required|mandatory|must)\b", clause, re.I):
+                return False
+            return bool(re.search(r"\b(?:preferred|nice.to.have|a plus|not required)\b", clause, re.I))
+        if clauses and all(optional(clause) for clause in clauses):
+            continue
+        if any(re.search(r"\b(?:preferred|nice.to.have)\b", clause, re.I)
+               and re.search(r"\b(?:required|mandatory|must)\b", clause, re.I) for clause in clauses):
+            unclear.append(_as_unclear(item, "Mixed qualification wording needs clarification."))
+            continue
         blockers.append({
             "type": item.get("type") if item.get("type") in BLOCKER_TYPES else "other",
             "severity": item.get("severity") if item.get("severity") in SEVERITIES else "medium",
@@ -348,9 +372,14 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
             continue
         title = _clean(item.get("title"))
         evidence = _verified_evidence(item.get("evidence"), resume_text, jd_text)
+        evidence = [e for e in evidence if e["source"] != "resume"
+                    or (quote_supported(e["snippet"], demonstrated)
+                        and not unsupported_facts(e["snippet"], demonstrated))]
         # Deleted, not demoted. An unproven strength is exactly the claim that
         # put an 85 on a card, so it does not get a softer landing.
-        if not evidence or unsupported_terms(title, from_resume):
+        if (not any(e["source"] == "resume" and quote_supported(e["snippet"], demonstrated)
+                    for e in evidence)
+                or unsupported_terms(title, from_resume)):
             continue
         strengths.append({"title": title,
                           "why_it_matters": _clean(item.get("why_it_matters")),
