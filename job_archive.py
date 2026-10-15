@@ -283,6 +283,9 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
 def job_card_payload(snapshot: dict) -> dict:
     """Return an application-owned Discord message with one Tailor CV button."""
     footer = f"{snapshot['tier']} · fit {snapshot['score']}"
+    age = snapshot.get("age_days")
+    if type(age) is int and age >= 0:
+        footer += f" · Posted {age}d ago"
     if not snapshot.get("ranking_verified"):
         # A keyword fallback score rendered identically to a model score, so a
         # run where the ranker was down looked exactly like a run where it
