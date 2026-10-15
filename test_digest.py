@@ -2578,11 +2578,13 @@ class TestEndToEnd(unittest.TestCase):
         post_worker.assert_called_once()
         self.assertEqual(post_worker.call_args.args[2], [])
         fetch_aggregator.assert_not_called()
-        self.assertIn("0 delivered today", post_worker.call_args.kwargs["heartbeat"]["content"])
+        self.assertEqual(post_worker.call_args.kwargs["heartbeat"]["content"],
+                         f"**Job digest — {digest.riyadh_today().isoformat()}** · 0 delivered today.\n"
+                         "Matching evidence unavailable; check your resume and profile.")
         self.assertTrue(post_worker.call_args.kwargs["heartbeat"]["key"].startswith("heartbeat:"))
         post_webhook.assert_not_called()
 
-    def test_quiet_report_distinguishes_seen_only_from_below_floor_jobs(self):
+    def test_quiet_report_keeps_diagnostics_in_logs(self):
         cases = [
             ({"newly_found": 0, "already_seen": 70, "below_floor": 0},
              "70 seen before", "0 newly found", "0 rejected for role or qualification mismatch"),
@@ -2591,21 +2593,24 @@ class TestEndToEnd(unittest.TestCase):
         ]
         for summary, *expected in cases:
             with self.subTest(summary=summary), \
-                 mock.patch.object(digest, "post_discord") as post:
+                 mock.patch.object(digest, "post_discord") as post, \
+                 mock.patch.object(digest, "log") as log:
                 digest.post_heartbeat(
                     "https://discord.test/webhook", "", "", "2026-09-27",
-                    880, 70, [], **summary,
+                    880, 70, ["Average fit down"], **summary,
                     boards_read=64, boards_total=79, boards_skipped=15,
                     paused_feeds=["jsearch", "active_ats", "linkedin_api"],
                 )
 
             body = "\n".join(post.call_args.args[1])
-            self.assertIn("0 delivered", body)
+            self.assertEqual(body, "**Job digest — 2026-09-27** · 0 delivered today.\n"
+                                   "No suitable new matches today.")
+            diagnostics = "\n".join(str(call.args[0]) for call in log.call_args_list)
             for text in expected:
-                self.assertIn(text, body)
-            self.assertIn("Read 64 of 79 employer boards; 15 skipped", body)
-            self.assertIn("Quota-paused feeds: JSearch, Active ATS, LinkedIn", body)
-            self.assertNotIn("already sent", body)
+                self.assertIn(text, diagnostics)
+            self.assertIn("Read 64 of 79 employer boards; 15 skipped", diagnostics)
+            self.assertIn("Quota-paused feeds: JSearch, Active ATS, LinkedIn", diagnostics)
+            self.assertIn("Average fit down", diagnostics)
 
     def test_added_employer_boards_use_saudi_filters_identity_and_freshness(self):
         added = {
@@ -2943,7 +2948,7 @@ class TestEndToEnd(unittest.TestCase):
         posts, work = run_main(self.ENV, None)
         body = "\n".join(posts)
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", body)
-        self.assertIn("awaiting complete fit verification", body)
+        self.assertIn("Job matching temporarily unavailable; retrying next run.", body)
         self.assertNotIn("tailored resume:", body)
 
     def test_a_below_80_job_without_viability_evidence_is_held_without_cooldown(self):
@@ -3017,7 +3022,7 @@ class TestEndToEnd(unittest.TestCase):
         ranking = {"jsearch_b": {"score": 93, "why": "Supported role"}}
         posts, work = run_main(self.ENV, ranking, fit_checks={})
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
-        self.assertIn("awaiting complete fit verification", "\n".join(posts))
+        self.assertIn("No suitable new matches today.", "\n".join(posts))
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle), {})
 
@@ -3093,7 +3098,7 @@ class TestEndToEnd(unittest.TestCase):
             posts, work = run_main(env, None)
         body = "\n".join(posts)
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", body)
-        self.assertIn("awaiting complete fit verification", body)
+        self.assertIn("Job matching temporarily unavailable; retrying next run.", body)
         self.assertNotIn("tailored resume:", body)
         self.assertFalse(os.path.exists(os.path.join(work, "tailored")))
 
@@ -3433,7 +3438,7 @@ class TestTheCardStatesThePostingAge(unittest.TestCase):
         posts, work = run_main(TestEndToEnd.ENV, ranking, jobs=[job],
                                link_statuses=[digest.LINK_OPEN])
         shutil.rmtree(work, ignore_errors=True)
-        self.assertIn("1 with unverified posting dates", "\n".join(posts))
+        self.assertIn("No suitable new matches today.", "\n".join(posts))
 
 
 class TestActiveAtsRealRowShape(unittest.TestCase):

@@ -93,6 +93,49 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertNotIn("floor:url:https://example.test/50", seen)
         self.assertNotIn("url:https://example.test/50", seen)
 
+    def test_fallback_fills_five_from_30_days_after_recent_matches(self):
+        ages = {"recent": 7, "older_best": 8, "older_next": 14, "older_third": 21,
+                "oldest": 30, "deferred": 29, "stale": 31, "undated": None,
+                "future": -1}
+        jobs = [self.job(name, company=f"Employer {name}",
+                         first_published=(digest.riyadh_today() - datetime.timedelta(days=age)).isoformat()
+                         if age is not None else "") for name, age in ages.items()]
+        scores = dict(recent=45, older_best=95, older_next=90, older_third=79,
+                      oldest=70, deferred=60, stale=99, undated=99, future=99)
+        body, row, seen, work = self.run_jobs(jobs, scores, {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["fallback_delivered"], 5)
+        self.assertEqual(row["strong"], 0)
+        self.assertIn("**Software Engineer oldest**", body)
+        self.assertNotIn("**Software Engineer deferred**", body)
+        for name in ("stale", "undated", "future", "deferred"):
+            self.assertNotIn(f"url:https://example.test/{name}", seen)
+        with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
+            cards = json.load(handle)["jobs"]
+        self.assertEqual(cards[0]["source_id"], "recent")
+        self.assertEqual(cards[1]["score"], 95)
+        self.assertTrue(all(card["tier"] == "Closest viable matches" for card in cards))
+        self.assertIn("posted 30 days ago", body)
+
+    def test_recent_strong_match_still_suppresses_older_fallback(self):
+        jobs = [self.job("recent"), self.job("older", first_published=(
+            digest.riyadh_today() - datetime.timedelta(days=8)).isoformat())]
+        body, row, _, _ = self.run_jobs(jobs, {"recent": 80, "older": 95},
+                                       {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["fallback_delivered"], 0)
+        self.assertNotIn("**Software Engineer older**", body)
+
+    def test_recent_fallback_wins_employer_slots_before_older_higher_scores(self):
+        jobs = [self.job(f"recent{n}") for n in range(3)] + [self.job(
+            f"older{n}", first_published=(digest.riyadh_today() - datetime.timedelta(days=8)).isoformat())
+            for n in range(3)]
+        body, row, _, _ = self.run_jobs(jobs,
+            {j["id"]: 60 if j["id"].startswith("recent") else 90 for j in jobs},
+            {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["fallback_delivered"], 3)
+        self.assertIn("**Software Engineer recent0**", body)
+        self.assertNotIn("**Software Engineer older0**", body)
+
     def test_fewer_than_five_viable_jobs_are_delivered_without_padding(self):
         jobs = [self.job("viable"), self.job("wrong"), self.job("blocked"), self.job("unclear")]
         checks = {j["title"]: VIABLE for j in jobs}
@@ -131,7 +174,8 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertIn("**Software Engineer 73**", body)
 
     def test_interactive_fallback_preserves_evidence_and_marks_only_accepted_jobs(self):
-        jobs = [self.job("best", company="Employer A"), self.job("next", company="Employer B")]
+        jobs = [self.job("best", company="Employer A"), self.job("next", company="Employer B",
+                first_published=(digest.riyadh_today() - datetime.timedelta(days=8)).isoformat())]
         received = []
         def deliver(_url, _secret, snapshots, **kwargs):
             received.extend(snapshots)
@@ -140,10 +184,13 @@ class TestStrictAlerts(unittest.TestCase):
         env = dict(fixtures.TestEndToEnd.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
                    WORKER_CALLBACK_SECRET="test-secret")
         with mock.patch.object(digest, "post_interactive_cards", side_effect=deliver):
-            _, row, seen, _ = self.run_jobs(jobs, {"best": 79, "next": 70},
+            _, row, seen, _ = self.run_jobs(jobs, {"best": 79, "next": 90},
                                            {j["title"]: VIABLE for j in jobs}, env)
         self.assertEqual(row["fallback_delivered"], 1)
         self.assertEqual(received[0]["tier"], "Closest viable matches")
+        self.assertEqual(received[1]["first_published"], jobs[1]["first_published"])
+        footer = fixtures.job_archive.job_card_payload(received[1])["embeds"][0]["footer"]["text"]
+        self.assertIn("Posted 8d ago", footer)
         self.assertEqual(received[0]["match_evidence"][0]["resume_quote"],
                          "Built and deployed the product solo with React 19, TypeScript")
         self.assertNotIn("url:https://example.test/next", seen)
@@ -195,6 +242,20 @@ class TestStrictAlerts(unittest.TestCase):
         for title in ("Data Analytics Manager", "Product Manager", "Software Development Manager"):
             with self.subTest(title=title):
                 self.assertFalse(digest.matches_filters(self.job(title=title)))
+
+    def test_limited_fresh_feeds_target_resume_tracks_before_pagination(self):
+        for title in ("'ai engineer'", "'llm'", "software", "'data analyst'", "'power bi'"):
+            self.assertIn(title, digest.ACTIVE_ATS_TITLE)
+        for title in ("'machine learning'", "'data scien'", "'data engineer'", "mlops",
+                      "devops", "sre", "'cloud engineer'", "'data architect'", "'qa engineer'"):
+            self.assertNotIn(title, digest.ACTIVE_ATS_TITLE)
+
+    def test_scheduled_feed_requests_fallback_window_without_extra_calls(self):
+        with mock.patch.object(digest, "fresh_api_feeds", return_value=("active_ats",)), \
+             mock.patch.object(digest, "fetch_active_ats", return_value=[]) as fetch:
+            self.run_jobs([], {})
+        fetch.assert_called_once()
+        self.assertEqual(fetch.call_args.args[2], 30)
 
     def test_missing_partial_and_teaser_descriptions_stay_retryable(self):
         for description in ("", "Build Python apps.", "We are a growing AI company. " * 20):
@@ -251,7 +312,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["delivered"], 0)
         self.assertEqual(row["unverified_date"], 2)
         self.assertEqual(seen, {})
-        self.assertIn("2 with unverified posting dates", body)
+        self.assertIn("No suitable new matches today.", body)
 
 
 class TestStrictPostingDates(unittest.TestCase):

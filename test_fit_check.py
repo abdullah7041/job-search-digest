@@ -298,6 +298,16 @@ class TestNeutralResult(unittest.TestCase):
 
 
 class TestCheckJobs(unittest.TestCase):
+    def test_recent_candidates_get_the_existing_check_budget_first(self):
+        import digest
+        jobs = [dict(JOB, id="old", score=95, age_days=8),
+                dict(JOB, id="recent", score=45, age_days=7)]
+        with mock.patch.object(fit_check, "MAX_CHECKED_JOBS", 1), \
+             mock.patch.object(fit_check, "check_job", return_value=fit_check.neutral_result()) as check:
+            fit_check.check_jobs(jobs, RESUME, "key", "m", [], key=digest.delivery_priority)
+        self.assertEqual(check.call_args.args[0]["id"], "recent")
+        self.assertEqual(jobs[0]["fit_check"]["note"], "not checked: budget exhausted")
+
     def test_only_the_highest_scoring_jobs_are_checked(self):
         jobs = [dict(JOB, score=80 + n, id=n) for n in range(fit_check.MAX_CHECKED_JOBS + 3)]
         calls = []

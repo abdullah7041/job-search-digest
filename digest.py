@@ -2366,8 +2366,14 @@ def drop_below_floor(jobs):
     return kept, dropped
 
 
+def delivery_priority(job):
+    """Prefer the last week, then fit score, with a stable tie break."""
+    return ((job.get("age_days") or 0) > MAX_JOB_AGE_DAYS,
+            -job.get("score", 0), str(job.get("id", "")))
+
+
 def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
-    """Keep at most `limit` roles per employer, its highest scores first.
+    """Keep at most `limit` roles per employer, recent matches before older ones.
 
     Returns (kept, deferred). The deferred ones are NOT remembered, on the same
     reasoning as a paid-relister drop: this is a verdict on the shape of today's
@@ -2379,7 +2385,7 @@ def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
     their own allowance and defeat the cap.
     """
     kept, deferred, counts = [], [], {}
-    for job in sorted(jobs, key=lambda j: j.get("score", 0), reverse=True):
+    for job in sorted(jobs, key=delivery_priority):
         key = company_key(job.get("company")) or (job.get("company") or "")
         counts[key] = counts.get(key, 0) + 1
         (kept if counts[key] <= limit else deferred).append(job)
@@ -2404,6 +2410,7 @@ def is_strong(job):
     check = job.get("fit_check") or {}
     return bool(job.get("ranking_verified")
                 and job["score"] >= max(MIN_DELIVER_SCORE, STRONG_MATCH_MIN_SCORE)
+                and 0 <= (job.get("age_days") or 0) <= MAX_JOB_AGE_DAYS
                 and jd_grade(job.get("description") or "") == GRADE_FULL
                 and check.get("ceiling") == "high"
                 and not check.get("note")
@@ -2412,11 +2419,12 @@ def is_strong(job):
 
 
 def is_viable(job):
-    """A same-track fallback backed by resume evidence and a clean requirements check."""
+    """A same-track match within 30 days, backed by demonstrated resume evidence."""
     check = job.get("fit_check") or {}
     tracks = {track["name"] for track in PROFILE.get("tracks", [])}
     return bool(job.get("ranking_verified")
-                and 40 <= job["score"] < STRONG_MATCH_MIN_SCORE
+                and job["score"] >= 40
+                and 0 <= (job.get("age_days") or 0) <= FALLBACK_MAX_JOB_AGE_DAYS
                 and job.get("track") in tracks
                 and jd_grade(job.get("description") or "") == GRADE_FULL
                 and check.get("ceiling") == "high"
@@ -2914,7 +2922,7 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
         f"**Job digest — {today}** · 0 delivered today.",
         f"Scanned {scanned} postings; {matched} matched the filters: "
         f"{already_seen} seen before, {newly_found} newly found; "
-        f"{stale} older than {MAX_JOB_AGE_DAYS}d, "
+        f"{stale} older than {FALLBACK_MAX_JOB_AGE_DAYS}d, "
         f"{below_floor} rejected for role or qualification mismatch.",
         f"Excluded {unverified_date} with unverified posting dates; "
         f"{unverified_fit} awaiting complete fit verification.",
@@ -2923,6 +2931,14 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
         f"Quota-paused feeds: {paused_names or 'none'}.",
     ]
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
+    for line in lines[1:]:
+        log(line)
+    status = "No suitable new matches today."
+    if any(warning and warning.startswith("Matching evidence unavailable:") for warning in warnings):
+        status = "Matching evidence unavailable; check your resume and profile."
+    elif any(warning and warning.startswith("Fit ranking unavailable;") for warning in warnings):
+        status = "Job matching temporarily unavailable; retrying next run."
+    lines = [lines[0], status]
     if worker_url:
         post_interactive_cards(
             worker_url,
@@ -3009,7 +3025,7 @@ def main():
                     "indeed": fetch_indeed}
         for feed in (*scheduled_feeds, "indeed"):
             quota = quotas.setdefault(feed, {})
-            all_jobs.extend(fetchers[feed](rapidapi_key, quota, MAX_JOB_AGE_DAYS,
+            all_jobs.extend(fetchers[feed](rapidapi_key, quota, FALLBACK_MAX_JOB_AGE_DAYS,
                                            paused_feeds=paused_feeds))
         save_api_quotas(quotas)
     else:
@@ -3108,12 +3124,12 @@ def main():
     # a request per job. Deliberately NOT written to seen.json: the check is
     # free to repeat, and a posting dropped for age today must still be
     # deliverable if a source later reports a corrected, newer date for it.
-    fresh, age_rejected = split_by_age(fresh, MAX_JOB_AGE_DAYS)
+    fresh, age_rejected = split_by_age(fresh, FALLBACK_MAX_JOB_AGE_DAYS)
     unverified_dates = [j for j in age_rejected
                         if j.get("age_days") is None or j["age_days"] < 0]
     stale = [j for j in age_rejected if j not in unverified_dates]
     for job in stale:
-        log(f"DROP older than {MAX_JOB_AGE_DAYS}d ({job['age_days']}d): "
+        log(f"DROP older than {FALLBACK_MAX_JOB_AGE_DAYS}d ({job['age_days']}d): "
             f"{job['company']} — {job['title']}")
     undated = sum(1 for j in unverified_dates if j.get("age_days") is None)
     # Keep the pre-verification candidates: subsequent filters mutate fresh.
@@ -3122,7 +3138,7 @@ def main():
     discovered_new = list(fresh)
     log(f"{len(all_jobs)} fetched, {len(matched)} match filter, "
         f"{len(relisted_copies)} relisted copies, {len(paywalled)} paywalled and refused "
-        f"at the fetch, {len(stale)} older than {MAX_JOB_AGE_DAYS}d, "
+        f"at the fetch, {len(stale)} older than {FALLBACK_MAX_JOB_AGE_DAYS}d, "
         f"{len(fresh)} new ({undated} undated)")
 
     # Verification is evidence, not a boolean gate: a third-party site may block
@@ -3296,7 +3312,7 @@ def main():
     fresh = [job for job in candidates if job["score"] >= 40]
     below_floor = [job for job in candidates if job["score"] < 40]
     check_jobs(fresh, evidence, rank_key, RANK_MODEL, RANK_FALLBACKS,
-               RANK_PROVIDER, log)
+               RANK_PROVIDER, log, key=delivery_priority)
     for job in cap_blocked_scores(fresh):
         gaps = "; ".join(b["title"] for b in job["fit_check"]["blockers"])
         log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
@@ -3317,7 +3333,13 @@ def main():
             f"skipped for {FLOOR_COOLDOWN_DAYS} days")
         defer_below_floor(seen, job, today)
     for job in unverified:
-        log(f"Held for fit verification: {job['company']} - {job['title']}")
+        check = job.get("fit_check") or {}
+        log(f"Held for fit verification: {job['company']} - {job['title']}; "
+            f"score={job['score']}, ranked={job.get('ranking_verified', False)}, "
+            f"JD={jd_grade(job.get('description') or '')}, "
+            f"track={job.get('track')!r}, ceiling={check.get('ceiling', 'unknown')}, "
+            f"note={check.get('note', '')!r}, unclear={check.get('unclear', [])!r}, "
+            f"resume strengths={len(check.get('strengths') or [])}")
 
     if not fresh:
         save_seen(seen)
@@ -3347,7 +3369,7 @@ def main():
         log(f"Deferred {job['company']} - {job['title']}: fit {job['score']}, "
             f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
 
-    fresh.sort(key=lambda job: (-job["score"], job["id"]))
+    fresh.sort(key=delivery_priority)
     limit = MAX_JOBS_IN_DIGEST if strong_mode else MAX_FALLBACK_JOBS
     deferred.extend(fresh[limit:])
     if strong_mode:
@@ -3366,7 +3388,7 @@ def main():
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     if not strong_mode:
-        lines.append("No verified 80+ matches; these are the closest viable roles, with their actual fit scores.")
+        lines.append("Closest viable matches · posted within 30 days.")
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     by_company = {}
     for j in fresh:
@@ -3647,7 +3669,8 @@ def discover(names):
 # yield, which no amount of reading the vendor's docs will tell us.
 #
 # It reads. It never writes, never delivers and never touches seen.json.
-# Nothing older than this reaches the digest. first_published was written by
+# Strong matches stay within seven days; the fallback can use up to 30.
+# first_published was written by
 # every fetcher and read by NOTHING before this, so "fresh" meant only "not
 # delivered before". The configured window can tighten the seven-day policy;
 # no source's retrieval or update clock can establish a publication date.
@@ -3660,6 +3683,7 @@ def _max_job_age(raw):
 
 
 MAX_JOB_AGE_DAYS = _max_job_age(os.environ.get("MAX_JOB_AGE_DAYS"))
+FALLBACK_MAX_JOB_AGE_DAYS = 30
 
 def publication_day(raw):
     """Validate publication dates and convert timestamp dates to Riyadh."""
@@ -3731,13 +3755,9 @@ ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
 # arboriculture engineers. Name the software disciplines instead.
 ACTIVE_ATS_TITLE = (
     "software | developer | backend | 'back end' | frontend | 'front end' | "
-    "'full stack' | fullstack | 'machine learning' | 'data scien':* | "
-    "'data engineer' | 'ai engineer' | 'llm' | 'ai product engineer' | "
+    "'full stack' | fullstack | 'ai engineer' | 'llm' | 'ai product engineer' | "
     "'data analyst' | analytics | 'business intelligence' | 'power bi' | "
-    "'ml engineer' | mlops | devops | sre | "
-    "'site reliability' | 'platform engineer' | 'cloud engineer' | "
-    "'solutions engineer' | 'solutions architect' | 'software architect' | "
-    "'data architect' | 'automation engineer' | 'qa engineer' | 'test engineer'"
+    "'solutions engineer' | 'ai solutions architect' | 'automation engineer'"
 )
 
 

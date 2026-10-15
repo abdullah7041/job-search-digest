@@ -468,8 +468,8 @@ def check_job(job: dict, resume_text: str, api_key: str, deadline: float,
 
 def check_jobs(jobs: list[dict], resume_text: str, api_key: str, model: str,
                fallbacks: list[str], provider: dict | None = None,
-               log=lambda message: None) -> None:
-    """Attach a verified reality check to each job, highest score first.
+               log=lambda message: None, *, key=None) -> None:
+    """Attach a verified reality check, using the caller's priority or fit score.
 
     Mutates in place, like apply_ranking and cap_teaser_scores. Stops at the
     shared deadline rather than running the workflow out of time, and any job it
@@ -482,7 +482,7 @@ def check_jobs(jobs: list[dict], resume_text: str, api_key: str, model: str,
                                               if not resume_text else "no api key")
         return
     deadline = time.monotonic() + CHECK_BUDGET_SECONDS
-    ordered = sorted(jobs, key=lambda j: j.get("score", 0), reverse=True)
+    ordered = sorted(jobs, key=key or (lambda j: -j.get("score", 0)))
     for index, job in enumerate(ordered):
         if index >= MAX_CHECKED_JOBS or time.monotonic() >= deadline:
             job["fit_check"] = neutral_result("not checked: budget exhausted")
