@@ -24,6 +24,7 @@ import shutil
 import tempfile
 import unittest
 from unittest import mock
+from urllib.parse import parse_qs, urlparse
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, REPO)
@@ -3278,6 +3279,22 @@ class TestFetchActiveAts(unittest.TestCase):
         self.assertIn("description_format=text", url)
         self.assertIn("title_advanced=", url)
         self.assertIn("Saudi", requests_unquote(url))
+
+    def test_fresh_feeds_keep_weekly_index_window_for_30_day_fallback(self):
+        cutoff = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+        for fetch in (digest.fetch_active_ats, digest.fetch_linkedin):
+            with self.subTest(feed=fetch.__name__):
+                quota = {}
+                with mock.patch.object(digest.requests, "get",
+                                       return_value=self._response([])) as get:
+                    self.assertEqual(fetch("key", quota=quota, max_age_days=30), [])
+                get.assert_called_once()
+                query = parse_qs(urlparse(get.call_args.args[0]).query)
+                self.assertEqual(query["time_frame"], ["7d"])
+                self.assertEqual(query["date_posted_gte"], [cutoff + "T00:00:00"])
+                self.assertEqual(query["limit"], ["10"])
+                self.assertEqual(quota["jobs_remaining"], 220)
+                self.assertEqual(quota["requests_remaining"], 22)
 
 
 class TestApiQuotasSurviveTheRun(unittest.TestCase):
