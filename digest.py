@@ -1218,13 +1218,13 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None, paused_feeds=None):
     That is the entire reason it exists -- the aggregator cannot answer "posted
     this week" at all, which is what the digest is asked for.
     """
-    days, since = _age_window(max_age_days)
+    _, since = _age_window(max_age_days)
     query = ("?source=" + requests.utils.quote(ACTIVE_ATS_SOURCES)
              + "&location=" + requests.utils.quote("Saudi Arabia")
              + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
              + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
              + "&date_posted_gte=" + since + "T00:00:00"
-             + "&time_frame=" + str(days) + "d"
+             + "&time_frame=7d"
              + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
     return _fetch_fantastic("Active ATS", ACTIVE_ATS_HOST, "/active-ats", query,
                             "active_ats", api_key, quota, paused_feeds)
@@ -1248,24 +1248,24 @@ def fetch_linkedin(api_key, quota=None, max_age_days=None, paused_feeds=None):
     location_conflict is what catches the leak; it already exists for exactly
     this.
     """
-    days, since = _age_window(max_age_days)
+    _, since = _age_window(max_age_days)
     query = ("?location=" + requests.utils.quote("Saudi Arabia")
              + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
              + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
              + "&date_posted_gte=" + since + "T00:00:00"
-             + "&time_frame=" + str(days) + "d"
+             + "&time_frame=7d"
              + "&description_format=text&limit=" + str(ACTIVE_ATS_PAGE))
     return _fetch_fantastic("LinkedIn", LINKEDIN_API_HOST, "/active-jb", query,
                             "linkedin_api", api_key, quota, paused_feeds)
 
 
 def _age_window(max_age_days):
-    """The cutoff as both a bucket and an exact date.
+    """The publication lookback and its exact date cutoff.
 
-    time_frame is required and cuts on INDEXED time, while the age gate reads
-    date_posted -- so a row can sit inside the window and outside the gate.
-    Sending date_posted_gte too means the server has already applied the same
-    cut the gate will.
+    The feeds use a fixed 7d indexed-time window independently of this
+    publication cutoff. A 30-day fallback policy must not become the
+    unsupported time_frame=30d; older postings can still arrive from boards
+    or when newly indexed by the feeds.
     """
     days = max_age_days if isinstance(max_age_days, int) and max_age_days > 0 else 7
     return days, (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
