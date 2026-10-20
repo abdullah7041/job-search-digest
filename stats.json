@@ -2036,5 +2036,72 @@
 "undated": 4,
 "unverified_date": 4,
 "unverified_fit": 6
+},
+{
+"avg_score": 37.8,
+"below_floor": 6,
+"competitive": 0,
+"cooling": 0,
+"date": "2026-10-20",
+"delivered": 0,
+"dropped_stale": 35,
+"fallback_delivered": 0,
+"fetched": 1251,
+"link_closed": 0,
+"link_unknown": 2,
+"matched": 74,
+"new": 13,
+"relisted": 0,
+"review": 0,
+"source_yield": {
+"ashby": {
+"delivered": 0,
+"fetched": 126,
+"new": 0,
+"quota_paused": false
+},
+"greenhouse": {
+"delivered": 0,
+"fetched": 712,
+"new": 1,
+"quota_paused": false
+},
+"indeed": {
+"delivered": 0,
+"fetched": 19,
+"new": 0,
+"quota_paused": false
+},
+"jsearch": {
+"delivered": 0,
+"fetched": 6,
+"new": 0,
+"quota_paused": false
+},
+"linkedin_api": {
+"delivered": 0,
+"fetched": 10,
+"new": 9,
+"quota_paused": false
+},
+"pinpoint": {
+"delivered": 0,
+"fetched": 41,
+"new": 0,
+"quota_paused": false
+},
+"workable": {
+"delivered": 0,
+"fetched": 337,
+"new": 3,
+"quota_paused": false
+}
+},
+"strong": 0,
+"tailor_failed": 0,
+"tailored": 0,
+"undated": 3,
+"unverified_date": 3,
+"unverified_fit": 7
 }
 ]
