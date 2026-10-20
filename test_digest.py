@@ -2286,6 +2286,19 @@ class TestPerCompanyCap(unittest.TestCase):
         self.assertEqual([j["score"] for j in deferred], [75])
 
 
+class TestDiscordWebhookChunks(unittest.TestCase):
+    def test_long_gap_and_question_lines_fit_without_losing_text(self):
+        lines = ["Job digest", "Gaps: " + "qualification " * 45 +
+                 "Questions to check: " + "experience evidence " * 90, "Next role"]
+        response = mock.Mock(status_code=204)
+        with mock.patch.object(digest.requests, "post", return_value=response) as post, \
+             mock.patch.object(digest.time, "sleep"):
+            digest.post_discord("https://discord.test/webhook", lines)
+        messages = [call.kwargs["json"]["content"] for call in post.call_args_list]
+        self.assertTrue(all(0 < len(message) <= 1900 for message in messages))
+        self.assertEqual("".join(messages).replace("\n", ""), "".join(lines))
+
+
 class TestDeliveryFloor(unittest.TestCase):
     """Scores are relative to MIN_DELIVER_SCORE rather than written out, so
     moving the floor cannot silently stop these testing what they name."""
@@ -2605,7 +2618,7 @@ class TestEndToEnd(unittest.TestCase):
 
             body = "\n".join(post.call_args.args[1])
             self.assertEqual(body, "**Job digest — 2026-09-27** · 0 delivered today.\n"
-                                   "No suitable new matches today.")
+                                   "No verified new roles for review today (0 of 5).")
             diagnostics = "\n".join(str(call.args[0]) for call in log.call_args_list)
             for text in expected:
                 self.assertIn(text, diagnostics)
@@ -2980,7 +2993,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertIn("floor:url:https://example.com/b", seen)
+        self.assertIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.com/b", seen)
         self.assertNotIn("url:https://example.com/b", seen)
 
     def _snapshot(self, work, title):
@@ -3023,7 +3036,7 @@ class TestEndToEnd(unittest.TestCase):
         ranking = {"jsearch_b": {"score": 93, "why": "Supported role"}}
         posts, work = run_main(self.ENV, ranking, fit_checks={})
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
-        self.assertIn("No suitable new matches today.", "\n".join(posts))
+        self.assertIn("No verified new roles for review today (0 of 5).", "\n".join(posts))
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle), {})
 
@@ -3455,7 +3468,7 @@ class TestTheCardStatesThePostingAge(unittest.TestCase):
         posts, work = run_main(TestEndToEnd.ENV, ranking, jobs=[job],
                                link_statuses=[digest.LINK_OPEN])
         shutil.rmtree(work, ignore_errors=True)
-        self.assertIn("No suitable new matches today.", "\n".join(posts))
+        self.assertIn("No verified new roles for review today (0 of 5).", "\n".join(posts))
 
 
 class TestActiveAtsRealRowShape(unittest.TestCase):
@@ -4625,6 +4638,7 @@ class TestTheBelowFloorCooldown(unittest.TestCase):
         middling = (today - datetime.timedelta(
             days=digest.FLOOR_COOLDOWN_DAYS + 1)).isoformat()
         seen = {"delivered-old": middling, "delivered-new": recent,
+                "floor:legacy-stale": middling,
                 digest.FLOOR_SEEN_PREFIX + "stale": middling,
                 digest.FLOOR_SEEN_PREFIX + "fresh": recent}
 
@@ -4643,3 +4657,4 @@ class TestTheBelowFloorCooldown(unittest.TestCase):
         self.assertIn(digest.FLOOR_SEEN_PREFIX + "fresh", pruned)
         self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "stale", pruned,
                          "a cooldown must expire on its own clock")
+        self.assertNotIn("floor:legacy-stale", pruned)
