@@ -87,7 +87,7 @@ class TestStrictAlerts(unittest.TestCase):
         body, row, seen, _ = self.run_jobs(jobs, {str(n): n for n in (42, 50, 60, 65, 70, 75, 79)}, checks)
         self.assertEqual(row["delivered"], 5)
         self.assertEqual(row["fallback_delivered"], 5)
-        self.assertIn("Closest viable matches", body)
+        self.assertIn("Closest matches to review", body)
         self.assertNotIn("**Software Engineer 50**", body)
         self.assertIn("**Software Engineer 79**", body)
         self.assertNotIn("floor:url:https://example.test/50", seen)
@@ -113,7 +113,7 @@ class TestStrictAlerts(unittest.TestCase):
             cards = json.load(handle)["jobs"]
         self.assertEqual(cards[0]["source_id"], "recent")
         self.assertEqual(cards[1]["score"], 95)
-        self.assertTrue(all(card["tier"] == "Closest viable matches" for card in cards))
+        self.assertTrue(all(card["tier"] == "Closest matches to review" for card in cards))
         self.assertIn("posted 30 days ago", body)
 
     def test_recent_strong_match_still_suppresses_older_fallback(self):
@@ -136,24 +136,91 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertIn("**Software Engineer recent0**", body)
         self.assertNotIn("**Software Engineer older0**", body)
 
-    def test_fewer_than_five_viable_jobs_are_delivered_without_padding(self):
+    def test_fallback_fills_five_with_disclosed_gaps_and_keeps_real_scores(self):
+        scores = dict(degree=95, skill=85, experience=75, unclear=78, clean=65,
+                      lower=50, wrong=39, unchecked=99, incomplete=99)
+        jobs = [self.job(name, company=f"Employer {name}") for name in scores]
+        jobs[-1]["description"] = "Build TypeScript applications."
+        checks = {j["title"]: VIABLE for j in jobs}
+        for name, kind, severity, title in (
+            ("degree", "education_certification_gap", "medium", "Required degree absent"),
+            ("skill", "missing_required_skill", "high", "Vector search not demonstrated"),
+            ("experience", "experience_gap", "critical", "Required testing experience absent"),
+        ):
+            checks[f"Software Engineer {name}"] = dict(VIABLE, ceiling="mid", blockers=[{
+                "type": kind, "severity": severity, "title": title}])
+        checks["Software Engineer unclear"] = dict(VIABLE, unclear=[{
+            "topic": "Frontend team experience", "reason": "Only solo projects evidenced",
+            "evidence_needed": "Examples of delivery with a frontend team"}])
+        checks["Software Engineer unchecked"] = fit_check.neutral_result("not checked: budget exhausted")
+        body, row, seen, work = self.run_jobs(jobs, scores, checks)
+        self.assertEqual(row["fallback_delivered"], 5)
+        self.assertEqual(row["strong"], 0)
+        self.assertEqual(row["unverified_fit"], 2)
+        with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
+            cards = json.load(handle)["jobs"]
+        self.assertEqual([(card["source_id"], card["score"]) for card in cards],
+                         [("unclear", 78), ("degree", 69), ("skill", 69), ("clean", 65), ("experience", 55)])
+        for card in cards:
+            self.assertIn(f"url:https://example.test/{card['source_id']}", seen)
+            self.assertNotIn(digest.FLOOR_SEEN_PREFIX + f"url:https://example.test/{card['source_id']}", seen)
+        for name in ("lower", "unchecked", "incomplete"):
+            self.assertNotIn(f"url:https://example.test/{name}", seen)
+            self.assertNotIn(digest.FLOOR_SEEN_PREFIX + f"url:https://example.test/{name}", seen)
+        self.assertIn("Required degree absent", body)
+        self.assertIn("Frontend team experience", body)
+        self.assertIn("Only solo projects evidenced", body)
+        embed = fixtures.job_archive.job_card_payload(cards[0])["embeds"][0]
+        self.assertIn("Frontend team experience", json.dumps(embed))
+        self.assertIn("Only solo projects evidenced", json.dumps(embed))
+        degree_embed = fixtures.job_archive.job_card_payload(cards[1])["embeds"][0]
+        self.assertIn("Required degree absent", json.dumps(degree_embed))
+
+    def test_fewer_than_five_review_jobs_are_delivered_without_padding(self):
         jobs = [self.job("viable"), self.job("wrong"), self.job("blocked"), self.job("unclear")]
         checks = {j["title"]: VIABLE for j in jobs}
-        checks[jobs[2]["title"]] = dict(CLEAN, ceiling="mid", blockers=[{
+        checks[jobs[2]["title"]] = dict(VIABLE, ceiling="mid", blockers=[{
             "type": "education_certification_gap", "severity": "medium", "title": "Required degree absent"}])
         checks[jobs[3]["title"]] = dict(VIABLE, unclear=[{"topic": "Minimum experience", "reason": "Unproven"}])
         body, row, seen, _ = self.run_jobs(jobs,
             {"viable": 55, "wrong": 39, "blocked": 79, "unclear": 78}, checks)
-        self.assertEqual(row["delivered"], 1)
-        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertEqual(row["delivered"], 3)
+        self.assertEqual(row["fallback_delivered"], 3)
         self.assertIn("**Software Engineer viable**", body)
-        self.assertNotIn("**Software Engineer blocked**", body)
-        self.assertNotIn("floor:url:https://example.test/unclear", seen)
+        self.assertIn("**Software Engineer blocked**", body)
+        self.assertIn("3 of 5", body)
+        self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.test/unclear", seen)
+
+    def test_old_gap_cooldowns_do_not_hide_new_review_candidates(self):
+        job = self.job()
+        work = tempfile.mkdtemp(prefix="review_policy_")
+        for filename in ("resume.md", "profile.json"):
+            shutil.copy(os.path.join(fixtures.REPO, filename), work)
+        today = digest.riyadh_today().isoformat()
+        legacy = {"floor:url:https://example.test/match": today,
+                  "floor:" + digest.description_key(job): today,
+                  "url:https://example.test/already-delivered": today}
+        with open(os.path.join(work, "seen.json"), "w", encoding="utf-8") as handle:
+            json.dump(legacy, handle)
+        _, row, seen, _ = self.run_jobs([job], {"match": 69},
+                                      {job["title"]: VIABLE}, work=work)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertIn("url:https://example.test/already-delivered", seen)
 
     def test_fallback_requires_resume_evidence_not_just_a_clean_check(self):
         _, row, seen, _ = self.run_jobs([self.job()], {"match": 79})
         self.assertEqual(row["delivered"], 0)
         self.assertEqual(seen, {})
+
+    def test_review_shortlist_excludes_confirmed_location_and_role_mismatches(self):
+        for kind in ("location_work_authorization", "role_scope_mismatch"):
+            with self.subTest(kind=kind):
+                job = self.job()
+                check = dict(VIABLE, ceiling="low", blockers=[{
+                    "type": kind, "severity": "critical", "title": "Required role or location mismatch"}])
+                _, row, seen, _ = self.run_jobs([job], {"match": 79}, {job["title"]: check})
+                self.assertEqual(row["delivered"], 0)
+                self.assertIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.test/match", seen)
 
     def test_any_strong_match_suppresses_fallback_without_cooling_viable_jobs(self):
         jobs = [self.job("strong"), self.job("viable")]
@@ -177,9 +244,11 @@ class TestStrictAlerts(unittest.TestCase):
         jobs = [self.job("best", company="Employer A"), self.job("next", company="Employer B",
                 first_published=(digest.riyadh_today() - datetime.timedelta(days=8)).isoformat())]
         received = []
+        summaries = []
         def deliver(_url, _secret, snapshots, **kwargs):
             received.extend(snapshots)
-            return {"posted": [snapshots[0]["job_key"]], "existing": [],
+            summaries.append(kwargs.get("heartbeat"))
+            return {"posted": [snapshots[0]["job_key"], kwargs["heartbeat"]["key"]], "existing": [],
                     "in_progress": [], "retryable": [snapshots[1]["job_key"]], "failed": []}
         env = dict(fixtures.TestEndToEnd.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
                    WORKER_CALLBACK_SECRET="test-secret")
@@ -187,7 +256,9 @@ class TestStrictAlerts(unittest.TestCase):
             _, row, seen, _ = self.run_jobs(jobs, {"best": 79, "next": 90},
                                            {j["title"]: VIABLE for j in jobs}, env)
         self.assertEqual(row["fallback_delivered"], 1)
-        self.assertEqual(received[0]["tier"], "Closest viable matches")
+        self.assertIsNotNone(summaries[0])
+        self.assertIn("2 of 5", summaries[0]["content"])
+        self.assertEqual(received[0]["tier"], "Closest matches to review")
         self.assertEqual(received[1]["first_published"], jobs[1]["first_published"])
         footer = fixtures.job_archive.job_card_payload(received[1])["embeds"][0]["footer"]["text"]
         self.assertIn("Posted 8d ago", footer)
@@ -195,6 +266,32 @@ class TestStrictAlerts(unittest.TestCase):
                          "Built and deployed the product solo with React 19, TypeScript")
         self.assertNotIn("url:https://example.test/next", seen)
         self.assertNotIn("floor:url:https://example.test/next", seen)
+
+    def test_summary_delivery_cannot_hide_total_job_card_failure(self):
+        env = dict(fixtures.TestEndToEnd.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
+                   WORKER_CALLBACK_SECRET="test-secret")
+        for summary_state in ("posted", "existing", "in_progress", "retryable"):
+            with self.subTest(summary_state=summary_state):
+                job = self.job()
+                work = tempfile.mkdtemp(prefix="review_delivery_")
+                self.addCleanup(shutil.rmtree, work, ignore_errors=True)
+                for filename in ("resume.md", "profile.json"):
+                    shutil.copy(os.path.join(fixtures.REPO, filename), work)
+                def deliver(_url, _secret, snapshots, **kwargs):
+                    result = {"posted": [], "existing": [], "in_progress": [], "retryable": [],
+                              "failed": [{"job_key": snapshots[0]["job_key"], "error": "Discord HTTP 503"}]}
+                    result[summary_state] = [kwargs["heartbeat"]["key"]]
+                    return result
+                with mock.patch.object(digest, "post_interactive_cards", side_effect=deliver), \
+                     mock.patch.object(digest, "post_discord") as webhook:
+                    with self.assertRaises(SystemExit) as raised:
+                        self.run_jobs([job], {"match": 69}, {job["title"]: VIABLE}, env, work)
+                self.assertEqual(raised.exception.code, 1)
+                webhook.assert_not_called()
+                with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
+                    self.assertEqual(json.load(handle), {})
+                with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+                    self.assertEqual(json.load(handle)[-1]["delivered"], 0)
 
     def test_junior_software_allowed_but_junior_analytics_and_internships_excluded(self):
         for title in ("Junior Software Engineer", "Associate AI Engineer", "Entry Level Backend Developer"):
@@ -204,14 +301,16 @@ class TestStrictAlerts(unittest.TestCase):
 
     def test_qualification_cap_is_applied_before_delivery(self):
         job = self.job()
-        blocked = dict(CLEAN, ceiling="mid", blockers=[{
+        blocked = dict(VIABLE, ceiling="mid", blockers=[{
             "type": "education_certification_gap", "severity": "medium", "title": "Required degree absent"}])
         body, row, seen, _ = self.run_jobs([job], {"match": 95}, {job["title"]: blocked})
-        self.assertEqual(row["delivered"], 0)
-        self.assertEqual(row["below_floor"], 1)
-        self.assertNotIn("**Software Engineer match**", body)
-        self.assertIn("floor:url:https://example.test/match", seen)
-        self.assertNotIn("url:https://example.test/match", seen)
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["below_floor"], 0)
+        self.assertIn("**Software Engineer match**", body)
+        self.assertIn("fit 69", body)
+        self.assertIn("Required degree absent", body)
+        self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.test/match", seen)
+        self.assertIn("url:https://example.test/match", seen)
 
     def test_incomplete_requirements_check_stays_retryable(self):
         for reason in ("check unavailable", "not checked: budget exhausted"):
@@ -312,7 +411,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["delivered"], 0)
         self.assertEqual(row["unverified_date"], 2)
         self.assertEqual(seen, {})
-        self.assertIn("No suitable new matches today.", body)
+        self.assertIn("No verified new roles for review today (0 of 5).", body)
 
 
 class TestStrictPostingDates(unittest.TestCase):

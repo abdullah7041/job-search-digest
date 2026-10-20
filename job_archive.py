@@ -260,6 +260,7 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "ceiling": (job.get("fit_check") or {}).get("ceiling", "unknown"),
         "blockers": [blocker.get("title", "") for blocker
                      in ((job.get("fit_check") or {}).get("blockers") or [])][:3],
+        "unclear": ((job.get("fit_check") or {}).get("unclear") or [])[:3],
         "link_status": job.get("link_status", "unknown"),
         # Additive. first_published was written by every fetcher and dropped
         # here, so no archived run could answer how old its cards were -- which
@@ -322,6 +323,9 @@ def job_card_payload(snapshot: dict) -> dict:
         footer += f" · {len(blockers)} verified gap(s)"
     elif snapshot.get("ceiling") == "unknown":
         footer += " · Requirements not checked"
+    unclear = snapshot.get("unclear") or []
+    if unclear:
+        footer += f" · {len(unclear)} question(s) to check"
     fields = [
         {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
         {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
@@ -336,6 +340,11 @@ def job_card_payload(snapshot: dict) -> dict:
         # reason the score was capped, so they have to be readable.
         fields.append({"name": "Gaps the posting states",
                        "value": "\n".join(f"• {title}" for title in blockers)[:1024],
+                       "inline": False})
+    if unclear:
+        fields.append({"name": "Questions to check",
+                       "value": "\n".join(f"• {item.get('topic', 'Fit question')}: {item.get('reason', '')}"
+                                          for item in unclear)[:1024],
                        "inline": False})
     return {
         "embeds": [{

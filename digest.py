@@ -306,9 +306,9 @@ def _score_floor(raw: str, default: int = 80) -> int:
     return value
 
 
-# Strong-match threshold. A separate top-five policy selects fully verified
+# Strong-match threshold. A separate top-five policy selects evidence-backed
 # same-track jobs below 80 only when no strong match qualifies. Scores below 40
-# and verified blockers receive cooldowns; incomplete evidence remains retryable.
+# and out-of-scope roles receive cooldowns; incomplete evidence remains retryable.
 MIN_DELIVER_SCORE = _score_floor(os.environ.get("MIN_DELIVER_SCORE") or "")
 
 # Per-job resume tailoring is an explicit Discord interaction handled by
@@ -389,7 +389,9 @@ JD_SEEN_PREFIX = "jd:"
 # under the 120-day TTL, because scores move: the archives hold one description
 # scored 40, 40, 40, 45, 50, 50 and 75 unchanged. Long enough not to re-rank the
 # same reject every morning, short enough that one bad number is not a verdict.
-FLOOR_SEEN_PREFIX = "floor:"
+# Previous cooldowns also rejected reviewable qualification gaps. Start a new
+# namespace so those roles can be checked again without forgetting deliveries.
+FLOOR_SEEN_PREFIX = "floor:review:"
 FLOOR_COOLDOWN_DAYS = 7
 USER_AGENT = "job-digest/1.0 (personal job search)"
 
@@ -2395,7 +2397,7 @@ def cap_per_company(jobs, limit=MAX_JOBS_PER_COMPANY):
 TIER_STRONG = "Strong matches"
 TIER_COMPETITIVE = "Competitive with gaps"
 TIER_REVIEW = "Worth reviewing"
-TIER_CLOSEST = "Closest viable matches"
+TIER_CLOSEST = "Closest matches to review"
 
 
 def is_strong(job):
@@ -2419,7 +2421,7 @@ def is_strong(job):
 
 
 def is_viable(job):
-    """A same-track match within 30 days, backed by demonstrated resume evidence."""
+    """An evidence-backed review candidate; qualification gaps stay visible."""
     check = job.get("fit_check") or {}
     tracks = {track["name"] for track in PROFILE.get("tracks", [])}
     return bool(job.get("ranking_verified")
@@ -2427,10 +2429,10 @@ def is_viable(job):
                 and 0 <= (job.get("age_days") or 0) <= FALLBACK_MAX_JOB_AGE_DAYS
                 and job.get("track") in tracks
                 and jd_grade(job.get("description") or "") == GRADE_FULL
-                and check.get("ceiling") == "high"
+                and check.get("ceiling") in ("high", "mid", "low")
                 and not check.get("note")
-                and not check.get("blockers")
-                and not check.get("unclear")
+                and not any(b.get("type") in ("location_work_authorization", "role_scope_mismatch")
+                            for b in check.get("blockers") or [])
                 and any(e.get("source") == "resume" and e.get("snippet")
                         for strength in check.get("strengths") or []
                         for e in strength.get("evidence") or []))
@@ -2567,7 +2569,7 @@ def save_seen(seen):
     cutoff = (today - datetime.timedelta(days=STATE_TTL_DAYS)).isoformat()
     floor_cutoff = (today - datetime.timedelta(days=FLOOR_COOLDOWN_DAYS)).isoformat()
     pruned = {k: v for k, v in seen.items()
-              if v >= (floor_cutoff if k.startswith(FLOOR_SEEN_PREFIX) else cutoff)}
+              if v >= (floor_cutoff if k.startswith("floor:") else cutoff)}
     with open(STATE_FILE, "w") as f:
         json.dump(pruned, f, indent=0, sort_keys=True)
 
@@ -2933,7 +2935,7 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     for line in lines[1:]:
         log(line)
-    status = "No suitable new matches today."
+    status = "No verified new roles for review today (0 of 5)."
     if any(warning and warning.startswith("Matching evidence unavailable:") for warning in warnings):
         status = "Matching evidence unavailable; check your resume and profile."
     elif any(warning and warning.startswith("Fit ranking unavailable;") for warning in warnings):
@@ -2952,11 +2954,14 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
 
 def post_discord(webhook, lines):
     chunks, cur = [], ""
-    for ln in lines:
-        if len(cur) + len(ln) + 1 > 1900:  # Discord hard limit is 2000
-            chunks.append(cur)
-            cur = ""
-        cur += ln + "\n"
+    limit = 1900  # Discord hard limit is 2000; reserve room for newlines.
+    for line in lines:
+        for offset in range(0, max(len(line), 1), limit - 1):
+            part = line[offset:offset + limit - 1]
+            if len(cur) + len(part) + 1 > limit:
+                chunks.append(cur)
+                cur = ""
+            cur += part + "\n"
     if cur:
         chunks.append(cur)
     for ch in chunks:
@@ -3318,12 +3323,12 @@ def main():
         log(f"Capped {job['company']} - {job['title']} at {job['score']}: {gaps}")
     strong_candidates, viable = [], []
     for job in fresh:
-        if (job.get("fit_check") or {}).get("blockers"):
-            below_floor.append(job)
-        elif is_strong(job):
+        if is_strong(job):
             strong_candidates.append(job)
         elif is_viable(job):
             viable.append(job)
+        elif (job.get("fit_check") or {}).get("blockers"):
+            below_floor.append(job)
         else:
             unverified.append(job)
     strong_mode = bool(strong_candidates)
@@ -3360,7 +3365,7 @@ def main():
                        unverified_date=len(unverified_dates), unverified_fit=len(unverified),
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read, paused_feeds=paused_feeds)
-        log("No fully verified strong or viable matches. Heartbeat sent.")
+        log("No verified strong matches or review candidates. Heartbeat sent.")
         return
 
     # Only eligible jobs consume employer slots or the digest's overall limit.
@@ -3387,8 +3392,12 @@ def main():
     write_snapshots(fresh, today)
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
+    shortlist_summary = None
     if not strong_mode:
-        lines.append("Closest viable matches · posted within 30 days.")
+        lines.append("Closest matches to review · posted within 30 days.")
+        lines.append(f"Shortlist: {len(fresh)} of {MAX_FALLBACK_JOBS} roles available for review today.")
+        if len(fresh) < MAX_FALLBACK_JOBS:
+            shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     by_company = {}
     for j in fresh:
@@ -3421,6 +3430,10 @@ def main():
                 # Now that every delivered job is checked, an unchecked one
                 # would otherwise read exactly like one checked and found clean.
                 flags.append("requirements not checked")
+            if check.get("unclear"):
+                questions = "; ".join(f"{item.get('topic', 'Fit question')}: {item.get('reason', '')}"
+                                      for item in check["unclear"])
+                flags.append(f"questions to check - {questions}")
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
@@ -3454,10 +3467,13 @@ def main():
     delivered_ids = set()
     if worker_url:
         try:
-            delivery = post_interactive_cards(worker_url, worker_secret, snapshots)
-            accepted_keys = set(delivery.get("posted", []) + delivery.get("existing", []))
-            uncertain_keys = set(delivery.get("in_progress", []) + delivery.get("retryable", []))
-            failed = delivery.get("failed", [])
+            delivery = post_interactive_cards(worker_url, worker_secret, snapshots, heartbeat=shortlist_summary)
+            # Worker summaries include heartbeat keys; only job cards count as
+            # delivered or pending when deciding whether the digest failed.
+            job_keys = {snapshot["job_key"] for snapshot in snapshots}
+            accepted_keys = job_keys.intersection(delivery.get("posted", []) + delivery.get("existing", []))
+            uncertain_keys = job_keys.intersection(delivery.get("in_progress", []) + delivery.get("retryable", []))
+            failed = [item for item in delivery.get("failed", []) if item.get("job_key") in job_keys]
             interactive_delivery_claimed = bool(accepted_keys or uncertain_keys or failed)
             delivered_ids = {snapshot["source_id"] for snapshot in snapshots if snapshot["job_key"] in accepted_keys}
             log(
