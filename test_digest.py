@@ -1875,6 +1875,15 @@ class TestJsearchPaging(unittest.TestCase):
         self.assertEqual(digest._request_budget("4"), 4)
         self.assertEqual(digest._request_budget(str(len(digest.AGGREGATOR_QUERIES) + 1)), 2)
 
+    def test_expanding_search_targets_does_not_expand_the_daily_request_budget(self):
+        for raw in ("7", "12"):
+            with self.subTest(raw=raw), \
+                 mock.patch.object(digest, "JSEARCH_DAILY_REQUESTS", digest._request_budget(raw)), \
+                 mock.patch.object(digest.requests, "get", return_value=self._page([])) as get, \
+                 mock.patch.object(digest.time, "sleep", lambda *_: None):
+                digest.fetch_jsearch("test-key")
+                self.assertEqual(get.call_count, 2)
+
     def test_two_queries_rotate_without_a_second_page(self):
         queries = ["a", "b", "c", "d"]
         self.assertEqual(digest.jsearch_query_plan(queries, 2, day=0), ["a", "b"])
@@ -2617,8 +2626,9 @@ class TestEndToEnd(unittest.TestCase):
                 )
 
             body = "\n".join(post.call_args.args[1])
-            self.assertEqual(body, "**Job digest — 2026-09-27** · 0 delivered today.\n"
-                                   "No verified new roles for review today (0 of 5).")
+            self.assertIn("0 of 10", body)
+            self.assertIn("Search coverage incomplete", body)
+            self.assertIn("qualification mismatches" if summary["below_floor"] else "previously sent jobs", body)
             diagnostics = "\n".join(str(call.args[0]) for call in log.call_args_list)
             for text in expected:
                 self.assertIn(text, diagnostics)
@@ -3036,7 +3046,7 @@ class TestEndToEnd(unittest.TestCase):
         ranking = {"jsearch_b": {"score": 93, "why": "Supported role"}}
         posts, work = run_main(self.ENV, ranking, fit_checks={})
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
-        self.assertIn("No verified new roles for review today (0 of 5).", "\n".join(posts))
+        self.assertIn("Awaiting complete fit verification", "\n".join(posts))
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle), {})
 
@@ -3057,7 +3067,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual(snapshot["ceiling"], "high")
         card = job_archive.job_card_payload(snapshot)
         self.assertNotIn("Low ceiling", card["embeds"][0]["footer"]["text"])
-        self.assertEqual(len(card["embeds"][0]["fields"]), 2, "no gaps field when clean")
+        self.assertNotIn("Gaps the posting states", [field["name"] for field in card["embeds"][0]["fields"]])
 
     def test_the_drift_average_ignores_the_blocker_cap(self):
         """avg_score is taken before the cap (digest.py:2131), so a run where
@@ -3468,7 +3478,7 @@ class TestTheCardStatesThePostingAge(unittest.TestCase):
         posts, work = run_main(TestEndToEnd.ENV, ranking, jobs=[job],
                                link_statuses=[digest.LINK_OPEN])
         shutil.rmtree(work, ignore_errors=True)
-        self.assertIn("No verified new roles for review today (0 of 5).", "\n".join(posts))
+        self.assertIn("Unverified posting dates: 1 (0 of 10).", "\n".join(posts))
 
 
 class TestActiveAtsRealRowShape(unittest.TestCase):
@@ -3770,7 +3780,7 @@ class TestSourceYield(unittest.TestCase):
             self.assertEqual(len(selection), 2)
             covered.update(selection)
         self.assertEqual(covered, set(queries))
-        self.assertIn("LLM engineer Saudi Arabia", covered)
+        self.assertIn("LLM application engineer Saudi Arabia", covered)
         self.assertIn("AI product engineer Saudi Arabia", covered)
 
     def test_fresh_feed_switches_at_riyadh_midnight(self):

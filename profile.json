@@ -1,5 +1,37 @@
 {
-  "blurb": "Candidate: AI Product Engineer and solo founder in Saudi Arabia who builds and deploys LLM-powered products and production automations end to end. Founder of Watheq, an Arabic-first bilingual AI resume optimization and job-matching platform deployed in production for the Saudi market, built solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security, Upstash Redis rate limiting, OpenRouter/Gemini, and server-side PDF generation. He implemented credit-based monetization, guest rate limiting, Moyasar payment integration with 3DS flows, and Arabic/Hijri date handling. He builds evidence-constrained LLM workflows for parsing, matching, gap analysis, interview questions, and resume improvement, with Zod validation, anti-hallucination output rules, gold-set evaluation harnesses, deterministic scoring, and quality-drift checks. He built bilingual PDF/DOCX processing with Arabic/English detection, OCR fallback, structured JSON recovery, real-time progress, and ATS-safe PDF exports. He also runs production automation on GitHub Actions: a Saudi job-discovery and ranking pipeline across five ATS APIs with fail-soft discovery, employer verification, apply-link recovery, quota controls, evidence-aware ranking, and Discord delivery. His TASI market-analysis platform combines Python, TypeScript, React/Next.js, deterministic technical rules, scheduled workflows, Discord alerts, a 5-year walk-forward backtest, provider failover, and CI contract tests. Python, TypeScript, and SQL, with commercial operations and data analytics since March 2020 and hands-on AI product engineering since August 2025. Do not count the commercial/analytics years as years of software engineering. RAG concepts and n8n are listed knowledge/skills, not evidence of shipped RAG or n8n workflows. Native Arabic and professional English. Wants junior, associate and mid-level individual-contributor AI/LLM and software roles, and mid-level and senior hands-on data-analytics roles based in Saudi Arabia only; roles based outside Saudi Arabia are not a match even with relocation. He prefers hands-on technical ownership and not people management. EDUCATION: diploma in Pipefitting Technology from Saudi Petroleum Services Polytechnic (2018), GPA 4.6/5, and NO bachelor's degree. Everything in software and AI is self-taught and shipped rather than credentialed. A posting that states a bachelor's degree as a minimum qualification is a real gap; a degree that is preferred or accepts equivalent experience is not. WHAT HE DOES NOT DO: he BUILDS WITH models, he does not build models. Do not credit model training, fine-tuning, TensorFlow, PyTorch, scikit-learn, deep learning, MLOps, feature engineering, or formal statistics/data-science study. His evaluation work judge-scores LLM prompts and model variants, not models he trained. A posting requiring model development, fine-tuning, or a classical ML stack is a wrong-function match and belongs in the 0-39 band.",
+  "blurb": "Candidate: AI Product Engineer and solo founder in Saudi Arabia who builds and deploys LLM-powered products and production automations end to end. Founder of Watheq, an Arabic-first bilingual AI resume optimization and job-matching platform deployed in production for the Saudi market, built solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security, Upstash Redis rate limiting, OpenRouter/Gemini, and server-side PDF generation. He implemented credit-based monetization, guest rate limiting, Moyasar payment integration with 3DS flows, and Arabic/Hijri date handling. He builds evidence-constrained LLM workflows for parsing, matching, gap analysis, interview questions, and resume improvement, with Zod validation, anti-hallucination output rules, gold-set evaluation harnesses, deterministic scoring, and quality-drift checks. He built bilingual PDF/DOCX processing with Arabic/English detection, OCR fallback, structured JSON recovery, real-time progress, and ATS-safe PDF exports. He also runs production automation on GitHub Actions: a Saudi job-discovery and ranking pipeline across five ATS APIs with fail-soft discovery, employer verification, apply-link recovery, quota controls, evidence-aware ranking, and Discord delivery. His TASI market-analysis platform combines Python, TypeScript, React/Next.js, deterministic technical rules, scheduled workflows, Discord alerts, a 5-year walk-forward backtest, provider failover, and CI contract tests. Python, TypeScript, and SQL, with commercial operations and data analytics since March 2020 and hands-on AI product engineering since August 2025. Do not count the commercial/analytics years as years of software engineering. RAG concepts and n8n are listed knowledge/skills, not evidence of shipped RAG or n8n workflows. Native Arabic and professional English. Wants junior, associate and mid-level individual-contributor AI/LLM and software roles, and mid-level and senior hands-on data-analytics roles based in Saudi Arabia only; roles based outside Saudi Arabia are not a match even with relocation. He also targets sales operations, commercial and retail analytics, customer insights/CRM analytics, and senior sales/advisory individual-contributor roles, judged against his Alghalia experience. He prefers hands-on individual-contributor work and not people management. EDUCATION: diploma in Pipefitting Technology from Saudi Petroleum Services Polytechnic (2018), GPA 4.6/5, and NO bachelor's degree. Everything in software and AI is self-taught and shipped rather than credentialed. A posting that states a bachelor's degree as a minimum qualification is a real gap; a degree that is preferred or accepts equivalent experience is not. WHAT HE DOES NOT DO: he BUILDS WITH models, he does not build models. Do not credit model training, fine-tuning, TensorFlow, PyTorch, scikit-learn, deep learning, MLOps, feature engineering, or formal statistics/data-science study. His evaluation work judge-scores LLM prompts and model variants, not models he trained. A posting requiring model development, fine-tuning, or a classical ML stack is a wrong-function match and belongs in the 0-39 band.",
+  "title_priorities": {
+    "Sales Operations Analyst": 1,
+    "Sales Performance Analyst": 1,
+    "Commercial Analyst": 2,
+    "Commercial Business Analyst": 2,
+    "Retail Business Analyst": 2,
+    "Data Analyst": 3,
+    "Business Data Analyst": 3,
+    "Business Intelligence Analyst": 4,
+    "Reporting Analyst": 4,
+    "Power BI Developer": 4,
+    "AI Automation Engineer": 5,
+    "AI Automation Specialist": 5,
+    "AI Implementation Specialist": 6,
+    "AI Solutions Specialist": 6,
+    "AI Product Engineer": 7,
+    "LLM Application Engineer": 8,
+    "Applied AI Engineer": 8,
+    "LLM Engineer": 8,
+    "Full-Stack Developer": 9,
+    "Full Stack Developer": 9,
+    "Full-Stack Engineer": 9,
+    "Product Engineer": 9,
+    "Customer Insights Analyst": 10,
+    "CRM Analyst": 10,
+    "Senior Sales Specialist": 11,
+    "Senior Sales Advisor": 11,
+    "Sales Specialist": 11,
+    "Sales Advisor": 11,
+    "AI Solutions Engineer": 12,
+    "Technical Solutions Consultant": 12
+  },
   "skill_keywords": [
     "ai",
     "llm",
@@ -31,9 +63,41 @@
     "forward deployed",
     "prompt",
     "analyst",
-    "product"
+    "product",
+    "sales operations",
+    "sales performance",
+    "commercial analyst",
+    "retail business analyst",
+    "reporting analyst",
+    "customer insights",
+    "crm analyst",
+    "sales specialist",
+    "sales advisor"
   ],
   "tracks": [
+    {
+      "name": "Commercial and sales operations",
+      "titles": [
+        "Sales Operations Analyst",
+        "Sales Performance Analyst",
+        "Commercial Analyst",
+        "Commercial Business Analyst",
+        "Retail Business Analyst",
+        "Customer Insights Analyst",
+        "CRM Analyst"
+      ],
+      "evidence": "Judge against the Alghalia experience since March 2020: weekly sales performance reporting, Power BI dashboards, segmentation of 100+ customer accounts, cross-sell analysis, competitor/pricing intelligence, and reduced expired-unit waste. These are hands-on commercial analytics roles, not general accounting, finance, or people management. Do not infer Salesforce, CRM administration, formal business-analysis methods, or tools not demonstrated in the resume."
+    },
+    {
+      "name": "Sales and customer advisory",
+      "titles": [
+        "Senior Sales Specialist",
+        "Senior Sales Advisor",
+        "Sales Specialist",
+        "Sales Advisor"
+      ],
+      "evidence": "Judge against the Alghalia Data Analyst / Senior Sales Specialist experience since March 2020 and its customer accounts and cross-sell work. Do not infer enterprise presales, quota attainment, closing metrics, sales leadership, or industry experience absent from the resume."
+    },
     {
       "name": "AI and LLM product engineering",
       "titles": [
@@ -41,10 +105,17 @@
         "Associate AI Engineer",
         "AI Engineer",
         "Automation Engineer",
+        "AI Automation Engineer",
+        "AI Automation Specialist",
+        "AI Implementation Specialist",
+        "AI Solutions Specialist",
         "Senior AI Engineer",
         "AI Product Engineer",
         "Applied AI Engineer",
+        "LLM Application Engineer",
         "LLM Engineer",
+        "AI Solutions Engineer",
+        "Technical Solutions Consultant",
         "Forward Deployed Engineer",
         "AI Solutions Architect"
       ],
@@ -59,6 +130,8 @@
         "Software Engineer",
         "Backend Engineer",
         "Full-Stack Engineer",
+        "Full-Stack Developer",
+        "Product Engineer",
         "Frontend Engineer",
         "Automation Engineer",
         "Senior Software Engineer",
@@ -77,7 +150,9 @@
       "name": "Data and analytics",
       "titles": [
         "Data Analyst",
+        "Business Data Analyst",
         "Business Intelligence Analyst",
+        "Reporting Analyst",
         "Power BI Developer",
         "Senior Data Analyst"
       ],

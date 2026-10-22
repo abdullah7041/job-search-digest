@@ -239,6 +239,7 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "url": job.get("apply_url") or job.get("url", ""),
         "salary": job.get("salary", ""),
         "tier": job.get("tier", "Worth reviewing"),
+        "application_action": job.get("application_action", ""),
         "score": job.get("score", 0),
         "why": job.get("why", ""),
         "ranking_verified": bool(job.get("ranking_verified")),
@@ -330,6 +331,8 @@ def job_card_payload(snapshot: dict) -> dict:
         {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
         {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
     ]
+    if snapshot.get("application_action"):
+        fields.append({"name": "Next step", "value": snapshot["application_action"], "inline": False})
     if snapshot.get("match_evidence"):
         fields.append({"name": "Background evidence",
                        "value": "\n".join(f"• {item['title']}: {item['resume_quote']}"

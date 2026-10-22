@@ -5,10 +5,11 @@ Daily job-search digest -> Discord.
 Pattern (same as the AI-news digest):
   gather  -> JSearch (RapidAPI, Google for Jobs aggregator) for breadth
              + company ATS APIs (Greenhouse, Ashby, Workable, Lever) for depth
-  filter  -> Saudi-only, track-specific IC levels, confirmed publication within 7 days
+  filter  -> Saudi-only, track-specific IC levels, strong matches within 7 days
+             and evidence-backed review candidates within 30 days
   rank    -> one cheap OpenRouter call for score + one-line "why it fits"
              (deterministic keyword fallback if the ranker is missing or fails)
-  deliver -> Discord webhook
+  deliver -> up to ten jobs via interactive Discord cards or webhook
 Runs on GitHub Actions cron. No laptop needed.
 
 Secrets (GitHub repo -> Settings -> Secrets and variables -> Actions):
@@ -38,6 +39,7 @@ import sys
 import json
 import time
 import datetime
+from itertools import groupby
 
 import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -180,21 +182,22 @@ DEFAULT_PROFILE = {
 # Two rotating page-one queries/day use about 60 requests/month, leaving a
 # reserve for manual diagnostics and unexpected reruns.
 # Endpoint + response shape + field names verified live 28 Jun 2026.
-# Measured 3 Sep 2026 by `--probe-queries`, counting results that pass this
-# file's own title and location filters: backend 6, data 6, full stack 5, ML 4,
-# software 3, "AI engineer" only 2. Backend was added and the others were not
-# because its six were all employers the digest had never seen -- FileCloud,
-# Innovationteam, PrimeGate, Democrance -- while the data query's six are mostly
-# the paid relisters that get dropped again every morning. Full stack scored
-# well but repeated two of backend's six. Every query costs 30 requests a month
-# out of 200, so a query earns its place on that number or not at all.
+# Twelve candidate-directed role families, rotated within the existing request
+# budget. Broader search is not a measured yield improvement until live source
+# receipts and delivered jobs confirm it.
 AGGREGATOR_QUERIES = [
-    "software engineer Saudi Arabia",
+    "sales operations analyst Saudi Arabia",
+    "commercial analyst Saudi Arabia",
     "data analyst Saudi Arabia",
-    "LLM engineer Saudi Arabia",
-    "backend engineer Saudi Arabia",
+    "business intelligence analyst Saudi Arabia",
+    "AI automation specialist Saudi Arabia",
+    "AI implementation specialist Saudi Arabia",
     "AI product engineer Saudi Arabia",
-    "business intelligence Power BI Saudi Arabia",
+    "LLM application engineer Saudi Arabia",
+    "full stack developer Saudi Arabia",
+    "customer insights analyst Saudi Arabia",
+    "senior sales specialist Saudi Arabia",
+    "AI solutions engineer Saudi Arabia",
 ]
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
 
@@ -208,7 +211,8 @@ def _request_budget(raw):
         value = int(str(raw).strip())
     except (TypeError, ValueError):
         return default
-    return value if 0 <= value <= len(AGGREGATOR_QUERIES) else default
+    # Adding target families must not silently permit a larger daily spend.
+    return value if 0 <= value <= min(6, len(AGGREGATOR_QUERIES)) else default
 
 
 JSEARCH_DAILY_REQUESTS = _request_budget(os.environ.get("JSEARCH_DAILY_REQUESTS"))
@@ -264,8 +268,7 @@ RANK_BUDGET_SECONDS = 120
 # which is to spend a deadline on losing work and never on losing the digest.
 RUN_BUDGET_SECONDS = 600
 
-MAX_JOBS_IN_DIGEST = 25
-MAX_FALLBACK_JOBS = 5
+MAX_JOBS_IN_DIGEST = 10
 # Discovered boards read per run, on top of the hand-curated COMPANIES list,
 # which is never rationed. Board discovery adds entries every week and has no
 # ceiling of its own, so without this the company loop grows without bound
@@ -306,8 +309,8 @@ def _score_floor(raw: str, default: int = 80) -> int:
     return value
 
 
-# Strong-match threshold. A separate top-five policy selects evidence-backed
-# same-track jobs below 80 only when no strong match qualifies. Scores below 40
+# Strong-match threshold. Review candidates fill remaining shortlist places.
+# Scores below 40
 # and out-of-scope roles receive cooldowns; incomplete evidence remains retryable.
 MIN_DELIVER_SCORE = _score_floor(os.environ.get("MIN_DELIVER_SCORE") or "")
 
@@ -415,9 +418,18 @@ LINK_UNKNOWN = "unknown"
 # ----------------------------------------------------------------------------
 
 
+SOURCE_FAILURES = set()
+
+
 def log(msg):
     ts = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     print(f"[{ts}] {msg}", flush=True)
+
+
+def source_failure(source, message):
+    """Retain failed source reads so an empty result cannot imply full coverage."""
+    SOURCE_FAILURES.add(source)
+    log(message)
 
 
 def load_profile():
@@ -442,7 +454,13 @@ def load_profile():
                     or not all(isinstance(t.get(k), str) and t[k].strip() for k in ("name", "evidence"))
                     or not isinstance(t.get("titles"), list) or not t["titles"]
                     or not all(isinstance(title, str) and title.strip() for title in t["titles"])
-                    for t in data["tracks"])))):
+                    for t in data["tracks"])))
+            or ("title_priorities" in data and (
+                not isinstance(data["title_priorities"], dict)
+                or not data["title_priorities"]
+                or any(not isinstance(title, str) or not title.strip()
+                       or type(priority) is not int or not 1 <= priority <= 12
+                       for title, priority in data["title_priorities"].items())))):
         log(f"WARN {PROFILE_FILE} missing 'blurb' or 'skill_keywords', using default profile")
         return DEFAULT_PROFILE
     return data
@@ -483,15 +501,15 @@ def fetch_greenhouse(c):
     try:
         r = _get(url)
     except requests.RequestException as e:
-        log(f"WARN {c['name']}: request failed: {e}")
+        source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
         return []
     if r.status_code != 200:
-        log(f"WARN {c['name']}: greenhouse HTTP {r.status_code} (token '{c['token']}'). Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: greenhouse HTTP {r.status_code} (token '{c['token']}'). Skipping.")
         return []
     try:
         data = r.json()
     except ValueError:
-        log(f"WARN {c['name']}: non-JSON response. Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
         return []
     out = []
     for j in data.get("jobs", []):
@@ -518,15 +536,15 @@ def fetch_ashby(c):
     try:
         r = _get(url)
     except requests.RequestException as e:
-        log(f"WARN {c['name']}: request failed: {e}")
+        source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
         return []
     if r.status_code != 200:
-        log(f"WARN {c['name']}: ashby HTTP {r.status_code} (token '{c['token']}'). Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: ashby HTTP {r.status_code} (token '{c['token']}'). Skipping.")
         return []
     try:
         data = r.json()
     except ValueError:
-        log(f"WARN {c['name']}: non-JSON response. Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
         return []
     out = []
     for j in data.get("jobs", []):
@@ -558,15 +576,15 @@ def fetch_workable(c):
         try:
             r = _post(url, body)
         except requests.RequestException as e:
-            log(f"WARN {c['name']}: request failed: {e}")
+            source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
             return out  # return what we already have; partial beats crashing
         if r.status_code != 200:
-            log(f"WARN {c['name']}: workable HTTP {r.status_code} (token '{c['token']}'). Skipping.")
+            source_failure(c['name'], f"WARN {c['name']}: workable HTTP {r.status_code} (token '{c['token']}'). Skipping.")
             return out
         try:
             data = r.json()
         except ValueError:
-            log(f"WARN {c['name']}: non-JSON response. Skipping.")
+            source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
             return out
         for j in data.get("results", []):
             if j.get("state") not in (None, "published"):
@@ -603,18 +621,18 @@ def fetch_lever(c):
     try:
         r = _get(url)
     except requests.RequestException as e:
-        log(f"WARN {c['name']}: request failed: {e}")
+        source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
         return []
     if r.status_code != 200:
-        log(f"WARN {c['name']}: lever HTTP {r.status_code} (token '{c['token']}'). Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: lever HTTP {r.status_code} (token '{c['token']}'). Skipping.")
         return []
     try:
         data = r.json()
     except ValueError:
-        log(f"WARN {c['name']}: non-JSON response. Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
         return []
     if not isinstance(data, list):
-        log(f"WARN {c['name']}: unexpected lever payload. Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: unexpected lever payload. Skipping.")
         return []
     out = []
     for j in data:
@@ -697,17 +715,17 @@ def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
         try:
             r = requests.get(url, headers=headers, timeout=30)
         except requests.RequestException as e:
-            log(f"WARN JSearch [{query!r}]: request failed: {e}")
+            source_failure('jsearch', f"WARN JSearch [{query!r}]: request failed: {e}")
             return [], ""
         recorded = _record_quota(quota, r.headers)
         _debit_unreported_quota(quota, recorded)
         if r.status_code != 200:
-            log(f"WARN JSearch [{query!r}]: HTTP {r.status_code}: {r.text[:120]}")
+            source_failure('jsearch', f"WARN JSearch [{query!r}]: HTTP {r.status_code}: {r.text[:120]}")
             return [], ""
         try:
             data = r.json()
         except ValueError:
-            log(f"WARN JSearch [{query!r}]: non-JSON response")
+            source_failure('jsearch', f"WARN JSearch [{query!r}]: non-JSON response")
             return [], ""
         # v2 shape: {"status":..,"data":{"jobs":[...],"cursor":..}}. Be defensive in case
         # a future response hands back a bare list again.
@@ -967,15 +985,15 @@ def fetch_pinpoint(c):
     try:
         r = _get(url)
     except requests.RequestException as e:
-        log(f"WARN {c['name']}: request failed: {e}")
+        source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
         return []
     if r.status_code != 200:
-        log(f"WARN {c['name']}: pinpoint HTTP {r.status_code} (token '{c['token']}'). Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: pinpoint HTTP {r.status_code} (token '{c['token']}'). Skipping.")
         return []
     try:
         data = r.json()
     except ValueError:
-        log(f"WARN {c['name']}: non-JSON response. Skipping.")
+        source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
         return []
     out = []
     for j in data.get("data", []):
@@ -1281,9 +1299,6 @@ INDEED_HOST = "jobs-api14.p.rapidapi.com"
 # What this feed is asked for. Indeed has no taxonomy filter here and no
 # working date filter, so the query carries the terms and everything else is
 # judged locally.
-INDEED_QUERY = "software engineer"
-
-
 def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
     """Read one page of Saudi roles from Indeed, which no other feed reaches.
 
@@ -1306,24 +1321,24 @@ def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
     if out_of_allowance("indeed", quota, paused_feeds=paused_feeds):
         return []
     url = ("https://" + INDEED_HOST + "/v2/indeed/search"
-           + "?query=" + requests.utils.quote(INDEED_QUERY)
+           + "?query=" + requests.utils.quote(AGGREGATOR_QUERIES[(riyadh_ordinal() - 1) % len(AGGREGATOR_QUERIES)])
            + "&location=" + requests.utils.quote("Saudi Arabia")
            + "&countryCode=sa")
     try:
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
                                        "X-RapidAPI-Host": INDEED_HOST}, timeout=30)
     except requests.RequestException as e:
-        log("WARN Indeed: request failed: " + str(e))
+        source_failure('indeed', "WARN Indeed: request failed: " + str(e))
         return []
     recorded = _record_quota(quota, r.headers)
     _debit_unreported_quota(quota, recorded)
     if r.status_code != 200:
-        log("WARN Indeed: HTTP " + str(r.status_code) + ": " + r.text[:120])
+        source_failure('indeed', "WARN Indeed: HTTP " + str(r.status_code) + ": " + r.text[:120])
         return []
     try:
         payload = r.json()
     except ValueError:
-        log("WARN Indeed: non-JSON response")
+        source_failure('indeed', "WARN Indeed: non-JSON response")
         return []
     rows = payload.get("data") if isinstance(payload, dict) else payload
     out = []
@@ -1427,17 +1442,17 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota,
         r = requests.get(url, headers={"X-RapidAPI-Key": api_key,
                                        "X-RapidAPI-Host": host}, timeout=30)
     except requests.RequestException as e:
-        log("WARN " + name + ": request failed: " + str(e))
+        source_failure(source, "WARN " + name + ": request failed: " + str(e))
         return []
     recorded = _record_quota(quota, r.headers)
     _debit_unreported_quota(quota, recorded, job_cost=ACTIVE_ATS_PAGE)
     if r.status_code != 200:
-        log("WARN " + name + ": HTTP " + str(r.status_code) + ": " + r.text[:120])
+        source_failure(source, "WARN " + name + ": HTTP " + str(r.status_code) + ": " + r.text[:120])
         return []
     try:
         rows = r.json()
     except ValueError:
-        log("WARN " + name + ": non-JSON response")
+        source_failure(source, "WARN " + name + ": non-JSON response")
         return []
     if isinstance(rows, dict):
         rows = rows.get("data") or rows.get("jobs") or []
@@ -1569,7 +1584,8 @@ def matches_filters(job):
     if (any(k in title for k in ("junior", "associate", "entry", "fresh"))
             and any(k in title for k in ("data analyst", "analytics", "business intelligence", "power bi"))):
         return False
-    if not any(k in title for k in TITLE_INCLUDE):
+    if not (any(k in title for k in TITLE_INCLUDE)
+            or keyword_hits(title, [t.lower() for t in PROFILE.get("title_priorities", {})])):
         return False
     return True
 
@@ -1930,7 +1946,9 @@ def rank_jobs(jobs, api_key, evidence=None):
         "Score each job 0-100 for fit to this candidate.\n"
         "Use the exact target track name in track; use an empty track for unrelated work. "
         "Junior and associate AI/application/software roles are valid targets when their "
-        "requirements fit the candidate. Analytics targets are mid-level and senior IC.\n"
+        "requirements fit the candidate. Analytics and commercial targets are mid-level "
+        "and senior IC. Sales and customer-advisory roles are also valid targets. "
+        "Judge each role against the relevant track's evidence, not the resume headline.\n"
         f"Use this strict evidence-based rubric: {weights}. "
         "80+ means strong evidence-backed fit, 60-79 means competitive with gaps, below 60 "
         "means significant gaps. Never score above 90 unless every requirement "
@@ -2369,8 +2387,11 @@ def drop_below_floor(jobs):
 
 
 def delivery_priority(job):
-    """Prefer the last week, then fit score, with a stable tie break."""
-    return ((job.get("age_days") or 0) > MAX_JOB_AGE_DAYS,
+    """Strong matches first; then recency, requested role priority, and fit."""
+    priorities = PROFILE.get("title_priorities", {})
+    role_priority = min((priority for title, priority in priorities.items()
+                         if keyword_hits(job.get("title", ""), [title.lower()])), default=99)
+    return (not is_strong(job), (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
             -job.get("score", 0), str(job.get("id", "")))
 
 
@@ -2910,7 +2931,8 @@ def instability_warning(unstable):
 def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, warnings,
                    *, newly_found=0, already_seen=0, stale=0, below_floor=0,
                    boards_read=0, boards_total=0, boards_skipped=0,
-                   paused_feeds=(), unverified_date=0, unverified_fit=0):
+                   paused_feeds=(), unverified_date=0, unverified_fit=0,
+                   incomplete_descriptions=0, source_failures=()):
     """Confirm a quiet day out loud.
 
     A green workflow run with no new roles used to exit silently, which is
@@ -2935,12 +2957,25 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     for line in lines[1:]:
         log(line)
-    status = "No verified new roles for review today (0 of 5)."
+    count = f"0 of {MAX_JOBS_IN_DIGEST}"
+    status = f"No suitable new vacancies found ({count})."
+    if incomplete_descriptions:
+        status = f"Awaiting complete job descriptions: {incomplete_descriptions} ({count})."
+    elif unverified_fit:
+        status = f"Awaiting complete fit verification: {unverified_fit} ({count})."
+    elif unverified_date:
+        status = f"Unverified posting dates: {unverified_date} ({count})."
+    elif below_floor:
+        status = f"New vacancies had role or qualification mismatches ({count})."
+    elif already_seen:
+        status = f"No new suitable vacancies; previously sent jobs were excluded ({count})."
     if any(warning and warning.startswith("Matching evidence unavailable:") for warning in warnings):
         status = "Matching evidence unavailable; check your resume and profile."
     elif any(warning and warning.startswith("Fit ranking unavailable;") for warning in warnings):
         status = "Job matching temporarily unavailable; retrying next run."
     lines = [lines[0], status]
+    if source_failures or paused_feeds or boards_skipped:
+        lines.append("Search coverage incomplete: some sources failed, were quota-paused, or could not be read.")
     if worker_url:
         post_interactive_cards(
             worker_url,
@@ -2974,6 +3009,7 @@ def post_discord(webhook, lines):
 
 def main():
     global PROFILE
+    SOURCE_FAILURES.clear()
     PROFILE = load_profile()
     evidence = load_resume_evidence()
     evidence_ready = PROFILE is not DEFAULT_PROFILE and bool(evidence)
@@ -3207,7 +3243,7 @@ def main():
                        unverified_date=len(unverified_dates),
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
-                       paused_feeds=paused_feeds)
+                       paused_feeds=paused_feeds, source_failures=SOURCE_FAILURES)
         log("No new matching jobs. Heartbeat sent.")
         return
 
@@ -3289,7 +3325,7 @@ def main():
                        unverified_date=len(unverified_dates),
                        boards_read=boards_read, boards_total=boards_total,
                        boards_skipped=boards_total - boards_read,
-                       paused_feeds=paused_feeds)
+                       paused_feeds=paused_feeds, source_failures=SOURCE_FAILURES)
         # Cooling is named here because it is the one reason on this path that a
         # reader can act on: those postings are coming back, and a morning where
         # every candidate was one would otherwise read as a dead feed.
@@ -3331,8 +3367,7 @@ def main():
             below_floor.append(job)
         else:
             unverified.append(job)
-    strong_mode = bool(strong_candidates)
-    fresh = strong_candidates if strong_mode else viable
+    fresh = strong_candidates + viable
     for job in below_floor:
         log(f"Rejected {job['company']} - {job['title']}: final fit {job['score']}; "
             f"skipped for {FLOOR_COOLDOWN_DAYS} days")
@@ -3364,7 +3399,10 @@ def main():
                        stale=len(stale), below_floor=len(below_floor),
                        unverified_date=len(unverified_dates), unverified_fit=len(unverified),
                        boards_read=boards_read, boards_total=boards_total,
-                       boards_skipped=boards_total - boards_read, paused_feeds=paused_feeds)
+                       boards_skipped=boards_total - boards_read, paused_feeds=paused_feeds,
+                       incomplete_descriptions=sum(jd_grade(j.get("description") or "") != GRADE_FULL
+                                                   for j in unverified),
+                       source_failures=SOURCE_FAILURES)
         log("No verified strong matches or review candidates. Heartbeat sent.")
         return
 
@@ -3375,16 +3413,15 @@ def main():
             f"more than {MAX_JOBS_PER_COMPANY} from one employer today")
 
     fresh.sort(key=delivery_priority)
-    limit = MAX_JOBS_IN_DIGEST if strong_mode else MAX_FALLBACK_JOBS
+    limit = MAX_JOBS_IN_DIGEST
     deferred.extend(fresh[limit:])
-    if strong_mode:
-        deferred.extend(viable)
     fresh = fresh[:limit]
     for job in fresh:
-        job["tier"] = TIER_STRONG if strong_mode else TIER_CLOSEST
-    strong = fresh if strong_mode else []
-    competitive = [] if strong_mode else [j for j in fresh if j["score"] >= COMPETITIVE_MIN_SCORE]
-    review = [] if strong_mode else [j for j in fresh if j["score"] < COMPETITIVE_MIN_SCORE]
+        job["tier"] = TIER_STRONG if is_strong(job) else TIER_CLOSEST
+        job["application_action"] = "Apply first" if is_strong(job) else "Worth reviewing"
+    strong = [j for j in fresh if is_strong(j)]
+    competitive = [j for j in fresh if not is_strong(j) and j["score"] >= COMPETITIVE_MIN_SCORE]
+    review = [j for j in fresh if not is_strong(j) and j["score"] < COMPETITIVE_MIN_SCORE]
 
     # Persist full job/JD evidence before delivery. A later button click can
     # therefore tailor the actual captured posting rather than its title.
@@ -3392,18 +3429,12 @@ def main():
     write_snapshots(fresh, today)
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
-    shortlist_summary = None
-    if not strong_mode:
-        lines.append("Closest matches to review · posted within 30 days.")
-        lines.append(f"Shortlist: {len(fresh)} of {MAX_FALLBACK_JOBS} roles available for review today.")
-        if len(fresh) < MAX_FALLBACK_JOBS:
-            shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
+    lines.append(f"Shortlist: {len(fresh)} of {MAX_JOBS_IN_DIGEST} roles available for review today.")
+    lines.append("Apply first: strong matches. Worth reviewing: relevant options with gaps or questions shown.")
+    shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
-    by_company = {}
-    for j in fresh:
-        by_company.setdefault((j["tier"], j["company"]), []).append(j)
     last_tier = None
-    for (tier, comp), jobs in by_company.items():
+    for (tier, comp), jobs in groupby(fresh, key=lambda j: (j["tier"], j["company"])):
         if tier != last_tier:
             lines.append(f"\n**{tier}**")
             last_tier = tier
@@ -3437,10 +3468,10 @@ def main():
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
-                f"- **{j['title']}** — {j['location']} · fit {j['score']}{pay}\n"
+                f"- **{j['title']}** — {j['location']} · {j['application_action']} · fit {j['score']}{pay}\n"
                 f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
             )
-            if not strong_mode:
+            if check.get("strengths"):
                 for strength in check.get("strengths") or []:
                     quotes = [e["snippet"] for e in strength.get("evidence") or [] if e.get("source") == "resume"]
                     if quotes:
@@ -3456,7 +3487,7 @@ def main():
             strong=len(strong), competitive=len(competitive), review=len(review),
             tailored=0, tailor_failed=0,
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
-            fallback_delivered=0 if strong_mode else len(delivered_ids),
+            fallback_delivered=sum(j["id"] in delivered_ids for j in fresh if not is_strong(j)),
             source_yield=source_yield(all_jobs, discovered_new,
                                      [j for j in fresh if j["id"] in delivered_ids], paused_feeds, attempted_sources),
             below_floor=len(below_floor), deferred=len(deferred), unverified_fit=len(unverified),
@@ -3761,9 +3792,9 @@ ACTIVE_ATS_SOURCES = ("greenhouse,ashby,lever.co,workable,pinpoint,"
                       "workday,smartrecruiters,icims,oraclecloud,successfactors")
 
 
-# TITLE_INCLUDE as a Boolean the API can evaluate, so the tech filter runs
-# server-side and the free plan's 250-jobs-a-month allowance is not spent on
-# hotel and retail postings. Chained with <-> where a term is a phrase.
+# Target roles as a Boolean the API can evaluate, including commercial and
+# sales aliases from the profile. Avoid spending the limited page on unrelated
+# engineering disciplines.
 # Deliberately NOT the bare word "engineer". TITLE_INCLUDE can afford it because
 # LOCATION_INCLUDE, TITLE_EXCLUDE and the ranker all sit downstream of it for
 # free. Here every row costs allowance: the first filtered probe (7 Sep 2026)
@@ -3774,6 +3805,8 @@ ACTIVE_ATS_TITLE = (
     "'full stack' | fullstack | 'ai engineer' | 'llm' | 'ai product engineer' | "
     "'data analyst' | analytics | 'business intelligence' | 'power bi' | "
     "'solutions engineer' | 'ai solutions architect' | 'automation engineer'"
+    + "".join(" | '" + re.sub(r"[^a-z0-9 ]", " ", title.lower()) + "'"
+                            for title in PROFILE.get("title_priorities", {}))
 )
 
 
