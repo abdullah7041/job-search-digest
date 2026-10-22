@@ -76,24 +76,130 @@ class TestStrictAlerts(unittest.TestCase):
                 digest.apply_ranking([job], {job["id"]: {"score": score, "why": why}})
                 self.assertFalse(job["ranking_verified"])
 
+    def test_requested_role_families_are_not_discarded_before_ranking(self):
+        titles = (
+            "Sales Operations Analyst", "Sales Performance Analyst", "Commercial Analyst", "Commercial Business Analyst",
+            "Retail Business Analyst", "Data Analyst", "Business Data Analyst",
+            "Business Intelligence Analyst", "Reporting Analyst", "AI Automation Engineer",
+            "AI Automation Specialist", "AI Implementation Specialist", "AI Solutions Specialist",
+            "AI Product Engineer", "LLM Application Engineer", "Applied AI Engineer",
+            "Full-Stack Developer", "Product Engineer", "Customer Insights Analyst", "CRM Analyst",
+            "Senior Sales Specialist", "Senior Sales Advisor", "AI Solutions Engineer",
+            "Technical Solutions Consultant",
+        )
+        for title in titles:
+            with self.subTest(title=title):
+                self.assertTrue(digest.matches_filters(self.job(title=title)))
+        for title in ("Sales Manager", "Commercial Director", "Civil Engineer", "CRM Analyst - Dubai based"):
+            with self.subTest(title=title):
+                self.assertFalse(digest.matches_filters(self.job(title=title)))
+
+    def test_one_strong_match_is_filled_to_ten_with_review_candidates(self):
+        jobs = [self.job(str(n), company=f"Employer {n}") for n in range(12)]
+        scores = {str(n): 90 if n == 0 else 80 - n for n in range(12)}
+        body, row, seen, work = self.run_jobs(jobs, scores, {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["delivered"], 10)
+        self.assertEqual(row["strong"], 1)
+        self.assertEqual(row["fallback_delivered"], 9)
+        self.assertIn("10 of 10", body)
+        self.assertIn("Apply first", body)
+        self.assertIn("Worth reviewing", body)
+        for name in ("10", "11"):
+            self.assertNotIn(f"url:https://example.test/{name}", seen)
+            self.assertNotIn(digest.FLOOR_SEEN_PREFIX + f"url:https://example.test/{name}", seen)
+        with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
+            cards = json.load(handle)["jobs"]
+        self.assertEqual(cards[0]["source_id"], "0")
+        for card, action in ((cards[0], "Apply first"), (cards[1], "Worth reviewing")):
+            embed = fixtures.job_archive.job_card_payload(card)["embeds"][0]
+            self.assertIn(action, json.dumps(embed))
+            self.assertTrue(card["match_evidence"])
+
+    def test_review_candidates_follow_requested_role_priority(self):
+        jobs = [self.job("data", title="Data Analyst", company="Data Employer"),
+                self.job("commercial", title="Commercial Analyst", company="Commercial Employer"),
+                self.job("operations", title="Sales Operations Analyst", company="Sales Employer")]
+        body, row, _, work = self.run_jobs(jobs, {"data": 79, "commercial": 65, "operations": 60},
+                                         {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["delivered"], 3)
+        with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
+            cards = json.load(handle)["jobs"]
+        self.assertEqual([card["source_id"] for card in cards], ["operations", "commercial", "data"])
+
+    def test_ten_strong_jobs_fill_the_shortlist_before_review_candidates(self):
+        jobs = [self.job(str(n), company=f"Employer {n}") for n in range(12)]
+        jobs.append(self.job("review", title="Sales Operations Analyst", company="Sales Employer"))
+        scores = {str(n): 95 - n for n in range(12)}
+        scores["review"] = 79
+        _, row, seen, _ = self.run_jobs(jobs, scores, {j["title"]: VIABLE for j in jobs})
+        self.assertEqual(row["delivered"], 10)
+        self.assertEqual(row["fallback_delivered"], 0)
+        for name in ("10", "11", "review"):
+            self.assertNotIn(f"url:https://example.test/{name}", seen)
+            self.assertNotIn(digest.FLOOR_SEEN_PREFIX + f"url:https://example.test/{name}", seen)
+
+    def test_webhook_keeps_role_priority_when_an_employer_has_multiple_roles(self):
+        jobs = [self.job("operations", title="Sales Operations Analyst", company="Shared Employer"),
+                self.job("commercial", title="Commercial Analyst", company="Other Employer"),
+                self.job("data", title="Data Analyst", company="Shared Employer")]
+        body, _, _, _ = self.run_jobs(jobs, {"operations": 60, "commercial": 65, "data": 79},
+                                       {j["title"]: VIABLE for j in jobs})
+        self.assertLess(body.index("**Sales Operations Analyst**"), body.index("**Commercial Analyst**"))
+        self.assertLess(body.index("**Commercial Analyst**"), body.index("**Data Analyst**"))
+
+    def test_mixed_shortlist_counts_only_review_cards_accepted_by_delivery(self):
+        jobs = [self.job(name, company=f"Employer {name}") for name in ("strong", "review", "retry")]
+        received = []
+        def deliver(_url, _secret, snapshots, **kwargs):
+            received.extend(snapshots)
+            return {"posted": [snapshots[0]["job_key"], snapshots[1]["job_key"], kwargs["heartbeat"]["key"]],
+                    "existing": [], "in_progress": [], "retryable": [snapshots[2]["job_key"]], "failed": []}
+        env = dict(fixtures.TestEndToEnd.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
+                   WORKER_CALLBACK_SECRET="test-secret")
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=deliver):
+            _, row, seen, _ = self.run_jobs(jobs, {"strong": 90, "review": 79, "retry": 70},
+                                           {j["title"]: VIABLE for j in jobs}, env)
+        self.assertEqual(len(received), 3)
+        self.assertEqual(row["delivered"], 2)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertNotIn("url:https://example.test/retry", seen)
+
+    def test_empty_digest_explains_incomplete_descriptions(self):
+        body, row, seen, _ = self.run_jobs([self.job(description="Build Python apps.")], {"match": 90})
+        self.assertEqual(row["delivered"], 0)
+        self.assertEqual(seen, {})
+        self.assertIn("complete job descriptions", body)
+        self.assertIn("0 of 10", body)
+
+    def test_empty_digest_reports_failed_sources_and_clears_failures_next_run(self):
+        response = mock.Mock(status_code=503, text="Service unavailable")
+        company = {"name": "Example", "source": "greenhouse", "token": "example"}
+        with mock.patch.object(digest, "_get", return_value=response):
+            posts, work = fixtures.run_main(fixtures.TestEndToEnd.ENV, {}, jobs=[], companies=[company])
+        self.addCleanup(shutil.rmtree, work, ignore_errors=True)
+        self.assertIn("Search coverage incomplete", "\n".join(posts))
+        posts, _ = fixtures.run_main(fixtures.TestEndToEnd.ENV, {}, jobs=[], work=work)
+        self.assertNotIn("Search coverage incomplete", "\n".join(posts))
+
     def test_lower_configured_floor_cannot_relax_strong_match_gate(self):
         with mock.patch.object(digest, "MIN_DELIVER_SCORE", 40):
             _, row, _, _ = self.run_jobs([self.job()], {"match": 79})
         self.assertEqual(row["delivered"], 0)
 
-    def test_no_strong_matches_delivers_best_five_verified_viable_jobs(self):
-        jobs = [self.job(str(n), company=f"Employer {n}") for n in (42, 50, 60, 65, 70, 75, 79)]
+    def test_no_strong_matches_delivers_best_ten_verified_viable_jobs(self):
+        scores = (42, 50, 60, 65, 70, 71, 72, 73, 74, 75, 76, 77, 79)
+        jobs = [self.job(str(n), company=f"Employer {n}") for n in scores]
         checks = {j["title"]: VIABLE for j in jobs}
-        body, row, seen, _ = self.run_jobs(jobs, {str(n): n for n in (42, 50, 60, 65, 70, 75, 79)}, checks)
-        self.assertEqual(row["delivered"], 5)
-        self.assertEqual(row["fallback_delivered"], 5)
+        body, row, seen, _ = self.run_jobs(jobs, {str(n): n for n in scores}, checks)
+        self.assertEqual(row["delivered"], 10)
+        self.assertEqual(row["fallback_delivered"], 10)
         self.assertIn("Closest matches to review", body)
         self.assertNotIn("**Software Engineer 50**", body)
         self.assertIn("**Software Engineer 79**", body)
         self.assertNotIn("floor:url:https://example.test/50", seen)
         self.assertNotIn("url:https://example.test/50", seen)
 
-    def test_fallback_fills_five_from_30_days_after_recent_matches(self):
+    def test_review_shortlist_includes_30_day_roles_after_recent_matches(self):
         ages = {"recent": 7, "older_best": 8, "older_next": 14, "older_third": 21,
                 "oldest": 30, "deferred": 29, "stale": 31, "undated": None,
                 "future": -1}
@@ -103,11 +209,11 @@ class TestStrictAlerts(unittest.TestCase):
         scores = dict(recent=45, older_best=95, older_next=90, older_third=79,
                       oldest=70, deferred=60, stale=99, undated=99, future=99)
         body, row, seen, work = self.run_jobs(jobs, scores, {j["title"]: VIABLE for j in jobs})
-        self.assertEqual(row["fallback_delivered"], 5)
+        self.assertEqual(row["fallback_delivered"], 6)
         self.assertEqual(row["strong"], 0)
         self.assertIn("**Software Engineer oldest**", body)
-        self.assertNotIn("**Software Engineer deferred**", body)
-        for name in ("stale", "undated", "future", "deferred"):
+        self.assertIn("**Software Engineer deferred**", body)
+        for name in ("stale", "undated", "future"):
             self.assertNotIn(f"url:https://example.test/{name}", seen)
         with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
             cards = json.load(handle)["jobs"]
@@ -116,14 +222,14 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertTrue(all(card["tier"] == "Closest matches to review" for card in cards))
         self.assertIn("posted 30 days ago", body)
 
-    def test_recent_strong_match_still_suppresses_older_fallback(self):
+    def test_recent_strong_match_precedes_older_review_candidate(self):
         jobs = [self.job("recent"), self.job("older", first_published=(
             digest.riyadh_today() - datetime.timedelta(days=8)).isoformat())]
         body, row, _, _ = self.run_jobs(jobs, {"recent": 80, "older": 95},
                                        {j["title"]: VIABLE for j in jobs})
-        self.assertEqual(row["delivered"], 1)
-        self.assertEqual(row["fallback_delivered"], 0)
-        self.assertNotIn("**Software Engineer older**", body)
+        self.assertEqual(row["delivered"], 2)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertLess(body.index("**Software Engineer recent**"), body.index("**Software Engineer older**"))
 
     def test_recent_fallback_wins_employer_slots_before_older_higher_scores(self):
         jobs = [self.job(f"recent{n}") for n in range(3)] + [self.job(
@@ -136,7 +242,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertIn("**Software Engineer recent0**", body)
         self.assertNotIn("**Software Engineer older0**", body)
 
-    def test_fallback_fills_five_with_disclosed_gaps_and_keeps_real_scores(self):
+    def test_review_shortlist_keeps_disclosed_gaps_and_real_scores(self):
         scores = dict(degree=95, skill=85, experience=75, unclear=78, clean=65,
                       lower=50, wrong=39, unchecked=99, incomplete=99)
         jobs = [self.job(name, company=f"Employer {name}") for name in scores]
@@ -154,17 +260,17 @@ class TestStrictAlerts(unittest.TestCase):
             "evidence_needed": "Examples of delivery with a frontend team"}])
         checks["Software Engineer unchecked"] = fit_check.neutral_result("not checked: budget exhausted")
         body, row, seen, work = self.run_jobs(jobs, scores, checks)
-        self.assertEqual(row["fallback_delivered"], 5)
+        self.assertEqual(row["fallback_delivered"], 6)
         self.assertEqual(row["strong"], 0)
         self.assertEqual(row["unverified_fit"], 2)
         with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
             cards = json.load(handle)["jobs"]
         self.assertEqual([(card["source_id"], card["score"]) for card in cards],
-                         [("unclear", 78), ("degree", 69), ("skill", 69), ("clean", 65), ("experience", 55)])
+                         [("unclear", 78), ("degree", 69), ("skill", 69), ("clean", 65), ("experience", 55), ("lower", 50)])
         for card in cards:
             self.assertIn(f"url:https://example.test/{card['source_id']}", seen)
             self.assertNotIn(digest.FLOOR_SEEN_PREFIX + f"url:https://example.test/{card['source_id']}", seen)
-        for name in ("lower", "unchecked", "incomplete"):
+        for name in ("unchecked", "incomplete"):
             self.assertNotIn(f"url:https://example.test/{name}", seen)
             self.assertNotIn(digest.FLOOR_SEEN_PREFIX + f"url:https://example.test/{name}", seen)
         self.assertIn("Required degree absent", body)
@@ -176,7 +282,7 @@ class TestStrictAlerts(unittest.TestCase):
         degree_embed = fixtures.job_archive.job_card_payload(cards[1])["embeds"][0]
         self.assertIn("Required degree absent", json.dumps(degree_embed))
 
-    def test_fewer_than_five_review_jobs_are_delivered_without_padding(self):
+    def test_fewer_than_ten_review_jobs_are_delivered_without_padding(self):
         jobs = [self.job("viable"), self.job("wrong"), self.job("blocked"), self.job("unclear")]
         checks = {j["title"]: VIABLE for j in jobs}
         checks[jobs[2]["title"]] = dict(VIABLE, ceiling="mid", blockers=[{
@@ -188,7 +294,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["fallback_delivered"], 3)
         self.assertIn("**Software Engineer viable**", body)
         self.assertIn("**Software Engineer blocked**", body)
-        self.assertIn("3 of 5", body)
+        self.assertIn("3 of 10", body)
         self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.test/unclear", seen)
 
     def test_old_gap_cooldowns_do_not_hide_new_review_candidates(self):
@@ -222,13 +328,13 @@ class TestStrictAlerts(unittest.TestCase):
                 self.assertEqual(row["delivered"], 0)
                 self.assertIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.test/match", seen)
 
-    def test_any_strong_match_suppresses_fallback_without_cooling_viable_jobs(self):
+    def test_strong_and_review_candidates_can_share_the_shortlist(self):
         jobs = [self.job("strong"), self.job("viable")]
         checks = {j["title"]: VIABLE for j in jobs}
         body, row, seen, _ = self.run_jobs(jobs, {"strong": 80, "viable": 79}, checks)
-        self.assertEqual(row["delivered"], 1)
-        self.assertEqual(row["fallback_delivered"], 0)
-        self.assertNotIn("**Software Engineer viable**", body)
+        self.assertEqual(row["delivered"], 2)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertIn("**Software Engineer viable**", body)
         self.assertNotIn("floor:url:https://example.test/viable", seen)
 
     def test_fallback_employer_limit_does_not_consume_other_employer_slots(self):
@@ -257,7 +363,7 @@ class TestStrictAlerts(unittest.TestCase):
                                            {j["title"]: VIABLE for j in jobs}, env)
         self.assertEqual(row["fallback_delivered"], 1)
         self.assertIsNotNone(summaries[0])
-        self.assertIn("2 of 5", summaries[0]["content"])
+        self.assertIn("2 of 10", summaries[0]["content"])
         self.assertEqual(received[0]["tier"], "Closest matches to review")
         self.assertEqual(received[1]["first_published"], jobs[1]["first_published"])
         footer = fixtures.job_archive.job_card_payload(received[1])["embeds"][0]["footer"]["text"]
@@ -411,7 +517,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["delivered"], 0)
         self.assertEqual(row["unverified_date"], 2)
         self.assertEqual(seen, {})
-        self.assertIn("No verified new roles for review today (0 of 5).", body)
+        self.assertIn("Unverified posting dates: 2 (0 of 10).", body)
 
 
 class TestStrictPostingDates(unittest.TestCase):
