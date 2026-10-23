@@ -1,19 +1,19 @@
 {
 "active_ats": {
-"jobs_remaining": 198,
-"observed_at": 1792573337.6706018,
-"requests_remaining": 18,
-"reset_at": 1794071830.6706026
+"jobs_remaining": 188,
+"observed_at": 1792745970.3002594,
+"requests_remaining": 17,
+"reset_at": 1794071830.3002598
 },
 "indeed": {
-"observed_at": 1792659876.393513,
-"requests_remaining": 35,
-"reset_at": 1794084471.3935134
+"observed_at": 1792745972.5747604,
+"requests_remaining": 34,
+"reset_at": 1794084471.5747612
 },
 "jsearch": {
-"observed_at": 1792659874.2818367,
-"requests_remaining": 155,
-"reset_at": 1793185796.2818375
+"observed_at": 1792745968.303107,
+"requests_remaining": 153,
+"reset_at": 1793185796.3031075
 },
 "linkedin_api": {
 "jobs_remaining": 188,
