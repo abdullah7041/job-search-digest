@@ -13,16 +13,19 @@ JD_MIN_CHARS = 400
 JD_MIN_WORDS = 60
 RESPONSIBILITY_MARKERS = ("responsibil", "you will", "duties", "about the role")
 REQUIREMENT_MARKERS = ("requirement", "qualification", "experience", "skills")
+RESPONSIBILITY_HEADINGS = (
+    "what you'll do", "what you’ll do", "what you will do", "your impact", "job description",
+)
 
 # The headings a real posting puts in front of the part that states what the job
 # actually is. Everything above the first one is recruiting copy: culture, perks,
 # and how much the employer will invest in you. Ordering here does not matter --
 # whichever appears earliest in the text wins.
 SIGNAL_HEADINGS = (
-    "your impact", "what you'll do", "what you will do", "what youll do",
+    "your impact", "what you'll do", "what you’ll do", "what you will do", "what youll do",
     "responsibilities", "requirements", "qualifications", "who you are",
     "your profile", "what we're looking for", "what we are looking for",
-    "what you bring", "about the role", "the role", "skills", "must have",
+    "what you bring", "about the role", "the role", "skills", "must have", "job description",
 )
 
 # Aggregators hand over a paragraph of marketing copy and call it a job
@@ -59,7 +62,9 @@ def jd_completeness_failures(jd_text: str) -> list[str]:
     if len(normalized) < JD_MIN_CHARS or len(re.findall(r"\b\w+\b", normalized)) < JD_MIN_WORDS:
         failures.append("too_short")
     lowered = normalized.lower()
-    if not any(marker in lowered for marker in RESPONSIBILITY_MARKERS):
+    if (not any(marker in lowered for marker in RESPONSIBILITY_MARKERS)
+            and not any(match.group(1).lower() in RESPONSIBILITY_HEADINGS
+                        for match in SIGNAL_RE.finditer(jd_text or ""))):
         failures.append("responsibilities_not_evidenced")
     if not any(marker in lowered for marker in REQUIREMENT_MARKERS):
         failures.append("requirements_not_evidenced")
@@ -193,7 +198,7 @@ def jd_grade(jd_text: str) -> str:
     normalized = " ".join(text.split())
     if not normalized:
         return GRADE_MISSING
-    if jd_completeness_failures(normalized):
+    if jd_completeness_failures(text):
         return GRADE_INCOMPLETE
     if (len(normalized) < TEASER_MIN_CHARS
             and len(signal_headings(text)) < TEASER_MIN_HEADINGS):

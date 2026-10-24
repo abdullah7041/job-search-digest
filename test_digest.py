@@ -252,6 +252,75 @@ class TestGetDescription(unittest.TestCase):
         with mock.patch.object(digest, "_get", side_effect=digest.requests.ConnectionError("down")):
             self.assertEqual(digest.get_description(job), "")
 
+    def test_partial_inline_text_is_recovered_from_the_posting(self):
+        job = {"id": "1", "title": "Data Analyst", "company": "Example",
+               "description": "Build Power BI reports.", "source": "jsearch",
+               "url": "https://example.test/jobs/1"}
+        response = self._resp({})
+        response.text = '<script type="application/ld+json">' + json.dumps({
+            "@type": "JobPosting", "description": FULL_JD}) + '</script>'
+        with mock.patch.object(digest, "_get", return_value=response):
+            description = digest.get_description(job)
+        self.assertEqual(description, FULL_JD[:digest.JD_MAX_CHARS])
+        self.assertEqual(job["description"], FULL_JD)
+
+    def test_failed_partial_text_recovery_preserves_the_original(self):
+        job = {"id": "1", "title": "Data Analyst", "company": "Example",
+               "description": "Build Power BI reports.", "source": "jsearch",
+               "url": "https://example.test/jobs/1"}
+        response = self._resp({})
+        response.status_code = 429
+        response.text = "Too many requests"
+        with mock.patch.object(digest, "_get", return_value=response):
+            description = digest.get_description(job)
+        self.assertEqual(description, "Build Power BI reports.")
+
+    def test_partial_text_recovery_does_not_use_another_employers_posting(self):
+        job = {"id": "1", "title": "Data Analyst", "company": "Example Labs",
+               "description": "Build Power BI reports.", "source": "jsearch",
+               "url": "https://example.test/jobs/1"}
+        def get(url):
+            response = self._resp({"content": FULL_JD})
+            response.text = '<a href="https://boards.greenhouse.io/othercompany/jobs/99">Other jobs</a>'
+            return response
+        with mock.patch.object(digest, "_get", side_effect=get):
+            description = digest.get_description(job)
+        self.assertEqual(description, "Build Power BI reports.")
+        self.assertNotIn("apply_url", job)
+
+
+# Synthetic posting with the structure used by the held Workable/LinkedIn jobs.
+TASK_HEADING_JD = (
+    "Our reporting team builds practical dashboards for commercial operations and customer accounts.\n"
+    "{heading}\n"
+    "Build Power BI dashboards for weekly sales performance and inventory reporting. "
+    "Analyze customer segments, pricing trends, product demand, and operational waste. "
+    "Design useful data models, validate report accuracy with business users, document the process, "
+    "and maintain scheduled refreshes so the team can act on reliable information.\n"
+    "Requirements\n"
+    "Experience building Power BI dashboards and communicating business insights is required. "
+    "Use Excel and SQL to prepare data, investigate discrepancies, and explain findings. "
+    "Work independently with sales colleagues and support recurring reporting improvements."
+)
+
+
+class TestPostingTaskHeadings(unittest.TestCase):
+    def test_complete_postings_with_normal_task_headings_are_usable(self):
+        for heading in ("What you'll do", "What You’ll Do", "What You Will Do", "Job Description:"):
+            with self.subTest(heading=heading):
+                text = TASK_HEADING_JD.format(heading=heading)
+                self.assertNotIn("too_short", job_archive.jd_completeness_failures(text))
+                self.assertEqual(job_archive.jd_completeness_failures(text), [])
+                self.assertEqual(job_archive.jd_grade(text), "full")
+                snapshot = job_archive.make_snapshot({"description": text}, "2026-10-24T00:00:00Z")
+                self.assertEqual(snapshot["jd"]["status"], "captured")
+
+    def test_prose_mentions_of_task_headings_do_not_make_marketing_copy_complete(self):
+        text = ("We will explain what you'll do when you join our community and share the job description later. "
+                "Our people value experience, learning, collaboration, and benefits. ") * 12
+        self.assertIn("responsibilities_not_evidenced", job_archive.jd_completeness_failures(text))
+        self.assertNotEqual(job_archive.jd_grade(text), "full")
+
 
 # A posting shaped like the real ones: recruiting copy first, the job second.
 # The McKinsey posting archived on 2026-08-20 puts "Skills" at character 1931,

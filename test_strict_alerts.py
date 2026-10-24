@@ -171,6 +171,15 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertIn("complete job descriptions", body)
         self.assertIn("0 of 10", body)
 
+    def test_complete_task_heading_postings_reach_the_review_shortlist(self):
+        job = self.job(title="Power BI Developer",
+                       description=fixtures.TASK_HEADING_JD.format(heading="What You’ll Do"))
+        body, row, seen, _ = self.run_jobs([job], {"match": 68}, {job["title"]: VIABLE})
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["unverified_fit"], 0)
+        self.assertIn("**Power BI Developer**", body)
+        self.assertIn("url:https://example.test/match", seen)
+
     def test_empty_digest_reports_failed_sources_and_clears_failures_next_run(self):
         response = mock.Mock(status_code=503, text="Service unavailable")
         company = {"name": "Example", "source": "greenhouse", "token": "example"}

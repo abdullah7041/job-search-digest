@@ -46,7 +46,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
-from job_archive import (GRADE_FULL, GRADE_TEASER, jd_grade, jd_requirements, jd_signal,
+from job_archive import (GRADE_FULL, GRADE_TEASER, jd_completeness_failures, jd_grade, jd_requirements, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 import fit_check
 from fit_check import check_jobs
@@ -2022,6 +2022,12 @@ def get_description(job):
         # JSearch job takes, so leaving it here is what kept the apply-link
         # rescue from ever running on the postings it exists for.
         rescue_apply_link(job)
+        # A provider snippet is not a completed fetch. Recover the full posting
+        # before the completeness gate holds an otherwise relevant job forever.
+        if jd_grade(job["description"]) != GRADE_FULL and job.get("url"):
+            recovered = fetch_posting_page(job)
+            if jd_grade(recovered) == GRADE_FULL:
+                job["description"] = recovered
         return job["description"][:JD_MAX_CHARS]
     src, token = job.get("source"), job.get("token")
     try:
@@ -2070,6 +2076,12 @@ def fetch_posting_page(job):
     """
     posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
     record_apply_link(job, posting["employer_url"], posting["employer_token"])
+    # A related-jobs link can point at a different employer. Refusing that
+    # apply link must also refuse text recovered through the same ATS hop.
+    if (posting.get("text_source") == "ats" and posting["employer_url"]
+            and canonical_url(posting["employer_url"]) != canonical_url(job.get("url"))
+            and not employer_matches_token(job.get("company"), posting["employer_token"])):
+        return ""
     return posting["text"]
 
 
@@ -3377,6 +3389,9 @@ def main():
         log(f"Held for fit verification: {job['company']} - {job['title']}; "
             f"score={job['score']}, ranked={job.get('ranking_verified', False)}, "
             f"JD={jd_grade(job.get('description') or '')}, "
+            f"JD_chars={len(job.get('description') or '')}, "
+            f"JD_issues={jd_completeness_failures(job.get('description') or '')!r}, "
+            f"url={apply_link(job)!r}, "
             f"track={job.get('track')!r}, ceiling={check.get('ceiling', 'unknown')}, "
             f"note={check.get('note', '')!r}, unclear={check.get('unclear', [])!r}, "
             f"resume strengths={len(check.get('strengths') or [])}")
