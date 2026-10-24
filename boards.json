@@ -954,6 +954,10 @@
     "company": "NCS Group",
     "miss": "2026-10-08"
   },
+  "ndpinvestment": {
+    "company": "NDP Investment",
+    "miss": "2026-10-24"
+  },
   "neoleap": {
     "company": "neoleap",
     "found": "2026-09-16",
@@ -961,6 +965,10 @@
     "roles": 0,
     "source": "workable",
     "token": "neoleap"
+  },
+  "neostats": {
+    "company": "NeoStats",
+    "miss": "2026-10-24"
   },
   "netbuilder": {
     "company": "NETbuilder",
@@ -1057,6 +1065,10 @@
     "company": "PULSE (MENA)",
     "miss": "2026-10-14"
   },
+  "pyramidconsulting": {
+    "company": "Pyramid Consulting, Inc",
+    "miss": "2026-10-24"
+  },
   "qanoniah": {
     "company": "Qanoniah قانونية",
     "found": "2026-10-08",
@@ -1107,6 +1119,10 @@
     "roles": 0,
     "source": "workable",
     "token": "mckinsey"
+  },
+  "rackspacetechnology": {
+    "company": "Rackspace Technology",
+    "miss": "2026-10-24"
   },
   "recruitis": {
     "company": "Recruitis",
@@ -1234,6 +1250,10 @@
   "scoutglobal": {
     "company": "Scout Global",
     "miss": "2026-09-13"
+  },
+  "sealymattressmiddleeast": {
+    "company": "Sealy Mattress Middle East",
+    "miss": "2026-10-24"
   },
   "sensys": {
     "company": "SENSYS Inc.",
