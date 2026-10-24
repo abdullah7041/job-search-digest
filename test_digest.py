@@ -3063,7 +3063,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("url:https://example.com/e", seen,
                          "a below-floor score must not be remembered as a delivery")
 
-    def test_a_blocked_job_is_excluded_after_qualification_caps(self):
+    def test_a_qualification_gap_without_fit_evidence_is_held_after_caps(self):
         ranking = {"jsearch_b": {"score": 93, "why": "Supported role"}}
         blocked = dict(CLEAN_CHECK, ceiling="low", blockers=[
             {"title": "Required qualification absent", "severity": "high"}])
@@ -3072,7 +3072,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertNotIn("**Senior Software Engineer (AI Systems)**", "\n".join(posts))
         with open(os.path.join(work, "seen.json"), encoding="utf-8") as handle:
             seen = json.load(handle)
-        self.assertIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.com/b", seen)
+        self.assertNotIn(digest.FLOOR_SEEN_PREFIX + "url:https://example.com/b", seen)
         self.assertNotIn("url:https://example.com/b", seen)
 
     def _snapshot(self, work, title):
