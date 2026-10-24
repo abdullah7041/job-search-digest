@@ -274,7 +274,7 @@ MAX_JOBS_IN_DIGEST = 10
 # ceiling of its own, so without this the company loop grows without bound
 # against RUN_BUDGET_SECONDS. Overflow is served least-recently-read first on
 # following runs, so this remains a time backstop rather than a starvation rule.
-MAX_BOARDS_PER_RUN = 50
+MAX_BOARDS_PER_RUN = 150
 # One employer must not be able to fill a morning on its own. Board discovery
 # works well enough that it can: Innovationteam, found 3 Sep 2026, supplied 9 of
 # that evening's 12 delivered cards from a board of 40 roles, with 7 more of its
@@ -392,9 +392,9 @@ JD_SEEN_PREFIX = "jd:"
 # under the 120-day TTL, because scores move: the archives hold one description
 # scored 40, 40, 40, 45, 50, 50 and 75 unchanged. Long enough not to re-rank the
 # same reject every morning, short enough that one bad number is not a verdict.
-# Previous cooldowns also rejected reviewable qualification gaps. Start a new
+# Previous cooldowns also rejected jobs awaiting positive fit evidence. Start a new
 # namespace so those roles can be checked again without forgetting deliveries.
-FLOOR_SEEN_PREFIX = "floor:review:"
+FLOOR_SEEN_PREFIX = "floor:verified:"
 FLOOR_COOLDOWN_DAYS = 7
 USER_AGENT = "job-digest/1.0 (personal job search)"
 
@@ -3375,13 +3375,20 @@ def main():
             strong_candidates.append(job)
         elif is_viable(job):
             viable.append(job)
-        elif (job.get("fit_check") or {}).get("blockers"):
+        elif job["score"] < 40 or any(
+                b.get("type") in ("location_work_authorization", "role_scope_mismatch")
+                for b in (job.get("fit_check") or {}).get("blockers") or []):
             below_floor.append(job)
         else:
             unverified.append(job)
     fresh = strong_candidates + viable
     for job in below_floor:
+        check = job.get("fit_check") or {}
         log(f"Rejected {job['company']} - {job['title']}: final fit {job['score']}; "
+            f"track={job.get('track')!r}, "
+            f"blockers={[(b.get('type'), b.get('title')) for b in check.get('blockers') or []]!r}, "
+            f"resume strengths={len(check.get('strengths') or [])}, "
+            f"url={apply_link(job)!r}; "
             f"skipped for {FLOOR_COOLDOWN_DAYS} days")
         defer_below_floor(seen, job, today)
     for job in unverified:

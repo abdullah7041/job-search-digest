@@ -314,6 +314,8 @@ class TestStrictAlerts(unittest.TestCase):
         today = digest.riyadh_today().isoformat()
         legacy = {"floor:url:https://example.test/match": today,
                   "floor:" + digest.description_key(job): today,
+                  "floor:review:url:https://example.test/match": today,
+                  "floor:review:" + digest.description_key(job): today,
                   "url:https://example.test/already-delivered": today}
         with open(os.path.join(work, "seen.json"), "w", encoding="utf-8") as handle:
             json.dump(legacy, handle)
@@ -325,6 +327,18 @@ class TestStrictAlerts(unittest.TestCase):
     def test_fallback_requires_resume_evidence_not_just_a_clean_check(self):
         _, row, seen, _ = self.run_jobs([self.job()], {"match": 79})
         self.assertEqual(row["delivered"], 0)
+        self.assertEqual(seen, {})
+
+    def test_missing_strength_evidence_with_ordinary_gaps_remains_retryable(self):
+        job = self.job()
+        check = dict(CLEAN, ceiling="low", blockers=[
+            {"type": "missing_required_skill", "severity": "medium", "title": "SMAX integration unproven"},
+            {"type": "domain_gap", "severity": "medium", "title": "ITSM reporting unproven"},
+        ])
+        _, row, seen, _ = self.run_jobs([job], {"match": 68}, {job["title"]: check})
+        self.assertEqual(row["delivered"], 0)
+        self.assertEqual(row["unverified_fit"], 1)
+        self.assertEqual(row["below_floor"], 0)
         self.assertEqual(seen, {})
 
     def test_review_shortlist_excludes_confirmed_location_and_role_mismatches(self):
