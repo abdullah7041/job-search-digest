@@ -55,7 +55,8 @@ function jdIsComplete(value) {
   const normalized = (value || "").trim().replace(/\s+/g, " ");
   const words = normalized.match(/\b\w+\b/g) || [];
   const lowered = normalized.toLowerCase();
-  const hasResponsibilities = ["responsibil", "you will", "duties", "about the role"].some((marker) => lowered.includes(marker));
+  const hasTaskHeading = /(?:^|[\n\r.;:!?•*\-]\s*)(?:what you['’]ll do|what you will do|your impact|job description)\b/i.test(value || "");
+  const hasResponsibilities = hasTaskHeading || ["responsibil", "you will", "duties", "about the role"].some((marker) => lowered.includes(marker));
   const hasRequirements = ["requirement", "qualification", "experience", "skills"].some((marker) => lowered.includes(marker));
   return normalized.length >= 400 && words.length >= 60 && hasResponsibilities && hasRequirements;
 }

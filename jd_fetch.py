@@ -309,7 +309,7 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
         if log:
             log(message)
 
-    found = {"text": "", "employer_url": "", "employer_token": ""}
+    found = {"text": "", "employer_url": "", "employer_token": "", "text_source": ""}
     if not url:
         return found
 
@@ -338,6 +338,7 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
     if text and not jd_completeness_failures(text):
         note(f"JD read from structured data for {url}")
         found["text"] = text[:limit]
+        found["text_source"] = "structured_data"
         return found
 
     # The relister did not publish it, but it may have linked to whoever did.
@@ -349,12 +350,14 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
         if text and not jd_completeness_failures(text):
             note(f"JD read from {reference['source']} for {url}")
             found["text"] = text[:limit]
+            found["text_source"] = "ats"
             return found
 
     text = readable_text(page_html) if page_html else ""
     if text and not jd_completeness_failures(text):
         note(f"JD read from page text for {url}")
         found["text"] = text[:limit]
+        found["text_source"] = "page"
         return found
 
     note(f"WARN no complete job description found at {url}")

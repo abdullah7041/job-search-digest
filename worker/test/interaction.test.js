@@ -191,6 +191,37 @@ test("rejects a hash-valid JD fragment even if it is labeled captured", async ()
   );
 });
 
+test("tailoring accepts complete postings with normal task headings", async () => {
+  for (const heading of ["What you'll do", "What You’ll Do", "What You Will Do", "Job Description:"]) {
+    const text = `Our reporting team supports commercial operations and customer accounts.\n${heading}\n` +
+      "Build Power BI dashboards for weekly sales performance and inventory reporting. " +
+      "Analyze customer segments, pricing trends, product demand, and operational waste. " +
+      "Design useful data models, validate report accuracy with business users, document the process, " +
+      "and maintain scheduled refreshes so the team can act on reliable information.\nRequirements\n" +
+      "Experience building Power BI dashboards and communicating business insights is required. " +
+      "Use Excel and SQL to prepare data, investigate discrepancies, and explain findings. " +
+      "Work independently with sales colleagues and support recurring reporting improvements.";
+    const snapshot = { job_key: "linkedin_api:reporting", jd: {
+      status: "captured", text, sha256: createHash("sha256").update(text).digest("hex"),
+    } };
+    const result = await tailoringInputFromSnapshotRow(
+      { job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) }, snapshot.job_key,
+    );
+    assert.equal(result.job_snapshot.jd.text, text);
+  }
+});
+
+test("tailoring rejects marketing prose that only mentions task headings", async () => {
+  const text = ("We will explain what you'll do when you join our community and share the job description later. " +
+    "Our people value experience, learning, collaboration, and benefits. ").repeat(12);
+  const snapshot = { job_key: "linkedin_api:teaser", jd: {
+    status: "captured", text, sha256: createHash("sha256").update(text).digest("hex"),
+  } };
+  await assert.rejects(tailoringInputFromSnapshotRow(
+    { job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) }, snapshot.job_key,
+  ), /complete job description/i);
+});
+
 test("persists the runner's explicit completed or failed status", () => {
   assert.equal(callbackTaskStatus({ status: "completed" }), "completed");
   assert.equal(callbackTaskStatus({ status: "failed" }), "failed");
