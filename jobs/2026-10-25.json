@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-25",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "active_ats:2423144946",
+      "captured_at": "2026-10-25T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2423144946",
+      "title": "Sales Specialist",
+      "company": "PepsiCo",
+      "location": "Governorate of Jidda, Makkah Region, Saudi Arabia",
+      "url": "https://www.pepsicojobs.com/main/jobs/478853",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "score": 50,
+      "why": "Field merchandising and in-store sampling role, not commercial analytics or advisory.",
+      "ranking_verified": true,
+      "track": "Sales and customer advisory",
+      "categories": {
+        "hard_skills": {
+          "score": 18,
+          "max": 40,
+          "note": "Involves retail store visits, planograms, and physical stock rotation."
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Retail/commercial background partially relevant, but role is field merchandising"
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No specific academic degree required."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Located in Jeddah, outside candidate's base in Riyadh/Eastern Province."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Experience with Competitor and Market Intelligence",
+          "resume_quote": "Produce competitor and pricing intelligence on product launches, category trends, and price movements to inform assortment and pricing decisions."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Missing Valid Driving License"
+      ],
+      "unclear": [
+        {
+          "topic": "Location and willingness to relocate",
+          "reason": "The candidate is based in Riyadh/Al-Ahsa, whereas the role is located in the Governorate of Jidda.",
+          "evidence_needed": "Confirmation of location flexibility or willingness to work in Jeddah."
+        },
+        {
+          "topic": "Field merchandising and planogram adherence",
+          "reason": "The candidate has commercial analytics and retail sales specialist experience, but field execution of planograms is not explicitly detailed.",
+          "evidence_needed": "Direct evidence of conducting in-store retail merchandising, shelf placement, and planogram compliance."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-20",
+      "age_days": 5,
+      "jd": {
+        "status": "captured",
+        "text": "Overview\n\nWe Are PepsiCo \nPepsiCo products are enjoyed by consumers more than one billion times a day in more than 200 countries and territories around the world. PepsiCo generated more than $79 billion in net revenue in 2021, driven by a complementary beverage and convenient foods portfolio that includes LAY’S ®️, DORITOS ®️, CHEETOS ®️, GATORADE ®️, PEPSI ®️, QUAKER ®️ and more. PepsiCo's product portfolio includes a wide range of enjoyable foods and beverages, including many iconic brands that generate more than $1 billion each in estimated annual retail sales. \nGuiding PepsiCo is our vision to Be the Global Leader in Beverages and Convenient Foods by Winning with PepsiCo Positive (pep+). Pep+ is our strategic end-to-end transformation that puts sustainability and human capital at the center of how we will create value and growth by operating within planetary boundaries and inspiring positive change for planet and people. \nOur employees drive our culture. No two days are the same; we are dynamic and full of passionate teams that embrace new ideas through our collaborative spirit. At PepsiCo, we know that our company can only succeed when our associates and the society we serve flourishes. We are committed to fostering a diverse workforce by creating a collaborative, equitable and inclusive space where everyone, regardless of what we look like, where we come from or who we love, has a voice. At PepsiCo we create a Space to be y( )u. \nLearn more about our culture and life at PepsiCo: https://stories.pepsicojobs.com/ \nJoin PepsiCo, dare to transform. \n\nResponsibilities\n\nJOB PURPOSE\nAs part of the sales team the primary role of this position is to maximize our on-shelf presence in all outlets \nserved by the merchandiser. Additionally, when required the merchandiser will conduct in-store sampling \nsessions and in-store sampling and/or promotions. Planograms must be adhered to for both on and off shelf \ndisplays. Any non-compliance to the agreed arrangements must be reported to the pre-seller immediately. In \naddition to these duties the merchandiser is required to supply the pre-seller with the latest market \ninformation in order to take advantage of any selling opportunities.\nAccountabilities:\n Call on specific OT outlets as per daily journey plan provided by your supervisor.\n Merchandize SSFL products within your OT stores in the various access points, shelf, stand, floor display.\n Place POS material wherever applicable next to our SSFL displays.\n Ensure all access points are merchandized as per approved planograms.\n Rotate product using FIFO method, and remove sub-standard products.\n Maintain clean and fresh stock of SSF products on the shelf at all times.\n Monitor and report competitive activities.\n Report any deviations from agreed terms with your assigned OT customer / outlet.\n Report daily activities of the prior day to your supervisor.\n Participate in sampling / redemption campaigns when required.\n Maintain appropriate personal appearance, and professional behavior in line with Frito Lay code of conduct.\nKey Performance Measures:\n Execution Standard.\n LTA enforcement.\n Journey plan adherence.\n\nQualifications\n\nEXPERIENCE / COMPETENCIES REQUIRED\n Valid driving license.\n Service-level oriented.\n Strong communication and interpersonal skills",
+        "sha256": "57e9bbede0c07f27070dab20cf214ba7433d9695ee3fe5ba6cefa1c393a2f791",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
