@@ -2530,5 +2530,78 @@
 "undated": 1,
 "unverified_date": 1,
 "unverified_fit": 8
+},
+{
+"avg_score": 38.6,
+"below_floor": 7,
+"competitive": 0,
+"cooling": 0,
+"date": "2026-10-27",
+"delivered": 0,
+"dropped_stale": 47,
+"fallback_delivered": 0,
+"fetched": 1646,
+"link_closed": 0,
+"link_unknown": 1,
+"matched": 117,
+"new": 18,
+"relisted": 1,
+"review": 0,
+"source_yield": {
+"active_ats": {
+"delivered": 0,
+"fetched": 9,
+"new": 8,
+"quota_paused": false
+},
+"ashby": {
+"delivered": 0,
+"fetched": 146,
+"new": 3,
+"quota_paused": false
+},
+"greenhouse": {
+"delivered": 0,
+"fetched": 919,
+"new": 0,
+"quota_paused": false
+},
+"indeed": {
+"delivered": 0,
+"fetched": 8,
+"new": 3,
+"quota_paused": false
+},
+"jsearch": {
+"delivered": 0,
+"fetched": 4,
+"new": 0,
+"quota_paused": false
+},
+"lever": {
+"delivered": 0,
+"fetched": 21,
+"new": 0,
+"quota_paused": false
+},
+"pinpoint": {
+"delivered": 0,
+"fetched": 70,
+"new": 0,
+"quota_paused": false
+},
+"workable": {
+"delivered": 0,
+"fetched": 469,
+"new": 5,
+"quota_paused": false
+}
+},
+"strong": 0,
+"tailor_failed": 0,
+"tailored": 0,
+"undated": 2,
+"unverified_date": 2,
+"unverified_fit": 11
 }
 ]
