@@ -192,6 +192,20 @@ class TestStrictAlerts(unittest.TestCase):
         posts, _ = fixtures.run_main(fixtures.TestEndToEnd.ENV, {}, jobs=[], work=work)
         self.assertNotIn("Search coverage incomplete", "\n".join(posts))
 
+    def test_a_nonempty_shortlist_still_reports_source_failures(self):
+        job = self.job("coverage")
+        response = mock.Mock(status_code=503, text="Unavailable")
+        company = {"name": "Failed Employer", "source": "greenhouse", "token": "failed"}
+        with mock.patch.object(digest, "_get", return_value=response):
+            posts, work = fixtures.run_main(fixtures.TestEndToEnd.ENV,
+                {job["id"]: {"score": 95, "why": "Supported fit", "track": "Software engineering, front and back"}},
+                jobs=[job], companies=[company])
+        self.addCleanup(shutil.rmtree, work, ignore_errors=True)
+        body = "\n".join(posts)
+        self.assertIn("**Software Engineer coverage**", body)
+        self.assertIn("Coverage: 0/1 boards read successfully", body)
+        self.assertIn("Failed sources: Failed Employer", body)
+
     def test_lower_configured_floor_cannot_relax_strong_match_gate(self):
         with mock.patch.object(digest, "MIN_DELIVER_SCORE", 40):
             _, row, _, _ = self.run_jobs([self.job()], {"match": 79})
