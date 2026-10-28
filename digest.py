@@ -45,7 +45,7 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
+from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, jsonld_posting_countries, strip_html
 from job_archive import (GRADE_FULL, GRADE_TEASER, jd_completeness_failures, jd_grade, jd_requirements, jd_signal,
                          make_snapshot, score_instability, write_snapshots)
 import fit_check
@@ -1573,6 +1573,8 @@ def location_conflict(title):
 def matches_filters(job):
     title = job["title"].lower()
     loc = job["location"].lower()
+    if posting_location_conflict(job):
+        return False
     if not any(k in loc for k in LOCATION_INCLUDE):
         return False
     if location_conflict(job["title"]):
@@ -1588,6 +1590,13 @@ def matches_filters(job):
             or keyword_hits(title, [t.lower() for t in PROFILE.get("title_priorities", {})])):
         return False
     return True
+
+
+def posting_location_conflict(job):
+    countries = job.get("posting_countries") or []
+    return bool(countries and not any(
+        country.upper() == "SA" or "saudi" in country.lower() or "السعودية" in country
+        for country in countries))
 
 
 def canonical_url(url):
@@ -2075,6 +2084,7 @@ def fetch_posting_page(job):
     ones that pay for it.
     """
     posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    job["posting_countries"] = posting.get("posting_countries") or job.get("posting_countries", [])
     record_apply_link(job, posting["employer_url"], posting["employer_token"])
     # A related-jobs link can point at a different employer. Refusing that
     # apply link must also refuse text recovered through the same ATS hop.
@@ -2147,6 +2157,7 @@ def rescue_apply_link(job):
     page_html = ""
     if response.status_code == 200:
         page_html = response.text
+        job["posting_countries"] = jsonld_posting_countries(page_html)
     else:
         # Probed live on 2026-08-29: Glassdoor, Jooble and learn4good all answer
         # 403 to a datacenter IP, and a runner fares no better than the laptop
@@ -3268,6 +3279,11 @@ def main():
     else:
         log(f"Run budget spent: {len(fresh)} job(s) scored on the description "
             "their source supplied, without enrichment")
+
+    for job in fresh:
+        if posting_location_conflict(job):
+            log(f"DROP conflicting posting country {job['posting_countries']!r}: {job['company']} — {job['title']}")
+    fresh = [job for job in fresh if not posting_location_conflict(job)]
 
     # A rescued apply link is BUILT from a token and a posting id, not copied
     # from a page, so it has never been fetched at the point enrichment records

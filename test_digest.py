@@ -306,7 +306,8 @@ TASK_HEADING_JD = (
 
 class TestPostingTaskHeadings(unittest.TestCase):
     def test_complete_postings_with_normal_task_headings_are_usable(self):
-        for heading in ("What you'll do", "What You’ll Do", "What You Will Do", "Job Description:"):
+        for heading in ("What you'll do", "What You’ll Do", "What You Will Do", "Job Description:",
+                        "THE ROLE: DEPLOYING IMPACT"):
             with self.subTest(heading=heading):
                 text = TASK_HEADING_JD.format(heading=heading)
                 self.assertNotIn("too_short", job_archive.jd_completeness_failures(text))
@@ -320,6 +321,18 @@ class TestPostingTaskHeadings(unittest.TestCase):
                 "Our people value experience, learning, collaboration, and benefits. ") * 12
         self.assertIn("responsibilities_not_evidenced", job_archive.jd_completeness_failures(text))
         self.assertNotEqual(job_archive.jd_grade(text), "full")
+
+    def test_structured_posting_country_can_contradict_provider_location(self):
+        import jd_fetch
+        page = '<script type="application/ld+json">' + json.dumps({
+            "@type": "JobPosting", "description": TASK_HEADING_JD.format(heading="Responsibilities"),
+            "jobLocation": {"address": {"addressLocality": "Casablanca", "addressCountry": "MA"}},
+        }) + '</script>'
+        self.assertEqual(jd_fetch.jsonld_posting_countries(page), ["MA"])
+        self.assertEqual(jd_fetch.jsonld_posting_countries("<html>No metadata</html>"), [])
+        job = dict(REAL_JOBS[1], title="Data Analyst", location="Riyadh, Saudi Arabia")
+        self.assertTrue(digest.matches_filters(dict(job, posting_countries=["SA"])))
+        self.assertFalse(digest.matches_filters(dict(job, posting_countries=["MA"])))
 
 
 # A posting shaped like the real ones: recruiting copy first, the job second.

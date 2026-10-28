@@ -11,10 +11,10 @@ import re
 
 JD_MIN_CHARS = 400
 JD_MIN_WORDS = 60
-RESPONSIBILITY_MARKERS = ("responsibil", "you will", "duties", "about the role")
+RESPONSIBILITY_MARKERS = ("responsibil", "responsible for", "you will", "duties", "about the role")
 REQUIREMENT_MARKERS = ("requirement", "qualification", "experience", "skills")
 RESPONSIBILITY_HEADINGS = (
-    "what you'll do", "what you’ll do", "what you will do", "your impact", "job description",
+    "what you'll do", "what you’ll do", "what you will do", "your impact", "job description", "the role",
 )
 
 # The headings a real posting puts in front of the part that states what the job

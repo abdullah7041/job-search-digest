@@ -140,8 +140,7 @@ def _job_postings(node):
             yield from _job_postings(value)
 
 
-def jsonld_job_posting(page_html: str) -> str:
-    """The description from the page's JobPosting metadata, or ""."""
+def _page_job_postings(page_html):
     for match in JSONLD_RE.finditer(page_html or ""):
         raw = match.group(1).strip()
         # A few boards HTML-escape the block they embed, so try both readings.
@@ -150,12 +149,32 @@ def jsonld_job_posting(page_html: str) -> str:
                 document = json.loads(candidate)
             except ValueError:
                 continue
-            for posting in _job_postings(document):
-                text = strip_html(posting.get("description") or "")
-                if text:
-                    return text
+            yield from _job_postings(document)
             break
-    return ""
+
+
+def jsonld_job_posting(page_html: str) -> str:
+    """The description from the page's JobPosting metadata, or ""."""
+    return next((strip_html(p.get("description") or "") for p in _page_job_postings(page_html)
+                 if p.get("description")), "")
+
+
+def jsonld_posting_countries(page_html: str) -> list[str]:
+    """Explicit countries on the posting whose description is being read."""
+    for posting in _page_job_postings(page_html):
+        if not posting.get("description"):
+            continue
+        locations = posting.get("jobLocation") or []
+        locations = locations if isinstance(locations, list) else [locations]
+        countries = []
+        for location in locations:
+            address = location.get("address") if isinstance(location, dict) else None
+            country = address.get("addressCountry") if isinstance(address, dict) else None
+            country = country.get("name") if isinstance(country, dict) else country
+            if isinstance(country, str) and country.strip():
+                countries.append(country.strip())
+        return countries
+    return []
 
 
 # ------------------------------- ATS hop ------------------------------------
@@ -333,6 +352,7 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
     reference = ats_reference(page_html, url)
     found["employer_url"] = ats_url(reference)
     found["employer_token"] = (reference or {}).get("token") or ""
+    found["posting_countries"] = jsonld_posting_countries(page_html)
 
     text = jsonld_job_posting(page_html)
     if text and not jd_completeness_failures(text):
