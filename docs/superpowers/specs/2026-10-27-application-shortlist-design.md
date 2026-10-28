@@ -1,6 +1,6 @@
 # An application shortlist that keeps promising leads visible
 
-Status: proposed design; awaiting approval before implementation.
+Status: approved for implementation by the user on October 28, 2026.
 
 ## Intent and agreed direction
 

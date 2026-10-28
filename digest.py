@@ -421,6 +421,7 @@ LINK_UNKNOWN = "unknown"
 SOURCE_FAILURES = set()
 THROTTLED_SOURCES = {}
 BOARD_COVERAGE = {}
+NETWORK_DEADLINE = 0
 
 
 def log(msg):
@@ -575,10 +576,20 @@ def fetch_workable(c):
     # No public apply URL in the payload, so we build the canonical one from shortcode.
     url = f"https://apply.workable.com/api/v3/accounts/{c['token']}/jobs"
     out, body, pages = [], {}, 0
+    retried = False
     MAX_PAGES = 30  # hard stop so a misbehaving cursor can never loop forever (300 jobs)
     while pages < MAX_PAGES:
         try:
             r = _post(url, body)
+            if r.status_code == 429 and not retried:
+                try:
+                    delay = int(r.headers.get("Retry-After", ""))
+                except (ValueError, TypeError):
+                    delay = -1
+                if 0 <= delay <= 5 and time.monotonic() + delay + 30 < NETWORK_DEADLINE:
+                    retried = True
+                    time.sleep(delay)
+                    r = _post(url, body)
         except requests.RequestException as e:
             source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
             return out  # return what we already have; partial beats crashing
@@ -2360,6 +2371,8 @@ def remember(seen, job, today):
     """
     prefix = "pending:" if job.get("application_state") == "needs_checking" else ""
     seen[prefix + job_identity(job)] = today
+    if apply_link(job):
+        seen[prefix + "url:" + canonical_url(apply_link(job))] = today
     key = description_key(job)
     if key:
         seen[prefix + key] = today
@@ -2535,7 +2548,8 @@ def is_pending(job):
 
 
 def pending_was_delivered(seen, job):
-    return any("pending:" + key in seen for key in (job_identity(job), description_key(job)) if key)
+    return any("pending:" + key in seen for key in (
+        job_identity(job), description_key(job), "url:" + canonical_url(apply_link(job))) if key)
 
 
 def split_tiers(jobs):
@@ -2866,11 +2880,10 @@ def board_discovery_seeds(paywalled, still_paid, matched):
 def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     """Every discovered board as a COMPANIES entry, minus the ones already there.
 
-    Least recently read first, then capped. The order matters only once the cap
-    binds, and then it matters a lot: newest-first would starve exactly the
-    boards discovered earliest and validated longest, so a board that misses one
-    run is at the front of the queue for the next. A record with no `last_read`
-    has never been read and sorts ahead of every record that has.
+    Least recently attempted first, then capped, with legacy last_read as a
+    fallback. Failed attempts must rotate too: otherwise one throttled account
+    would always precede boards that never got a request. Successful last_read
+    remains separate from the attempt timestamp.
 
     The cap is a growth backstop rather than a ration -- board discovery adds
     entries every week with no ceiling of its own, and the company loop it feeds
@@ -2879,9 +2892,9 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     """
     already = {(c["source"], c["token"]) for c in COMPANIES}
     out = []
-    for key in sorted(boards, key=lambda k: (boards[k].get("last_read") or "", k)):
+    for key in sorted(boards, key=lambda k: (boards[k].get("last_attempt") or boards[k].get("last_read") or "", k)):
         record = boards[key]
-        if not record.get("source"):
+        if not record.get("source") or record.get("curated"):
             continue
         pair = (record["source"], record["token"])
         if pair in already:
@@ -2890,6 +2903,13 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
         out.append({"name": record.get("company") or record["token"],
                     "source": record["source"], "token": record["token"]})
     return out[:limit] if limit is not None else out
+
+
+def board_read_queue(boards):
+    by_pair = {(r.get("source"), r.get("token")): r for r in boards.values() if r.get("source")}
+    return sorted(COMPANIES + confirmed_boards(boards), key=lambda c:
+                  by_pair.get((c["source"], c["token"]), {}).get("last_attempt")
+                  or by_pair.get((c["source"], c["token"]), {}).get("last_read") or "")
 # ----------------------------------------------------------------------------
 
 
@@ -3093,7 +3113,7 @@ def post_discord(webhook, lines):
 
 
 def main():
-    global PROFILE
+    global PROFILE, NETWORK_DEADLINE
     SOURCE_FAILURES.clear()
     THROTTLED_SOURCES.clear()
     BOARD_COVERAGE.clear()
@@ -3115,6 +3135,7 @@ def main():
     # only where the remaining work is optional -- never mid-delivery. See
     # RUN_BUDGET_SECONDS.
     run_deadline = time.monotonic() + RUN_BUDGET_SECONDS
+    NETWORK_DEADLINE = run_deadline
 
     seen = load_seen()
     boards = load_boards()
@@ -3174,32 +3195,32 @@ def main():
                      if r.get("source")}
     discovered_total = confirmed_boards(boards, limit=None)
     boards_total = len(COMPANIES) + len(discovered_total)
-    board_queue = COMPANIES + confirmed_boards(boards)
+    board_queue = board_read_queue(boards)
+    curated_pairs = {(c["source"], c["token"]) for c in COMPANIES}
     boards_read = 0
     read_boards = False
-    for index, c in enumerate(board_queue):
-        # COMPANIES is hand-curated and always read; only discovered boards are
-        # droppable, and confirmed_boards has already ordered them so the ones
-        # skipped here are first in line tomorrow.
-        if index >= len(COMPANIES) and time.monotonic() >= run_deadline:
-            log(f"Run budget spent: {len(board_queue) - index} discovered "
-                "board(s) unread this run, least recently read first next run")
-            break
+    for c in board_queue:
+        # Rotate attempts so one failing account cannot monopolize a host.
+        # Curated boards still get an attempt after the optional-read deadline.
+        if (c["source"], c["token"]) not in curated_pairs and time.monotonic() >= run_deadline:
+            continue
         if c["source"] in THROTTLED_SOURCES:
             BOARD_COVERAGE["throttled"] += 1
             continue
         BOARD_COVERAGE["attempted"] += 1
         attempted_sources.append(c["source"])
         all_jobs.extend(fetch_company(c))
+        key = board_by_pair.get((c["source"], c["token"])) or f"{c['source']}:{c['token']}"
+        record = boards.setdefault(key, {"company": c["name"], "source": c["source"], "token": c["token"],
+                                         "curated": (c["source"], c["token"]) in curated_pairs})
+        record["last_attempt"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        read_boards = True
         if c["name"] in SOURCE_FAILURES:
             BOARD_COVERAGE["failed"] += 1
             continue
         boards_read += 1
         BOARD_COVERAGE["successful"] += 1
-        key = board_by_pair.get((c["source"], c["token"]))
-        if key:
-            boards[key]["last_read"] = today_iso
-            read_boards = True
+        record["last_read"] = today_iso
         time.sleep(0.5)
 
     # dedupe within the run (same posting could appear twice)
@@ -3356,7 +3377,8 @@ def main():
     for job in fresh:
         if posting_location_conflict(job):
             log(f"DROP conflicting posting country {job['posting_countries']!r}: {job['company']} — {job['title']}")
-    fresh = [job for job in fresh if not posting_location_conflict(job)]
+    fresh = [job for job in fresh if not posting_location_conflict(job)
+             and "url:" + canonical_url(apply_link(job)) not in seen]
 
     # A rescued apply link is BUILT from a token and a posting id, not copied
     # from a page, so it has never been fetched at the point enrichment records
@@ -3478,6 +3500,10 @@ def main():
             job.update(application_state="needs_checking", pending_reasons=pending_reasons(job))
             pending.append(job)
     fresh = strong_candidates + viable + pending
+    unique = {}
+    for job in sorted(fresh, key=delivery_priority):
+        unique.setdefault(canonical_url(apply_link(job)), job)
+    fresh = list(unique.values())
     for job in below_floor:
         check = job.get("fit_check") or {}
         log(f"Rejected {job['company']} - {job['title']}: final fit {job['score']}; "
@@ -3606,6 +3632,7 @@ def main():
                         lines.append(f"  Background evidence: {strength['title']} — {quotes[0][:180]}")
                         break
 
+    failed_card_keys = set()
     def record_delivery_stats(delivered_ids):
         save_stats(
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
@@ -3619,7 +3646,8 @@ def main():
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
             fallback_delivered=sum(job_key(j) in delivered_ids for j in fresh if j["application_state"] == "worth_reviewing"),
             needs_checking_delivered=sum(job_key(j) in delivered_ids for j in fresh if j["application_state"] == "needs_checking"),
-            delivery_attempted=len(fresh), delivery_failed=len(fresh) - len(delivered_ids),
+            delivery_attempted=len(fresh), delivery_failed=len(failed_card_keys),
+            delivery_unconfirmed=max(0, len(fresh) - len(delivered_ids) - len(failed_card_keys)),
             source_yield=source_yield(all_jobs, discovered_new,
                                       [j for j in fresh if job_key(j) in delivered_ids], paused_feeds, attempted_sources),
             below_floor=len(below_floor), deferred=len(deferred), unverified_fit=len(unverified),
@@ -3637,6 +3665,7 @@ def main():
             accepted_keys = job_keys.intersection(delivery.get("posted", []) + delivery.get("existing", []))
             uncertain_keys = job_keys.intersection(delivery.get("in_progress", []) + delivery.get("retryable", []))
             failed = [item for item in delivery.get("failed", []) if item.get("job_key") in job_keys]
+            failed_card_keys.update(item["job_key"] for item in failed)
             interactive_delivery_claimed = bool(accepted_keys or uncertain_keys or failed)
             delivered_ids = accepted_keys
             log(

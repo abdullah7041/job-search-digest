@@ -413,7 +413,23 @@ class TestStrictAlerts(unittest.TestCase):
             _, row, seen, _ = self.run_jobs([job], {"match": 69}, env=env)
         self.assertEqual(row["delivered"], 0)
         self.assertEqual(row["needs_checking_delivered"], 0)
+        self.assertEqual(row["delivery_failed"], 0)
+        self.assertEqual(row["delivery_unconfirmed"], 1)
         self.assertEqual(seen, {})
+
+    def test_same_application_link_cannot_fill_both_ready_and_pending_slots(self):
+        ready = self.job("ready", title="Data Analyst", company="Same Employer",
+                         apply_url="https://employer.test/jobs/42")
+        pending = self.job("pending", title="Data Analyst", company="Same Employer",
+                           description="Partial source snippet", source="linkedin_api",
+                           apply_url="https://employer.test/jobs/42")
+        _, row, seen, work = self.run_jobs([ready, pending], {"ready": 70, "pending": 85},
+                                         {ready["title"]: VIABLE})
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertEqual(row["needs_checking_delivered"], 0)
+        _, again, _, _ = self.run_jobs([pending], {"pending": 85}, work=work)
+        self.assertEqual(again["delivered"], 0)
 
     def test_review_shortlist_excludes_confirmed_location_and_role_mismatches(self):
         for kind in ("location_work_authorization", "role_scope_mismatch"):

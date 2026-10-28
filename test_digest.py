@@ -2140,6 +2140,28 @@ class TestPaywalledPostingsAreNeverFetched(unittest.TestCase):
 
 
 class TestFocusedCoverage(unittest.TestCase):
+    def test_unread_boards_rotate_ahead_of_the_account_that_was_throttled(self):
+        boards = {
+            "one": {"company": "One", "source": "workable", "token": "one", "last_attempt": "2026-10-28T07:00:00Z"},
+            "two": {"company": "Two", "source": "workable", "token": "two", "last_read": "2026-10-27"},
+        }
+        with mock.patch.object(digest, "COMPANIES", [{"name": "One", "source": "workable", "token": "one"}]):
+            self.assertEqual(digest.board_read_queue(boards)[0]["token"], "two")
+
+    def test_a_short_retry_after_is_honored_once_within_the_deadline(self):
+        digest.THROTTLED_SOURCES.clear()
+        self.addCleanup(digest.THROTTLED_SOURCES.clear)
+        limited = mock.Mock(status_code=429, headers={"Retry-After": "1"})
+        recovered = mock.Mock(status_code=200)
+        recovered.json.return_value = {"results": []}
+        with mock.patch.object(digest, "_post", side_effect=[limited, recovered]) as post, \
+             mock.patch.object(digest.time, "sleep") as sleep, \
+             mock.patch.object(digest, "NETWORK_DEADLINE", digest.time.monotonic() + 100):
+            digest.fetch_workable({"name": "One", "token": "one"})
+        self.assertEqual(post.call_count, 2)
+        sleep.assert_any_call(1)
+        self.assertNotIn("workable", digest.THROTTLED_SOURCES)
+
     def test_primary_and_complementary_families_share_the_existing_budget(self):
         queries = digest.AGGREGATOR_QUERIES
         plans = [digest.focused_query_plan(queries, 2, day) for day in range(8)]
@@ -2177,7 +2199,10 @@ class TestFocusedCoverage(unittest.TestCase):
             self.assertEqual(json.load(handle)[-1]["board_coverage"],
                              {"attempted": 1, "successful": 0, "failed": 1, "throttled": 1})
         with open(os.path.join(work, "boards.json"), encoding="utf-8") as handle:
-            self.assertEqual(json.load(handle), boards)
+            stored = json.load(handle)
+        self.assertEqual([r["last_read"] for r in stored.values()], ["2026-10-01", "2026-10-01"])
+        self.assertTrue(stored["one"]["last_attempt"])
+        self.assertNotIn("last_attempt", stored["two"])
 
 
 class TestBoardDiscovery(unittest.TestCase):
