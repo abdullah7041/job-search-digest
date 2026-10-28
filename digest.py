@@ -419,6 +419,8 @@ LINK_UNKNOWN = "unknown"
 
 
 SOURCE_FAILURES = set()
+THROTTLED_SOURCES = {}
+BOARD_COVERAGE = {}
 
 
 def log(msg):
@@ -566,6 +568,8 @@ def fetch_ashby(c):
 
 
 def fetch_workable(c):
+    if "workable" in THROTTLED_SOURCES:
+        return []
     # Workable v3 board API: POST, 10 jobs/page, cursor in "nextPage" -> echo back
     # as {"token": ...}. Verified live 24 Jun 2026 against apply.workable.com/foodics.
     # No public apply URL in the payload, so we build the canonical one from shortcode.
@@ -579,6 +583,8 @@ def fetch_workable(c):
             source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
             return out  # return what we already have; partial beats crashing
         if r.status_code != 200:
+            if r.status_code == 429:
+                THROTTLED_SOURCES["workable"] = str(r.headers.get("Retry-After") or "next run")[:60]
             source_failure(c['name'], f"WARN {c['name']}: workable HTTP {r.status_code} (token '{c['token']}'). Skipping.")
             return out
         try:
@@ -841,7 +847,7 @@ def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
             added += 1
         return added
 
-    selected_queries = jsearch_query_plan(
+    selected_queries = focused_query_plan(
         AGGREGATOR_QUERIES, JSEARCH_DAILY_REQUESTS,
         riyadh_ordinal())
     bootstrap_allowed = True
@@ -873,6 +879,24 @@ def jsearch_query_plan(queries, budget, day):
         return []
     start = (day * count) % len(queries)
     return [queries[(start + i) % len(queries)] for i in range(count)]
+
+
+def focused_query_plan(queries, budget, day):
+    count = min(max(0, budget), 6, len(queries))
+    if len(queries) <= 4:
+        return jsearch_query_plan(queries, count, day)
+    primary, remaining = queries[:4], queries[4:]
+    plan = [primary[day % len(primary)], remaining[day % len(remaining)]]
+    for query in jsearch_query_plan(queries, len(queries), day):
+        if query not in plan:
+            plan.append(query)
+    return plan[:count]
+
+
+def primary_title_filter(day=None):
+    priority = (riyadh_ordinal() if day is None else day) % 4 + 1
+    titles = [title for title, value in PROFILE.get("title_priorities", {}).items() if value == priority]
+    return " | ".join("'" + re.sub(r"[^a-z0-9 ]", " ", title.lower()) + "'" for title in titles) or ACTIVE_ATS_TITLE
 
 
 # VERIFIED 3 Sep 2026: /search-v2 does return `apply_options`, a list of
@@ -1241,7 +1265,7 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None, paused_feeds=None):
     _, since = _age_window(max_age_days)
     query = ("?source=" + requests.utils.quote(ACTIVE_ATS_SOURCES)
              + "&location=" + requests.utils.quote("Saudi Arabia")
-             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&title_advanced=" + requests.utils.quote(primary_title_filter())
              + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
              + "&date_posted_gte=" + since + "T00:00:00"
              + "&time_frame=7d"
@@ -1270,7 +1294,7 @@ def fetch_linkedin(api_key, quota=None, max_age_days=None, paused_feeds=None):
     """
     _, since = _age_window(max_age_days)
     query = ("?location=" + requests.utils.quote("Saudi Arabia")
-             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&title_advanced=" + requests.utils.quote(primary_title_filter())
              + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
              + "&date_posted_gte=" + since + "T00:00:00"
              + "&time_frame=7d"
@@ -1321,7 +1345,7 @@ def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
     if out_of_allowance("indeed", quota, paused_feeds=paused_feeds):
         return []
     url = ("https://" + INDEED_HOST + "/v2/indeed/search"
-           + "?query=" + requests.utils.quote(AGGREGATOR_QUERIES[(riyadh_ordinal() - 1) % len(AGGREGATOR_QUERIES)])
+           + "?query=" + requests.utils.quote(focused_query_plan(AGGREGATOR_QUERIES, 2, riyadh_ordinal())[-1])
            + "&location=" + requests.utils.quote("Saudi Arabia")
            + "&countryCode=sa")
     try:
@@ -2885,6 +2909,7 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
         "fallback_delivered": 0,
     }
     row.update(metrics)
+    row["board_coverage"] = dict(BOARD_COVERAGE)
     for source, counts in sorted(metrics.get("source_yield", {}).items()):
         log(f"Source {source}: {counts['fetched']} fetched, {counts['new']} new, "
             f"{counts['delivered']} delivered"
@@ -2974,7 +2999,7 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
         f"Excluded {unverified_date} with unverified posting dates; "
         f"{unverified_fit} awaiting complete fit verification.",
         f"Read {boards_read} of {boards_total} employer boards; "
-        f"{boards_skipped} skipped by the per-run cap or time budget.",
+        f"{boards_skipped} not read successfully. Coverage: {BOARD_COVERAGE}.",
         f"Quota-paused feeds: {paused_names or 'none'}.",
     ]
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
@@ -2999,6 +3024,10 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
     lines = [lines[0], status]
     if source_failures or paused_feeds or boards_skipped:
         lines.append("Search coverage incomplete: some sources failed, were quota-paused, or could not be read.")
+        lines.append(f"Boards: {boards_read}/{boards_total} read successfully; "
+                     f"{BOARD_COVERAGE.get('throttled', 0)} deferred after rate limiting. "
+                     f"Failed sources: {', '.join(sorted(source_failures)) or 'none'}. "
+                     f"Quota-paused feeds: {paused_names or 'none'}.")
     if worker_url:
         post_interactive_cards(
             worker_url,
@@ -3033,6 +3062,9 @@ def post_discord(webhook, lines):
 def main():
     global PROFILE
     SOURCE_FAILURES.clear()
+    THROTTLED_SOURCES.clear()
+    BOARD_COVERAGE.clear()
+    BOARD_COVERAGE.update(attempted=0, successful=0, failed=0, throttled=0)
     PROFILE = load_profile()
     evidence = load_resume_evidence()
     evidence_ready = PROFILE is not DEFAULT_PROFILE and bool(evidence)
@@ -3120,9 +3152,17 @@ def main():
             log(f"Run budget spent: {len(board_queue) - index} discovered "
                 "board(s) unread this run, least recently read first next run")
             break
-        boards_read += 1
+        if c["source"] in THROTTLED_SOURCES:
+            BOARD_COVERAGE["throttled"] += 1
+            continue
+        BOARD_COVERAGE["attempted"] += 1
         attempted_sources.append(c["source"])
         all_jobs.extend(fetch_company(c))
+        if c["name"] in SOURCE_FAILURES:
+            BOARD_COVERAGE["failed"] += 1
+            continue
+        boards_read += 1
+        BOARD_COVERAGE["successful"] += 1
         key = board_by_pair.get((c["source"], c["token"]))
         if key:
             boards[key]["last_read"] = today_iso

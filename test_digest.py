@@ -2139,6 +2139,44 @@ class TestPaywalledPostingsAreNeverFetched(unittest.TestCase):
         self.assertEqual(paywalled, [])
 
 
+class TestFocusedCoverage(unittest.TestCase):
+    def test_primary_and_complementary_families_share_the_existing_budget(self):
+        queries = digest.AGGREGATOR_QUERIES
+        plans = [digest.focused_query_plan(queries, 2, day) for day in range(8)]
+        self.assertTrue(all(len(p) == 2 and p[0] in queries[:4] and p[1] in queries[4:] for p in plans))
+        self.assertEqual({p[0] for p in plans}, set(queries[:4]))
+        self.assertEqual({p[1] for p in plans}, set(queries[4:]))
+        self.assertEqual(digest.focused_query_plan(queries, 0, 1), [])
+        self.assertEqual(len(digest.focused_query_plan(queries, 99, 1)), 6)
+        self.assertIn("sales operations analyst", digest.primary_title_filter(0))
+        self.assertNotIn("software", digest.primary_title_filter(0))
+
+    def test_workable_rate_limit_pauses_other_accounts_for_this_run(self):
+        digest.THROTTLED_SOURCES.clear()
+        self.addCleanup(digest.THROTTLED_SOURCES.clear)
+        response = mock.Mock(status_code=429, headers={"Retry-After": "60"})
+        with mock.patch.object(digest, "_post", return_value=response) as post:
+            digest.fetch_workable({"name": "One", "token": "one"})
+            digest.fetch_workable({"name": "Two", "token": "two"})
+        self.assertEqual(post.call_count, 1)
+        self.assertEqual(digest.THROTTLED_SOURCES["workable"], "60")
+
+    def test_throttled_boards_keep_their_read_timestamps_and_coverage_is_honest(self):
+        _, work = run_main(TestEndToEnd.ENV, {}, jobs=[])
+        self.addCleanup(shutil.rmtree, work, ignore_errors=True)
+        boards = {name: {"company": name, "source": "workable", "token": name,
+                         "last_read": "2026-10-01"} for name in ("one", "two")}
+        with open(os.path.join(work, "boards.json"), "w", encoding="utf-8") as handle:
+            json.dump(boards, handle)
+        with mock.patch.object(digest, "_post", return_value=mock.Mock(status_code=429, headers={"Retry-After": "60"})):
+            run_main(TestEndToEnd.ENV, {}, jobs=[], work=work)
+        with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)[-1]["board_coverage"],
+                             {"attempted": 1, "successful": 0, "failed": 1, "throttled": 1})
+        with open(os.path.join(work, "boards.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), boards)
+
+
 class TestBoardDiscovery(unittest.TestCase):
     """Finding an employer's own board for a posting stuck behind a paid relister.
 
