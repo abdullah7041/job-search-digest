@@ -3029,6 +3029,19 @@ def instability_warning(unstable):
     )
 
 
+def coverage_summary(boards_read, boards_total, source_failures=(), paused_feeds=()):
+    names = {"jsearch": "JSearch", "active_ats": "Active ATS", "linkedin_api": "LinkedIn", "indeed": "Indeed"}
+    failed = sorted(source_failures)
+    failures = ", ".join(str(name)[:40] for name in failed[:5]) or "none"
+    if len(failed) > 5:
+        failures += f" and {len(failed) - 5} more"
+    paused = ", ".join(names.get(feed, feed) for feed in paused_feeds) or "none"
+    return (f"Coverage: {boards_read}/{boards_total} boards read successfully; "
+            f"{BOARD_COVERAGE.get('attempted', 0)} attempted, {BOARD_COVERAGE.get('failed', 0)} failed, "
+            f"{BOARD_COVERAGE.get('throttled', 0)} deferred after rate limiting. "
+            f"Failed sources: {failures}. Quota-paused feeds: {paused}.")
+
+
 def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, warnings,
                    *, newly_found=0, already_seen=0, stale=0, below_floor=0,
                    boards_read=0, boards_total=0, boards_skipped=0,
@@ -3077,10 +3090,7 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
     lines = [lines[0], status]
     if source_failures or paused_feeds or boards_skipped:
         lines.append("Search coverage incomplete: some sources failed, were quota-paused, or could not be read.")
-        lines.append(f"Boards: {boards_read}/{boards_total} read successfully; "
-                     f"{BOARD_COVERAGE.get('throttled', 0)} deferred after rate limiting. "
-                     f"Failed sources: {', '.join(sorted(source_failures)) or 'none'}. "
-                     f"Quota-paused feeds: {paused_names or 'none'}.")
+        lines.append(coverage_summary(boards_read, boards_total, source_failures, paused_feeds))
     if worker_url:
         post_interactive_cards(
             worker_url,
@@ -3580,6 +3590,7 @@ def main():
     lines.append("Apply first: verified strong matches. Worth reviewing: verified options with gaps. Needs checking: fit pending.")
     lines.append(f"Available: {len(strong)} Apply first; {len(competitive) + len(review)} Worth reviewing; "
                  f"{sum(j['application_state'] == 'needs_checking' for j in fresh)} Needs checking.")
+    lines.append(coverage_summary(boards_read, boards_total, SOURCE_FAILURES, paused_feeds))
     shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     last_tier = None
