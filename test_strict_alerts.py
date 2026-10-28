@@ -390,6 +390,8 @@ class TestStrictAlerts(unittest.TestCase):
         payload = fixtures.job_archive.job_card_payload(card)
         tailor = next(button for button in payload["components"][0]["components"] if button["label"] == "Tailor CV")
         self.assertTrue(tailor["disabled"])
+        self.assertIn("Tailor CV unavailable", json.dumps(payload))
+        self.assertNotIn("re-reads the link", json.dumps(payload))
 
     def test_pending_does_not_displace_ready_jobs_or_overfill_the_shortlist(self):
         jobs = [self.job(str(n), company=f"Employer {n}") for n in range(12)]

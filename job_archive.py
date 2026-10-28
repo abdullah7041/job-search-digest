@@ -312,7 +312,9 @@ def job_card_payload(snapshot: dict) -> dict:
     # so a card said "here is what the posting demands" and "send me the
     # posting" in the same breath. Partial text is still text.
     status = (snapshot.get("jd") or {}).get("status")
-    if status == "missing":
+    if snapshot.get("application_state") and (status != "captured" or snapshot_grade(snapshot) != GRADE_FULL):
+        footer += " · Tailor CV unavailable until the full posting is verified"
+    elif status == "missing":
         footer += " · No posting text archived; tailoring reads the link"
     elif status != "captured":
         footer += " · Partial posting archived; tailoring re-reads the link"
