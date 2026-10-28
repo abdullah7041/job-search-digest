@@ -204,6 +204,11 @@ def build_prompt(job: dict, resume_text: str) -> str:
         "- Every blocker and every strength must cite evidence: a short snippet "
         "COPIED VERBATIM from the resume or the job description, with source set "
         "to which one it came from. Do not paraphrase a snippet.\n"
+        "- Independently identify up to three relevant strengths, even when there are blockers. "
+        "For each, quote 30-180 characters from an EXPERIENCE or PROJECT entry showing the "
+        "candidate doing relevant work, and quote the matching job duty. Use words copied "
+        "from that resume entry for the strength title. Return no strengths only when no "
+        "demonstrated work is relevant; a missing credential does not erase proven skills.\n"
         "- Cite the job description for what the role requires, and the resume "
         "for what the candidate has or lacks.\n"
         "- If something is missing, ambiguous, or you had to infer it, put it in "
@@ -315,8 +320,10 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
     jd_text = job.get("description") or ""
     demonstrated = achievement_evidence(resume_text)
     from_resume = vocabulary(demonstrated)
+    from_resume.update({"demonstrated", "practical", "proven", "relevant"})
 
     blockers, unclear, strengths = [], [], []
+    audit = {"received": len(raw.get("strengths") or []), "kept": 0, "discarded": {}}
 
     for item in (raw.get("unclear") if isinstance(raw.get("unclear"), list) else []):
         if isinstance(item, dict):
@@ -372,20 +379,25 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
             continue
         title = _clean(item.get("title"))
         evidence = _verified_evidence(item.get("evidence"), resume_text, jd_text)
+        resume_quotes = [e for e in evidence if e["source"] == "resume"]
         evidence = [e for e in evidence if e["source"] != "resume"
                     or (quote_supported(e["snippet"], demonstrated)
                         and not unsupported_facts(e["snippet"], demonstrated))]
         # Deleted, not demoted. An unproven strength is exactly the claim that
         # put an 85 on a card, so it does not get a softer landing.
-        if (not any(e["source"] == "resume" and quote_supported(e["snippet"], demonstrated)
-                    for e in evidence)
-                or unsupported_terms(title, from_resume)):
+        reason = ("invalid_quote" if not resume_quotes else
+                  "not_demonstrated" if not any(quote_supported(e["snippet"], demonstrated) for e in resume_quotes) else
+                  "unsupported_facts" if any(unsupported_facts(e["snippet"], demonstrated) for e in resume_quotes) else
+                  "unsupported_title_terms" if unsupported_terms(title, from_resume) else "")
+        if reason:
+            audit["discarded"][reason] = audit["discarded"].get(reason, 0) + 1
             continue
         strengths.append({"title": title,
                           "why_it_matters": _clean(item.get("why_it_matters")),
                           "evidence": evidence})
 
     blockers = blockers[:MAX_BLOCKERS]
+    audit["kept"] = min(len(strengths), MAX_STRENGTHS)
     # `unclear` is diagnostic today: nothing outside this module reads it, and
     # it reaches neither the snapshot nor the card. The demotion still does real
     # work -- a demoted blocker stops counting toward ceiling_band -- so this is
@@ -393,7 +405,7 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
     # that this truncation drops model-supplied items before demoted ones.
     return {"blockers": blockers, "unclear": unclear[:MAX_BLOCKERS],
             "strengths": strengths[:MAX_STRENGTHS],
-            "ceiling": ceiling_band(blockers), "note": ""}
+            "ceiling": ceiling_band(blockers), "note": "", "strength_audit": audit}
 
 
 def ceiling_band(blockers: list[dict]) -> str:
@@ -489,6 +501,7 @@ def check_jobs(jobs: list[dict], resume_text: str, api_key: str, model: str,
             continue
         result = check_job(job, resume_text, api_key, deadline, model, fallbacks, provider)
         job["fit_check"] = result
+        log(f"Fit evidence {job.get('company')} - {job.get('title')}: {result.get('strength_audit', {})}")
         if result["note"]:
             log(f"Fit check skipped {job.get('company')} - {job.get('title')}: {result['note']}")
         elif result["blockers"]:

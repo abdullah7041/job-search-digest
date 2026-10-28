@@ -45,9 +45,9 @@ import requests
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, strip_html
+from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, jsonld_posting_countries, strip_html
 from job_archive import (GRADE_FULL, GRADE_TEASER, jd_completeness_failures, jd_grade, jd_requirements, jd_signal,
-                         make_snapshot, score_instability, write_snapshots)
+                         job_key, make_snapshot, score_instability, write_snapshots)
 import fit_check
 from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
@@ -419,6 +419,9 @@ LINK_UNKNOWN = "unknown"
 
 
 SOURCE_FAILURES = set()
+THROTTLED_SOURCES = {}
+BOARD_COVERAGE = {}
+NETWORK_DEADLINE = 0
 
 
 def log(msg):
@@ -566,19 +569,33 @@ def fetch_ashby(c):
 
 
 def fetch_workable(c):
+    if "workable" in THROTTLED_SOURCES:
+        return []
     # Workable v3 board API: POST, 10 jobs/page, cursor in "nextPage" -> echo back
     # as {"token": ...}. Verified live 24 Jun 2026 against apply.workable.com/foodics.
     # No public apply URL in the payload, so we build the canonical one from shortcode.
     url = f"https://apply.workable.com/api/v3/accounts/{c['token']}/jobs"
     out, body, pages = [], {}, 0
+    retried = False
     MAX_PAGES = 30  # hard stop so a misbehaving cursor can never loop forever (300 jobs)
     while pages < MAX_PAGES:
         try:
             r = _post(url, body)
+            if r.status_code == 429 and not retried:
+                try:
+                    delay = int(r.headers.get("Retry-After", ""))
+                except (ValueError, TypeError):
+                    delay = -1
+                if 0 <= delay <= 5 and time.monotonic() + delay + 30 < NETWORK_DEADLINE:
+                    retried = True
+                    time.sleep(delay)
+                    r = _post(url, body)
         except requests.RequestException as e:
             source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
             return out  # return what we already have; partial beats crashing
         if r.status_code != 200:
+            if r.status_code == 429:
+                THROTTLED_SOURCES["workable"] = str(r.headers.get("Retry-After") or "next run")[:60]
             source_failure(c['name'], f"WARN {c['name']}: workable HTTP {r.status_code} (token '{c['token']}'). Skipping.")
             return out
         try:
@@ -841,7 +858,7 @@ def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
             added += 1
         return added
 
-    selected_queries = jsearch_query_plan(
+    selected_queries = focused_query_plan(
         AGGREGATOR_QUERIES, JSEARCH_DAILY_REQUESTS,
         riyadh_ordinal())
     bootstrap_allowed = True
@@ -873,6 +890,24 @@ def jsearch_query_plan(queries, budget, day):
         return []
     start = (day * count) % len(queries)
     return [queries[(start + i) % len(queries)] for i in range(count)]
+
+
+def focused_query_plan(queries, budget, day):
+    count = min(max(0, budget), 6, len(queries))
+    if len(queries) <= 4:
+        return jsearch_query_plan(queries, count, day)
+    primary, remaining = queries[:4], queries[4:]
+    plan = [primary[day % len(primary)], remaining[day % len(remaining)]]
+    for query in jsearch_query_plan(queries, len(queries), day):
+        if query not in plan:
+            plan.append(query)
+    return plan[:count]
+
+
+def primary_title_filter(day=None):
+    priority = (riyadh_ordinal() if day is None else day) % 4 + 1
+    titles = [title for title, value in PROFILE.get("title_priorities", {}).items() if value == priority]
+    return " | ".join("'" + re.sub(r"[^a-z0-9 ]", " ", title.lower()) + "'" for title in titles) or ACTIVE_ATS_TITLE
 
 
 # VERIFIED 3 Sep 2026: /search-v2 does return `apply_options`, a list of
@@ -1241,7 +1276,7 @@ def fetch_active_ats(api_key, quota=None, max_age_days=None, paused_feeds=None):
     _, since = _age_window(max_age_days)
     query = ("?source=" + requests.utils.quote(ACTIVE_ATS_SOURCES)
              + "&location=" + requests.utils.quote("Saudi Arabia")
-             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&title_advanced=" + requests.utils.quote(primary_title_filter())
              + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
              + "&date_posted_gte=" + since + "T00:00:00"
              + "&time_frame=7d"
@@ -1270,7 +1305,7 @@ def fetch_linkedin(api_key, quota=None, max_age_days=None, paused_feeds=None):
     """
     _, since = _age_window(max_age_days)
     query = ("?location=" + requests.utils.quote("Saudi Arabia")
-             + "&title_advanced=" + requests.utils.quote(ACTIVE_ATS_TITLE)
+             + "&title_advanced=" + requests.utils.quote(primary_title_filter())
              + "&exclude_organization=" + requests.utils.quote(EXCLUDED_ORGS_PARAM)
              + "&date_posted_gte=" + since + "T00:00:00"
              + "&time_frame=7d"
@@ -1321,7 +1356,7 @@ def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
     if out_of_allowance("indeed", quota, paused_feeds=paused_feeds):
         return []
     url = ("https://" + INDEED_HOST + "/v2/indeed/search"
-           + "?query=" + requests.utils.quote(AGGREGATOR_QUERIES[(riyadh_ordinal() - 1) % len(AGGREGATOR_QUERIES)])
+           + "?query=" + requests.utils.quote(focused_query_plan(AGGREGATOR_QUERIES, 2, riyadh_ordinal())[-1])
            + "&location=" + requests.utils.quote("Saudi Arabia")
            + "&countryCode=sa")
     try:
@@ -1573,6 +1608,8 @@ def location_conflict(title):
 def matches_filters(job):
     title = job["title"].lower()
     loc = job["location"].lower()
+    if posting_location_conflict(job):
+        return False
     if not any(k in loc for k in LOCATION_INCLUDE):
         return False
     if location_conflict(job["title"]):
@@ -1588,6 +1625,13 @@ def matches_filters(job):
             or keyword_hits(title, [t.lower() for t in PROFILE.get("title_priorities", {})])):
         return False
     return True
+
+
+def posting_location_conflict(job):
+    countries = job.get("posting_countries") or []
+    return bool(countries and not any(
+        country.upper() == "SA" or "saudi" in country.lower() or "السعودية" in country
+        for country in countries))
 
 
 def canonical_url(url):
@@ -2075,6 +2119,7 @@ def fetch_posting_page(job):
     ones that pay for it.
     """
     posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    job["posting_countries"] = posting.get("posting_countries") or job.get("posting_countries", [])
     record_apply_link(job, posting["employer_url"], posting["employer_token"])
     # A related-jobs link can point at a different employer. Refusing that
     # apply link must also refuse text recovered through the same ATS hop.
@@ -2147,6 +2192,7 @@ def rescue_apply_link(job):
     page_html = ""
     if response.status_code == 200:
         page_html = response.text
+        job["posting_countries"] = jsonld_posting_countries(page_html)
     else:
         # Probed live on 2026-08-29: Glassdoor, Jooble and learn4good all answer
         # 403 to a datacenter IP, and a runner fares no better than the laptop
@@ -2323,10 +2369,13 @@ def remember(seen, job, today):
     relists the same posting under a fresh URL and only the description
     fingerprint catches that.
     """
-    seen[job_identity(job)] = today
+    prefix = "pending:" if job.get("application_state") == "needs_checking" else ""
+    seen[prefix + job_identity(job)] = today
+    if apply_link(job):
+        seen[prefix + "url:" + canonical_url(apply_link(job))] = today
     key = description_key(job)
     if key:
-        seen[key] = today
+        seen[prefix + key] = today
 
 
 def defer_below_floor(seen, job, today):
@@ -2403,7 +2452,8 @@ def delivery_priority(job):
     priorities = PROFILE.get("title_priorities", {})
     role_priority = min((priority for title, priority in priorities.items()
                          if keyword_hits(job.get("title", ""), [title.lower()])), default=99)
-    return (not is_strong(job), (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
+    state_order = 2 if job.get("application_state") == "needs_checking" else (0 if is_strong(job) else 1)
+    return (state_order, (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
             -job.get("score", 0), str(job.get("id", "")))
 
 
@@ -2469,6 +2519,37 @@ def is_viable(job):
                 and any(e.get("source") == "resume" and e.get("snippet")
                         for strength in check.get("strengths") or []
                         for e in strength.get("evidence") or []))
+
+
+def pending_reasons(job):
+    reasons = []
+    if jd_grade(job.get("description") or "") != GRADE_FULL:
+        reasons.append("Full job description needs verification.")
+    check = job.get("fit_check") or {}
+    if check.get("note"):
+        reasons.append("Requirements check unavailable: " + str(check["note"])[:160])
+    elif check.get("ceiling", "unknown") == "unknown":
+        reasons.append("Requirements and qualification gaps have not been checked.")
+    if not any(e.get("source") == "resume" and e.get("snippet")
+               for strength in check.get("strengths") or [] for e in strength.get("evidence") or []):
+        reasons.append("No positive match to demonstrated resume work has been verified.")
+    return reasons
+
+
+def is_pending(job):
+    return bool(job.get("ranking_verified") and job.get("score", 0) >= 40
+                and job.get("track") in {track["name"] for track in PROFILE.get("tracks", [])}
+                and type(job.get("age_days")) is int and 0 <= job["age_days"] <= FALLBACK_MAX_JOB_AGE_DAYS
+                and apply_link(job) and not on_paid_relister(apply_link(job))
+                and job.get("link_status") != LINK_CLOSED and matches_filters(job)
+                and not any(b.get("type") in ("location_work_authorization", "role_scope_mismatch")
+                            for b in (job.get("fit_check") or {}).get("blockers") or [])
+                and pending_reasons(job))
+
+
+def pending_was_delivered(seen, job):
+    return any("pending:" + key in seen for key in (
+        job_identity(job), description_key(job), "url:" + canonical_url(apply_link(job))) if key)
 
 
 def split_tiers(jobs):
@@ -2799,11 +2880,10 @@ def board_discovery_seeds(paywalled, still_paid, matched):
 def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     """Every discovered board as a COMPANIES entry, minus the ones already there.
 
-    Least recently read first, then capped. The order matters only once the cap
-    binds, and then it matters a lot: newest-first would starve exactly the
-    boards discovered earliest and validated longest, so a board that misses one
-    run is at the front of the queue for the next. A record with no `last_read`
-    has never been read and sorts ahead of every record that has.
+    Least recently attempted first, then capped, with legacy last_read as a
+    fallback. Failed attempts must rotate too: otherwise one throttled account
+    would always precede boards that never got a request. Successful last_read
+    remains separate from the attempt timestamp.
 
     The cap is a growth backstop rather than a ration -- board discovery adds
     entries every week with no ceiling of its own, and the company loop it feeds
@@ -2812,9 +2892,9 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     """
     already = {(c["source"], c["token"]) for c in COMPANIES}
     out = []
-    for key in sorted(boards, key=lambda k: (boards[k].get("last_read") or "", k)):
+    for key in sorted(boards, key=lambda k: (boards[k].get("last_attempt") or boards[k].get("last_read") or "", k)):
         record = boards[key]
-        if not record.get("source"):
+        if not record.get("source") or record.get("curated"):
             continue
         pair = (record["source"], record["token"])
         if pair in already:
@@ -2823,6 +2903,13 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
         out.append({"name": record.get("company") or record["token"],
                     "source": record["source"], "token": record["token"]})
     return out[:limit] if limit is not None else out
+
+
+def board_read_queue(boards):
+    by_pair = {(r.get("source"), r.get("token")): r for r in boards.values() if r.get("source")}
+    return sorted(COMPANIES + confirmed_boards(boards), key=lambda c:
+                  by_pair.get((c["source"], c["token"]), {}).get("last_attempt")
+                  or by_pair.get((c["source"], c["token"]), {}).get("last_read") or "")
 # ----------------------------------------------------------------------------
 
 
@@ -2872,8 +2959,10 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
         "new": new, "avg_score": avg_score,
         "unverified_date": 0, "unverified_fit": 0,
         "fallback_delivered": 0,
+        "needs_checking_delivered": 0,
     }
     row.update(metrics)
+    row["board_coverage"] = dict(BOARD_COVERAGE)
     for source, counts in sorted(metrics.get("source_yield", {}).items()):
         log(f"Source {source}: {counts['fetched']} fetched, {counts['new']} new, "
             f"{counts['delivered']} delivered"
@@ -2963,7 +3052,7 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
         f"Excluded {unverified_date} with unverified posting dates; "
         f"{unverified_fit} awaiting complete fit verification.",
         f"Read {boards_read} of {boards_total} employer boards; "
-        f"{boards_skipped} skipped by the per-run cap or time budget.",
+        f"{boards_skipped} not read successfully. Coverage: {BOARD_COVERAGE}.",
         f"Quota-paused feeds: {paused_names or 'none'}.",
     ]
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
@@ -2988,6 +3077,10 @@ def post_heartbeat(webhook, worker_url, worker_secret, today, scanned, matched, 
     lines = [lines[0], status]
     if source_failures or paused_feeds or boards_skipped:
         lines.append("Search coverage incomplete: some sources failed, were quota-paused, or could not be read.")
+        lines.append(f"Boards: {boards_read}/{boards_total} read successfully; "
+                     f"{BOARD_COVERAGE.get('throttled', 0)} deferred after rate limiting. "
+                     f"Failed sources: {', '.join(sorted(source_failures)) or 'none'}. "
+                     f"Quota-paused feeds: {paused_names or 'none'}.")
     if worker_url:
         post_interactive_cards(
             worker_url,
@@ -3020,8 +3113,11 @@ def post_discord(webhook, lines):
 
 
 def main():
-    global PROFILE
+    global PROFILE, NETWORK_DEADLINE
     SOURCE_FAILURES.clear()
+    THROTTLED_SOURCES.clear()
+    BOARD_COVERAGE.clear()
+    BOARD_COVERAGE.update(attempted=0, successful=0, failed=0, throttled=0)
     PROFILE = load_profile()
     evidence = load_resume_evidence()
     evidence_ready = PROFILE is not DEFAULT_PROFILE and bool(evidence)
@@ -3039,6 +3135,7 @@ def main():
     # only where the remaining work is optional -- never mid-delivery. See
     # RUN_BUDGET_SECONDS.
     run_deadline = time.monotonic() + RUN_BUDGET_SECONDS
+    NETWORK_DEADLINE = run_deadline
 
     seen = load_seen()
     boards = load_boards()
@@ -3098,24 +3195,32 @@ def main():
                      if r.get("source")}
     discovered_total = confirmed_boards(boards, limit=None)
     boards_total = len(COMPANIES) + len(discovered_total)
-    board_queue = COMPANIES + confirmed_boards(boards)
+    board_queue = board_read_queue(boards)
+    curated_pairs = {(c["source"], c["token"]) for c in COMPANIES}
     boards_read = 0
     read_boards = False
-    for index, c in enumerate(board_queue):
-        # COMPANIES is hand-curated and always read; only discovered boards are
-        # droppable, and confirmed_boards has already ordered them so the ones
-        # skipped here are first in line tomorrow.
-        if index >= len(COMPANIES) and time.monotonic() >= run_deadline:
-            log(f"Run budget spent: {len(board_queue) - index} discovered "
-                "board(s) unread this run, least recently read first next run")
-            break
-        boards_read += 1
+    for c in board_queue:
+        # Rotate attempts so one failing account cannot monopolize a host.
+        # Curated boards still get an attempt after the optional-read deadline.
+        if (c["source"], c["token"]) not in curated_pairs and time.monotonic() >= run_deadline:
+            continue
+        if c["source"] in THROTTLED_SOURCES:
+            BOARD_COVERAGE["throttled"] += 1
+            continue
+        BOARD_COVERAGE["attempted"] += 1
         attempted_sources.append(c["source"])
         all_jobs.extend(fetch_company(c))
-        key = board_by_pair.get((c["source"], c["token"]))
-        if key:
-            boards[key]["last_read"] = today_iso
-            read_boards = True
+        key = board_by_pair.get((c["source"], c["token"])) or f"{c['source']}:{c['token']}"
+        record = boards.setdefault(key, {"company": c["name"], "source": c["source"], "token": c["token"],
+                                         "curated": (c["source"], c["token"]) in curated_pairs})
+        record["last_attempt"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        read_boards = True
+        if c["name"] in SOURCE_FAILURES:
+            BOARD_COVERAGE["failed"] += 1
+            continue
+        boards_read += 1
+        BOARD_COVERAGE["successful"] += 1
+        record["last_read"] = today_iso
         time.sleep(0.5)
 
     # dedupe within the run (same posting could appear twice)
@@ -3269,6 +3374,12 @@ def main():
         log(f"Run budget spent: {len(fresh)} job(s) scored on the description "
             "their source supplied, without enrichment")
 
+    for job in fresh:
+        if posting_location_conflict(job):
+            log(f"DROP conflicting posting country {job['posting_countries']!r}: {job['company']} — {job['title']}")
+    fresh = [job for job in fresh if not posting_location_conflict(job)
+             and "url:" + canonical_url(apply_link(job)) not in seen]
+
     # A rescued apply link is BUILT from a token and a posting id, not copied
     # from a page, so it has never been fetched at the point enrichment records
     # it. Verify before handing it over. Only a link enrichment just introduced
@@ -3381,7 +3492,18 @@ def main():
             below_floor.append(job)
         else:
             unverified.append(job)
-    fresh = strong_candidates + viable
+    for job in strong_candidates + viable:
+        job["application_state"] = "apply_first" if is_strong(job) else "worth_reviewing"
+    pending = []
+    for job in unverified:
+        if is_pending(job) and not pending_was_delivered(seen, job):
+            job.update(application_state="needs_checking", pending_reasons=pending_reasons(job))
+            pending.append(job)
+    fresh = strong_candidates + viable + pending
+    unique = {}
+    for job in sorted(fresh, key=delivery_priority):
+        unique.setdefault(canonical_url(apply_link(job)), job)
+    fresh = list(unique.values())
     for job in below_floor:
         check = job.get("fit_check") or {}
         log(f"Rejected {job['company']} - {job['title']}: final fit {job['score']}; "
@@ -3439,11 +3561,14 @@ def main():
     deferred.extend(fresh[limit:])
     fresh = fresh[:limit]
     for job in fresh:
-        job["tier"] = TIER_STRONG if is_strong(job) else TIER_CLOSEST
-        job["application_action"] = "Apply first" if is_strong(job) else "Worth reviewing"
+        if job.get("application_state") == "needs_checking":
+            job["tier"] = job["application_action"] = "Needs checking"
+        else:
+            job["tier"] = TIER_STRONG if is_strong(job) else TIER_CLOSEST
+            job["application_action"] = "Apply first" if is_strong(job) else "Worth reviewing"
     strong = [j for j in fresh if is_strong(j)]
-    competitive = [j for j in fresh if not is_strong(j) and j["score"] >= COMPETITIVE_MIN_SCORE]
-    review = [j for j in fresh if not is_strong(j) and j["score"] < COMPETITIVE_MIN_SCORE]
+    competitive = [j for j in fresh if j["application_state"] == "worth_reviewing" and j["score"] >= COMPETITIVE_MIN_SCORE]
+    review = [j for j in fresh if j["application_state"] == "worth_reviewing" and j["score"] < COMPETITIVE_MIN_SCORE]
 
     # Persist full job/JD evidence before delivery. A later button click can
     # therefore tailor the actual captured posting rather than its title.
@@ -3452,7 +3577,9 @@ def main():
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     lines.append(f"Shortlist: {len(fresh)} of {MAX_JOBS_IN_DIGEST} roles available for review today.")
-    lines.append("Apply first: strong matches. Worth reviewing: relevant options with gaps or questions shown.")
+    lines.append("Apply first: verified strong matches. Worth reviewing: verified options with gaps. Needs checking: fit pending.")
+    lines.append(f"Available: {len(strong)} Apply first; {len(competitive) + len(review)} Worth reviewing; "
+                 f"{sum(j['application_state'] == 'needs_checking' for j in fresh)} Needs checking.")
     shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     last_tier = None
@@ -3474,6 +3601,9 @@ def main():
             if not j.get("description"):
                 flags.append("title-only assessment")
             check = j.get("fit_check") or {}
+            pending = j["application_state"] == "needs_checking"
+            if pending:
+                flags.extend(j["pending_reasons"])
             gaps = "; ".join(b["title"] for b in check.get("blockers") or [])
             if gaps:
                 # Named whatever the ceiling. A single verified gap used to show
@@ -3490,8 +3620,10 @@ def main():
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
-                f"- **{j['title']}** — {j['location']} · {j['application_action']} · fit {j['score']}{pay}\n"
-                f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
+                f"- **{j['title']}** — {j['location']} · {j['application_action']} · "
+                + ("Fit pending" if pending else f"fit {j['score']}") + f"{pay}\n"
+                + ("  Potentially relevant role; application fit has not been verified." if pending else f"  {j['why']}")
+                + f"\n  <{apply_link(j)}>{resume_line}"
             )
             if check.get("strengths"):
                 for strength in check.get("strengths") or []:
@@ -3500,18 +3632,30 @@ def main():
                         lines.append(f"  Background evidence: {strength['title']} — {quotes[0][:180]}")
                         break
 
+    failed_card_keys = set()
+    delivered_cards = {}
     def record_delivery_stats(delivered_ids):
+        accepted = [j for j in fresh if job_key(j) in delivered_ids]
+        def receipt(job):
+            return delivered_cards.get(job_key(job), {"application_state": job["application_state"], "score": job["score"]})
+        states = [receipt(j).get("application_state") for j in accepted]
         save_stats(
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
                 dropped_stale=len(stale), undated=undated,
             unverified_date=len(unverified_dates),
-            strong=len(strong), competitive=len(competitive), review=len(review),
+            strong=states.count("apply_first"),
+            competitive=sum(receipt(j).get("application_state") == "worth_reviewing" and (receipt(j).get("score") or 0) >= COMPETITIVE_MIN_SCORE for j in accepted),
+            review=sum(receipt(j).get("application_state") == "worth_reviewing" and (receipt(j).get("score") or 0) < COMPETITIVE_MIN_SCORE for j in accepted),
             tailored=0, tailor_failed=0,
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
-            fallback_delivered=sum(j["id"] in delivered_ids for j in fresh if not is_strong(j)),
+            fallback_delivered=states.count("worth_reviewing"),
+            needs_checking_delivered=states.count("needs_checking"),
+            delivery_unclassified=sum(state not in ("apply_first", "worth_reviewing", "needs_checking") for state in states),
+            delivery_attempted=len(fresh), delivery_failed=len(failed_card_keys),
+            delivery_unconfirmed=max(0, len(fresh) - len(delivered_ids) - len(failed_card_keys)),
             source_yield=source_yield(all_jobs, discovered_new,
-                                     [j for j in fresh if j["id"] in delivered_ids], paused_feeds, attempted_sources),
+                                      [j for j in fresh if job_key(j) in delivered_ids], paused_feeds, attempted_sources),
             below_floor=len(below_floor), deferred=len(deferred), unverified_fit=len(unverified),
         )
 
@@ -3521,14 +3665,16 @@ def main():
     if worker_url:
         try:
             delivery = post_interactive_cards(worker_url, worker_secret, snapshots, heartbeat=shortlist_summary)
+            delivered_cards = delivery.get("delivered_cards") or {}
             # Worker summaries include heartbeat keys; only job cards count as
             # delivered or pending when deciding whether the digest failed.
             job_keys = {snapshot["job_key"] for snapshot in snapshots}
             accepted_keys = job_keys.intersection(delivery.get("posted", []) + delivery.get("existing", []))
             uncertain_keys = job_keys.intersection(delivery.get("in_progress", []) + delivery.get("retryable", []))
             failed = [item for item in delivery.get("failed", []) if item.get("job_key") in job_keys]
+            failed_card_keys.update(item["job_key"] for item in failed)
             interactive_delivery_claimed = bool(accepted_keys or uncertain_keys or failed)
-            delivered_ids = {snapshot["source_id"] for snapshot in snapshots if snapshot["job_key"] in accepted_keys}
+            delivered_ids = accepted_keys
             log(
                 f"Interactive delivery accepted {len(accepted_keys)} of {len(snapshots)} cards "
                 f"({len(failed)} failed)"
@@ -3569,10 +3715,10 @@ def main():
         # digest went out again the next morning -- re-fetching every
         # description and paying for a second ranking call -- for as long as
         # the Worker stayed unreachable.
-        delivered_ids = {job["id"] for job in fresh}
+        delivered_ids = {job_key(job) for job in fresh}
 
     for j in fresh:
-        if j["id"] in delivered_ids:
+        if job_key(j) in delivered_ids:
             remember(seen, j, today)
     save_seen(seen)
     record_delivery_stats(delivered_ids)

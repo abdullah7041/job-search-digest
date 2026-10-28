@@ -11,10 +11,10 @@ import re
 
 JD_MIN_CHARS = 400
 JD_MIN_WORDS = 60
-RESPONSIBILITY_MARKERS = ("responsibil", "you will", "duties", "about the role")
+RESPONSIBILITY_MARKERS = ("responsibil", "responsible for", "you will", "duties", "about the role")
 REQUIREMENT_MARKERS = ("requirement", "qualification", "experience", "skills")
 RESPONSIBILITY_HEADINGS = (
-    "what you'll do", "what you’ll do", "what you will do", "your impact", "job description",
+    "what you'll do", "what you’ll do", "what you will do", "your impact", "job description", "the role",
 )
 
 # The headings a real posting puts in front of the part that states what the job
@@ -222,7 +222,8 @@ def snapshot_grade(snapshot: dict) -> str:
 
 def job_key(job: dict) -> str:
     """Stable provider-scoped key suitable for a short Discord custom_id."""
-    return f"{job.get('source') or 'unknown'}:{job.get('id') or job.get('url') or 'unknown'}"
+    prefix = "pending:" if job.get("application_state") == "needs_checking" else ""
+    return prefix + f"{job.get('source') or 'unknown'}:{job.get('id') or job.get('url') or 'unknown'}"
 
 
 def make_snapshot(job: dict, captured_at: str) -> dict:
@@ -245,8 +246,11 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "salary": job.get("salary", ""),
         "tier": job.get("tier", "Worth reviewing"),
         "application_action": job.get("application_action", ""),
-        "score": job.get("score", 0),
-        "why": job.get("why", ""),
+        "application_state": job.get("application_state", ""),
+        "pending_reasons": job.get("pending_reasons") or [],
+        "score": None if job.get("application_state") == "needs_checking" else job.get("score", 0),
+        "why": ("Potentially relevant role; application fit has not been verified."
+                if job.get("application_state") == "needs_checking" else job.get("why", "")),
         "ranking_verified": bool(job.get("ranking_verified")),
         # Additive, like ceiling and jd.grade below. Which target track the
         # ranker judged this against, and the four rubric categories it
@@ -289,7 +293,8 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
 
 def job_card_payload(snapshot: dict) -> dict:
     """Return an application-owned Discord message with one Tailor CV button."""
-    footer = f"{snapshot['tier']} · fit {snapshot['score']}"
+    pending = snapshot.get("application_state") == "needs_checking"
+    footer = f"{snapshot['tier']} · " + ("Fit pending" if pending else f"fit {snapshot['score']}")
     age = snapshot.get("age_days")
     if type(age) is int and age >= 0:
         footer += f" · Posted {age}d ago"
@@ -307,7 +312,9 @@ def job_card_payload(snapshot: dict) -> dict:
     # so a card said "here is what the posting demands" and "send me the
     # posting" in the same breath. Partial text is still text.
     status = (snapshot.get("jd") or {}).get("status")
-    if status == "missing":
+    if snapshot.get("application_state") and (status != "captured" or snapshot_grade(snapshot) != GRADE_FULL):
+        footer += " · Tailor CV unavailable until the full posting is verified"
+    elif status == "missing":
         footer += " · No posting text archived; tailoring reads the link"
     elif status != "captured":
         footer += " · Partial posting archived; tailoring re-reads the link"
@@ -338,6 +345,8 @@ def job_card_payload(snapshot: dict) -> dict:
     ]
     if snapshot.get("application_action"):
         fields.append({"name": "Next step", "value": snapshot["application_action"], "inline": False})
+    if snapshot.get("pending_reasons"):
+        fields.append({"name": "Needs checking", "value": "\n".join("• " + reason for reason in snapshot["pending_reasons"])[:1024], "inline": False})
     if snapshot.get("match_evidence"):
         fields.append({"name": "Background evidence",
                        "value": "\n".join(f"• {item['title']}: {item['resume_quote']}"
@@ -369,7 +378,7 @@ def job_card_payload(snapshot: dict) -> dict:
                 "style": 1,
                 "label": "Tailor CV",
                 "custom_id": f"tailor:{hashlib.sha256(snapshot['job_key'].encode('utf-8')).hexdigest()[:32]}",
-                "disabled": False,
+                "disabled": bool(snapshot.get("application_state")) and (status != "captured" or snapshot_grade(snapshot) != GRADE_FULL),
             }],
         }],
         "allowed_mentions": {"parse": []},
@@ -411,7 +420,7 @@ def score_instability(archive_dir: str = "jobs", window_days: int = INSTABILITY_
         for snapshot in archive.get("jobs") or []:
             # Only model scores are comparable; the keyword fallback is a
             # constant for a given title and would read as perfect stability.
-            if not snapshot.get("ranking_verified"):
+            if not snapshot.get("ranking_verified") or snapshot.get("score") is None:
                 continue
             digest = (snapshot.get("jd") or {}).get("sha256") or ""
             if not digest:

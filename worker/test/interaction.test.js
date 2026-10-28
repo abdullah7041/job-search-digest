@@ -17,6 +17,7 @@ import worker, {
   createResumePreview,
   currentConfirmedResume,
   tailoringInputFromSnapshotRow,
+  readinessDeliveryCounts,
   taskAccessStatus,
   taskExpiryMilliseconds,
   PASTE_MODAL,
@@ -192,7 +193,7 @@ test("rejects a hash-valid JD fragment even if it is labeled captured", async ()
 });
 
 test("tailoring accepts complete postings with normal task headings", async () => {
-  for (const heading of ["What you'll do", "What You’ll Do", "What You Will Do", "Job Description:"]) {
+  for (const heading of ["What you'll do", "What You’ll Do", "What You Will Do", "Job Description:", "THE ROLE: DEPLOYING IMPACT"]) {
     const text = `Our reporting team supports commercial operations and customer accounts.\n${heading}\n` +
       "Build Power BI dashboards for weekly sales performance and inventory reporting. " +
       "Analyze customer segments, pricing trends, product demand, and operational waste. " +
@@ -220,6 +221,44 @@ test("tailoring rejects marketing prose that only mentions task headings", async
   await assert.rejects(tailoringInputFromSnapshotRow(
     { job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) }, snapshot.job_key,
   ), /complete job description/i);
+});
+
+test("new pending cards cannot bypass an incomplete JD with a forged click", async () => {
+  const snapshot = { job_key: "pending:ashby:lead", application_state: "needs_checking",
+    jd: { status: "incomplete", grade: "incomplete", text: "Build AI apps." } };
+  const row = () => ({ job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) });
+  await assert.rejects(tailoringInputFromSnapshotRow(row(), snapshot.job_key), /complete job description/i);
+  snapshot.jd = { status: "captured", grade: "full", text: FULL_JD,
+    sha256: createHash("sha256").update(FULL_JD).digest("hex") };
+  assert.equal((await tailoringInputFromSnapshotRow(row(), snapshot.job_key)).job_snapshot.job_key, snapshot.job_key);
+  snapshot.jd.text += " altered";
+  await assert.rejects(tailoringInputFromSnapshotRow(row(), snapshot.job_key), /digest/i);
+});
+
+test("readiness receipt counts only accepted job cards and separates uncertain delivery", () => {
+  const cards = ["apply_first", "worth_reviewing", "needs_checking", "needs_checking"].map((state, i) => ({
+    job_key: String(i), snapshot: { application_state: state },
+  }));
+  assert.deepEqual(readinessDeliveryCounts(cards, {
+    posted: ["0", "summary"], existing: ["2"], retryable: ["3"], failed: [{ job_key: "1" }],
+  }), { attempted: 4, accepted: 2, failed: 1, unconfirmed: 1,
+    apply_first: 1, worth_reviewing: 0, needs_checking: 1, unclassified: 0 });
+});
+
+test("existing delivery receipts retain the original snapshot's readiness", async () => {
+  const original = { application_state: "apply_first", score: 88 };
+  const db = { prepare(sql) { return { bind() { return {
+    async run() { return { meta: { changes: 0 } }; },
+    async first() { return sql.includes("snapshot_json") ? { snapshot_json: JSON.stringify(original) } : { state: "posted" }; },
+  }; } }; } };
+  const card = { job_key: "ashby:existing", snapshot: { application_state: "worth_reviewing", score: 70 } };
+  const result = await postCard({ DB: db }, card);
+  assert.equal(result.application_state, "apply_first");
+  assert.equal(result.score, 88);
+  const counts = readinessDeliveryCounts([card], { existing: [card.job_key],
+    delivered_cards: { [card.job_key]: result } });
+  assert.equal(counts.apply_first, 1);
+  assert.equal(counts.worth_reviewing, 0);
 });
 
 test("persists the runner's explicit completed or failed status", () => {

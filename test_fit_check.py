@@ -169,6 +169,26 @@ class TestBlockerVerification(unittest.TestCase):
 
 
 class TestStrengthVerification(unittest.TestCase):
+
+    def test_ordinary_title_wording_does_not_erase_a_verified_strength(self):
+        result = fit_check.verify(answer(strengths=[strength("Demonstrated PostgreSQL integration",
+            "Supabase (PostgreSQL) with role-based access control")]), JOB, RESUME)
+        self.assertEqual(len(result["strengths"]), 1)
+
+    def test_strength_audit_distinguishes_empty_response_from_rejected_evidence(self):
+        raw = answer(strengths=[
+            strength("PostgreSQL integration", "Supabase (PostgreSQL) with role-based access control"),
+            strength("Production Airflow", "Supabase (PostgreSQL) with role-based access control"),
+            strength("Python", "This made-up quote is not in the resume at all"),
+            strength("RAG concepts", "AI & LLM: prompt engineering, evaluation pipelines, RAG concepts, n8n"),
+        ])
+        result = fit_check.verify(raw, JOB, RESUME)
+        self.assertEqual(result["strength_audit"]["received"], 4)
+        self.assertEqual(result["strength_audit"]["kept"], 1)
+        self.assertEqual(result["strength_audit"]["discarded"], {
+            "unsupported_title_terms": 1, "invalid_quote": 1, "not_demonstrated": 1,
+        })
+        self.assertEqual(fit_check.verify(answer(), JOB, RESUME)["strength_audit"]["received"], 0)
     def test_background_quote_cannot_append_an_unstated_tool(self):
         result = fit_check.verify(answer(strengths=[strength("LLM evaluation pipeline",
             "Built an LLM evaluation pipeline that judge-scores prompt, temperature, and model variants Kubernetes")]),
