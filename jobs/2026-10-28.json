@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-28",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "ashby:1330dd9d-0d98-4ac5-8f6c-69b160f635cf",
+      "captured_at": "2026-10-28T00:00:00Z",
+      "source": "ashby",
+      "source_id": "1330dd9d-0d98-4ac5-8f6c-69b160f635cf",
+      "title": "Agent Engineer",
+      "company": "Sarj AI",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://jobs.ashbyhq.com/sarjai/1330dd9d-0d98-4ac5-8f6c-69b160f635cf",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 69,
+      "why": "Excellent match on LLM agents, APIs, and Python; lacks the required bachelor's degree. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 40,
+          "max": 40,
+          "note": "Strong match on LLMs, prompt engineering, APIs, JSON, Python, and bilingual deli"
+        },
+        "experience": {
+          "score": 25,
+          "max": 30,
+          "note": "Proven hands-on experience building and shipping AI agent applications end to en"
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Has technical diploma; lacks stated mandatory Bachelor's degree in CS/Engineerin"
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Perfect fit for up to 2 years experience and Riyadh location."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Designed LLM workflows with anti-hallucination rules",
+          "resume_quote": "Designed LLM workflows for bilingual resume parsing with Arabic/Hijri dates, job matching, gap analysis, interview questions, and evidence-constrained improvement, with Zod validat"
+        },
+        {
+          "title": "Built separate gold-set evaluation harnesses",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows to catch regressions a"
+        },
+        {
+          "title": "Integrating 5 ATS platforms with automated delivery",
+          "resume_quote": "Built a scheduled Saudi tech job-discovery and ranking pipeline integrating 5 ATS platforms (Greenhouse, Ashby, Workable, Lever, Pinpoint) with automated Discord delivery."
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Missing Bachelor's Degree in Required Field"
+      ],
+      "unclear": [
+        {
+          "topic": "Voice AI Domain Experience",
+          "reason": "The role specifically emphasizes building Voice AI agents and analyzing real calls, whereas the candidate's demonstrated AI work focuses primarily on text and document workflows.",
+          "evidence_needed": "Evidence of experience building, evaluating, or integrating Voice AI agents or handling spoken conversation flows."
+        },
+        {
+          "topic": "Direct External Client Delivery",
+          "reason": "The role requires acting as a key client point of contact and managing client project delivery end-to-end, while the candidate's engineering background is solo-product founder experience.",
+          "evidence_needed": "Demonstrated experience managing enterprise or B2B client delivery, requirements gathering, and external stakeholder management in an engineering context."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-13T14:25:19.216+00:00",
+      "age_days": 15,
+      "jd": {
+        "status": "captured",
+        "text": "About Us\n\nBuilt with 💜 in KSA and leveraging Silicon Valley expertise, we’re creating innovative solutions in the realm of Voice AI and AI agents. As we continue our rapid growth trajectory in an exciting and dynamic market, we’re looking for A-players to join our team.\n\n\n\nRole Overview \n\nAs an Agent Engineer, you’ll design, configure, and improve Voice AI agents that hold real conversations with our clients’ customers. Think of it as a client-facing prompt engineering role with project ownership: you’ll lead client projects from discovery to go-live, build prompts and conversation flows, integrate agents with client systems, and continuously improve performance based on real calls. You’ll work closely with our Operations, Engineering, and Product teams, and act as a key point of contact for clients throughout delivery.\n\nKey Responsibilities\n\nBuild & Integrate\n\n - Design and refine prompts and conversation flows that shape how agents speak, respond, and handle complex requests.\n\n - Integrate agents with client systems (e.g. CRMs, booking and ticketing tools) through APIs and webhooks.\n\n - Build Proofs of Concept (POCs) for new client use cases, from scoping to demo-ready delivery.\n\n - Test agents across scenarios and edge cases to ensure reliable performance before and after launch.\n\nOwn Delivery\n\n - Own end-to-end delivery of client projects, including scope, timelines, quality, and outcomes.\n\n - Serve as the main point of contact for clients, leading requirements gathering, progress updates, and expectation management.\n\n - Manage multiple projects at once, prioritizing effectively and flagging risks early.\n\nImprove & Optimize\n\n - Analyze real calls and transcripts against our quality rubric, identifying errors, hallucinations, and recurring failure patterns.\n\n - Turn insights into prompt, flow, and integration improvements, and share feedback that informs our product roadmap.\n\n - Contribute to weekly quality reports and help evolve our quality standards and best practices.\n\n - Support and guide interns on prompting and delivery best practices.\n\n\n\nRequirements\n\n - Bachelor’s degree in Computer Science, Engineering, or a related field.\n\n - Up to 2 years of relevant experience; fresh graduates with previous relevant internships are welcome to apply.\n\n - Fluent in Arabic and English, written and spoken.\n\n - Excellent communication skills and confidence leading client conversations.\n\n - Solid understanding of LLMs and prompt engineering.\n\n - Working knowledge of APIs, webhooks, and JSON.\n\n - Experience with a scripting language (e.g. Python or JavaScript) is a plus.\n\n - Proven ability to manage projects or deliverables with clear ownership.\n\n\n\nWhy Join Us?\n\n - Opportunity to be part of a high-growth, innovative tech start-up\n\n - Collaborative, mission-driven culture\n\n - Hands-on experience working on impactful AI products",
+        "sha256": "2fef634c803c9cd1fc61924e534ce8e9d4c496f69b7fba84b111cf6ca7e45cd8",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "ashby:5089f71b-5dfc-43be-b763-7a16c4090c4f",
+      "captured_at": "2026-10-28T00:00:00Z",
+      "source": "ashby",
+      "source_id": "5089f71b-5dfc-43be-b763-7a16c4090c4f",
+      "title": "QA Engineer",
+      "company": "Sarj AI",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://jobs.ashbyhq.com/sarjai/5089f71b-5dfc-43be-b763-7a16c4090c4f",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 45,
+      "why": "Lacks 3+ years dedicated software QA experience despite strong AI evaluation background.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 25,
+          "max": 40,
+          "note": "Demonstrated AI evaluation and CI testing, but lacks formal QA test frameworks."
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Has software experience since August 2025; misses 3+ years dedicated QA requirem"
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No explicit degree required; has technical diploma."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Based in Riyadh and fluent bilingual Arabic and English."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Built separate gold-set evaluation harnesses",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows to catch regressions"
+        },
+        {
+          "title": "Quality gates spanning linting, type checks, tests",
+          "resume_quote": "quality gates spanning linting, type checks, tests, builds, localization validation, and AI evaluations."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 3+ Years in Software Quality Assurance"
+      ],
+      "unclear": [
+        {
+          "topic": "Formal QA Process and Tooling Experience",
+          "reason": "The candidate has built automated evaluation harnesses and CI gates, but it is unclear if they have formal QA bug-tracking and manual test planning experience.",
+          "evidence_needed": "Evidence of designing standard test plans, test cases, and using formal QA bug tracking tools in a team environment."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-13T14:56:16.594+00:00",
+      "age_days": 15,
+      "jd": {
+        "status": "captured",
+        "text": "Built with 💜 in KSA and leveraging Silicon Valley expertise, we’re creating innovative solutions in the realm of Voice AI and AI agents. As we continue our rapid growth trajectory in an exciting and dynamic market, we’re looking for A-players to join our team.\n\n\nROLE OVERVIEW\n\nAs a Quality Assurance Engineer, you'll work closely with our engineering and product teams to ensure the quality, reliability, and performance of our products. You'll contribute to testing processes, identifying bugs, and improving product quality across various stages of development. This is an opportunity to gain hands-on experience in QA practices within a high-growth AI start-up environment.\n\n \n\n\nKEY RESPONSIBILITIES\n\n - Design, develop, and execute comprehensive test plans and test cases\n\n - Perform manual and automated testing to ensure product quality\n\n - Identify, document, and track bugs and issues using appropriate tools\n\n - Collaborate with engineering and product teams to resolve defects\n\n - Participate in regression, functional, and performance testing\n\n - Help improve QA processes, testing frameworks, and best practices\n\n - Support release cycles by validating features before deployment\n\n - Contribute to documentation of test cases, results, and QA procedures\n\n \n\n\nREQUIREMENTS\n\n - 3+ years of expierence in software quality assurance, testing, and AI technologies\n\n - Deep understanding of software testing concepts and methodologies\n\n - Strong attention to detail and problem-solving skills\n\n - Excellent communication and analytical abilities\n\n - Ability to speak and write fluently in both Arabic & English\n\n - Familiarity with testing tools or programming languages is a plus\n\n - Based in KSA, preferably Riyadh\n\n \n\n\nWHY JOIN US?\n\n - Opportunity to be part of a high-growth, innovative tech start-up\n\n - Collaborative, mission-driven culture\n\n - Hands-on experience working on impactful AI products\n\n - Exposure to real-world QA processes and modern testing tools",
+        "sha256": "e180de3a26380ced32339e1c8542d3954a22c2c6ef04f575ef7c31faa02cecf5",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "workable:6209978",
+      "captured_at": "2026-10-28T00:00:00Z",
+      "source": "workable",
+      "source_id": "6209978",
+      "title": "DevOps Engineer (Saudi Only)",
+      "company": "Lucidya",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/lucidya/j/FAE968EB43/",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 45,
+      "why": "Has GitHub Actions CI/CD experience but lacks required Kubernetes, Docker, and Terraform.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 15,
+          "max": 40,
+          "note": "Shows GitHub Actions and serverless, but lacks Kubernetes, Docker, and Terraform"
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Lacks dedicated DevOps/Platform engineering tenure despite CI/CD pipeline automa"
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No degree requirement stated."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Saudi national based in Riyadh matching 1-3 years seniority."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "GitHub Actions and quality gates",
+          "resume_quote": "OpenRouter metadata, GitHub Actions, and quality gates spanning linting, type checks, tests, builds, localization validation"
+        },
+        {
+          "title": "AI/application observability with Sentry, Telegram alerts",
+          "resume_quote": "Added AI/application observability with Sentry, Telegram alerts, OpenRouter metadata, GitHub Actions"
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required DevOps or Platform Engineering Experience",
+        "Lack of Evidenced Major Cloud Provider Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Kubernetes and Docker Container Orchestration",
+          "reason": "The role requires deploying and managing containerized applications in Kubernetes, but the resume does not mention Docker or Kubernetes usage in experience or projects.",
+          "evidence_needed": "Evidence of building, containerizing, and orchestrating services via Docker and Kubernetes clusters."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-19T00:00:00.000Z",
+      "age_days": 9,
+      "jd": {
+        "status": "captured",
+        "text": "About Lucidya\nLucidya is an AI-native Customer Experience Intelligence platform enabling enterprises to understand, engage, and retain customers at scale. Unlike tools that just surface insights, Lucidya completes the loop with proprietary AI capabilities, helping teams take action and improve customer experiences across marketing, support, and research.\nAs we scale globally, building reliable, scalable, and automated infrastructure is a top priority. DevOps is a core pillar of our engineering strategy, and we are investing heavily in deployment pipelines, observability, and operational efficiency across all products.\nWhy This Role Matters\nOur engineering teams deliver fast-moving, AI-driven products, and the backbone of their speed and reliability is solid infrastructure and automation. As a DevOps Engineer, you’ll ensure our systems scale seamlessly, deployments happen without friction, and incidents are caught before they impact users. You’ll enable our teams to move faster, focus on building features, and trust that the platform is rock-solid.\nYou’ll be part of shaping the operational culture at Lucidya, where automation, reliability, and proactive problem solving aren’t just buzzwords, they’re outcomes we obsess over every day.\nWhat You’ll Do\nBuild, maintain, and improve CI/CD pipelines to support reliable and efficient software delivery.\nDeploy and manage containerized applications using Docker and Kubernetes.\nSupport cloud infrastructure management and automation using Infrastructure as Code tools such as Terraform.\nImplement and maintain monitoring, logging, and alerting solutions using tools such as Grafana.\nAutomate repetitive operational tasks and support development teams with infrastructure and deployment needs.\nTroubleshoot deployment, application, and infrastructure issues, identifying root causes and implementing solutions.\nCollaborate with engineers to improve system performance, reliability, and release processes.\nFollow security best practices across deployment pipelines, applications, and infrastructure.\nParticipate in incident investigation and resolution, escalating complex issues when necessary.\nContribute to documentation and continuous improvement of infrastructure workflows and operational processes.\nDay-to-Day You’ll:\nDeploy applications and support routine operations within Kubernetes environments.\nBuild, maintain, and troubleshoot CI/CD pipelines for new and existing services.\nMonitor system health, investigate alerts, and resolve common deployment and infrastructure issues.\nSupport developers with application deployments, environment configurations, and infrastructure requests.\nWrite and maintain scripts to automate repetitive operational tasks.\nAssist with infrastructure provisioning and configuration management.\nCollaborate with senior engineers to investigate complex incidents and improve system reliability.\nContinuously identify opportunities to improve automation, observability, and operational efficiency.\nSuccess Looks Like:\nReliable CI/CD pipelines with fewer deployment failures and smoother releases.\nSuccessful deployment and operation of containerized applications in Kubernetes.\nFaster identification and resolution of common infrastructure and deployment issues.\nReduced manual operational effort through automation.\nImproved monitoring, logging, and visibility into application health.\nEffective collaboration with engineering teams and clear documentation of operational processes.\nFirst 90 Days\n0–30 Days: Understand Lucidya’s infrastructure, architecture, deployment workflows, tools, and operational practices. Become familiar with existing cloud environments and Kubernetes deployments.\n30–60 Days: Contribute to CI/CD pipeline improvements, support routine deployments, troubleshoot common issues, and take ownership of smaller infrastructure tasks with guidance from senior engineers.\n60–90 Days: Successfully onboard 2–3 services onto the existing Kubernetes environment, with appropriate CI/CD pipelines, monitoring, and health checks, collaborating with senior engineers where needed.\nRequirements\nWho You Are\nExperienced: You have 1–3 years of hands-on experience in DevOps, Cloud Infrastructure, Platform Engineering, or a related role.\nHands-On: You have practical experience with CI/CD pipelines, Docker, Kubernetes, and cloud infrastructure.\nProactive Problem Solver: You can investigate common technical issues, identify root causes, and implement solutions while knowing when to escalate complex problems.\nCollaborative: You work closely with developers and other engineers to support deployments and improve infrastructure reliability.\nCurious & Growth-Oriented: You are eager to learn, improve existing systems, and develop your expertise in cloud infrastructure, automation, and observability.\nQuality-Focused: You understand the importance of reliable deployments, infrastructure security, monitoring, and operational documentation.\nTechnical Skills You’ll Bring\nCI/CD: Hands-on experience building, maintaining, or improving CI/CD pipelines using tools such as GitHub Actions, GitLab CI/CD, Jenkins, or similar.\nContainers & Orchestration: Practical experience with Docker and working knowledge of Kubernetes, including application deployments, configurations, and troubleshooting.\nInfrastructure as Code: Familiarity with Terraform, CloudFormation, or similar tools for provisioning and managing infrastructure.\nCloud Platforms: Hands-on experience with at least one major cloud provider, such as AWS or GCP.\nScripting & Automation: Ability to write basic automation scripts using Bash or Python.\nMonitoring & Observability: Familiarity with monitoring, logging, and alerting tools such as Grafana, Prometheus, or similar.\nConfiguration Management: Basic knowledge of tools such as Ansible, Puppet, or Chef.\nLinux & Networking: Working knowledge of Linux systems, networking fundamentals, DNS, HTTP/HTTPS, and troubleshooting connectivity issues.\nVersion Control: Experience usin",
+        "sha256": "6a8f0a2e2af5e3d417c5c71140d4d03c05501c0a422dd3c808397ec06be4529f",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
