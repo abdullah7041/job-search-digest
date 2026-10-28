@@ -222,7 +222,8 @@ def snapshot_grade(snapshot: dict) -> str:
 
 def job_key(job: dict) -> str:
     """Stable provider-scoped key suitable for a short Discord custom_id."""
-    return f"{job.get('source') or 'unknown'}:{job.get('id') or job.get('url') or 'unknown'}"
+    prefix = "pending:" if job.get("application_state") == "needs_checking" else ""
+    return prefix + f"{job.get('source') or 'unknown'}:{job.get('id') or job.get('url') or 'unknown'}"
 
 
 def make_snapshot(job: dict, captured_at: str) -> dict:
@@ -245,8 +246,11 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "salary": job.get("salary", ""),
         "tier": job.get("tier", "Worth reviewing"),
         "application_action": job.get("application_action", ""),
-        "score": job.get("score", 0),
-        "why": job.get("why", ""),
+        "application_state": job.get("application_state", ""),
+        "pending_reasons": job.get("pending_reasons") or [],
+        "score": None if job.get("application_state") == "needs_checking" else job.get("score", 0),
+        "why": ("Potentially relevant role; application fit has not been verified."
+                if job.get("application_state") == "needs_checking" else job.get("why", "")),
         "ranking_verified": bool(job.get("ranking_verified")),
         # Additive, like ceiling and jd.grade below. Which target track the
         # ranker judged this against, and the four rubric categories it
@@ -411,7 +415,7 @@ def score_instability(archive_dir: str = "jobs", window_days: int = INSTABILITY_
         for snapshot in archive.get("jobs") or []:
             # Only model scores are comparable; the keyword fallback is a
             # constant for a given title and would read as perfect stability.
-            if not snapshot.get("ranking_verified"):
+            if not snapshot.get("ranking_verified") or snapshot.get("score") is None:
                 continue
             digest = (snapshot.get("jd") or {}).get("sha256") or ""
             if not digest:

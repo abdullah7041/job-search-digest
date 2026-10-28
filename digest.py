@@ -47,7 +47,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, jsonld_posting_countries, strip_html
 from job_archive import (GRADE_FULL, GRADE_TEASER, jd_completeness_failures, jd_grade, jd_requirements, jd_signal,
-                         make_snapshot, score_instability, write_snapshots)
+                         job_key, make_snapshot, score_instability, write_snapshots)
 import fit_check
 from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
@@ -2358,10 +2358,11 @@ def remember(seen, job, today):
     relists the same posting under a fresh URL and only the description
     fingerprint catches that.
     """
-    seen[job_identity(job)] = today
+    prefix = "pending:" if job.get("application_state") == "needs_checking" else ""
+    seen[prefix + job_identity(job)] = today
     key = description_key(job)
     if key:
-        seen[key] = today
+        seen[prefix + key] = today
 
 
 def defer_below_floor(seen, job, today):
@@ -2438,7 +2439,8 @@ def delivery_priority(job):
     priorities = PROFILE.get("title_priorities", {})
     role_priority = min((priority for title, priority in priorities.items()
                          if keyword_hits(job.get("title", ""), [title.lower()])), default=99)
-    return (not is_strong(job), (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
+    state_order = 2 if job.get("application_state") == "needs_checking" else (0 if is_strong(job) else 1)
+    return (state_order, (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
             -job.get("score", 0), str(job.get("id", "")))
 
 
@@ -2504,6 +2506,36 @@ def is_viable(job):
                 and any(e.get("source") == "resume" and e.get("snippet")
                         for strength in check.get("strengths") or []
                         for e in strength.get("evidence") or []))
+
+
+def pending_reasons(job):
+    reasons = []
+    if jd_grade(job.get("description") or "") != GRADE_FULL:
+        reasons.append("Full job description needs verification.")
+    check = job.get("fit_check") or {}
+    if check.get("note"):
+        reasons.append("Requirements check unavailable: " + str(check["note"])[:160])
+    elif check.get("ceiling", "unknown") == "unknown":
+        reasons.append("Requirements and qualification gaps have not been checked.")
+    if not any(e.get("source") == "resume" and e.get("snippet")
+               for strength in check.get("strengths") or [] for e in strength.get("evidence") or []):
+        reasons.append("No positive match to demonstrated resume work has been verified.")
+    return reasons
+
+
+def is_pending(job):
+    return bool(job.get("ranking_verified") and job.get("score", 0) >= 40
+                and job.get("track") in {track["name"] for track in PROFILE.get("tracks", [])}
+                and type(job.get("age_days")) is int and 0 <= job["age_days"] <= FALLBACK_MAX_JOB_AGE_DAYS
+                and apply_link(job) and not on_paid_relister(apply_link(job))
+                and job.get("link_status") != LINK_CLOSED and matches_filters(job)
+                and not any(b.get("type") in ("location_work_authorization", "role_scope_mismatch")
+                            for b in (job.get("fit_check") or {}).get("blockers") or [])
+                and pending_reasons(job))
+
+
+def pending_was_delivered(seen, job):
+    return any("pending:" + key in seen for key in (job_identity(job), description_key(job)) if key)
 
 
 def split_tiers(jobs):
@@ -2907,6 +2939,7 @@ def save_stats(stats, today, fetched, matched, new, avg_score, **metrics):
         "new": new, "avg_score": avg_score,
         "unverified_date": 0, "unverified_fit": 0,
         "fallback_delivered": 0,
+        "needs_checking_delivered": 0,
     }
     row.update(metrics)
     row["board_coverage"] = dict(BOARD_COVERAGE)
@@ -3437,7 +3470,14 @@ def main():
             below_floor.append(job)
         else:
             unverified.append(job)
-    fresh = strong_candidates + viable
+    for job in strong_candidates + viable:
+        job["application_state"] = "apply_first" if is_strong(job) else "worth_reviewing"
+    pending = []
+    for job in unverified:
+        if is_pending(job) and not pending_was_delivered(seen, job):
+            job.update(application_state="needs_checking", pending_reasons=pending_reasons(job))
+            pending.append(job)
+    fresh = strong_candidates + viable + pending
     for job in below_floor:
         check = job.get("fit_check") or {}
         log(f"Rejected {job['company']} - {job['title']}: final fit {job['score']}; "
@@ -3495,11 +3535,14 @@ def main():
     deferred.extend(fresh[limit:])
     fresh = fresh[:limit]
     for job in fresh:
-        job["tier"] = TIER_STRONG if is_strong(job) else TIER_CLOSEST
-        job["application_action"] = "Apply first" if is_strong(job) else "Worth reviewing"
+        if job.get("application_state") == "needs_checking":
+            job["tier"] = job["application_action"] = "Needs checking"
+        else:
+            job["tier"] = TIER_STRONG if is_strong(job) else TIER_CLOSEST
+            job["application_action"] = "Apply first" if is_strong(job) else "Worth reviewing"
     strong = [j for j in fresh if is_strong(j)]
-    competitive = [j for j in fresh if not is_strong(j) and j["score"] >= COMPETITIVE_MIN_SCORE]
-    review = [j for j in fresh if not is_strong(j) and j["score"] < COMPETITIVE_MIN_SCORE]
+    competitive = [j for j in fresh if j["application_state"] == "worth_reviewing" and j["score"] >= COMPETITIVE_MIN_SCORE]
+    review = [j for j in fresh if j["application_state"] == "worth_reviewing" and j["score"] < COMPETITIVE_MIN_SCORE]
 
     # Persist full job/JD evidence before delivery. A later button click can
     # therefore tailor the actual captured posting rather than its title.
@@ -3562,12 +3605,16 @@ def main():
             link_closed=len(closed), link_unknown=unknown_count,
                 dropped_stale=len(stale), undated=undated,
             unverified_date=len(unverified_dates),
-            strong=len(strong), competitive=len(competitive), review=len(review),
+            strong=sum(job_key(j) in delivered_ids for j in strong),
+            competitive=sum(job_key(j) in delivered_ids for j in competitive),
+            review=sum(job_key(j) in delivered_ids for j in review),
             tailored=0, tailor_failed=0,
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
-            fallback_delivered=sum(j["id"] in delivered_ids for j in fresh if not is_strong(j)),
+            fallback_delivered=sum(job_key(j) in delivered_ids for j in fresh if j["application_state"] == "worth_reviewing"),
+            needs_checking_delivered=sum(job_key(j) in delivered_ids for j in fresh if j["application_state"] == "needs_checking"),
+            delivery_attempted=len(fresh), delivery_failed=len(fresh) - len(delivered_ids),
             source_yield=source_yield(all_jobs, discovered_new,
-                                     [j for j in fresh if j["id"] in delivered_ids], paused_feeds, attempted_sources),
+                                      [j for j in fresh if job_key(j) in delivered_ids], paused_feeds, attempted_sources),
             below_floor=len(below_floor), deferred=len(deferred), unverified_fit=len(unverified),
         )
 
@@ -3584,7 +3631,7 @@ def main():
             uncertain_keys = job_keys.intersection(delivery.get("in_progress", []) + delivery.get("retryable", []))
             failed = [item for item in delivery.get("failed", []) if item.get("job_key") in job_keys]
             interactive_delivery_claimed = bool(accepted_keys or uncertain_keys or failed)
-            delivered_ids = {snapshot["source_id"] for snapshot in snapshots if snapshot["job_key"] in accepted_keys}
+            delivered_ids = accepted_keys
             log(
                 f"Interactive delivery accepted {len(accepted_keys)} of {len(snapshots)} cards "
                 f"({len(failed)} failed)"
@@ -3625,10 +3672,10 @@ def main():
         # digest went out again the next morning -- re-fetching every
         # description and paying for a second ranking call -- for as long as
         # the Worker stayed unreachable.
-        delivered_ids = {job["id"] for job in fresh}
+        delivered_ids = {job_key(job) for job in fresh}
 
     for j in fresh:
-        if j["id"] in delivered_ids:
+        if job_key(j) in delivered_ids:
             remember(seen, j, today)
     save_seen(seen)
     record_delivery_stats(delivered_ids)
