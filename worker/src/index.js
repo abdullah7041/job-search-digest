@@ -55,12 +55,14 @@ export function readinessDeliveryCounts(cards, summary) {
   const accepted = new Set([...(summary.posted || []), ...(summary.existing || [])]);
   const failed = new Set((summary.failed || []).map((item) => item.job_key));
   const counts = { attempted: cards.length, accepted: 0, failed: 0, unconfirmed: 0,
-    apply_first: 0, worth_reviewing: 0, needs_checking: 0 };
+    apply_first: 0, worth_reviewing: 0, needs_checking: 0, unclassified: 0 };
   for (const card of cards) {
     if (accepted.has(card.job_key)) {
       counts.accepted++;
-      const state = card.snapshot?.application_state;
+      const state = Object.hasOwn(summary.delivered_cards || {}, card.job_key)
+        ? summary.delivered_cards[card.job_key].application_state : card.snapshot?.application_state;
       if (["apply_first", "worth_reviewing", "needs_checking"].includes(state)) counts[state]++;
+      else counts.unclassified++;
     } else if (failed.has(card.job_key)) counts.failed++;
     else counts.unconfirmed++;
   }
@@ -342,6 +344,13 @@ export async function postCard(env, card) {
   ).bind(card.job_key, leaseUntil).run();
   if (claim.meta?.changes !== 1) {
     const current = await env.DB.prepare("SELECT state FROM delivery_claims WHERE job_key = ?").bind(card.job_key).first();
+    if (current?.state === "posted" && card.snapshot) {
+      const row = await env.DB.prepare("SELECT snapshot_json FROM job_snapshots WHERE job_key = ? ORDER BY captured_at DESC LIMIT 1").bind(card.job_key).first();
+      let saved = {};
+      try { saved = JSON.parse(row?.snapshot_json || "{}"); } catch {}
+      const state = saved.application_state || (saved.tier === "Strong matches" ? "apply_first" : saved.tier ? "worth_reviewing" : "");
+      return { status: "existing", job_key: card.job_key, application_state: state, score: saved.score ?? null };
+    }
     return { status: current?.state === "posted" ? "existing" : "in_progress", job_key: card.job_key };
   }
 
@@ -380,7 +389,7 @@ export async function postCard(env, card) {
   } catch (error) {
     return { status: "in_progress", job_key: card.job_key, error: `Card posted but persistence is pending: ${error.message}` };
   }
-  return { status: "posted", job_key: card.job_key };
+  return { status: "posted", job_key: card.job_key, application_state: card.snapshot?.application_state, score: card.snapshot?.score };
 }
 
 // A tailored CV used to be PATCHed onto the interaction's own message with
@@ -581,11 +590,14 @@ export default {
       const pruned = await pruneExpiredState(env.DB);
       const digest = JSON.parse(raw);
       const cards = digest.cards || [];
-      const summary = { posted: [], existing: [], in_progress: [], retryable: [], failed: [], pruned };
+      const summary = { posted: [], existing: [], in_progress: [], retryable: [], failed: [], pruned, delivered_cards: {} };
       for (const card of cards) {
         try {
           const outcome = await postCard(env, card);
           summary[outcome.status].push(card.job_key);
+          if (["posted", "existing"].includes(outcome.status)) {
+            summary.delivered_cards[card.job_key] = { application_state: outcome.application_state || "", score: outcome.score ?? null };
+          }
         } catch (error) {
           summary.failed.push({ job_key: card.job_key, error: error.message });
         }
@@ -593,7 +605,7 @@ export default {
       summary.readiness = readinessDeliveryCounts(cards, summary);
       if (digest.heartbeat) {
         const counts = summary.readiness;
-        const receipt = cards.length ? `\nAccepted: ${counts.apply_first} Apply first; ${counts.worth_reviewing} Worth reviewing; ${counts.needs_checking} Needs checking. ${counts.failed} failed; ${counts.unconfirmed} unconfirmed.` : "";
+        const receipt = cards.length ? `\nAccepted: ${counts.apply_first} Apply first; ${counts.worth_reviewing} Worth reviewing; ${counts.needs_checking} Needs checking. ${counts.unclassified} classification unavailable; ${counts.failed} failed; ${counts.unconfirmed} unconfirmed.` : "";
         const suffix = cards.length ? ":" + (await sha256Hex(JSON.stringify({ keys: cards.map(c => c.job_key).sort(), counts }))).slice(0, 16) : "";
         const heartbeat = { job_key: digest.heartbeat.key + suffix,
           payload: { content: digest.heartbeat.content + receipt, allowed_mentions: { parse: [] } } };

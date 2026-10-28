@@ -433,6 +433,20 @@ class TestStrictAlerts(unittest.TestCase):
         _, again, _, _ = self.run_jobs([pending], {"pending": 85}, work=work)
         self.assertEqual(again["delivered"], 0)
 
+    def test_existing_worker_receipt_uses_the_immutable_delivered_classification(self):
+        job = self.job()
+        env = dict(fixtures.TestEndToEnd.ENV, INTERACTIVE_WORKER_URL="https://worker.test",
+                   WORKER_CALLBACK_SECRET="test-secret")
+        def existing(_url, _secret, snapshots, **kwargs):
+            key = snapshots[0]["job_key"]
+            return {"posted": [], "existing": [key], "failed": [],
+                    "delivered_cards": {key: {"application_state": "apply_first", "score": 88}}}
+        with mock.patch.object(digest, "post_interactive_cards", side_effect=existing):
+            _, row, _, _ = self.run_jobs([job], {"match": 70}, {job["title"]: VIABLE}, env)
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["strong"], 1)
+        self.assertEqual(row["fallback_delivered"], 0)
+
     def test_review_shortlist_excludes_confirmed_location_and_role_mismatches(self):
         for kind in ("location_work_authorization", "role_scope_mismatch"):
             with self.subTest(kind=kind):

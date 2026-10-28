@@ -242,7 +242,23 @@ test("readiness receipt counts only accepted job cards and separates uncertain d
   assert.deepEqual(readinessDeliveryCounts(cards, {
     posted: ["0", "summary"], existing: ["2"], retryable: ["3"], failed: [{ job_key: "1" }],
   }), { attempted: 4, accepted: 2, failed: 1, unconfirmed: 1,
-    apply_first: 1, worth_reviewing: 0, needs_checking: 1 });
+    apply_first: 1, worth_reviewing: 0, needs_checking: 1, unclassified: 0 });
+});
+
+test("existing delivery receipts retain the original snapshot's readiness", async () => {
+  const original = { application_state: "apply_first", score: 88 };
+  const db = { prepare(sql) { return { bind() { return {
+    async run() { return { meta: { changes: 0 } }; },
+    async first() { return sql.includes("snapshot_json") ? { snapshot_json: JSON.stringify(original) } : { state: "posted" }; },
+  }; } }; } };
+  const card = { job_key: "ashby:existing", snapshot: { application_state: "worth_reviewing", score: 70 } };
+  const result = await postCard({ DB: db }, card);
+  assert.equal(result.application_state, "apply_first");
+  assert.equal(result.score, 88);
+  const counts = readinessDeliveryCounts([card], { existing: [card.job_key],
+    delivered_cards: { [card.job_key]: result } });
+  assert.equal(counts.apply_first, 1);
+  assert.equal(counts.worth_reviewing, 0);
 });
 
 test("persists the runner's explicit completed or failed status", () => {

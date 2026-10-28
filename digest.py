@@ -3633,19 +3633,25 @@ def main():
                         break
 
     failed_card_keys = set()
+    delivered_cards = {}
     def record_delivery_stats(delivered_ids):
+        accepted = [j for j in fresh if job_key(j) in delivered_ids]
+        def receipt(job):
+            return delivered_cards.get(job_key(job), {"application_state": job["application_state"], "score": job["score"]})
+        states = [receipt(j).get("application_state") for j in accepted]
         save_stats(
             stats, today, len(all_jobs), len(matched), new_count, avg_score,
             link_closed=len(closed), link_unknown=unknown_count,
                 dropped_stale=len(stale), undated=undated,
             unverified_date=len(unverified_dates),
-            strong=sum(job_key(j) in delivered_ids for j in strong),
-            competitive=sum(job_key(j) in delivered_ids for j in competitive),
-            review=sum(job_key(j) in delivered_ids for j in review),
+            strong=states.count("apply_first"),
+            competitive=sum(receipt(j).get("application_state") == "worth_reviewing" and (receipt(j).get("score") or 0) >= COMPETITIVE_MIN_SCORE for j in accepted),
+            review=sum(receipt(j).get("application_state") == "worth_reviewing" and (receipt(j).get("score") or 0) < COMPETITIVE_MIN_SCORE for j in accepted),
             tailored=0, tailor_failed=0,
             delivered=len(delivered_ids), relisted=len(relisted), cooling=len(cooling),
-            fallback_delivered=sum(job_key(j) in delivered_ids for j in fresh if j["application_state"] == "worth_reviewing"),
-            needs_checking_delivered=sum(job_key(j) in delivered_ids for j in fresh if j["application_state"] == "needs_checking"),
+            fallback_delivered=states.count("worth_reviewing"),
+            needs_checking_delivered=states.count("needs_checking"),
+            delivery_unclassified=sum(state not in ("apply_first", "worth_reviewing", "needs_checking") for state in states),
             delivery_attempted=len(fresh), delivery_failed=len(failed_card_keys),
             delivery_unconfirmed=max(0, len(fresh) - len(delivered_ids) - len(failed_card_keys)),
             source_yield=source_yield(all_jobs, discovered_new,
@@ -3659,6 +3665,7 @@ def main():
     if worker_url:
         try:
             delivery = post_interactive_cards(worker_url, worker_secret, snapshots, heartbeat=shortlist_summary)
+            delivered_cards = delivery.get("delivered_cards") or {}
             # Worker summaries include heartbeat keys; only job cards count as
             # delivered or pending when deciding whether the digest failed.
             job_keys = {snapshot["job_key"] for snapshot in snapshots}
