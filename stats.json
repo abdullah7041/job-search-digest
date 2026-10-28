@@ -2606,42 +2606,48 @@
 },
 {
 "avg_score": 35.0,
-"below_floor": 2,
 "board_coverage": {
-"attempted": 135,
+"attempted": 134,
 "failed": 2,
-"successful": 133,
-"throttled": 9
+"successful": 132,
+"throttled": 10
 },
-"competitive": 1,
+"competitive": 0,
 "cooling": 0,
 "date": "2026-10-28",
-"deferred": 0,
-"delivered": 3,
-"delivery_attempted": 3,
-"delivery_failed": 0,
-"delivery_unclassified": 0,
-"delivery_unconfirmed": 0,
-"dropped_stale": 45,
-"fallback_delivered": 3,
-"fetched": 1640,
+"delivered": 0,
+"dropped_stale": 46,
+"fallback_delivered": 0,
+"fetched": 1676,
 "link_closed": 0,
 "link_unknown": 0,
-"matched": 101,
+"matched": 93,
 "needs_checking_delivered": 0,
-"new": 6,
+"new": 0,
 "relisted": 1,
-"review": 2,
+"review": 0,
 "source_yield": {
 "ashby": {
-"delivered": 2,
+"delivered": 0,
 "fetched": 150,
-"new": 2,
+"new": 0,
 "quota_paused": false
 },
 "greenhouse": {
 "delivered": 0,
-"fetched": 929,
+"fetched": 925,
+"new": 0,
+"quota_paused": false
+},
+"indeed": {
+"delivered": 0,
+"fetched": 11,
+"new": 0,
+"quota_paused": false
+},
+"jsearch": {
+"delivered": 0,
+"fetched": 6,
 "new": 0,
 "quota_paused": false
 },
@@ -2651,16 +2657,22 @@
 "new": 0,
 "quota_paused": false
 },
+"linkedin_api": {
+"delivered": 0,
+"fetched": 0,
+"new": 0,
+"quota_paused": false
+},
 "pinpoint": {
 "delivered": 0,
-"fetched": 70,
+"fetched": 69,
 "new": 0,
 "quota_paused": false
 },
 "workable": {
-"delivered": 1,
-"fetched": 470,
-"new": 5,
+"delivered": 0,
+"fetched": 494,
+"new": 1,
 "quota_paused": false
 }
 },
@@ -2669,6 +2681,6 @@
 "tailored": 0,
 "undated": 1,
 "unverified_date": 1,
-"unverified_fit": 1
+"unverified_fit": 0
 }
 ]
