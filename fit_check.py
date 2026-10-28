@@ -320,6 +320,7 @@ def verify(raw: dict, job: dict, resume_text: str) -> dict:
     jd_text = job.get("description") or ""
     demonstrated = achievement_evidence(resume_text)
     from_resume = vocabulary(demonstrated)
+    from_resume.update({"demonstrated", "practical", "proven", "relevant"})
 
     blockers, unclear, strengths = [], [], []
     audit = {"received": len(raw.get("strengths") or []), "kept": 0, "discarded": {}}

@@ -3551,7 +3551,9 @@ def main():
 
     lines = [f"**Job digest — {today}**  ({len(fresh)} new in Saudi Arabia)"]
     lines.append(f"Shortlist: {len(fresh)} of {MAX_JOBS_IN_DIGEST} roles available for review today.")
-    lines.append("Apply first: strong matches. Worth reviewing: relevant options with gaps or questions shown.")
+    lines.append("Apply first: verified strong matches. Worth reviewing: verified options with gaps. Needs checking: fit pending.")
+    lines.append(f"Available: {len(strong)} Apply first; {len(competitive) + len(review)} Worth reviewing; "
+                 f"{sum(j['application_state'] == 'needs_checking' for j in fresh)} Needs checking.")
     shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     last_tier = None
@@ -3573,6 +3575,9 @@ def main():
             if not j.get("description"):
                 flags.append("title-only assessment")
             check = j.get("fit_check") or {}
+            pending = j["application_state"] == "needs_checking"
+            if pending:
+                flags.extend(j["pending_reasons"])
             gaps = "; ".join(b["title"] for b in check.get("blockers") or [])
             if gaps:
                 # Named whatever the ceiling. A single verified gap used to show
@@ -3589,8 +3594,10 @@ def main():
             if flags:
                 resume_line += f"\n  _{'; '.join(flags)}_"
             lines.append(
-                f"- **{j['title']}** — {j['location']} · {j['application_action']} · fit {j['score']}{pay}\n"
-                f"  {j['why']}\n  <{apply_link(j)}>{resume_line}"
+                f"- **{j['title']}** — {j['location']} · {j['application_action']} · "
+                + ("Fit pending" if pending else f"fit {j['score']}") + f"{pay}\n"
+                + ("  Potentially relevant role; application fit has not been verified." if pending else f"  {j['why']}")
+                + f"\n  <{apply_link(j)}>{resume_line}"
             )
             if check.get("strengths"):
                 for strength in check.get("strengths") or []:

@@ -51,12 +51,28 @@ export async function buttonReferenceForJobKey(jobKey) {
   return (await sha256Hex(jobKey)).slice(0, 32);
 }
 
+export function readinessDeliveryCounts(cards, summary) {
+  const accepted = new Set([...(summary.posted || []), ...(summary.existing || [])]);
+  const failed = new Set((summary.failed || []).map((item) => item.job_key));
+  const counts = { attempted: cards.length, accepted: 0, failed: 0, unconfirmed: 0,
+    apply_first: 0, worth_reviewing: 0, needs_checking: 0 };
+  for (const card of cards) {
+    if (accepted.has(card.job_key)) {
+      counts.accepted++;
+      const state = card.snapshot?.application_state;
+      if (["apply_first", "worth_reviewing", "needs_checking"].includes(state)) counts[state]++;
+    } else if (failed.has(card.job_key)) counts.failed++;
+    else counts.unconfirmed++;
+  }
+  return counts;
+}
+
 function jdIsComplete(value) {
   const normalized = (value || "").trim().replace(/\s+/g, " ");
   const words = normalized.match(/\b\w+\b/g) || [];
   const lowered = normalized.toLowerCase();
-  const hasTaskHeading = /(?:^|[\n\r.;:!?•*\-]\s*)(?:what you['’]ll do|what you will do|your impact|job description)\b/i.test(value || "");
-  const hasResponsibilities = hasTaskHeading || ["responsibil", "you will", "duties", "about the role"].some((marker) => lowered.includes(marker));
+  const hasTaskHeading = /(?:^|[\n\r.;:!?•*\-]\s*)(?:what you['’]ll do|what you will do|your impact|job description|the role)\b/i.test(value || "");
+  const hasResponsibilities = hasTaskHeading || ["responsibil", "responsible for", "you will", "duties", "about the role"].some((marker) => lowered.includes(marker));
   const hasRequirements = ["requirement", "qualification", "experience", "skills"].some((marker) => lowered.includes(marker));
   return normalized.length >= 400 && words.length >= 60 && hasResponsibilities && hasRequirements;
 }
@@ -67,6 +83,9 @@ export async function tailoringInputFromSnapshotRow(row, expectedJobKey) {
   const snapshot = JSON.parse(row.snapshot_json);
   if (snapshot.job_key !== expectedJobKey) throw new Error("The stored job snapshot does not match this button.");
   const jd = snapshot.jd || {};
+  if (snapshot.application_state && (jd.status !== "captured" || jd.grade !== "full" || !jdIsComplete(jd.text))) {
+    throw new Error("A complete job description must be verified before tailoring this card.");
+  }
   // A snapshot without a captured description is no longer refused here. The
   // click used to end at this line telling the user a job description was
   // required, which left the only recoverable case -- an aggregator page the
@@ -562,12 +581,6 @@ export default {
       const pruned = await pruneExpiredState(env.DB);
       const digest = JSON.parse(raw);
       const cards = digest.cards || [];
-      if (digest.heartbeat) {
-        cards.push({
-          job_key: digest.heartbeat.key,
-          payload: { content: digest.heartbeat.content, allowed_mentions: { parse: [] } },
-        });
-      }
       const summary = { posted: [], existing: [], in_progress: [], retryable: [], failed: [], pruned };
       for (const card of cards) {
         try {
@@ -575,6 +588,20 @@ export default {
           summary[outcome.status].push(card.job_key);
         } catch (error) {
           summary.failed.push({ job_key: card.job_key, error: error.message });
+        }
+      }
+      summary.readiness = readinessDeliveryCounts(cards, summary);
+      if (digest.heartbeat) {
+        const counts = summary.readiness;
+        const receipt = cards.length ? `\nAccepted: ${counts.apply_first} Apply first; ${counts.worth_reviewing} Worth reviewing; ${counts.needs_checking} Needs checking. ${counts.failed} failed; ${counts.unconfirmed} unconfirmed.` : "";
+        const suffix = cards.length ? ":" + (await sha256Hex(JSON.stringify({ keys: cards.map(c => c.job_key).sort(), counts }))).slice(0, 16) : "";
+        const heartbeat = { job_key: digest.heartbeat.key + suffix,
+          payload: { content: digest.heartbeat.content + receipt, allowed_mentions: { parse: [] } } };
+        try {
+          const outcome = await postCard(env, heartbeat);
+          summary[outcome.status].push(heartbeat.job_key);
+        } catch (error) {
+          summary.failed.push({ job_key: heartbeat.job_key, error: error.message });
         }
       }
       return json(summary);

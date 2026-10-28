@@ -359,6 +359,10 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertTrue(card["pending_reasons"])
         self.assertIsNone(card["score"])
         self.assertEqual(card["match_evidence"], [])
+        payload = fixtures.job_archive.job_card_payload(card)
+        self.assertIn("Fit pending", json.dumps(payload))
+        self.assertNotIn("fit 69", json.dumps(payload))
+        self.assertIn(card["pending_reasons"][0], json.dumps(payload))
 
     def test_pending_lead_does_not_repeat_and_can_upgrade_once(self):
         job = self.job()
@@ -377,10 +381,15 @@ class TestStrictAlerts(unittest.TestCase):
                 self.job("wrong", description="Incomplete source snippet"),
                 self.job("foreign", posting_countries=["MA"]),
                 self.job("undated", first_published="")]
-        _, row, seen, _ = self.run_jobs(jobs, {"partial": 85, "wrong": 20, "foreign": 85, "undated": 85})
+        _, row, seen, work = self.run_jobs(jobs, {"partial": 85, "wrong": 20, "foreign": 85, "undated": 85})
         self.assertEqual(row["needs_checking_delivered"], 1)
         self.assertIn("pending:url:https://example.test/partial", seen)
         self.assertNotIn("pending:url:https://example.test/wrong", seen)
+        with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
+            card = json.load(handle)["jobs"][0]
+        payload = fixtures.job_archive.job_card_payload(card)
+        tailor = next(button for button in payload["components"][0]["components"] if button["label"] == "Tailor CV")
+        self.assertTrue(tailor["disabled"])
 
     def test_pending_does_not_displace_ready_jobs_or_overfill_the_shortlist(self):
         jobs = [self.job(str(n), company=f"Employer {n}") for n in range(12)]

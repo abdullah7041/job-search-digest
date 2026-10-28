@@ -170,6 +170,11 @@ class TestBlockerVerification(unittest.TestCase):
 
 class TestStrengthVerification(unittest.TestCase):
 
+    def test_ordinary_title_wording_does_not_erase_a_verified_strength(self):
+        result = fit_check.verify(answer(strengths=[strength("Demonstrated PostgreSQL integration",
+            "Supabase (PostgreSQL) with role-based access control")]), JOB, RESUME)
+        self.assertEqual(len(result["strengths"]), 1)
+
     def test_strength_audit_distinguishes_empty_response_from_rejected_evidence(self):
         raw = answer(strengths=[
             strength("PostgreSQL integration", "Supabase (PostgreSQL) with role-based access control"),

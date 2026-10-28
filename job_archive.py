@@ -293,7 +293,8 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
 
 def job_card_payload(snapshot: dict) -> dict:
     """Return an application-owned Discord message with one Tailor CV button."""
-    footer = f"{snapshot['tier']} · fit {snapshot['score']}"
+    pending = snapshot.get("application_state") == "needs_checking"
+    footer = f"{snapshot['tier']} · " + ("Fit pending" if pending else f"fit {snapshot['score']}")
     age = snapshot.get("age_days")
     if type(age) is int and age >= 0:
         footer += f" · Posted {age}d ago"
@@ -342,6 +343,8 @@ def job_card_payload(snapshot: dict) -> dict:
     ]
     if snapshot.get("application_action"):
         fields.append({"name": "Next step", "value": snapshot["application_action"], "inline": False})
+    if snapshot.get("pending_reasons"):
+        fields.append({"name": "Needs checking", "value": "\n".join("• " + reason for reason in snapshot["pending_reasons"])[:1024], "inline": False})
     if snapshot.get("match_evidence"):
         fields.append({"name": "Background evidence",
                        "value": "\n".join(f"• {item['title']}: {item['resume_quote']}"
@@ -373,7 +376,7 @@ def job_card_payload(snapshot: dict) -> dict:
                 "style": 1,
                 "label": "Tailor CV",
                 "custom_id": f"tailor:{hashlib.sha256(snapshot['job_key'].encode('utf-8')).hexdigest()[:32]}",
-                "disabled": False,
+                "disabled": bool(snapshot.get("application_state")) and (status != "captured" or snapshot_grade(snapshot) != GRADE_FULL),
             }],
         }],
         "allowed_mentions": {"parse": []},

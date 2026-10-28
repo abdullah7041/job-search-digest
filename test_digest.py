@@ -2148,8 +2148,11 @@ class TestFocusedCoverage(unittest.TestCase):
         self.assertEqual({p[1] for p in plans}, set(queries[4:]))
         self.assertEqual(digest.focused_query_plan(queries, 0, 1), [])
         self.assertEqual(len(digest.focused_query_plan(queries, 99, 1)), 6)
-        self.assertIn("sales operations analyst", digest.primary_title_filter(0))
-        self.assertNotIn("software", digest.primary_title_filter(0))
+        with open(os.path.join(REPO, "profile.json"), encoding="utf-8") as handle:
+            profile = json.load(handle)
+        with mock.patch.object(digest, "PROFILE", profile):
+            self.assertIn("sales operations analyst", digest.primary_title_filter(0))
+            self.assertNotIn("software", digest.primary_title_filter(0))
 
     def test_workable_rate_limit_pauses_other_accounts_for_this_run(self):
         digest.THROTTLED_SOURCES.clear()
@@ -2752,7 +2755,7 @@ class TestEndToEnd(unittest.TestCase):
             diagnostics = "\n".join(str(call.args[0]) for call in log.call_args_list)
             for text in expected:
                 self.assertIn(text, diagnostics)
-            self.assertIn("Read 64 of 79 employer boards; 15 skipped", diagnostics)
+            self.assertIn("Read 64 of 79 employer boards; 15 not read successfully", diagnostics)
             self.assertIn("Quota-paused feeds: JSearch, Active ATS, LinkedIn", diagnostics)
             self.assertIn("Average fit down", diagnostics)
 
