@@ -6,8 +6,8 @@
   "700apps": {
     "company": "700apps",
     "found": "2026-10-13",
-    "last_attempt": "2026-10-28T10:15:49.625978+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:39.033558+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "700apps"
@@ -23,8 +23,8 @@
   "abis": {
     "company": "ABIS",
     "found": "2026-10-11",
-    "last_attempt": "2026-10-28T10:15:54.026576+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:43.030525+00:00",
+    "last_read": "2026-10-29",
     "roles": 85,
     "source": "workable",
     "token": "abis"
@@ -32,8 +32,8 @@
   "accenture": {
     "company": "Accenture",
     "found": "2026-10-26",
-    "last_attempt": "2026-10-28T10:15:55.845401+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:44.565712+00:00",
+    "last_read": "2026-10-29",
     "roles": 21,
     "source": "pinpoint",
     "token": "accenture"
@@ -41,8 +41,8 @@
   "accenturemiddleeast": {
     "company": "Accenture Middle East",
     "found": "2026-10-22",
-    "last_attempt": "2026-10-28T10:15:56.496413+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:45.171613+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "accenture"
@@ -51,11 +51,15 @@
     "company": "Adecco Portugal",
     "miss": "2026-10-27"
   },
+  "adobe": {
+    "company": "Adobe",
+    "miss": "2026-10-29"
+  },
   "adree": {
     "company": "Adree",
     "found": "2026-09-07",
-    "last_attempt": "2026-10-28T10:15:57.153298+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:45.786708+00:00",
+    "last_read": "2026-10-29",
     "roles": 7,
     "source": "workable",
     "token": "adree"
@@ -67,8 +71,8 @@
   "airbus": {
     "company": "Airbus",
     "found": "2026-10-01",
-    "last_attempt": "2026-10-28T10:15:57.807687+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:46.396502+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "airbus"
@@ -84,8 +88,8 @@
   "almosafer": {
     "company": "Almosafer",
     "found": "2026-10-12",
-    "last_attempt": "2026-10-28T10:15:58.464015+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:47.016647+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "almosafer"
@@ -105,8 +109,8 @@
   "amazonwebservicesaws": {
     "company": "Amazon Web Services (AWS)",
     "found": "2026-10-06",
-    "last_attempt": "2026-10-28T10:15:59.120625+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:47.623747+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "amazon"
@@ -114,8 +118,8 @@
   "amitinternationalgroupfze": {
     "company": "Amit International Group FZE",
     "found": "2026-10-18",
-    "last_attempt": "2026-10-28T10:15:59.787822+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:48.236908+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "amit"
@@ -135,8 +139,8 @@
   "arbetecareers": {
     "company": "Arbete Careers",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T10:16:00.440273+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:48.838004+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "arbetecareers"
@@ -144,8 +148,8 @@
   "artefact": {
     "company": "Artefact",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T10:16:01.059003+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:49.486511+00:00",
+    "last_read": "2026-10-29",
     "roles": 123,
     "source": "greenhouse",
     "token": "artefact"
@@ -153,8 +157,8 @@
   "ashby:LeanTech": {
     "company": "Lean",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:26.994105+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:17.563562+00:00",
+    "last_read": "2026-10-29",
     "source": "ashby",
     "token": "LeanTech"
   },
@@ -165,17 +169,21 @@
   "astek": {
     "company": "Astek",
     "found": "2026-10-24",
-    "last_attempt": "2026-10-28T10:16:01.728437+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:50.089616+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "astek"
   },
+  "astekmiddleeast": {
+    "company": "Astek Middle East",
+    "miss": "2026-10-29"
+  },
   "atadexperience": {
     "company": "ATAD Experience",
     "found": "2026-10-22",
-    "last_attempt": "2026-10-28T10:16:02.391416+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:50.698595+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "atad"
@@ -195,8 +203,8 @@
   "bbi": {
     "company": "BBI",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T10:16:03.040841+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:51.313651+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "bbi"
@@ -224,8 +232,8 @@
   "brainlakeadvertising": {
     "company": "Brainlake Advertising LLC",
     "found": "2026-10-03",
-    "last_attempt": "2026-10-28T10:15:47.626473+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:37.211190+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "brainlake"
@@ -233,8 +241,8 @@
   "broaddevelopmentcontracting": {
     "company": "Broad Development Contracting Company",
     "found": "2026-10-15",
-    "last_attempt": "2026-10-28T10:16:03.686818+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:51.924063+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "broad"
@@ -250,8 +258,8 @@
   "capitalengineeringconsultancy": {
     "company": "capital engineering consultancy",
     "found": "2026-10-06",
-    "last_attempt": "2026-10-28T10:16:04.330307+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:52.545244+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "capital"
@@ -267,8 +275,8 @@
   "ciscosystems": {
     "company": "Cisco Systems, Inc",
     "found": "2026-10-24",
-    "last_attempt": "2026-10-28T10:15:48.973882+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:38.425762+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "cisco"
@@ -299,8 +307,8 @@
   "clientofthebridgerecruitment": {
     "company": "Client of The Bridge Recruitment",
     "found": "2026-09-19",
-    "last_attempt": "2026-10-28T10:15:41.727242+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:31.660703+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "client"
@@ -308,8 +316,8 @@
   "codeninja": {
     "company": "CodeNinja",
     "found": "2026-09-28",
-    "last_attempt": "2026-10-28T10:16:04.986497+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:53.165564+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "codeninja"
@@ -317,8 +325,8 @@
   "cohere": {
     "company": "Cohere",
     "found": "2026-10-13",
-    "last_attempt": "2026-10-28T10:16:05.607785+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:53.792223+00:00",
+    "last_read": "2026-10-29",
     "roles": 118,
     "source": "ashby",
     "token": "cohere"
@@ -330,8 +338,8 @@
   "confidential": {
     "company": "Confidential",
     "found": "2026-10-12",
-    "last_attempt": "2026-10-28T10:16:06.231039+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:54.416517+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "ashby",
     "token": "confidential"
@@ -346,8 +354,8 @@
   "confidentialemployer": {
     "company": "Confidential Employer",
     "found": "2026-09-16",
-    "last_attempt": "2026-10-28T10:15:42.391518+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:32.285976+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "confidential"
@@ -375,8 +383,8 @@
   "daralriyadh": {
     "company": "Dar Al Riyadh",
     "found": "2026-10-18",
-    "last_attempt": "2026-10-28T10:16:06.880766+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:55.038588+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "daralriyadh"
@@ -392,8 +400,8 @@
   "datamaticsglobalservices": {
     "company": "Datamatics-Global-Services-Ltd",
     "found": "2026-09-11",
-    "last_attempt": "2026-10-28T10:16:07.543129+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:55.652728+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "datamatics"
@@ -401,8 +409,8 @@
   "dataplus": {
     "company": "DataPlus",
     "found": "2026-09-03",
-    "last_attempt": "2026-10-28T10:16:08.202560+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:56.257414+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "dataplus"
@@ -410,8 +418,8 @@
   "dataservicessaudiarabialimitedoneperson": {
     "company": "Data Services Saudi Arabia Limited One Person Company",
     "found": "2026-09-05",
-    "last_attempt": "2026-10-28T10:16:08.852040+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:56.877042+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "data"
@@ -419,8 +427,8 @@
   "deepsourcetechnologies": {
     "company": "DeepSource Technologies",
     "found": "2026-09-10",
-    "last_attempt": "2026-10-28T10:16:11.359240+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:58.760188+00:00",
+    "last_read": "2026-10-29",
     "roles": 35,
     "source": "workable",
     "token": "deepsource"
@@ -428,8 +436,8 @@
   "deliveryhero": {
     "company": "Delivery Hero",
     "found": "2026-09-06",
-    "last_attempt": "2026-10-28T10:16:12.017335+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:59.395465+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "delivery"
@@ -452,8 +460,8 @@
   "devoteammiddleeast": {
     "company": "Devoteam Middle East",
     "found": "2026-10-05",
-    "last_attempt": "2026-10-28T10:15:43.031502+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:32.904236+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "devoteam"
@@ -461,8 +469,8 @@
   "devsinc": {
     "company": "Devsinc, LLC",
     "found": "2026-09-29",
-    "last_attempt": "2026-10-28T10:16:12.664647+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:00.002842+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "devsinc"
@@ -474,8 +482,8 @@
   "diyaralwatantradingcontractingcompanydaco": {
     "company": "Diyar Alwatan Trading & Contracting Company (DACO)",
     "found": "2026-09-24",
-    "last_attempt": "2026-10-28T10:16:13.319917+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:00.612083+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "diyar"
@@ -487,8 +495,8 @@
   "echelon": {
     "company": "Echelon",
     "found": "2026-10-27",
-    "last_attempt": "2026-10-28T10:15:37.993031+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:28.206004+00:00",
+    "last_read": "2026-10-29",
     "roles": 3,
     "source": "ashby",
     "token": "echelon"
@@ -496,8 +504,8 @@
   "edisonsmart": {
     "company": "Edison Smart®",
     "found": "2026-10-24",
-    "last_attempt": "2026-10-28T10:16:13.921840+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:01.222241+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "greenhouse",
     "token": "edison"
@@ -505,8 +513,8 @@
   "elm": {
     "company": "Elm Company",
     "found": "2026-09-29",
-    "last_attempt": "2026-10-28T10:16:14.580284+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:01.842897+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "elm"
@@ -518,8 +526,8 @@
   "emdadbyelm": {
     "company": "Emdad By Elm",
     "found": "2026-09-15",
-    "last_attempt": "2026-10-28T10:16:15.261498+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:02.460946+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "emdad"
@@ -527,8 +535,8 @@
   "emerson": {
     "company": "Emerson",
     "found": "2026-10-06",
-    "last_attempt": "2026-10-28T10:16:15.916847+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:03.063047+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "emerson"
@@ -540,8 +548,8 @@
   "eramtalent": {
     "company": "Eram Talent",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T10:16:16.587311+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:03.674427+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "eram"
@@ -564,8 +572,8 @@
   "etapsoftware": {
     "company": "ETAP Software",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T10:15:43.678951+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:33.527595+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "etap"
@@ -576,7 +584,7 @@
   },
   "everpure": {
     "company": "Everpure",
-    "miss": "2026-09-24"
+    "miss": "2026-10-29"
   },
   "evokeslab": {
     "company": "EvokesLab",
@@ -585,8 +593,8 @@
   "evolvice": {
     "company": "Evolvice",
     "found": "2026-09-24",
-    "last_attempt": "2026-10-28T10:16:17.820893+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:04.835165+00:00",
+    "last_read": "2026-10-29",
     "roles": 5,
     "source": "pinpoint",
     "token": "evolvice"
@@ -594,8 +602,8 @@
   "exequtmena": {
     "company": "exequt MENA",
     "found": "2026-09-03",
-    "last_attempt": "2026-10-28T10:16:18.479442+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:05.454120+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "exequt"
@@ -607,8 +615,8 @@
   "fakeehtechnologiespvt": {
     "company": "Fakeeh Technologies Pvt Ltd",
     "found": "2026-09-28",
-    "last_attempt": "2026-10-28T10:16:19.135255+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:06.078283+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "fakeeh"
@@ -616,8 +624,8 @@
   "fathom": {
     "company": "Fathom",
     "found": "2026-09-22",
-    "last_attempt": "2026-10-28T10:16:19.797411+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:06.669026+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "ashby",
     "token": "fathom"
@@ -629,8 +637,8 @@
   "flintmiddleeast": {
     "company": "Flint Middle-East",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T10:16:20.450797+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:07.278098+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "flint"
@@ -642,8 +650,8 @@
   "fluor": {
     "company": "Fluor Corp.",
     "found": "2026-10-21",
-    "last_attempt": "2026-10-28T10:16:21.106406+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:07.885590+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "fluor"
@@ -651,8 +659,8 @@
   "fortinet": {
     "company": "Fortinet",
     "found": "2026-10-18",
-    "last_attempt": "2026-10-28T10:16:21.777386+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:08.497479+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "fortinet"
@@ -664,8 +672,8 @@
   "futurelookitc": {
     "company": "Future Look ITC",
     "found": "2026-09-19",
-    "last_attempt": "2026-10-28T10:16:22.367701+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:09.120463+00:00",
+    "last_read": "2026-10-29",
     "roles": 8,
     "source": "greenhouse",
     "token": "future"
@@ -673,8 +681,8 @@
   "gathern": {
     "company": "Gathern",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T10:16:23.028490+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:09.751246+00:00",
+    "last_read": "2026-10-29",
     "roles": 11,
     "source": "workable",
     "token": "gathern"
@@ -686,8 +694,8 @@
   "glancecare": {
     "company": "Glance Care",
     "found": "2026-10-18",
-    "last_attempt": "2026-10-28T10:16:23.634445+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:10.390839+00:00",
+    "last_read": "2026-10-29",
     "roles": 35,
     "source": "greenhouse",
     "token": "glance"
@@ -699,8 +707,8 @@
   "gramianconsulting": {
     "company": "Gramian Consulting",
     "found": "2026-10-22",
-    "last_attempt": "2026-10-28T10:16:27.540797+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:13.580617+00:00",
+    "last_read": "2026-10-29",
     "roles": 62,
     "source": "workable",
     "token": "gramian"
@@ -708,39 +716,39 @@
   "greenhouse:careem": {
     "company": "Careem",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:25.736949+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:16.279297+00:00",
+    "last_read": "2026-10-29",
     "source": "greenhouse",
     "token": "careem"
   },
   "greenhouse:minio": {
     "company": "MinIO",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:35.202873+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:25.055274+00:00",
+    "last_read": "2026-10-29",
     "source": "greenhouse",
     "token": "minio"
   },
   "greenhouse:scaleai": {
     "company": "Scale AI",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:35.791340+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:25.703032+00:00",
+    "last_read": "2026-10-29",
     "source": "greenhouse",
     "token": "scaleai"
   },
   "greenhouse:tamara": {
     "company": "Tamara",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:26.328372+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:16.954780+00:00",
+    "last_read": "2026-10-29",
     "source": "greenhouse",
     "token": "tamara"
   },
   "hala": {
     "company": "HALA",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T10:15:39.258512+00:00",
+    "last_attempt": "2026-10-29T10:38:29.489357+00:00",
     "last_read": "2026-10-27",
     "roles": 12,
     "source": "greenhouse",
@@ -757,8 +765,8 @@
   "hexagon": {
     "company": "Hexagon",
     "found": "2026-10-15",
-    "last_attempt": "2026-10-28T10:16:28.193961+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:14.198873+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "hexagon"
@@ -766,8 +774,8 @@
   "hillinternational": {
     "company": "Hill International",
     "found": "2026-09-24",
-    "last_attempt": "2026-10-28T10:16:28.828647+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:14.806118+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "hill"
@@ -780,6 +788,10 @@
     "company": "Hiresquad Resources",
     "miss": "2026-09-10"
   },
+  "holoolk2030": {
+    "company": "Holoolk@2030",
+    "miss": "2026-10-29"
+  },
   "hudhudmaps": {
     "company": "HudHud Maps",
     "miss": "2026-09-13"
@@ -787,8 +799,8 @@
   "hudsonmanpower": {
     "company": "Hudson Manpower",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T10:16:29.470562+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:15.409431+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "hudson"
@@ -796,8 +808,8 @@
   "hungerstation": {
     "company": "HungerStation",
     "found": "2026-09-06",
-    "last_attempt": "2026-10-28T10:16:30.117553+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:16.026974+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "hungerstation"
@@ -809,8 +821,8 @@
   "imaroverseassaudicowll": {
     "company": "IMAR OVERSEAS SAUDI CO.W.L.L",
     "found": "2026-09-27",
-    "last_attempt": "2026-10-28T10:16:30.762417+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:16.648978+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "imar"
@@ -818,8 +830,8 @@
   "imploy": {
     "company": "Imploy",
     "found": "2026-10-14",
-    "last_attempt": "2026-10-28T10:16:31.419211+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:17.262066+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "imploy"
@@ -835,8 +847,8 @@
   "infraassure": {
     "company": "INFRA ASSURE",
     "found": "2026-10-01",
-    "last_attempt": "2026-10-28T10:16:32.064048+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:17.879439+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "infra"
@@ -851,8 +863,8 @@
   "innovacceranalytics": {
     "company": "Innovaccer Analytics",
     "found": "2026-09-18",
-    "last_attempt": "2026-10-28T10:15:44.336731+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:34.148911+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "innovaccer"
@@ -860,8 +872,8 @@
   "innovationteam": {
     "company": "Innovationteam",
     "found": "2026-09-03",
-    "last_attempt": "2026-10-28T10:16:34.654026+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:20.189485+00:00",
+    "last_read": "2026-10-29",
     "roles": 40,
     "source": "workable",
     "token": "innovationteam"
@@ -882,6 +894,10 @@
     "company": "ITHR Technologies Consulting LLC",
     "miss": "2026-09-11"
   },
+  "jeeny": {
+    "company": "Jeeny",
+    "miss": "2026-10-29"
+  },
   "jobgether": {
     "company": "Jobgether",
     "found": "2026-09-07",
@@ -893,8 +909,8 @@
   "jobgethersrl": {
     "company": "Jobgether SRL",
     "found": "2026-10-14",
-    "last_attempt": "2026-10-28T10:15:48.287952+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:37.827767+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "jobgether"
@@ -910,8 +926,8 @@
   "joinsolutions": {
     "company": "join solutions",
     "found": "2026-09-06",
-    "last_attempt": "2026-10-28T10:16:35.314822+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:20.813931+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "join"
@@ -931,8 +947,8 @@
   "laotopcollege": {
     "company": "Lao-Top College",
     "found": "2026-10-17",
-    "last_attempt": "2026-10-28T10:16:35.954041+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:21.429701+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "lao"
@@ -944,8 +960,8 @@
   "lenovo": {
     "company": "Lenovo",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T10:16:36.600294+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:22.037531+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "lenovo"
@@ -953,8 +969,8 @@
   "lever": {
     "company": "Lever, Inc.",
     "found": "2026-10-10",
-    "last_attempt": "2026-10-28T10:16:37.550044+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:23.383975+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "lever",
     "token": "lever"
@@ -970,8 +986,8 @@
   "lucidmotors": {
     "company": "Lucid Motors",
     "found": "2026-09-05",
-    "last_attempt": "2026-10-28T10:16:38.285424+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:24.214251+00:00",
+    "last_read": "2026-10-29",
     "roles": 332,
     "source": "greenhouse",
     "token": "lucidmotors"
@@ -979,8 +995,8 @@
   "lucidmotorsmiddleeast": {
     "company": "Lucid Motors Middle East",
     "found": "2026-09-10",
-    "last_attempt": "2026-10-28T10:16:38.925972+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:24.867302+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "lucid"
@@ -992,8 +1008,8 @@
   "malaa": {
     "company": "Malaa",
     "found": "2026-10-11",
-    "last_attempt": "2026-10-28T10:16:39.580284+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:25.484596+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "malaa"
@@ -1005,8 +1021,8 @@
   "mastercard": {
     "company": "Mastercard",
     "found": "2026-10-20",
-    "last_attempt": "2026-10-28T10:16:40.231692+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:26.095435+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "mastercard"
@@ -1014,8 +1030,8 @@
   "masterworks": {
     "company": "MASTER-WORKS",
     "found": "2026-09-22",
-    "last_attempt": "2026-10-28T10:16:40.878503+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:26.719977+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "masterworks"
@@ -1023,8 +1039,8 @@
   "medicaldata": {
     "company": "Medical Data Ltd.",
     "found": "2026-09-30",
-    "last_attempt": "2026-10-28T10:16:41.530586+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:27.331129+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "medical"
@@ -1032,8 +1048,8 @@
   "metasmartfactory": {
     "company": "META Smart Factory",
     "found": "2026-09-14",
-    "last_attempt": "2026-10-28T10:16:42.180297+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:27.952033+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "meta"
@@ -1041,8 +1057,8 @@
   "michaelpageinternationaluae": {
     "company": "Michael Page International (UAE)",
     "found": "2026-09-18",
-    "last_attempt": "2026-10-28T10:16:42.850820+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:28.561879+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "michael"
@@ -1050,8 +1066,8 @@
   "microland": {
     "company": "Microland",
     "found": "2026-09-25",
-    "last_attempt": "2026-10-28T10:16:43.507443+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:29.172672+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "microland"
@@ -1059,8 +1075,8 @@
   "miraiarabianinternational": {
     "company": "Mirai Arabian International Company Limited",
     "found": "2026-09-06",
-    "last_attempt": "2026-10-28T10:16:44.182691+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:29.786345+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "mirai"
@@ -1088,8 +1104,8 @@
   "mozn": {
     "company": "Mozn",
     "found": "2026-10-11",
-    "last_attempt": "2026-10-28T10:15:41.074498+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:31.054555+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "mozn"
@@ -1105,8 +1121,8 @@
   "nakhla": {
     "company": "Nakhla",
     "found": "2026-09-07",
-    "last_attempt": "2026-10-28T10:16:44.845295+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:30.412768+00:00",
+    "last_read": "2026-10-29",
     "roles": 1,
     "source": "workable",
     "token": "nakhla"
@@ -1114,8 +1130,8 @@
   "namaapartners": {
     "company": "Namaa Partners",
     "found": "2026-10-27",
-    "last_attempt": "2026-10-28T10:15:38.663817+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:28.849292+00:00",
+    "last_read": "2026-10-29",
     "roles": 13,
     "source": "greenhouse",
     "token": "namaa"
@@ -1131,8 +1147,8 @@
   "neoleap": {
     "company": "neoleap",
     "found": "2026-09-16",
-    "last_attempt": "2026-10-28T10:16:45.502254+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:31.021132+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "neoleap"
@@ -1148,8 +1164,8 @@
   "nexa": {
     "company": "Nexa",
     "found": "2026-09-15",
-    "last_attempt": "2026-10-28T10:16:46.148495+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:31.639377+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "nexa"
@@ -1157,8 +1173,8 @@
   "norconsulttelematics": {
     "company": "Norconsult Telematics",
     "found": "2026-09-19",
-    "last_attempt": "2026-10-28T10:16:46.798578+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:32.257000+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "norconsult"
@@ -1166,8 +1182,8 @@
   "nttdata": {
     "company": "NTT DATA",
     "found": "2026-10-24",
-    "last_attempt": "2026-10-28T10:16:47.452057+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:32.878796+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "nttdata"
@@ -1187,8 +1203,8 @@
   "outlook": {
     "company": "outlook",
     "found": "2026-10-17",
-    "last_attempt": "2026-10-28T10:16:48.097814+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:33.490219+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "outlook"
@@ -1196,8 +1212,8 @@
   "panasonicautomotive": {
     "company": "Panasonic Automotive",
     "found": "2026-10-02",
-    "last_attempt": "2026-10-28T10:16:48.736591+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:34.095104+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "panasonic"
@@ -1212,8 +1228,8 @@
   "parsonscorporation": {
     "company": "Parsons Corporation",
     "found": "2026-09-10",
-    "last_attempt": "2026-10-28T10:15:44.987142+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:34.765382+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "parsons"
@@ -1221,8 +1237,8 @@
   "pentaconsulting": {
     "company": "Penta Consulting Ltd",
     "found": "2026-10-15",
-    "last_attempt": "2026-10-28T10:16:49.390525+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:34.713062+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "penta"
@@ -1230,8 +1246,8 @@
   "pinpoint:tabby": {
     "company": "Tabby",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:30.640319+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:20.773506+00:00",
+    "last_read": "2026-10-29",
     "source": "pinpoint",
     "token": "tabby"
   },
@@ -1242,8 +1258,8 @@
   "procoretechnologies": {
     "company": "Procore Technologies",
     "found": "2026-10-13",
-    "last_attempt": "2026-10-28T10:16:50.042214+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:35.337918+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "procore"
@@ -1259,8 +1275,8 @@
   "qanoniah": {
     "company": "Qanoniah قانونية",
     "found": "2026-10-08",
-    "last_attempt": "2026-10-28T10:16:50.689208+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:35.941407+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "qanoniah"
@@ -1268,8 +1284,8 @@
   "qatarairways": {
     "company": "Qatar Airways",
     "found": "2026-10-10",
-    "last_attempt": "2026-10-28T10:16:51.346477+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:36.570232+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "qatar"
@@ -1277,8 +1293,8 @@
   "qiddiyainvestment": {
     "company": "Qiddiya Investment Company",
     "found": "2026-10-05",
-    "last_attempt": "2026-10-28T10:16:52.008320+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:37.189873+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "qiddiya"
@@ -1297,8 +1313,8 @@
   "qualcommtechnologies": {
     "company": "Qualcomm Technologies, Inc",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T10:15:45.648233+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:35.378039+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "qualcomm"
@@ -1306,8 +1322,8 @@
   "quantumblackaibymckinsey": {
     "company": "QuantumBlack, AI by McKinsey",
     "found": "2026-09-17",
-    "last_attempt": "2026-10-28T10:16:52.666280+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:37.804713+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "mckinsey"
@@ -1319,8 +1335,8 @@
   "recruitis": {
     "company": "Recruitis",
     "found": "2026-10-23",
-    "last_attempt": "2026-10-28T10:16:53.272581+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:38.493289+00:00",
+    "last_read": "2026-10-29",
     "roles": 10,
     "source": "greenhouse",
     "token": "recruitis"
@@ -1336,8 +1352,8 @@
   "riyadbank": {
     "company": "Riyad Bank",
     "found": "2026-09-15",
-    "last_attempt": "2026-10-28T10:16:53.914053+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:39.104229+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "riyad"
@@ -1345,8 +1361,8 @@
   "rmg": {
     "company": "RMG | ريناد المجد",
     "found": "2026-10-19",
-    "last_attempt": "2026-10-28T10:16:54.569220+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:39.719090+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "rmg"
@@ -1358,7 +1374,7 @@
   "robusta": {
     "company": "robusta",
     "found": "2026-10-13",
-    "last_attempt": "2026-10-28T10:16:58.555909+00:00",
+    "last_attempt": "2026-10-29T10:39:41.098226+00:00",
     "last_read": "2026-10-28",
     "roles": 67,
     "source": "workable",
@@ -1380,8 +1396,8 @@
   "salla": {
     "company": "Salla",
     "found": "2026-10-17",
-    "last_attempt": "2026-10-28T10:15:40.411482+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:30.434425+00:00",
+    "last_read": "2026-10-29",
     "roles": 32,
     "source": "workable",
     "token": "salla"
@@ -1406,8 +1422,8 @@
   "sarjai": {
     "company": "Sarj AI",
     "found": "2026-10-18",
-    "last_attempt": "2026-10-28T10:17:00.455669+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:41.191017+00:00",
+    "last_read": "2026-10-29",
     "roles": 15,
     "source": "ashby",
     "token": "sarjai"
@@ -1431,8 +1447,8 @@
   "saudibusinessmachines": {
     "company": "Saudi Business Machines",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T10:15:46.299412+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:35.993143+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "saudi"
@@ -1513,8 +1529,8 @@
   "sol": {
     "company": "SOL",
     "found": "2026-10-02",
-    "last_attempt": "2026-10-28T10:17:05.042620+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:41.787778+00:00",
+    "last_read": "2026-10-29",
     "roles": 2,
     "source": "ashby",
     "token": "sol"
@@ -1522,8 +1538,8 @@
   "solbusinesssolutions": {
     "company": "SOL Business Solutions",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T07:31:29.782344+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:00.170340+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "sol"
@@ -1531,8 +1547,8 @@
   "soum": {
     "company": "Soum",
     "found": "2026-10-24",
-    "last_attempt": "2026-10-28T10:17:05.953242+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:42.744059+00:00",
+    "last_read": "2026-10-29",
     "roles": 19,
     "source": "lever",
     "token": "soum"
@@ -1540,8 +1556,8 @@
   "sourcecode": {
     "company": "Source Code",
     "found": "2026-09-09",
-    "last_attempt": "2026-10-28T07:31:31.324130+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:00.780986+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "sourcecode"
@@ -1557,8 +1573,8 @@
   "statera": {
     "company": "STATERA",
     "found": "2026-09-12",
-    "last_attempt": "2026-10-28T07:31:31.974694+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:01.396522+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "statera"
@@ -1566,8 +1582,8 @@
   "stellarhunters": {
     "company": "Stellar Hunters",
     "found": "2026-10-09",
-    "last_attempt": "2026-10-28T07:31:32.598371+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:02.010501+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "stellar"
@@ -1583,8 +1599,8 @@
   "sync": {
     "company": "SYNC",
     "found": "2026-10-04",
-    "last_attempt": "2026-10-28T07:31:33.244533+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:02.634516+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "sync"
@@ -1592,8 +1608,8 @@
   "synechron": {
     "company": "Synechron",
     "found": "2026-10-10",
-    "last_attempt": "2026-10-28T07:31:33.876526+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:03.259852+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "synechron"
@@ -1601,8 +1617,8 @@
   "systemsarabia": {
     "company": "Systems Arabia",
     "found": "2026-10-11",
-    "last_attempt": "2026-10-28T07:31:34.530923+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:03.875382+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "systems"
@@ -1610,8 +1626,8 @@
   "tabby": {
     "company": "Tabby  تابي",
     "found": "2026-09-08",
-    "last_attempt": "2026-10-28T07:31:35.169761+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:04.481674+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "tabby"
@@ -1623,8 +1639,8 @@
   "tataconsultancyservices": {
     "company": "Tata Consultancy Services",
     "found": "2026-10-05",
-    "last_attempt": "2026-10-28T07:31:35.843574+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:05.098591+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "tata"
@@ -1632,8 +1648,8 @@
   "tawantech": {
     "company": "TAWANTECH",
     "found": "2026-10-06",
-    "last_attempt": "2026-10-28T07:31:38.195760+00:00",
-    "last_read": "2026-10-27",
+    "last_attempt": "2026-10-29T10:38:07.484964+00:00",
+    "last_read": "2026-10-29",
     "roles": 73,
     "source": "workable",
     "token": "tawantech"
@@ -1648,8 +1664,8 @@
   "teamyamama": {
     "company": "Team Yamama",
     "found": "2026-09-24",
-    "last_attempt": "2026-10-28T10:15:46.946666+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:36.602409+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "team"
@@ -1661,8 +1677,8 @@
   "telnyx": {
     "company": "Telnyx",
     "found": "2026-10-06",
-    "last_attempt": "2026-10-28T10:15:17.035940+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:08.096518+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "telnyx"
@@ -1670,8 +1686,8 @@
   "tkxel": {
     "company": "Tkxel",
     "found": "2026-10-09",
-    "last_attempt": "2026-10-28T10:15:17.682679+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:08.711220+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "tkxel"
@@ -1687,8 +1703,8 @@
   "trueai": {
     "company": "true ai",
     "found": "2026-09-07",
-    "last_attempt": "2026-10-28T10:15:18.338348+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:09.322292+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "trueai"
@@ -1704,8 +1720,8 @@
   "umatr": {
     "company": "UMATR",
     "found": "2026-10-21",
-    "last_attempt": "2026-10-28T10:15:18.998327+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:09.941874+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "umatr"
@@ -1713,8 +1729,8 @@
   "upliftpeopleconsulting": {
     "company": "Uplift People Consulting",
     "found": "2026-09-16",
-    "last_attempt": "2026-10-28T10:17:06.539447+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:39:43.350274+00:00",
+    "last_read": "2026-10-29",
     "roles": 22,
     "source": "greenhouse",
     "token": "uplift"
@@ -1722,8 +1738,8 @@
   "uxbertlabs": {
     "company": "UXBERT Labs",
     "found": "2026-10-14",
-    "last_attempt": "2026-10-28T10:15:19.657844+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:10.554266+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "uxbert"
@@ -1747,8 +1763,8 @@
   "webookcom": {
     "company": "WEbook.com",
     "found": "2026-10-16",
-    "last_attempt": "2026-10-28T10:15:23.116393+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:13.710040+00:00",
+    "last_read": "2026-10-29",
     "roles": 87,
     "source": "workable",
     "token": "webook"
@@ -1756,8 +1772,8 @@
   "whyhiring": {
     "company": "Why Hiring",
     "found": "2026-09-13",
-    "last_attempt": "2026-10-28T10:15:23.783005+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:14.342127+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "why"
@@ -1765,72 +1781,72 @@
   "workable:foodics": {
     "company": "Foodics",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:28.548309+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:19.036717+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "foodics"
   },
   "workable:jahez": {
     "company": "Jahez",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:31.965402+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:21.998037+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "jahez"
   },
   "workable:lucidya": {
     "company": "Lucidya",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:37.372494+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:27.615248+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "lucidya"
   },
   "workable:nana": {
     "company": "Nana",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:33.282553+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:23.234833+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "nana"
   },
   "workable:rasan": {
     "company": "Rasan",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:33.937380+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:23.839853+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "rasan"
   },
   "workable:sary": {
     "company": "Sary",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:34.612970+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:24.454178+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "sary"
   },
   "workable:unifonic": {
     "company": "Unifonic",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:31.303661+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:21.379503+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "unifonic"
   },
   "workable:zid": {
     "company": "Zid",
     "curated": true,
-    "last_attempt": "2026-10-28T10:15:32.612654+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:22.607555+00:00",
+    "last_read": "2026-10-29",
     "source": "workable",
     "token": "zid"
   },
   "xebia": {
     "company": "Xebia",
     "found": "2026-09-15",
-    "last_attempt": "2026-10-28T10:15:24.446359+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:14.962271+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "xebia"
@@ -1846,8 +1862,8 @@
   "yokogawa": {
     "company": "Yokogawa",
     "found": "2026-09-28",
-    "last_attempt": "2026-10-28T10:15:25.097326+00:00",
-    "last_read": "2026-10-28",
+    "last_attempt": "2026-10-29T10:38:15.562505+00:00",
+    "last_read": "2026-10-29",
     "roles": 0,
     "source": "workable",
     "token": "yokogawa"

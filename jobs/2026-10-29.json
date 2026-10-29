@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-29",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "workable:6233475",
+      "captured_at": "2026-10-29T00:00:00Z",
+      "source": "workable",
+      "source_id": "6233475",
+      "title": "Quality Assurance Engineer (Saudi National Only)",
+      "company": "Gathern",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/gathern/j/D7359295F9/",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 68,
+      "why": "Candidate has strong test automation, CI/CD, and AI testing skills, but lacks dedicated QA experience.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Strong CI/CD, GitHub Actions, Postman, and AI-assisted testing match."
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Experience is in software/product engineering rather than dedicated QA."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "Diploma held; no strict degree requirement specified."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Riyadh location, Saudi National, early-career IC level matches."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Separate gold-set evaluation harnesses and model-comparison workflows",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows to catch regressions"
+        },
+        {
+          "title": "Quality gates spanning linting, type checks, tests, builds",
+          "resume_quote": "Added AI/application observability with Sentry, Telegram alerts, OpenRouter metadata, GitHub Actions, and quality gates spanning linting, type checks, tests, builds"
+        },
+        {
+          "title": "CI contract tests across the Python producer and TypeScript dashboard",
+          "resume_quote": "added provider failover, retry policies, usage budgets, outcome tracking, and CI contract tests across the Python producer and TypeScript dashboard."
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Missing dedicated software quality assurance experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Mobile application testing experience",
+          "reason": "The job description requires experience testing iOS and Android mobile apps, but the resume only shows web and backend application engineering.",
+          "evidence_needed": "Evidence of executing manual or automated testing on mobile platforms (iOS and Android)."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-29T00:00:00.000Z",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "Are you passionate about building high-quality software that users love? Gathern is looking for a Quality Assurance Engineer to support the delivery of reliable, high-performing products. In this role, you’ll collaborate closely with engineers, product managers, and designers to validate features, report issues, and ensure our apps and services meet the highest quality standards.\nYou’ll contribute to our QA activities across manual and automated testing, participate in Agile ceremonies, and help improve how we test and deliver features. If you're detail-oriented, curious, and eager to grow in a fast-paced environment, this role is for you.\nResponsibilities:\nCollaborate with product and engineering teams to test features and report issues clearly and efficiently.\nExecute manual test cases and support the development of automated tests across mobile and backend platforms.\nValidate features during sprints and contribute to regression and exploratory testing cycles.\nDocument bugs and test results in Jira with clarity and context.\nParticipate in sprint planning and backlog grooming to provide a QA perspective.\nSupport QA team initiatives to improve test coverage and reduce bug leakage.\nUse tools like Firebase, Datadog, and Postman to validate backend behavior, error rates, and app stability.\nFollow and contribute to QA processes across the product lifecycle.\nRequirements\n1 - 3 years of experience in software quality assurance or a similar role.\nFamiliarity with Agile software development and testing practices.\nExperience testing mobile applications (iOS and Android) and backend APIs.\nAbility to write clear and concise bug reports and test documentation.\nBasic understanding of test automation tools and CI/CD pipelines.\nStrong attention to detail, problem-solving skills, and a team-first mindset.\nComfortable working in a fast-paced, collaborative environment.\nFluency in Arabic and good command of English.\nNice-to-Have Skills:\nExposure to automation frameworks (e.g., Appium, Postman, Cypress).\nAI-Assisted Testing: Familiarity with AI tools (e.g., ChatGPT, Claude, GitHub Copilot) to support test case generation, exploratory testing, test data creation, and bug analysis.\nInterest in AI-driven QA, automation, and emerging tools that improve testing efficiency and software quality.\nKnowledge of QA metrics and reporting tools.\nFamiliarity with tools like Jira, GitHub, TestRail, or similar.\nBenefits\nWhy Join Gathern?\nBe part of a collaborative and innovative team driving quality excellence.\nWork on cutting-edge products with real-world impact.\nEnjoy opportunities for professional growth and career advancement.",
+        "sha256": "33c97927656868d9749d1cbe7d2e3b23d2f6ea15ea60d61b97dfbbe93bc3f687",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
