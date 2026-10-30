@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-30",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "pending:linkedin_api:2439607258",
+      "captured_at": "2026-10-30T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2439607258",
+      "title": "Power BI Developer",
+      "company": "KTek Resourcing",
+      "location": "Jeddah, Makkah Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/power-bi-developer-at-ktek-resourcing-4484967410",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Full job description needs verification.",
+        "Requirements and qualification gaps have not been checked.",
+        "No positive match to demonstrated resume work has been verified."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Data and analytics",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Strong Power BI and dashboarding; no demonstrated SMAX ITSM source experience."
+        },
+        "experience": {
+          "score": 24,
+          "max": 30,
+          "note": "Over 4 years hands-on commercial analytics and reporting."
+        },
+        "education": {
+          "score": 6,
+          "max": 15,
+          "note": "Technical diploma with Google Data Analytics certification."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Role is based in Saudi Arabia; matches individual contributor profile."
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "unknown",
+      "blockers": [],
+      "unclear": [],
+      "link_status": "open",
+      "first_published": "2026-10-29",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Integration of SMAX data sources (Incident, Problem, Change, Service Requests, Assets, CMDB, Availability, etc.) with Power BI.\nDesign and configuration of data models to support reporting and analytics requirements.\nDevelopment of interactive Power BI dashboards for key ITSM processes, including:\nIncident Management metrics (e.g., volume, SLA compliance, resolution trends)\nProblem Management trends (e.g., recurring issues, root cause analysis)\nChange Management reporting (e.g., change success rate, approvals, backlogs)\nService Request fulfillment and SLA tracking\nAsset and configuration visibility (where applicable)\nAvailability and continuity metrics\nConfiguration of filters, drill-downs, and interactive visualizations for different user roles (IT managers, service desk, executives).\nSetup of scheduled data refreshes and automated report distribution.\nConfiguration of role-based access controls for dashboards and reports to ensure secure data visibility.\nSupport for User Acceptance Testing (UAT), validation, and production go-live.\nProvision of documentation and knowledge transfer for dashboard usage, maintenance, and reporting best practices.",
+        "sha256": "b6c27a6ba437c37f7c0a806ba5122fe00e46382f742ce7437403d6da8fd71e0e",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:linkedin_api:2439607229",
+      "captured_at": "2026-10-30T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2439607229",
+      "title": "Power BI Developer",
+      "company": "KTek Resourcing",
+      "location": "Jeddah, Makkah Region, Saudi Arabia",
+      "url": "https://sa.linkedin.com/jobs/view/power-bi-developer-at-ktek-resourcing-4484977058",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Full job description needs verification.",
+        "Requirements and qualification gaps have not been checked.",
+        "No positive match to demonstrated resume work has been verified."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Data and analytics",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Proven Power BI dashboards and data modeling; lacks specific SMAX/ITSM tools."
+        },
+        "experience": {
+          "score": 22,
+          "max": 30,
+          "note": "Over 4 years data analytics experience at Alghalia since March 2020."
+        },
+        "education": {
+          "score": 6,
+          "max": 15,
+          "note": "Diploma in Pipefitting plus Google Data Analytics cert; no degree."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Matches mid-level IC requirements; located in Saudi Arabia."
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "unknown",
+      "blockers": [],
+      "unclear": [],
+      "link_status": "open",
+      "first_published": "2026-10-29",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": "Job Title: Power BI Support\nExperience: 4+ Years\nEmployment Type: Full-Time\nJD:\nIntegration of SMAX data sources (Incident, Problem, Change, Service Requests, Assets, CMDB, Availability, etc.) with Power BI.\nDesign and configuration of data models to support reporting and analytics requirements.\nDevelopment of interactive Power BI dashboards for key ITSM processes, including:\nIncident Management metrics (e.g., volume, SLA compliance, resolution trends)\nProblem Management trends (e.g., recurring issues, root cause analysis)\nChange Management reporting (e.g., change success rate, approvals, backlogs)\nService Request fulfillment and SLA tracking\nAsset and configuration visibility (where applicable)\nAvailability and continuity metrics\nConfiguration of filters, drill-downs, and interactive visualizations for different user roles (IT managers, service desk, executives).\nSetup of scheduled data refreshes and automated report distribution.\nConfiguration of role-based access controls for dashboards and reports to ensure secure data visibility.\nSupport for User Acceptance Testing (UAT), validation, and production go-live.\nProvision of documentation and knowledge transfer for dashboard usage, maintenance, and reporting best practices.",
+        "sha256": "6d18683c44b211f161d52f42fcb631382ccf014d2a3ef5ba6ac8be031c411780",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    }
+  ]
+}
