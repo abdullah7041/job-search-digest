@@ -42,7 +42,7 @@ import datetime
 from itertools import groupby
 
 import requests
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
 from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, jsonld_posting_countries, strip_html
@@ -57,7 +57,8 @@ from resume_source import MATCH_CATEGORIES
 # Each company names its ATS in "source":
 #   "greenhouse" + region "us"/"eu"   -> boards-api[.eu].greenhouse.io
 #   "ashby"                           -> api.ashbyhq.com/posting-api
-#   "workable"                        -> apply.workable.com/api/v3 (POST, paginated)
+#   "workable"                        -> apply.workable.com/api/v1/widget/accounts
+#   "hala"                            -> HALA's official public careers API
 #   "lever"                           -> api.lever.co/v0/postings
 #   "pinpoint"                        -> <token>.pinpointhq.com/postings.json
 #
@@ -72,7 +73,7 @@ from resume_source import MATCH_CATEGORIES
 # never crashes the run. Add companies below; see CANDIDATES at the bottom of
 # this file for ones whose ATS still needs confirming in Claude Code.
 COMPANIES = [
-    {"name": "HALA",   "source": "greenhouse", "token": "hala",     "region": "us"},
+    {"name": "HALA",   "source": "hala", "token": "hala"},
     {"name": "Careem", "source": "greenhouse", "token": "careem",   "region": "us"},
     {"name": "Tamara", "source": "greenhouse", "token": "tamara",   "region": "eu"},
     {"name": "Lean",   "source": "ashby",      "token": "LeanTech"},
@@ -476,16 +477,16 @@ def riyadh_today():
     return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date()
 
 
-def _get(url):
+def _get(url, *, headers=None):
     # rescue_apply_link and verify_link fetch URLs the pipeline did not choose
     # -- aggregator links to whatever third-party page JSearch relayed -- so the
     # body is read through jd_fetch's bounded fetch instead of an unbounded GET.
     # See jd_fetch.MAX_RESPONSE_BYTES for why.
-    return bounded_get(url, timeout=30)
+    return bounded_get(url, timeout=30, headers=headers)
 
 
 def _post(url, body):
-    # Workable's public job-board API is POST-only and cursor-paginated.
+    # Workable v3 remains the account-discovery probe; board reads use the widget.
     return requests.post(
         url,
         headers={"User-Agent": USER_AGENT, "Content-Type": "application/json"},
@@ -568,66 +569,76 @@ def fetch_ashby(c):
     return out
 
 
+def fetch_hala(c):
+    # HALA's official careers site replaced its Greenhouse board in October 2026.
+    try:
+        r = _get("https://gateway.hala.com/mawhiba/v1/public/careers/jobs",
+                 headers={"X-Mawhiba-Client": "careers"})
+        if r.status_code != 200 or getattr(r, "truncated", False) is True:
+            raise ValueError(f"HTTP {r.status_code} or truncated response")
+        jobs = r.json()["jobs"]
+        if not isinstance(jobs, list):
+            raise ValueError("invalid jobs list")
+        out = []
+        for job in jobs:
+            slug, title = job["slug"], job["title_en"]
+            location = job.get("location") or ""
+            if not isinstance(slug, str) or not slug or not isinstance(title, str) or not title.strip():
+                raise ValueError("missing job identity")
+            if not isinstance(location, str):
+                raise ValueError("invalid job location")
+            out.append({"company": c["name"], "id": "hala:" + slug, "title": title.strip(),
+                        "location": location, "slug": slug,
+                        "url": "https://careers.hala.com/jobs/" + quote(slug, safe=""),
+                        "first_published": job.get("published_at") or "",
+                        "source": "hala", "token": c["token"], "description": ""})
+        log(f"{c['name']}: {len(out)} jobs (hala)")
+        return out
+    except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError) as error:
+        source_failure(c["name"], f"WARN {c['name']}: careers feed failed: {error}")
+        return []
+
+
 def fetch_workable(c):
     if "workable" in THROTTLED_SOURCES:
         return []
-    # Workable v3 board API: POST, 10 jobs/page, cursor in "nextPage" -> echo back
-    # as {"token": ...}. Verified live 24 Jun 2026 against apply.workable.com/foodics.
-    # No public apply URL in the payload, so we build the canonical one from shortcode.
-    url = f"https://apply.workable.com/api/v3/accounts/{c['token']}/jobs"
-    out, body, pages = [], {}, 0
-    retried = False
-    MAX_PAGES = 30  # hard stop so a misbehaving cursor can never loop forever (300 jobs)
-    while pages < MAX_PAGES:
-        try:
-            r = _post(url, body)
-            if r.status_code == 429 and not retried:
-                try:
-                    delay = int(r.headers.get("Retry-After", ""))
-                except (ValueError, TypeError):
-                    delay = -1
-                if 0 <= delay <= 5 and time.monotonic() + delay + 30 < NETWORK_DEADLINE:
-                    retried = True
-                    time.sleep(delay)
-                    r = _post(url, body)
-        except requests.RequestException as e:
-            source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
-            return out  # return what we already have; partial beats crashing
+    # The same public board endpoint already used for JD recovery, without v3 pagination.
+    url = f"https://apply.workable.com/api/v1/widget/accounts/{c['token']}?details=true"
+    try:
+        r = _get(url)
+        if r.status_code == 429:
+            try:
+                delay = int(r.headers.get("Retry-After", ""))
+            except (ValueError, TypeError):
+                delay = -1
+            if 0 <= delay <= 5 and time.monotonic() + delay + 30 < NETWORK_DEADLINE:
+                time.sleep(delay)
+                r = _get(url)
         if r.status_code != 200:
             if r.status_code == 429:
                 THROTTLED_SOURCES["workable"] = str(r.headers.get("Retry-After") or "next run")[:60]
-            source_failure(c['name'], f"WARN {c['name']}: workable HTTP {r.status_code} (token '{c['token']}'). Skipping.")
-            return out
-        try:
-            data = r.json()
-        except ValueError:
-            source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
-            return out
-        for j in data.get("results", []):
-            if j.get("state") not in (None, "published"):
-                continue
-            loc = j.get("location") or {}
-            # Combine city + country so LOCATION_INCLUDE matches "riyadh" AND "saudi".
-            location = ", ".join(p for p in (loc.get("city"), loc.get("country")) if p)
-            shortcode = j.get("shortcode") or ""
-            out.append({
-                "company": c["name"],
-                "id": str(j.get("id")),
-                "title": (j.get("title") or "").strip(),
-                "location": location,
-                "url": f"https://apply.workable.com/{c['token']}/j/{shortcode}/" if shortcode else "",
-                "first_published": j.get("published") or "",
-                "source": "workable", "token": c["token"], "shortcode": shortcode,
-                "description": "",  # fetched on demand via the v1 widget API
-            })
-        cursor = data.get("nextPage")
-        if not cursor:
-            break
-        body = {"token": cursor}
-        pages += 1
-        time.sleep(0.3)  # be polite across pages
-    log(f"{c['name']}: {len(out)} jobs (workable)")
-    return out
+            raise ValueError(f"HTTP {r.status_code}")
+        if getattr(r, "truncated", False) is True:
+            raise ValueError("truncated board response")
+        jobs = r.json()["jobs"]
+        if not isinstance(jobs, list):
+            raise ValueError("invalid jobs list")
+        out = []
+        for j in jobs:
+            shortcode, title = j["shortcode"], j["title"]
+            if not isinstance(shortcode, str) or not shortcode or not isinstance(title, str) or not title.strip():
+                raise ValueError("missing job identity")
+            out.append({"company": c["name"], "id": shortcode, "title": title.strip(),
+                        "location": ", ".join(p for p in (j.get("city"), j.get("country")) if p),
+                        "url": f"https://apply.workable.com/{c['token']}/j/{quote(shortcode, safe='')}/",
+                        "first_published": j.get("published_on") or "",
+                        "source": "workable", "token": c["token"], "shortcode": shortcode,
+                        "description": strip_html(j.get("description") or "")[:JD_MAX_CHARS]})
+        log(f"{c['name']}: {len(out)} jobs (workable)")
+        return out
+    except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError) as error:
+        source_failure(c["name"], f"WARN {c['name']}: workable board failed: {error}")
+        return []
 
 
 def fetch_lever(c):
@@ -1537,6 +1548,7 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota,
 
 
 FETCHERS = {
+    "hala": fetch_hala,
     "greenhouse": fetch_greenhouse,
     "ashby": fetch_ashby,
     "workable": fetch_workable,
@@ -1782,7 +1794,31 @@ def drop_repeat_descriptions(jobs, seen):
     kept, repeats = [], []
     for job in jobs:
         key = description_key(job)
-        (repeats if key and key in seen else kept).append(job)
+        if key and key in seen:
+            repeats.append(job)
+            continue
+        text = "\n".join(line.strip().casefold() for line in (job.get("description") or "").splitlines() if line.strip())
+        # ponytail: quadratic over unseen candidates; bucket by role if this grows large.
+        for index, other in enumerate(kept):
+            if (not text or not posting_key(job) or posting_key(job) != posting_key(other)
+                    or " ".join((job.get("location") or "").casefold().split())
+                    != " ".join((other.get("location") or "").casefold().split())):
+                continue
+            other_text = "\n".join(line.strip().casefold() for line in (other.get("description") or "").splitlines() if line.strip())
+            shorter, longer = sorted((text, other_text), key=len)
+            if not shorter or not longer.endswith(shorter):
+                continue
+            prefix = longer[:-len(shorter)]
+            if prefix and not re.fullmatch(r"(?:(?:job title|experience|employment type|jd)\s*:[^\n]*\n)+", prefix):
+                continue
+            if len(text) > len(other_text):
+                kept[index] = job
+                repeats.append(other)
+            else:
+                repeats.append(job)
+            break
+        else:
+            kept.append(job)
     return kept, repeats
 
 
@@ -2089,6 +2125,23 @@ def get_description(job):
                     w.get("shortcode"): strip_html(w.get("description") or "") for w in jobs
                 }
             job["description"] = _workable_details_cache.get(token, {}).get(job.get("shortcode"), "")
+        elif src == "hala":
+            slug = quote(job.get("slug") or job["id"].removeprefix("hala:"), safe="")
+            r = _get(f"https://gateway.hala.com/mawhiba/v1/public/careers/jobs/{slug}",
+                     headers={"X-Mawhiba-Client": "careers"})
+            if r.status_code == 200 and getattr(r, "truncated", False) is not True:
+                payload = r.json()
+                if not isinstance(payload, dict) or not isinstance(payload.get("job"), dict):
+                    raise ValueError("invalid HALA job detail")
+                detail = payload["job"]
+                if detail.get("slug", job.get("slug")) != job.get("slug"):
+                    return ""
+                if isinstance(detail.get("apply"), dict) and detail["apply"].get("accepting_applications") is False:
+                    job["link_status"] = LINK_CLOSED
+                text = detail.get("description_en_md") or ""
+                if not isinstance(text, str):
+                    raise ValueError("invalid HALA description")
+                job["description"] = strip_html(text)
         else:
             job["description"] = fetch_posting_page(job)
     except (requests.RequestException, ValueError) as e:
@@ -2891,6 +2944,7 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     COMPANIES is never rationed.
     """
     already = {(c["source"], c["token"]) for c in COMPANIES}
+    already.add(("greenhouse", "hala"))  # Retired; the official careers feed replaces it.
     out = []
     for key in sorted(boards, key=lambda k: (boards[k].get("last_attempt") or boards[k].get("last_read") or "", k)):
         record = boards[key]
@@ -3286,6 +3340,7 @@ def main():
     # delivered tomorrow.
     fresh = [j for j in matched
              if job_identity(j) not in seen
+             and "url:" + canonical_url(apply_link(j)) not in seen
              and not still_cooling(seen, j, today_iso)]
 
     # Age before liveness, because this costs no network and settle_link spends
@@ -3384,10 +3439,14 @@ def main():
         log(f"Run budget spent: {len(fresh)} job(s) scored on the description "
             "their source supplied, without enrichment")
 
+    late_closed = [job for job in fresh if job["link_status"] == LINK_CLOSED]
+    closed.extend(late_closed)
+    for job in late_closed:
+        log(f"DROP applications closed during JD recovery: {job['company']} — {job['title']}")
     for job in fresh:
         if posting_location_conflict(job):
             log(f"DROP conflicting posting country {job['posting_countries']!r}: {job['company']} — {job['title']}")
-    fresh = [job for job in fresh if not posting_location_conflict(job)
+    fresh = [job for job in fresh if job["link_status"] != LINK_CLOSED and not posting_location_conflict(job)
              and "url:" + canonical_url(apply_link(job)) not in seen]
 
     # A rescued apply link is BUILT from a token and a posting id, not copied
@@ -3790,9 +3849,9 @@ def main():
 # `python digest.py --discover salla tabby mozn` probes a company name as a token
 # against every token-based ATS and prints what's confirmed live.
 #
-# Each probe hits the SAME endpoint its fetcher uses. That matters: Workable's v1
-# widget undercounts against the v3 endpoint fetch_workable reads, so probing the
-# convenient endpoint gives an answer about an API the engine never calls.
+# Workable discovery retains the v3 account probe: its widget can return an
+# empty response even for an invented token. Fetching confirmed boards uses the
+# widget to avoid pagination; the control probe below still guards discovery.
 CONTROL_TOKEN = "zzznotarealcompany999"
 
 

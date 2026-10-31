@@ -74,8 +74,13 @@ function jdIsComplete(value) {
   const words = normalized.match(/\b\w+\b/g) || [];
   const lowered = normalized.toLowerCase();
   const hasTaskHeading = /(?:^|[\n\r.;:!?•*\-]\s*)(?:what you['’]ll do|what you will do|your impact|job description|the role)\b/i.test(value || "");
-  const hasResponsibilities = hasTaskHeading || ["responsibil", "responsible for", "you will", "duties", "about the role"].some((marker) => lowered.includes(marker));
-  const hasRequirements = ["requirement", "qualification", "experience", "skills"].some((marker) => lowered.includes(marker));
+  const hasTaskMarker = hasTaskHeading || ["responsibil", "responsible for", "you will", "duties", "about the role"].some((marker) => lowered.includes(marker));
+  // Keep these bounded duty/qualification patterns aligned with job_archive.py.
+  const dutyLines = (value || "").match(/^\s*(?:[-*•]\s*)?(?:integration|design|development|configuration|setup|support|provision|build|develop|maintain|analy[sz]e|implement|manage|deliver|test|automate|monitor)\b[^\n]{30,}/gim) || [];
+  const hasDutyList = new Set(dutyLines.map((line) => line.trim().toLowerCase().replace(/\s+/g, " "))).size >= 3;
+  const hasQualifications = /^\s*(?:[-*•]\s*)?(?:experience\s*:?\s*\d+\+?\s*(?:years?|yrs?)\b|\d+[\d\s+–—-]*\s*(?:years?|yrs?)\s+(?:of\s+)?experience\b|(?:experience|proficiency|knowledge|skills)\s+(?:in|with|of)\b|(?:bachelor|master|degree|diploma|certification)\b)/im.test(value || "");
+  const hasResponsibilities = hasTaskMarker || hasDutyList;
+  const hasRequirements = ["requirement", "qualification", "experience", "skills"].some((marker) => lowered.includes(marker)) && (hasTaskMarker || hasQualifications);
   return normalized.length >= 400 && words.length >= 60 && hasResponsibilities && hasRequirements;
 }
 

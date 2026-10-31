@@ -78,9 +78,9 @@ class BoundedResponse:
 
 
 def bounded_get(url, *, timeout: int = FETCH_TIMEOUT,
-                limit: int = MAX_RESPONSE_BYTES) -> BoundedResponse:
+                limit: int = MAX_RESPONSE_BYTES, headers: dict | None = None) -> BoundedResponse:
     """GET a URL, reading at most ``limit`` bytes of its body."""
-    response = requests.get(url, headers={"User-Agent": USER_AGENT},
+    response = requests.get(url, headers={"User-Agent": USER_AGENT, **(headers or {})},
                             timeout=timeout, stream=True)
     try:
         chunks, total = [], 0

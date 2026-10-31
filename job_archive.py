@@ -52,6 +52,24 @@ GRADE_FULL = "full"
 # there is nothing left to resolve, so this matches STATE_TTL_DAYS in digest.py.
 ARCHIVE_TTL_DAYS = 120
 
+DUTY_LINE_RE = re.compile(
+    r"^\s*(?:[-*•]\s*)?(?:integration|design|development|configuration|setup|support|provision"
+    r"|build|develop|maintain|analy[sz]e|implement|manage|deliver|test|automate|monitor)\b[^\n]{30,}",
+    re.IGNORECASE | re.MULTILINE,
+)
+QUALIFICATION_LINE_RE = re.compile(
+    r"^\s*(?:[-*•]\s*)?(?:experience\s*:?\s*\d+\+?\s*(?:years?|yrs?)\b"
+    r"|\d+[\d\s+–—-]*\s*(?:years?|yrs?)\s+(?:of\s+)?experience\b"
+    r"|(?:experience|proficiency|knowledge|skills)\s+(?:in|with|of)\b"
+    r"|(?:bachelor|master|degree|diploma|certification)\b)",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def has_duty_list(text: str) -> bool:
+    # ponytail: bounded wording heuristic; extend with frozen false-rejection examples.
+    return len({" ".join(m.group().lower().split()) for m in DUTY_LINE_RE.finditer(text or "")}) >= 3
+
 
 def jd_completeness_failures(jd_text: str) -> list[str]:
     """Return evidence that captured text is only a snippet, not a usable JD."""
@@ -62,11 +80,13 @@ def jd_completeness_failures(jd_text: str) -> list[str]:
     if len(normalized) < JD_MIN_CHARS or len(re.findall(r"\b\w+\b", normalized)) < JD_MIN_WORDS:
         failures.append("too_short")
     lowered = normalized.lower()
-    if (not any(marker in lowered for marker in RESPONSIBILITY_MARKERS)
-            and not any(match.group(1).lower() in RESPONSIBILITY_HEADINGS
-                        for match in SIGNAL_RE.finditer(jd_text or ""))):
+    has_task_heading = (any(marker in lowered for marker in RESPONSIBILITY_MARKERS)
+                        or any(match.group(1).lower() in RESPONSIBILITY_HEADINGS
+                               for match in SIGNAL_RE.finditer(jd_text or "")))
+    if not has_task_heading and not has_duty_list(jd_text):
         failures.append("responsibilities_not_evidenced")
-    if not any(marker in lowered for marker in REQUIREMENT_MARKERS):
+    if (not any(marker in lowered for marker in REQUIREMENT_MARKERS)
+            or (not has_task_heading and not QUALIFICATION_LINE_RE.search(jd_text or ""))):
         failures.append("requirements_not_evidenced")
     return failures
 
@@ -201,7 +221,7 @@ def jd_grade(jd_text: str) -> str:
     if jd_completeness_failures(text):
         return GRADE_INCOMPLETE
     if (len(normalized) < TEASER_MIN_CHARS
-            and len(signal_headings(text)) < TEASER_MIN_HEADINGS):
+            and len(signal_headings(text)) < TEASER_MIN_HEADINGS and not has_duty_list(text)):
         return GRADE_TEASER
     return GRADE_FULL
 

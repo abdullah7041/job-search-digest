@@ -28,6 +28,8 @@ from urllib.parse import parse_qs, urlparse
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, REPO)
+with open(os.path.join(REPO, "eval", "regressions", "power-bi-2026-10-30.json"), encoding="utf-8") as handle:
+    POWER_BI_POSTINGS = json.load(handle)["jobs"]
 
 # Import from a temp cwd so test runs never touch the real seen.json/stats.json.
 _TMP = tempfile.mkdtemp(prefix="digest_test_")
@@ -233,6 +235,30 @@ class TestGetDescription(unittest.TestCase):
         self.assertIn("Build LLM systems", out)
         self.assertIn("boards-api.greenhouse.io/v1/boards/hala/jobs/123", g.call_args[0][0])
 
+    def test_hala_recovers_its_public_markdown_description(self):
+        job = {"id": "hala:software-developer", "title": "Software Developer", "company": "HALA",
+               "source": "hala", "token": "hala", "slug": "software-developer", "description": ""}
+        response = self._resp({"job": {"slug": "software-developer", "description_en_md": FULL_JD}})
+        with mock.patch.object(digest, "_get", return_value=response) as get:
+            self.assertEqual(digest.get_description(job), FULL_JD[:digest.JD_MAX_CHARS])
+        self.assertEqual(get.call_args.args[0],
+                         "https://gateway.hala.com/mawhiba/v1/public/careers/jobs/software-developer")
+        self.assertEqual(get.call_args.kwargs["headers"], {"X-Mawhiba-Client": "careers"})
+
+    def test_hala_missing_description_does_not_invent_one(self):
+        job = {"id": "hala:software-developer", "title": "Software Developer", "company": "HALA",
+               "source": "hala", "token": "hala", "slug": "software-developer", "description": ""}
+        with mock.patch.object(digest, "_get", return_value=self._resp({"job": {"description_en_md": "&#x20;"}})):
+            self.assertEqual(digest.get_description(job), "")
+
+    def test_malformed_hala_detail_stays_missing_instead_of_aborting_digest(self):
+        for payload in ([], {"job": ["unexpected"]}, {"job": {"slug": "software-developer", "description_en_md": 123}}):
+            job = {"id": "hala:software-developer", "title": "Software Developer", "company": "HALA",
+                   "source": "hala", "token": "hala", "slug": "software-developer", "description": ""}
+            with self.subTest(payload=payload), \
+                 mock.patch.object(digest, "_get", return_value=self._resp(payload)):
+                self.assertEqual(digest.get_description(job), "")
+
     def test_workable_widget_cached_per_company(self):
         digest._workable_details_cache.clear()
         j1 = {"id": "1", "title": "t1", "company": "Salla", "description": "",
@@ -305,6 +331,18 @@ TASK_HEADING_JD = (
 
 
 class TestPostingTaskHeadings(unittest.TestCase):
+    def test_heading_free_duties_with_stated_experience_are_complete(self):
+        text = POWER_BI_POSTINGS[1]["description"]
+        self.assertEqual(job_archive.jd_completeness_failures(text), [])
+        self.assertEqual(job_archive.jd_grade(text), "full")
+        short = "Experience: 4+ Years\n" + "\n".join(text.splitlines()[4:10])
+        self.assertEqual(job_archive.jd_grade(short), "full")
+
+    def test_duties_without_qualification_evidence_stay_incomplete(self):
+        text = POWER_BI_POSTINGS[0]["description"]
+        self.assertIn("requirements_not_evidenced", job_archive.jd_completeness_failures(text))
+        self.assertNotEqual(job_archive.jd_grade(text), "full")
+
     def test_complete_postings_with_normal_task_headings_are_usable(self):
         for heading in ("What you'll do", "What You’ll Do", "What You Will Do", "Job Description:",
                         "THE ROLE: DEPLOYING IMPACT"):
@@ -369,6 +407,25 @@ TEASER_JD = (
 
 class TestJobIdentity(unittest.TestCase):
     """What seen.json remembers a posting by."""
+
+    def test_metadata_prefixed_relist_keeps_the_more_informative_copy(self):
+        bare, richer = POWER_BI_POSTINGS
+        for jobs in ([bare, richer], [richer, bare]):
+            kept, repeats = digest.drop_repeat_descriptions(jobs, {})
+            self.assertEqual(kept, [richer])
+            self.assertEqual(repeats, [bare])
+
+    def test_metadata_deduplication_preserves_locations_and_requirements(self):
+        richer = POWER_BI_POSTINGS[1]
+        for other in (dict(richer, location="Riyadh, Saudi Arabia"),
+                      dict(richer, description=richer["description"].replace("4+ Years", "6+ Years")),
+                      dict(richer, description=richer["description"] + "\nAWS certification required.")):
+            self.assertEqual(digest.drop_repeat_descriptions([richer, other], {}), ([richer, other], []))
+
+    def test_legacy_description_seen_keys_still_suppress_delivery(self):
+        job = POWER_BI_POSTINGS[1]
+        seen = {digest.description_key(job): "2026-10-30"}
+        self.assertEqual(digest.drop_repeat_descriptions([job], seen), ([], [job]))
 
     def test_an_aggregator_posting_keys_on_its_url_not_its_id(self):
         job = {"source": "jsearch", "id": "jsearch_opaque_token_1",
@@ -2139,6 +2196,91 @@ class TestPaywalledPostingsAreNeverFetched(unittest.TestCase):
         self.assertEqual(paywalled, [])
 
 
+class TestHalaCoverage(unittest.TestCase):
+    def setUp(self):
+        digest.SOURCE_FAILURES.clear()
+        self.addCleanup(digest.SOURCE_FAILURES.clear)
+
+    def test_curated_hala_uses_current_careers_feed_and_retires_greenhouse(self):
+        boards = {"hala": {"company": "HALA", "source": "greenhouse", "token": "hala"}}
+        entries = [c for c in digest.board_read_queue(boards) if c["name"] == "HALA"]
+        self.assertEqual([(c["source"], c["token"]) for c in entries], [("hala", "hala")])
+
+    def test_public_hala_feed_preserves_publication_date_and_source_url(self):
+        response = mock.Mock(status_code=200, truncated=False)
+        response.json.return_value = {"jobs": [{"slug": "software-developer", "title_en": "Software Developer",
+            "title_ar": "", "location": "KSA - Riyadh", "department_name": "Ventures",
+            "employment_type": "full_time", "published_at": "2026-10-28T15:10:49.446765+03:00"}]}
+        with mock.patch.object(digest, "_get", return_value=response) as get:
+            jobs = digest.fetch_company({"name": "HALA", "source": "hala", "token": "hala"})
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["id"], "hala:software-developer")
+        self.assertEqual(jobs[0]["url"], "https://careers.hala.com/jobs/software-developer")
+        self.assertEqual(jobs[0]["first_published"], "2026-10-28T15:10:49.446765+03:00")
+        self.assertEqual(jobs[0]["description"], "")
+        self.assertTrue(digest.matches_filters(jobs[0]))
+        self.assertEqual(get.call_args.kwargs["headers"], {"X-Mawhiba-Client": "careers"})
+
+    def test_hala_source_failures_do_not_count_as_successful_reads(self):
+        for status, payload in ((503, {}), (200, {}), (200, {"jobs": "invalid"}), (200, {"jobs": [{}]}),
+                                (200, {"jobs": [{"slug": "developer", "title_en": "Developer", "location": 123}]})):
+            response = mock.Mock(status_code=status, truncated=False)
+            response.json.return_value = payload
+            with self.subTest(status=status, payload=payload), \
+                 mock.patch.object(digest, "_get", return_value=response):
+                self.assertEqual(digest.fetch_company({"name": "HALA", "source": "hala", "token": "hala"}), [])
+                self.assertIn("HALA", digest.SOURCE_FAILURES)
+            digest.SOURCE_FAILURES.clear()
+
+
+class TestWorkableCoverage(unittest.TestCase):
+    def setUp(self):
+        digest.THROTTLED_SOURCES.clear()
+        digest.SOURCE_FAILURES.clear()
+        self.addCleanup(digest.THROTTLED_SOURCES.clear)
+        self.addCleanup(digest.SOURCE_FAILURES.clear)
+
+    def test_widget_board_maps_all_jobs_without_pagination(self):
+        response = mock.Mock(status_code=200, truncated=False)
+        response.json.return_value = {"name": "Foodics", "description": "", "jobs": [
+            {"title": "AI Engineer", "shortcode": str(n), "url": "https://apply.workable.com/j/" + str(n),
+             "published_on": "2026-10-29", "created_at": "2026-08-06", "country": "Saudi Arabia",
+             "city": "Riyadh", "description": "<p>" + FULL_JD + "</p>"} for n in range(29)]}
+        with mock.patch.object(digest, "_get", return_value=response) as get, \
+             mock.patch.object(digest, "_post", side_effect=AssertionError("pagination is unnecessary")):
+            jobs = digest.fetch_workable({"name": "Foodics", "token": "foodics"})
+        self.assertEqual(len(jobs), 29)
+        self.assertEqual(jobs[0]["url"], "https://apply.workable.com/foodics/j/0/")
+        self.assertEqual(jobs[0]["first_published"], "2026-10-29")
+        self.assertEqual(jobs[0]["description"], FULL_JD[:digest.JD_MAX_CHARS])
+        self.assertEqual(jobs[0]["location"], "Riyadh, Saudi Arabia")
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(get.call_args.args[0], "https://apply.workable.com/api/v1/widget/accounts/foodics?details=true")
+
+    def test_invalid_or_partial_widget_payload_is_a_failed_board(self):
+        for payload, truncated in (({}, False), ({"jobs": "invalid"}, False), ({"jobs": [{}]}, False),
+                                   ({"jobs": []}, True)):
+            response = mock.Mock(status_code=200, truncated=truncated)
+            response.json.return_value = payload
+            with self.subTest(payload=payload, truncated=truncated), \
+                 mock.patch.object(digest, "_get", return_value=response), \
+                 mock.patch.object(digest, "_post", return_value=response):
+                self.assertEqual(digest.fetch_workable({"name": "Foodics", "token": "foodics"}), [])
+                self.assertIn("Foodics", digest.SOURCE_FAILURES)
+            digest.SOURCE_FAILURES.clear()
+
+    def test_legacy_delivered_url_is_skipped_before_link_or_model_calls(self):
+        job = dict(REAL_JOBS[1], id="NEW_SHORTCODE", source="workable", token="foodics", description=FULL_JD)
+        _, work = run_main(TestEndToEnd.ENV, {}, jobs=[])
+        self.addCleanup(shutil.rmtree, work, ignore_errors=True)
+        with open(os.path.join(work, "seen.json"), "w", encoding="utf-8") as handle:
+            json.dump({"old-numeric-id": RECENT, "url:" + job["url"]: RECENT}, handle)
+        with mock.patch.object(digest, "settle_link", side_effect=AssertionError("already delivered")):
+            run_main(TestEndToEnd.ENV, {}, jobs=[job], work=work)
+        with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)[-1]["delivered"], 0)
+
+
 class TestFocusedCoverage(unittest.TestCase):
     def test_unread_boards_rotate_ahead_of_the_account_that_was_throttled(self):
         boards = {
@@ -2153,8 +2295,8 @@ class TestFocusedCoverage(unittest.TestCase):
         self.addCleanup(digest.THROTTLED_SOURCES.clear)
         limited = mock.Mock(status_code=429, headers={"Retry-After": "1"})
         recovered = mock.Mock(status_code=200)
-        recovered.json.return_value = {"results": []}
-        with mock.patch.object(digest, "_post", side_effect=[limited, recovered]) as post, \
+        recovered.json.return_value = {"jobs": []}
+        with mock.patch.object(digest, "_get", side_effect=[limited, recovered]) as post, \
              mock.patch.object(digest.time, "sleep") as sleep, \
              mock.patch.object(digest, "NETWORK_DEADLINE", digest.time.monotonic() + 100):
             digest.fetch_workable({"name": "One", "token": "one"})
@@ -2180,7 +2322,7 @@ class TestFocusedCoverage(unittest.TestCase):
         digest.THROTTLED_SOURCES.clear()
         self.addCleanup(digest.THROTTLED_SOURCES.clear)
         response = mock.Mock(status_code=429, headers={"Retry-After": "60"})
-        with mock.patch.object(digest, "_post", return_value=response) as post:
+        with mock.patch.object(digest, "_get", return_value=response) as post:
             digest.fetch_workable({"name": "One", "token": "one"})
             digest.fetch_workable({"name": "Two", "token": "two"})
         self.assertEqual(post.call_count, 1)
@@ -2193,7 +2335,7 @@ class TestFocusedCoverage(unittest.TestCase):
                          "last_read": "2026-10-01"} for name in ("one", "two")}
         with open(os.path.join(work, "boards.json"), "w", encoding="utf-8") as handle:
             json.dump(boards, handle)
-        with mock.patch.object(digest, "_post", return_value=mock.Mock(status_code=429, headers={"Retry-After": "60"})):
+        with mock.patch.object(digest, "_get", return_value=mock.Mock(status_code=429, headers={"Retry-After": "60"})):
             run_main(TestEndToEnd.ENV, {}, jobs=[], work=work)
         with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle)[-1]["board_coverage"],

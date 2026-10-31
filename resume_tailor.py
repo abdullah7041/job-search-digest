@@ -480,9 +480,7 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
     the caller can fall back to sending the untouched master resume.
     """
     allowed = vocabulary(master_text, snapshot.get("title", ""), snapshot.get("company", ""))
-    # Rule 4 permits the candidate's own headline and the job's title, nothing
-    # else. Until now nothing enforced it: the model's headline was written
-    # straight into the document unchecked.
+    # The headline is a fixed contract, not model-authored resume evidence.
     headline_terms = vocabulary(document["headline"], snapshot.get("title", ""))
     expected_headline = None
     if document["headline"].strip() and snapshot.get("title", "").strip():
@@ -496,6 +494,7 @@ def tailor(document: dict, snapshot: dict, api_key: str, sources: dict[str, str]
 
     for _ in range(MAX_ATTEMPTS):
         plan = call_model(build_prompt(document, snapshot, corrections), api_key, deadline)
+        plan["headline"] = expected_headline or document["headline"].strip()
         markup_errors = []
         wording = [plan.get("summary", "")] + [item["text"] for item in plan.get("bullets", [])]
         if any(re.search(r"</?[A-Za-z][^>]*>", text) for text in wording):

@@ -155,7 +155,8 @@ TEASER_WARNING = (
 def _message(title: str, company: str, gaps: list[str], fit_notes: list[str],
              note: str, warnings: list[str] | None = None, comparison: dict | None = None) -> str:
     """Everything the candidate needs to read, and nothing an employer sees."""
-    lines = [f"Tailored one-page CV for **{title}** at **{company}**, built from your confirmed master resume."]
+    label = "Untailored master resume" if note else "Tailored one-page CV"
+    lines = [f"{label} for **{title}** at **{company}**, built from your confirmed master resume."]
     if note:
         lines.append(f"\n:warning: {note}")
     for warning in warnings or []:

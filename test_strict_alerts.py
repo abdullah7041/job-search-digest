@@ -182,6 +182,26 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertIn("**Power BI Developer**", body)
         self.assertIn("url:https://example.test/match", seen)
 
+    def test_observed_power_bi_relists_reach_one_verified_review(self):
+        jobs = [dict(job, first_published=fixtures.RECENT) for job in fixtures.POWER_BI_POSTINGS]
+        body, row, _, _ = self.run_jobs(jobs, {j["id"]: 68 for j in jobs},
+                                      {"Power BI Developer": VIABLE})
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["needs_checking_delivered"], 0)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertEqual(body.count("**Power BI Developer**"), 1)
+
+    def test_hala_closure_found_during_description_fetch_is_not_delivered(self):
+        job = self.job("hala:closed", company="HALA", title="Software Developer", source="hala", token="hala",
+                       slug="closed", url="https://careers.hala.com/jobs/closed", description="")
+        response = mock.Mock(status_code=200, truncated=False)
+        response.json.return_value = {"job": {"slug": "closed", "description_en_md": fixtures.FULL_JD,
+                                              "apply": {"accepting_applications": False}}}
+        with mock.patch.object(digest, "_get", return_value=response):
+            _, row, _, _ = self.run_jobs([job], {"hala:closed": 90}, {job["title"]: VIABLE})
+        self.assertEqual(row["delivered"], 0)
+        self.assertEqual(row["link_closed"], 1)
+
     def test_empty_digest_reports_failed_sources_and_clears_failures_next_run(self):
         response = mock.Mock(status_code=503, text="Service unavailable")
         company = {"name": "Example", "source": "greenhouse", "token": "example"}

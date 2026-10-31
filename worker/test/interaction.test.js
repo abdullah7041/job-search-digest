@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import worker, {
@@ -209,6 +210,25 @@ test("tailoring accepts complete postings with normal task headings", async () =
       { job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) }, snapshot.job_key,
     );
     assert.equal(result.job_snapshot.jd.text, text);
+  }
+});
+
+test("heading-free duty lists require qualifications and retain their exact captured bytes", async () => {
+  const fixture = JSON.parse(readFileSync(new URL("../../eval/regressions/power-bi-2026-10-30.json", import.meta.url), "utf8"));
+  for (const [index, job] of fixture.jobs.entries()) {
+    const text = job.description;
+    const snapshot = { job_key: `pending:linkedin_api:${job.id}`, application_state: "needs_checking",
+      jd: { status: "captured", grade: "full", text, sha256: createHash("sha256").update(text).digest("hex") } };
+    const row = { job_key: snapshot.job_key, snapshot_json: JSON.stringify(snapshot) };
+    if (index === 0) {
+      await assert.rejects(tailoringInputFromSnapshotRow(row, snapshot.job_key), /complete job description/i);
+    } else {
+      const result = await tailoringInputFromSnapshotRow(row, snapshot.job_key);
+      assert.equal(result.job_snapshot.jd.text, text);
+      snapshot.jd.text += " altered";
+      row.snapshot_json = JSON.stringify(snapshot);
+      await assert.rejects(tailoringInputFromSnapshotRow(row, snapshot.job_key), /digest/i);
+    }
   }
 });
 
