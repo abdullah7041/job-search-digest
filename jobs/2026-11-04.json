@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-04",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9ZjY0YjAxMmZmZjM4NTY4MTtjYz1zYQ==",
+      "captured_at": "2026-11-04T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9ZjY0YjAxMmZmZjM4NTY4MTtjYz1zYQ==",
+      "title": "Full Stack Developer",
+      "company": "Pirelli",
+      "location": "Mecca, المملكة العربية السعودية",
+      "url": "https://jobs.pirelli.com/job/Full-Stack-Developer/23644-en_GB",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 55,
+      "why": "Matches full-stack stack (React, TypeScript, Python, PostgreSQL), but software experience spans under o (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 38,
+          "max": 40,
+          "note": "Excellent match on React, TypeScript, Python, PostgreSQL, REST APIs, CI/CD."
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Requires 3+ years full stack experience; candidate has ~8 months SE."
+        },
+        "education": {
+          "score": 5,
+          "max": 15,
+          "note": "No degree explicitly required; candidate holds technical diploma."
+        },
+        "seniority_location": {
+          "score": 9,
+          "max": 15,
+          "note": "Located in Saudi Arabia (Mecca/KAEC vs Riyadh)."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Built and deployed the product solo with React",
+          "resume_quote": "Built and deployed the product solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security"
+        },
+        {
+          "title": "Added AI/application observability with Sentry",
+          "resume_quote": "Added AI/application observability with Sentry, Telegram alerts, OpenRouter metadata, GitHub Actions, and quality gates spanning linting, type checks, tests, builds"
+        },
+        {
+          "title": "TypeScript and React action cockpit",
+          "resume_quote": "combining deterministic technical rules, disclosures/news context, scheduled GitHub Actions, Discord alerts, and a React/Next.js action cockpit."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Insufficient Professional Full Stack Development Experience"
+      ],
+      "unclear": [],
+      "link_status": "open",
+      "first_published": "2026-10-14",
+      "age_days": 21,
+      "jd": {
+        "status": "captured",
+        "text": "Job Description\nFull Stack Developer\nPosting Date: 14/10/2026\nCountry: Saudi Arabia\nLocation: King Abdullah Economic City, Mecca\nFunction: Digital\nExperience: 3 - 5 years\n\nDISCOVER PIRELLI\n\nWe are a global leader in the tire industry, specialized in designing, developing, manufacturing, and marketing high-performance tires for cars, motorcycles, and bicycles. With a presence in over 160 countries and around 18 production facilities, we pride ourselves on our cutting-edge technology and commitment to sustainability. Innovation is at the heart of everything we do, and it is fueled by our commitment to the inclusion of unique perspectives and different experiences. Because power is nothing without our people!\n\nPirelli MEAI (Middle East, Africa & India) & Russia, with its headquarters in Dubai, supports commercial operations, business planning, innovation, and customer excellence across countries in the region.\n\nDRIVE YOUR FUTURE\n\nWe’re looking for a Full Stack Developer to design, build and ship digital products and features across our entire business processes, from the user interface to the APIs and data layer. You’ll work closely with other engineers, take ownership of work from idea to production, and help raise the quality of our codebase.\n\nWHY JOIN US\nWe are offering a rewarding role with scope for career progression along with:\n\nHybrid Remote Working.\nEmployee benefits.\n\nYOUR CORE ACTIVITIES\n\nBuild and maintain responsive, accessible web interfaces using modern frameworks.\nDesign and implement scalable back-end services, REST/GraphQL APIs and data models.\nTake features from specification through development, testing, deployment and monitoring.\nWrite clean, tested and well-documented code, and take part in code reviews.\nOptimize application performance, security and reliability.\nIntegrate third-party services and internal systems.\nContribute to architecture decisions and to improving CI/CD and developer tooling.\nTroubleshoot production issues and help improve incident response.\nMentor junior developers and share knowledge across the team.\n\nWHAT WE ARE LOOKING FOR\n\n3+ years of professional experience in full stack development.\nStrong proficiency in JavaScript/TypeScript and a front-end framework (React, Vue or Angular).\nBack-end experience with Node.js, Python, Java, .NET or similar.\nSolid knowledge of relational (PostgreSQL, MySQL).\nExperience designing and consuming APIs (REST, GraphQL).\nFamiliarity with Git, workflows, automated testing and CI/CD pipelines.\nGood understanding of web security, performance and accessibility basics.\nClear communication and a collaborative approach.\n\nNICE TO HAVE\n\nCloud experience (AWS, Azure or GCP) and containers (Docker, Kubernetes).\nInfrastructure as code (Terraform, CloudFormation).\nExperience with microservices, event-driven architecture or serverless.\nKnowledge of observability tools (Datadog, Grafana, Sentry).\nOpen-source contributions or technical writing.\nKnowledge of NoSQL databases (MongoDB, ElasticSearch).\n\nOUR STACK\n\n[Front end: e.g. React, TypeScript, Next.js] · [Back end: e.g. Node.js, Python] · [Data: e.g. PostgreSQL, Redis] · [Infra: e.g. AWS, Docker, GitHub Actions]\n\n, DRIVE YOUR FUTURE!\n#WePirelli",
+        "sha256": "cdc4abee3703173eafd3964d938a78099bbecc8983ac0f48ae5e5561ce81ca66",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
