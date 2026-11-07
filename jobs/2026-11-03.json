@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-03",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "indeed:aWQ9YTA1MWNhYjg2NDZmYzRjOTtjYz1zYQ==",
+      "captured_at": "2026-11-03T00:00:00Z",
+      "source": "indeed",
+      "source_id": "aWQ9YTA1MWNhYjg2NDZmYzRjOTtjYz1zYQ==",
+      "title": "Forward Deployed AI Engineer",
+      "company": "Echelon",
+      "location": "Riyadh, المملكة العربية السعودية",
+      "url": "https://jobs.ashbyhq.com/echeloncareers/a853776f-f277-4aff-a68d-da8190dd4463?utm_source=6wy9ZKdkYe",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 69,
+      "why": "Strong fit for LLM app deployment, evaluation, observability, TypeScript/Python, and Riyadh location. (capped: 1 verified requirement gap)",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 35,
+          "max": 40,
+          "note": "Proven LLM workflows, evaluation harnesses, guardrails, Python, TypeScript."
+        },
+        "experience": {
+          "score": 24,
+          "max": 30,
+          "note": "Solo founder deployed Watheq in production; meets 1+ year AI bar."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No hard degree requirement stated."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Based in Riyadh, Saudi Arabia as required."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows"
+        },
+        {
+          "title": "Designed LLM workflows for bilingual resume parsing",
+          "resume_quote": "Designed LLM workflows for bilingual resume parsing with Arabic/Hijri dates, job matching, gap analysis, interview questions, and evidence-constrained improvement"
+        },
+        {
+          "title": "Built and deployed the product solo with React 19, TypeScript",
+          "resume_quote": "Built and deployed the product solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security, Upstash Redis rate limiting"
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Less Than 1+ Years of AI Product Engineering Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Production RAG Pipelines Experience",
+          "reason": "The resume lists 'RAG concepts' under skills without demonstrating implemented RAG architectures in its project or experience entries.",
+          "evidence_needed": "Evidence of designing, deploying, and optimizing Retrieval-Augmented Generation (RAG) pipelines in production environments."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-14",
+      "age_days": 20,
+      "jd": {
+        "status": "captured",
+        "text": "Forward Deployed AI Engineer\n\nRiyadh, Saudi Arabia · Full-time · Frontier\n\nContext & mandate\n\nEchelon is a Saudi-born, sovereign technology company that brings leading global AI technologies to the Kingdom and the world, deploys them through its own forward deployed operations, and productizes Saudi-developed capability.\n\nOur engineers work on the hardest and most critical problems facing the Kingdom’s largest institutions.\n\nThe role: deploying impact\n\nEmbedded with customer teams, you own an engagement from the first conversation to its first system in production, delivering value, and then you repeat, with impact that grows over time.\n\nEmbed: Work on site with operators and executives, and run each engagement like a venture inside the customer.\n\nScope: Turn ambiguous, high-stakes problems into clear technical plans, and build first what creates most value.\n\nBuild: Design and deploy production-grade AI systems powered by LLMs, on architectures built to scale.\n\nDrive adoption: Put systems in the hands of their users, measure the outcomes, and iterate until the impact is delivered.\n\nShape direction: Guide enterprise teams through AI adoption and set the technical direction of each engagement.\n\nWhere we align\nAI and technology first\n\nEngineering fundamentals: Strong proficiency in Python or TypeScript, and experience building reliable production systems with modern DevOps practices.\n\nAI-native: Hands-on with modern LLM tooling such as LangChain, LlamaIndex, Guardrails, MCP or agent frameworks, and a strong understanding of AI system evaluation, debugging and observability.\n\nBuilding AI systems: 1+ years building and deploying LLM-powered applications or AI agents in production, including RAG pipelines, tool use and multi-step AI workflows.\n\nOur values\n\nCustomer first: You measure your work by customer outcomes, and prioritise accordingly.\n\nOwnership mentality: You own outcomes end to end. When something breaks or stalls, you treat it as yours to fix.\n\nClear communicator: You explain complex systems simply, to operators and executives alike, and make the value of your work visible.\n\nComfortable with ambiguity: You make progress with incomplete information, partial data and unfamiliar environments, and you enjoy solving problems where there is no structure yet.\n\nLong-term builder: You invest in Echelon’s long-term success, bringing field insight back into our strategy and operations.\n\nThe seat\n\nLocation: Riyadh, Saudi Arabia\n\nPackage: A base salary with housing, transport and education allowances, medical cover, and equity through the employee equity programme. Terms are shared at offer stage.\n\nHow we work\n\nYou start from the problem, not the tool. You meet an unclear brief or a broken environment with energy and a plan.\n\nCuriosity: You learn how the work really happens on site and keep learning as the stack moves.\n\nSpeed: You move from brief to working code quickly and do not wait for perfect conditions.\n\nRigour: You reproduce before you fix, test what you ship and can explain every choice.\n\nConfidence & humility: You challenge and accept challenge, and change your view on evidence, without ego.\n\nAutonomy: You decide with incomplete information and own it; from an outcome, you organise the work yourself.\n\nResourcefulness: Missing access, partial data, an unfamiliar codebase: you find a way with what is available.\n\nSituational leadership: You lead when the moment calls for it, and follow when someone else has the better call.\n\nA force multiplier: Your reviews, patterns and documentation make the whole bench faster.\n\nAI-native depth: AI tools are part of how you write, test and debug code, and you have built something real with an LLM.\n\nWhere you are: From a first role to several years of shipping; fluent in Python, TypeScript or similar.",
+        "sha256": "ec217889a919605167e0cb1fe4929ad0af874d1e118725bed78047ba08f964f3",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}

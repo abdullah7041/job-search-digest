@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-02",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:6238850",
+      "captured_at": "2026-11-02T00:00:00Z",
+      "source": "workable",
+      "source_id": "6238850",
+      "title": "Senior Backend Software Engineer (Node.js / TypeScript)",
+      "company": "TAWANTECH",
+      "location": "Riyadh, Saudi Arabia",
+      "url": "https://apply.workable.com/tawantech/j/359C581BAF/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "No positive match to demonstrated resume work has been verified."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Strong TypeScript, Node, PostgreSQL, and Git"
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Software engineering experience begins Aug 2025"
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandatory bachelor's degree is missing"
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh location matches; senior title gap"
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Degree in Computer Science or Related Field",
+        "Lack of Track Record as a Senior Backend Software Engineer"
+      ],
+      "unclear": [
+        {
+          "topic": "Docker, Linux, and Bash experience",
+          "reason": "The JD requires hands-on experience managing Docker, Linux environments, and Bash scripting, which are not detailed in the candidate's project descriptions.",
+          "evidence_needed": "Concrete examples or project bullets demonstrating Docker container operations, Linux administration, and Bash scripting."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-02T00:00:00.000Z",
+      "age_days": 0,
+      "jd": {
+        "status": "captured",
+        "text": "We are looking for an experienced Senior Backend Software Engineer specializing in Node.js and TypeScript to design, develop, and maintain scalable, secure, and high-performance backend applications.\nThe ideal candidate should have strong backend development experience, solid knowledge of RESTful APIs, databases, containerization, and Linux environments, with an understanding of modern DevOps practices and infrastructure automation.\nRequirements\nKey Responsibilities\nDesign, develop, and maintain scalable backend services using Node.js and TypeScript.\nDevelop, integrate, and consume RESTful APIs.\nBuild and maintain backend applications using modern development practices.\nWork with relational and NoSQL databases, ensuring efficient data management and performance.\nManage and operate Docker containers and support application deployment.\nImplement secure coding practices and protect applications against common security vulnerabilities.\nDevelop and maintain scripts using Bash or PowerShell to automate operational tasks.\nCollaborate with cross-functional teams to deliver reliable and maintainable software solutions.\nParticipate in code reviews, troubleshooting, debugging, and performance optimization.\nSupport CI/CD processes and contribute to improving development and deployment workflows.\nJob Requirements\nBachelor's degree in Computer Science, Software Engineering, or a related field.\nStrong professional experience in backend software development using Node.js and TypeScript .\nHands-on experience with Git-based version control systems such as GitHub or GitLab.\nExperience developing and consuming RESTful APIs.\nPractical experience managing and operating Docker.\nExperience working with relational and/or NoSQL databases, such as PostgreSQL and MongoDB.\nGood understanding of secure coding practices, particularly OWASP Top 10 vulnerabilities.\nBasic knowledge of Linux environments.\nExperience writing scripts for Linux or Windows environments using Bash or PowerShell.\nExcellent English communication and collaboration skills.\nPreferred Qualifications\nExperience developing and deploying applications on Kubernetes.\nFamiliarity with the NestJS framework.\nExperience with DevOps practices and developing CI/CD pipelines.\nFamiliarity with frontend frameworks such as React or Vue.js.\nExperience with Infrastructure as Code (IaC), particularly Terraform.\nExperience with infrastructure automation tools.\nTechnical Skills\nCore: Node.js, TypeScript, REST APIs, Git\nFrameworks: NestJS\nDatabases: PostgreSQL, MongoDB\nDevOps & Infrastructure: Docker, Kubernetes, CI/CD, Terraform\nSecurity: Secure Coding, OWASP Top 10\nOperating Systems & Scripting: Linux, Bash, PowerShell",
+        "sha256": "c0891b53b12d5313e4db6a8f3bb50cb1a3afdc11a07cb9b89a29f916dbc17622",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
