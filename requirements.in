@@ -1,4 +1,4 @@
 # Direct runtime dependencies. Regenerate requirements.txt with pip-compile.
 requests>=2.31
 pypdf>=6.21.4
-reportlab>=4.2
+reportlab>=5.1.0
