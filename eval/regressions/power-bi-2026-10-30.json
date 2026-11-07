@@ -1,0 +1,23 @@
+{
+  "source_run": "https://github.com/abdullah7041/job-search-digest/actions/runs/41042340241",
+  "jobs": [
+    {
+      "company": "KTek Resourcing",
+      "title": "Power BI Developer",
+      "location": "Jeddah, Makkah Region, Saudi Arabia",
+      "id": "2439607258",
+      "source": "linkedin_api",
+      "url": "https://sa.linkedin.com/jobs/view/power-bi-developer-at-ktek-resourcing-4484967410",
+      "description": "Integration of SMAX data sources (Incident, Problem, Change, Service Requests, Assets, CMDB, Availability, etc.) with Power BI.\nDesign and configuration of data models to support reporting and analytics requirements.\nDevelopment of interactive Power BI dashboards for key ITSM processes, including:\nIncident Management metrics (e.g., volume, SLA compliance, resolution trends)\nProblem Management trends (e.g., recurring issues, root cause analysis)\nChange Management reporting (e.g., change success rate, approvals, backlogs)\nService Request fulfillment and SLA tracking\nAsset and configuration visibility (where applicable)\nAvailability and continuity metrics\nConfiguration of filters, drill-downs, and interactive visualizations for different user roles (IT managers, service desk, executives).\nSetup of scheduled data refreshes and automated report distribution.\nConfiguration of role-based access controls for dashboards and reports to ensure secure data visibility.\nSupport for User Acceptance Testing (UAT), validation, and production go-live.\nProvision of documentation and knowledge transfer for dashboard usage, maintenance, and reporting best practices."
+    },
+    {
+      "company": "KTek Resourcing",
+      "title": "Power BI Developer",
+      "location": "Jeddah, Makkah Region, Saudi Arabia",
+      "id": "2439607229",
+      "source": "linkedin_api",
+      "url": "https://sa.linkedin.com/jobs/view/power-bi-developer-at-ktek-resourcing-4484977058",
+      "description": "Job Title: Power BI Support\nExperience: 4+ Years\nEmployment Type: Full-Time\nJD:\nIntegration of SMAX data sources (Incident, Problem, Change, Service Requests, Assets, CMDB, Availability, etc.) with Power BI.\nDesign and configuration of data models to support reporting and analytics requirements.\nDevelopment of interactive Power BI dashboards for key ITSM processes, including:\nIncident Management metrics (e.g., volume, SLA compliance, resolution trends)\nProblem Management trends (e.g., recurring issues, root cause analysis)\nChange Management reporting (e.g., change success rate, approvals, backlogs)\nService Request fulfillment and SLA tracking\nAsset and configuration visibility (where applicable)\nAvailability and continuity metrics\nConfiguration of filters, drill-downs, and interactive visualizations for different user roles (IT managers, service desk, executives).\nSetup of scheduled data refreshes and automated report distribution.\nConfiguration of role-based access controls for dashboards and reports to ensure secure data visibility.\nSupport for User Acceptance Testing (UAT), validation, and production go-live.\nProvision of documentation and knowledge transfer for dashboard usage, maintenance, and reporting best practices."
+    }
+  ]
+}

@@ -25,6 +25,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from urllib.parse import urlsplit
 
 import requests
 
@@ -78,9 +79,9 @@ class BoundedResponse:
 
 
 def bounded_get(url, *, timeout: int = FETCH_TIMEOUT,
-                limit: int = MAX_RESPONSE_BYTES) -> BoundedResponse:
+                limit: int = MAX_RESPONSE_BYTES, headers: dict | None = None) -> BoundedResponse:
     """GET a URL, reading at most ``limit`` bytes of its body."""
-    response = requests.get(url, headers={"User-Agent": USER_AGENT},
+    response = requests.get(url, headers={"User-Agent": USER_AGENT, **(headers or {})},
                             timeout=timeout, stream=True)
     try:
         chunks, total = [], 0
@@ -153,15 +154,51 @@ def _page_job_postings(page_html):
             break
 
 
-def jsonld_job_posting(page_html: str) -> str:
+def select_job_posting(page_html: str, expected: dict, final_url: str = "") -> dict | None:
+    """Bind structured facts to the requested vacancy, not a related-job rail."""
+    def normalized(value):
+        return " ".join(re.findall(r"\w+", str(value or "").casefold()))
+    expected_url = expected.get("url") or ""
+    final_url = final_url if isinstance(final_url, str) and final_url else expected_url
+    hosts = expected.get("_official_hosts") or []
+    if hosts and urlsplit(final_url).hostname not in hosts:
+        return None
+    matches = []
+    for posting in _page_job_postings(page_html):
+        employer = posting.get("hiringOrganization") or {}
+        employer = employer.get("name", "") if isinstance(employer, dict) else ""
+        if not posting.get("title") or not employer or not isinstance(posting.get("description"), str):
+            continue
+        if expected.get("title") and normalized(posting["title"]) != normalized(expected["title"]):
+            continue
+        company = normalized(expected.get("company"))
+        if company and not (hosts and expected.get("employer_verified") is False):
+            actual = normalized(employer)
+            if company not in actual and actual not in company:
+                continue
+        identifier = posting.get("identifier") or {}
+        identifier = identifier.get("value", "") if isinstance(identifier, dict) else identifier
+        known = str(expected.get("requisition_id") or "").casefold()
+        if known and identifier and known != str(identifier).casefold():
+            continue
+        declared_url = posting.get("url") or ""
+        if declared_url and (not isinstance(declared_url, str) or declared_url.rstrip("/") != expected_url.rstrip("/")):
+            continue
+        if final_url.rstrip("/") != expected_url.rstrip("/") and not (known and known == str(identifier).casefold()):
+            continue
+        matches.append(posting)
+    return matches[0] if len(matches) == 1 else None
+
+
+def jsonld_job_posting(page_html: str, posting: dict | None = None) -> str:
     """The description from the page's JobPosting metadata, or ""."""
-    return next((strip_html(p.get("description") or "") for p in _page_job_postings(page_html)
+    return next((strip_html(p.get("description") or "") for p in ([posting] if posting else _page_job_postings(page_html))
                  if p.get("description")), "")
 
 
-def jsonld_posting_countries(page_html: str) -> list[str]:
+def jsonld_posting_countries(page_html: str, posting: dict | None = None) -> list[str]:
     """Explicit countries on the posting whose description is being read."""
-    for posting in _page_job_postings(page_html):
+    for posting in ([posting] if posting else _page_job_postings(page_html)):
         if not posting.get("description"):
             continue
         locations = posting.get("jobLocation") or []
@@ -175,6 +212,21 @@ def jsonld_posting_countries(page_html: str) -> list[str]:
                 countries.append(country.strip())
         return countries
     return []
+
+
+def jsonld_posting_metadata(page_html: str, posting: dict | None = None) -> dict:
+    """Keep structured facts separate from prose and never infer missing fields."""
+    for posting in ([posting] if posting else _page_job_postings(page_html)):
+        if not posting.get("description"):
+            continue
+        identifier = posting.get("identifier") or {}
+        employer = posting.get("hiringOrganization") or {}
+        return {"employment_type": posting.get("employmentType") or "",
+                "valid_through": posting.get("validThrough") or "",
+                "requisition_id": identifier.get("value", "") if isinstance(identifier, dict) else "",
+                "employer": employer.get("name", "") if isinstance(employer, dict) else "",
+                "title": posting.get("title") or ""}
+    return {}
 
 
 # ------------------------------- ATS hop ------------------------------------
@@ -311,7 +363,7 @@ def readable_text(page_html: str) -> str:
     return strip_html(body)
 
 
-def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) -> dict:
+def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None, expected_job: dict | None = None) -> dict:
     """What one posting URL can be made to give up: {"text", "employer_url"}.
 
     ``text`` is the best COMPLETE job description, or "" -- an incomplete one
@@ -333,10 +385,13 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
         return found
 
     page_html = ""
+    final_url = url
     try:
         response = get(url)
         if response.status_code == 200:
             page_html = response.text
+            if isinstance(getattr(response, "url", None), str):
+                final_url = response.url
         else:
             note(f"WARN JD page HTTP {response.status_code} for {url}")
     except (requests.RequestException, ValueError) as error:
@@ -349,12 +404,22 @@ def extract_posting(url: str, get=default_get, limit: int = JD_LIMIT, log=None) 
     # "people also viewed" rail is full of them, so the token is reported
     # alongside the URL: the caller knows which employer it asked about and is
     # the only one that can refuse a link naming a different one.
+    selected = None
+    if expected_job is not None:
+        selected = select_job_posting(page_html, dict(expected_job, url=url), final_url)
+        if ((expected_job.get("_official_hosts") and urlsplit(final_url).hostname not in expected_job["_official_hosts"])
+                or (list(_page_job_postings(page_html)) and selected is None)):
+            note(f"WARN posting identity could not be verified at {url}")
+            return found
     reference = ats_reference(page_html, url)
     found["employer_url"] = ats_url(reference)
     found["employer_token"] = (reference or {}).get("token") or ""
-    found["posting_countries"] = jsonld_posting_countries(page_html)
+    found["posting_countries"] = jsonld_posting_countries(page_html, selected)
+    found["metadata"] = jsonld_posting_metadata(page_html, selected)
+    if selected:
+        found["metadata"]["identity_verified"] = True
 
-    text = jsonld_job_posting(page_html)
+    text = jsonld_job_posting(page_html, selected)
     if text and not jd_completeness_failures(text):
         note(f"JD read from structured data for {url}")
         found["text"] = text[:limit]

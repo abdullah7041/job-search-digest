@@ -126,7 +126,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["delivered"], 3)
         with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
             cards = json.load(handle)["jobs"]
-        self.assertEqual([card["source_id"] for card in cards], ["operations", "commercial", "data"])
+        self.assertEqual([card["source_id"] for card in cards], ["data", "commercial", "operations"])
 
     def test_ten_strong_jobs_fill_the_shortlist_before_review_candidates(self):
         jobs = [self.job(str(n), company=f"Employer {n}") for n in range(12)]
@@ -146,8 +146,8 @@ class TestStrictAlerts(unittest.TestCase):
                 self.job("data", title="Data Analyst", company="Shared Employer")]
         body, _, _, _ = self.run_jobs(jobs, {"operations": 60, "commercial": 65, "data": 79},
                                        {j["title"]: VIABLE for j in jobs})
-        self.assertLess(body.index("**Sales Operations Analyst**"), body.index("**Commercial Analyst**"))
-        self.assertLess(body.index("**Commercial Analyst**"), body.index("**Data Analyst**"))
+        self.assertLess(body.index("**Data Analyst**"), body.index("**Commercial Analyst**"))
+        self.assertLess(body.index("**Commercial Analyst**"), body.index("**Sales Operations Analyst**"))
 
     def test_mixed_shortlist_counts_only_review_cards_accepted_by_delivery(self):
         jobs = [self.job(name, company=f"Employer {name}") for name in ("strong", "review", "retry")]
@@ -181,6 +181,26 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["unverified_fit"], 0)
         self.assertIn("**Power BI Developer**", body)
         self.assertIn("url:https://example.test/match", seen)
+
+    def test_observed_power_bi_relists_reach_one_verified_review(self):
+        jobs = [dict(job, first_published=fixtures.RECENT) for job in fixtures.POWER_BI_POSTINGS]
+        body, row, _, _ = self.run_jobs(jobs, {j["id"]: 68 for j in jobs},
+                                      {"Power BI Developer": VIABLE})
+        self.assertEqual(row["delivered"], 1)
+        self.assertEqual(row["needs_checking_delivered"], 0)
+        self.assertEqual(row["fallback_delivered"], 1)
+        self.assertEqual(body.count("**Power BI Developer**"), 1)
+
+    def test_hala_closure_found_during_description_fetch_is_not_delivered(self):
+        job = self.job("hala:closed", company="HALA", title="Software Developer", source="hala", token="hala",
+                       slug="closed", url="https://careers.hala.com/jobs/closed", description="")
+        response = mock.Mock(status_code=200, truncated=False)
+        response.json.return_value = {"job": {"slug": "closed", "description_en_md": fixtures.FULL_JD,
+                                              "apply": {"accepting_applications": False}}}
+        with mock.patch.object(digest, "_get", return_value=response):
+            _, row, _, _ = self.run_jobs([job], {"hala:closed": 90}, {job["title"]: VIABLE})
+        self.assertEqual(row["delivered"], 0)
+        self.assertEqual(row["link_closed"], 1)
 
     def test_empty_digest_reports_failed_sources_and_clears_failures_next_run(self):
         response = mock.Mock(status_code=503, text="Service unavailable")
@@ -542,10 +562,10 @@ class TestStrictAlerts(unittest.TestCase):
                 with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
                     self.assertEqual(json.load(handle)[-1]["delivered"], 0)
 
-    def test_junior_software_allowed_but_junior_analytics_and_internships_excluded(self):
-        for title in ("Junior Software Engineer", "Associate AI Engineer", "Entry Level Backend Developer"):
+    def test_role_level_is_evaluated_against_evidence_while_internships_are_excluded(self):
+        for title in ("Junior Software Engineer", "Associate AI Engineer", "Entry Level Backend Developer", "Junior Data Analyst"):
             self.assertTrue(digest.matches_filters(self.job(title=title)), title)
-        for title in ("Junior Data Analyst", "Software Engineering Intern", "AI Graduate Trainee"):
+        for title in ("Software Engineering Intern", "AI Graduate Trainee"):
             self.assertFalse(digest.matches_filters(self.job(title=title)), title)
 
     def test_qualification_cap_is_applied_before_delivery(self):
@@ -587,7 +607,8 @@ class TestStrictAlerts(unittest.TestCase):
         for title in ("Data Analyst", "Senior Data Analyst", "Business Intelligence Analyst", "Power BI Developer"):
             with self.subTest(title=title):
                 self.assertTrue(digest.matches_filters(self.job(title=title)))
-        for title in ("Data Analytics Manager", "Product Manager", "Software Development Manager"):
+        self.assertTrue(digest.matches_filters(self.job(title="Product Manager")))
+        for title in ("Data Analytics Manager", "Software Development Manager"):
             with self.subTest(title=title):
                 self.assertFalse(digest.matches_filters(self.job(title=title)))
 

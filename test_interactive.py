@@ -807,6 +807,17 @@ class TestSnippetSupport(unittest.TestCase):
 
 
 class TestTailoringPlan(unittest.TestCase):
+    def test_tailoring_constructs_the_headline_from_confirmed_titles(self):
+        document = parse_resume(MASTER)
+        snapshot = make_snapshot(JOB, "2026-10-31T12:00:00Z")
+        for headline in ("AI Product Engineer - Senior Machine Learning Engineer", "", "Invented Expert"):
+            with self.subTest(headline=headline), \
+                 mock.patch.object(resume_tailor, "call_model", return_value=_plan(headline=headline)):
+                tailored, _, _ = resume_tailor.tailor(
+                    document, snapshot, "key", source_refs(document), MASTER)
+                self.assertEqual(tailored["headline"],
+                                 "AI Product Engineer — Senior Machine Learning Engineer")
+
     def test_plan_keeps_only_cited_bullets_in_the_models_order(self):
         document = parse_resume(MASTER)
         plan = _plan(bullets=[
@@ -1532,6 +1543,7 @@ class TestRunnerDelivery(unittest.TestCase):
         self.assertTrue(result["pdf_base64"])
         self.assertFalse(result["tailored"])
         self.assertIn("untailored master resume", result["content"])
+        self.assertTrue(result["content"].startswith("Untailored master resume"))
 
     def test_a_missing_api_key_degrades_instead_of_failing(self):
         with mock.patch.dict(os.environ, {}, clear=False):

@@ -42,22 +42,28 @@ import datetime
 from itertools import groupby
 
 import requests
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from discord_delivery import post_interactive_cards
-from jd_fetch import ats_reference, ats_url, bounded_get, extract_posting, jsonld_posting_countries, strip_html
+from jd_fetch import (ats_reference, ats_url, bounded_get, extract_posting, jsonld_posting_countries,
+                      jsonld_posting_metadata, strip_html)
+from jd_fetch import select_job_posting
 from job_archive import (GRADE_FULL, GRADE_TEASER, jd_completeness_failures, jd_grade, jd_requirements, jd_signal,
                          job_key, make_snapshot, score_instability, write_snapshots)
 import fit_check
 from fit_check import check_jobs
 from openrouter import chat_json, configured_chain
 from resume_source import MATCH_CATEGORIES
+from search_preferences import (description_relevant, discovery_source, employment_status, load_preferences,
+                                readiness_issues, track_priority)
+from target_sources import TARGET_COMPANIES, fetch_target
 
 # ------------------------------- CONFIG -------------------------------------
 # Each company names its ATS in "source":
 #   "greenhouse" + region "us"/"eu"   -> boards-api[.eu].greenhouse.io
 #   "ashby"                           -> api.ashbyhq.com/posting-api
-#   "workable"                        -> apply.workable.com/api/v3 (POST, paginated)
+#   "workable"                        -> apply.workable.com/api/v1/widget/accounts
+#   "hala"                            -> HALA's official public careers API
 #   "lever"                           -> api.lever.co/v0/postings
 #   "pinpoint"                        -> <token>.pinpointhq.com/postings.json
 #
@@ -72,7 +78,7 @@ from resume_source import MATCH_CATEGORIES
 # never crashes the run. Add companies below; see CANDIDATES at the bottom of
 # this file for ones whose ATS still needs confirming in Claude Code.
 COMPANIES = [
-    {"name": "HALA",   "source": "greenhouse", "token": "hala",     "region": "us"},
+    {"name": "HALA",   "source": "hala", "token": "hala"},
     {"name": "Careem", "source": "greenhouse", "token": "careem",   "region": "us"},
     {"name": "Tamara", "source": "greenhouse", "token": "tamara",   "region": "eu"},
     {"name": "Lean",   "source": "ashby",      "token": "LeanTech"},
@@ -93,6 +99,8 @@ COMPANIES = [
     {"name": "Scale AI", "source": "greenhouse", "token": "scaleai"},
     {"name": "Lucidya",  "source": "workable", "token": "lucidya"},
 ]
+COMPANIES.extend({"name": c["name"], "source": "target", "token": c["token"]}
+                 for c in TARGET_COMPANIES if c["source"] == "target")
 
 # Saudi only. A job's location must contain one of these (case-insensitive).
 # Arabic terms included because JSearch returns Saudi city names in Arabic
@@ -102,6 +110,8 @@ LOCATION_INCLUDE = [
     "saudi", "ksa", "riyadh", "jeddah", "dammam", "khobar",
     "dhahran", "mecca", "makkah", "medina", "madinah",
     "السعودية", "الرياض", "جدة", "الدمام", "الخبر", "مكة", "المدينة",
+    "tabuk", "abha", "jazan", "jizan", "najran", "hail", "ha'il", "yanbu", "taif",
+    "ahsa", "hofuf", "qassim", "buraidah", "sakaka", "al baha", "jubail",
 ]
 
 # Expand ISO-3166 alpha-2 codes (JSearch returns these as job_country) to English
@@ -186,13 +196,13 @@ DEFAULT_PROFILE = {
 # budget. Broader search is not a measured yield improvement until live source
 # receipts and delivered jobs confirm it.
 AGGREGATOR_QUERIES = [
-    "sales operations analyst Saudi Arabia",
-    "commercial analyst Saudi Arabia",
+    "AI product engineer Saudi Arabia",
+    "software product engineer Saudi Arabia",
     "data analyst Saudi Arabia",
     "business intelligence analyst Saudi Arabia",
     "AI automation specialist Saudi Arabia",
     "AI implementation specialist Saudi Arabia",
-    "AI product engineer Saudi Arabia",
+    "commercial sales operations analyst Saudi Arabia",
     "LLM application engineer Saudi Arabia",
     "full stack developer Saudi Arabia",
     "customer insights analyst Saudi Arabia",
@@ -476,16 +486,16 @@ def riyadh_today():
     return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date()
 
 
-def _get(url):
+def _get(url, *, headers=None):
     # rescue_apply_link and verify_link fetch URLs the pipeline did not choose
     # -- aggregator links to whatever third-party page JSearch relayed -- so the
     # body is read through jd_fetch's bounded fetch instead of an unbounded GET.
     # See jd_fetch.MAX_RESPONSE_BYTES for why.
-    return bounded_get(url, timeout=30)
+    return bounded_get(url, timeout=30, headers=headers)
 
 
 def _post(url, body):
-    # Workable's public job-board API is POST-only and cursor-paginated.
+    # Workable v3 remains the account-discovery probe; board reads use the widget.
     return requests.post(
         url,
         headers={"User-Agent": USER_AGENT, "Content-Type": "application/json"},
@@ -528,6 +538,9 @@ def fetch_greenhouse(c):
             # says so on the card. A real publication date or nothing.
             "first_published": j.get("first_published") or "",
             "source": "greenhouse", "token": c["token"],
+            "employment_type": next((item.get("value") for item in j.get("metadata") or []
+                                     if isinstance(item, dict) and str(item.get("name", "")).lower() == "employment type"), ""),
+            "requisition_id": j.get("requisition_id") or "",
             "description": "",  # fetched on demand for delivered jobs only
         })
     log(f"{c['name']}: {len(out)} jobs (greenhouse)")
@@ -561,6 +574,8 @@ def fetch_ashby(c):
             "url": j.get("jobUrl") or j.get("applyUrl") or "",
             "first_published": j.get("publishedAt") or "",
             "source": "ashby", "token": c["token"],
+            "employment_type": j.get("employmentType") or "",
+            "requisition_id": j.get("requisitionId") or "",
             # descriptionPlain ships in the board payload (verified live 31 Jul 2026)
             "description": (j.get("descriptionPlain") or strip_html(j.get("descriptionHtml") or "")).strip(),
         })
@@ -568,66 +583,79 @@ def fetch_ashby(c):
     return out
 
 
+def fetch_hala(c):
+    # HALA's official careers site replaced its Greenhouse board in October 2026.
+    try:
+        r = _get("https://gateway.hala.com/mawhiba/v1/public/careers/jobs",
+                 headers={"X-Mawhiba-Client": "careers"})
+        if r.status_code != 200 or getattr(r, "truncated", False) is True:
+            raise ValueError(f"HTTP {r.status_code} or truncated response")
+        jobs = r.json()["jobs"]
+        if not isinstance(jobs, list):
+            raise ValueError("invalid jobs list")
+        out = []
+        for job in jobs:
+            slug, title = job["slug"], job["title_en"]
+            location = job.get("location") or ""
+            if not isinstance(slug, str) or not slug or not isinstance(title, str) or not title.strip():
+                raise ValueError("missing job identity")
+            if not isinstance(location, str):
+                raise ValueError("invalid job location")
+            out.append({"company": c["name"], "id": "hala:" + slug, "title": title.strip(),
+                        "location": location, "slug": slug,
+                        "url": "https://careers.hala.com/jobs/" + quote(slug, safe=""),
+                        "first_published": job.get("published_at") or "",
+                        "employment_type": job.get("employment_type") or "",
+                        "source": "hala", "token": c["token"], "description": ""})
+        log(f"{c['name']}: {len(out)} jobs (hala)")
+        return out
+    except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError) as error:
+        source_failure(c["name"], f"WARN {c['name']}: careers feed failed: {error}")
+        return []
+
+
 def fetch_workable(c):
     if "workable" in THROTTLED_SOURCES:
         return []
-    # Workable v3 board API: POST, 10 jobs/page, cursor in "nextPage" -> echo back
-    # as {"token": ...}. Verified live 24 Jun 2026 against apply.workable.com/foodics.
-    # No public apply URL in the payload, so we build the canonical one from shortcode.
-    url = f"https://apply.workable.com/api/v3/accounts/{c['token']}/jobs"
-    out, body, pages = [], {}, 0
-    retried = False
-    MAX_PAGES = 30  # hard stop so a misbehaving cursor can never loop forever (300 jobs)
-    while pages < MAX_PAGES:
-        try:
-            r = _post(url, body)
-            if r.status_code == 429 and not retried:
-                try:
-                    delay = int(r.headers.get("Retry-After", ""))
-                except (ValueError, TypeError):
-                    delay = -1
-                if 0 <= delay <= 5 and time.monotonic() + delay + 30 < NETWORK_DEADLINE:
-                    retried = True
-                    time.sleep(delay)
-                    r = _post(url, body)
-        except requests.RequestException as e:
-            source_failure(c['name'], f"WARN {c['name']}: request failed: {e}")
-            return out  # return what we already have; partial beats crashing
+    # The same public board endpoint already used for JD recovery, without v3 pagination.
+    url = f"https://apply.workable.com/api/v1/widget/accounts/{c['token']}?details=true"
+    try:
+        r = _get(url)
+        if r.status_code == 429:
+            try:
+                delay = int(r.headers.get("Retry-After", ""))
+            except (ValueError, TypeError):
+                delay = -1
+            if 0 <= delay <= 5 and time.monotonic() + delay + 30 < NETWORK_DEADLINE:
+                time.sleep(delay)
+                r = _get(url)
         if r.status_code != 200:
             if r.status_code == 429:
                 THROTTLED_SOURCES["workable"] = str(r.headers.get("Retry-After") or "next run")[:60]
-            source_failure(c['name'], f"WARN {c['name']}: workable HTTP {r.status_code} (token '{c['token']}'). Skipping.")
-            return out
-        try:
-            data = r.json()
-        except ValueError:
-            source_failure(c['name'], f"WARN {c['name']}: non-JSON response. Skipping.")
-            return out
-        for j in data.get("results", []):
-            if j.get("state") not in (None, "published"):
-                continue
-            loc = j.get("location") or {}
-            # Combine city + country so LOCATION_INCLUDE matches "riyadh" AND "saudi".
-            location = ", ".join(p for p in (loc.get("city"), loc.get("country")) if p)
-            shortcode = j.get("shortcode") or ""
-            out.append({
-                "company": c["name"],
-                "id": str(j.get("id")),
-                "title": (j.get("title") or "").strip(),
-                "location": location,
-                "url": f"https://apply.workable.com/{c['token']}/j/{shortcode}/" if shortcode else "",
-                "first_published": j.get("published") or "",
-                "source": "workable", "token": c["token"], "shortcode": shortcode,
-                "description": "",  # fetched on demand via the v1 widget API
-            })
-        cursor = data.get("nextPage")
-        if not cursor:
-            break
-        body = {"token": cursor}
-        pages += 1
-        time.sleep(0.3)  # be polite across pages
-    log(f"{c['name']}: {len(out)} jobs (workable)")
-    return out
+            raise ValueError(f"HTTP {r.status_code}")
+        if getattr(r, "truncated", False) is True:
+            raise ValueError("truncated board response")
+        jobs = r.json()["jobs"]
+        if not isinstance(jobs, list):
+            raise ValueError("invalid jobs list")
+        out = []
+        for j in jobs:
+            shortcode, title = j["shortcode"], j["title"]
+            if not isinstance(shortcode, str) or not shortcode or not isinstance(title, str) or not title.strip():
+                raise ValueError("missing job identity")
+            out.append({"company": c["name"], "id": shortcode, "title": title.strip(),
+                        "location": ", ".join(p for p in (j.get("city"), j.get("country")) if p),
+                        "url": f"https://apply.workable.com/{c['token']}/j/{quote(shortcode, safe='')}/",
+                        "first_published": j.get("published_on") or "",
+                        "source": "workable", "token": c["token"], "shortcode": shortcode,
+                        "employment_type": j.get("employment_type") or "",
+                        "requisition_id": j.get("code") or "",
+                        "description": strip_html(j.get("description") or "")[:JD_MAX_CHARS]})
+        log(f"{c['name']}: {len(out)} jobs (workable)")
+        return out
+    except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError) as error:
+        source_failure(c["name"], f"WARN {c['name']}: workable board failed: {error}")
+        return []
 
 
 def fetch_lever(c):
@@ -663,6 +691,7 @@ def fetch_lever(c):
             "url": j.get("hostedUrl") or j.get("applyUrl") or "",
             "first_published": published,
             "source": "lever", "token": c["token"],
+            "employment_type": cats.get("commitment") or "",
             "description": (j.get("descriptionPlain") or strip_html(j.get("description") or "")).strip(),
         })
     log(f"{c['name']}: {len(out)} jobs (lever)")
@@ -832,6 +861,8 @@ def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
                 "url":     j.get("job_apply_link") or j.get("job_google_link") or "",
             "first_published": str(publication_day(j.get("job_posted_at_datetime_utc")) or ""),
                 "source": "jsearch", "token": "",
+                "employment_type": j.get("job_employment_types") or j.get("job_employment_type") or "",
+                "requisition_id": j.get("job_requisition_id") or "",
                 "description": (j.get("job_description") or "").strip(),
                 # Google's knowledge-panel guess at the employer's site, present
                 # on 7 of 10 jobs. Never a link the candidate is given -- it is a
@@ -858,7 +889,7 @@ def fetch_jsearch(api_key, paywalled=None, quota=None, paused_feeds=None):
             added += 1
         return added
 
-    selected_queries = focused_query_plan(
+    selected_queries = discovery_query_plan(
         AGGREGATOR_QUERIES, JSEARCH_DAILY_REQUESTS,
         riyadh_ordinal())
     bootstrap_allowed = True
@@ -908,6 +939,17 @@ def primary_title_filter(day=None):
     priority = (riyadh_ordinal() if day is None else day) % 4 + 1
     titles = [title for title, value in PROFILE.get("title_priorities", {}).items() if value == priority]
     return " | ".join("'" + re.sub(r"[^a-z0-9 ]", " ", title.lower()) + "'" for title in titles) or ACTIVE_ATS_TITLE
+
+
+def discovery_query_plan(queries, budget, day):
+    plan = focused_query_plan(queries, budget, day)
+    # Replace a request, never add one. Alternate named targets with broader role discovery.
+    if len(plan) >= 2 and len(queries) > 4 and day % 2:
+        targets = sorted((c for c in TARGET_COMPANIES if c["format"] == "official_html"),
+                         key=lambda c: (c["priority"], c["name"]))
+        target = targets[(day // 2) % len(targets)]
+        plan[1] = f"{target['name']} software AI data analytics Saudi Arabia"
+    return plan
 
 
 # VERIFIED 3 Sep 2026: /search-v2 does return `apply_options`, a list of
@@ -993,7 +1035,20 @@ def best_free_link(options, company=""):
     posting is not caught downstream -- `verify_link` confirms it open because
     it is a real posting, and the resume is then tailored against it.
     """
-    for option in options or []:
+    def priority(option):
+        url = (option or {}).get("url") or ""
+        host = link_host(url)
+        if any(host in c["canonical_hosts"] and employer_matches_token(company, c["name"])
+               for c in TARGET_COMPANIES):
+            return -1
+        if ats_reference("", url):
+            return 0
+        if host == "linkedin.com" or host.endswith(".linkedin.com"):
+            return 1
+        if "indeed." in host:
+            return 2
+        return 3
+    for option in sorted(options or [], key=priority):
         url = ((option or {}).get("url") or "").strip()
         if not url.lower().startswith(("http://", "https://")):
             continue
@@ -1046,6 +1101,7 @@ def fetch_pinpoint(c):
             # First source to publish structured pay. Soft signal only — never filters.
             "salary": pinpoint_salary(j),
             "source": "pinpoint", "token": c["token"],
+            "employment_type": j.get("employment_type") or "",
             # Pinpoint splits the JD across three fields (verified live 31 Jul 2026)
             "description": "\n".join(strip_html(j.get(f) or "") for f in (
                 "description", "key_responsibilities", "skills_knowledge_expertise")).strip(),
@@ -1400,6 +1456,7 @@ def fetch_indeed(api_key, quota=None, max_age_days=None, paused_feeds=None):
             # all is better than the wrong one: an undated posting is withheld.
             "first_published": _epoch_ms_date(row.get("datePublishedTimestamp")),
             "source": "indeed", "token": "",
+            "employment_type": row.get("employmentType") or row.get("jobType") or row.get("employment_type") or "",
             "description": str(row.get("description") or "").strip(),
         })
     log("Indeed: " + str(len(out)) + " jobs ("
@@ -1528,6 +1585,8 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota,
             # Fantastic.jobs indexed it. The gate reads the employer's clock.
             "first_published": str(publication_day(row.get("date_posted")) or ""),
             "source": source, "token": "",
+            "employment_type": row.get("employment_type") or row.get("employment_types") or "",
+            "requisition_id": row.get("requisition_id") or "",
             "description": (row.get("description_text") or "").strip(),
         })
     log(name + ": " + str(len(out)) + " jobs ("
@@ -1537,6 +1596,9 @@ def _fetch_fantastic(name, host, path, query, source, api_key, quota,
 
 
 FETCHERS = {
+    "target": lambda company: fetch_target(company, get=lambda url, **kw: _get(url),
+                                           log=log, source_failure=source_failure),
+    "hala": fetch_hala,
     "greenhouse": fetch_greenhouse,
     "ashby": fetch_ashby,
     "workable": fetch_workable,
@@ -1583,11 +1645,15 @@ def _names_somewhere_saudi(place):
     if not place:
         return False
     lowered = place.casefold()
-    if any(k in lowered for k in LOCATION_INCLUDE):
+    if saudi_location(lowered):
         return True
     # The region code trails the city after an Arabic comma.
     tail = re.split(r"[،,]", place)[-1].strip().upper()
     return tail in SAUDI_REGION_CODES
+
+
+def saudi_location(place):
+    return any(re.search(r"(?<!\w)" + re.escape(word) + r"(?!\w)", place, re.I) for word in LOCATION_INCLUDE)
 
 
 def location_conflict(title):
@@ -1605,24 +1671,34 @@ def location_conflict(title):
     return False
 
 
-def matches_filters(job):
+def matches_filters(job, *, discovery=False):
     title = job["title"].lower()
     loc = job["location"].lower()
     if posting_location_conflict(job):
         return False
-    if not any(k in loc for k in LOCATION_INCLUDE):
+    if employment_status(job) == "excluded":
+        return False
+    if re.search(r"\b(?:UAE|Dubai|Abu Dhabi|Qatar|Bahrain|Kuwait|Oman|United States|United Kingdom)\b", loc, re.I):
+        return False
+    if not saudi_location(loc):
         return False
     if location_conflict(job["title"]):
         return False
-    if any(k in title for k in TITLE_EXCLUDE):
+    if any(k in title for k in TITLE_EXCLUDE
+           if k not in ("manager", "management")):
         return False
+    if "manager" in title or "management" in title:
+        adjacent = any(role in title for role in ("product manager", "program manager", "technical operations manager"))
+        if not adjacent or not (description_relevant(job) or keyword_hits(
+                title, [t.lower() for t in PROFILE.get("title_priorities", {})])):
+            return False
     if any(k in title for k in TITLE_EXCLUDE_DISCIPLINE):
         return False
-    if (any(k in title for k in ("junior", "associate", "entry", "fresh"))
-            and any(k in title for k in ("data analyst", "analytics", "business intelligence", "power bi"))):
-        return False
     if not (any(k in title for k in TITLE_INCLUDE)
-            or keyword_hits(title, [t.lower() for t in PROFILE.get("title_priorities", {})])):
+            or keyword_hits(title, [t.lower() for t in PROFILE.get("title_priorities", {})])
+            or description_relevant(job)
+            or (discovery and not job.get("description") and any(
+                hint in title for hint in ("operations", "solutions", "program", "product", "analyst")))):
         return False
     return True
 
@@ -1715,23 +1791,31 @@ def employer_matches_token(company, token):
     return name in slug or slug in name
 
 
-def posting_key(job):
-    """The employer-and-role identity two different boards agree on.
-
-    Empty when either half is missing, because a key of "::" would group every
-    incomplete card in the run into one posting.
-    """
-    company = company_key(job.get("company"))
-    title = " ".join(re.findall(r"[a-z0-9]+", (job.get("title") or "").casefold()))
-    return f"{company}::{title}" if company and title else ""
-
-
 # The sources that ARE the employer: a link from one of these is the company's
 # own posting, which is the link this digest should always prefer to hand over.
 # active_ats is not in FETCHERS -- it is one feed, not a per-company board -- but
 # every row it returns IS the employer's own ATS posting, so it belongs to the
 # set prefer_employer_postings favours over an aggregator relay.
 EMPLOYER_SOURCES = frozenset(FETCHERS) | {"active_ats"}
+
+
+def same_posting(left, right):
+    if not company_key(left.get("company")) or company_key(left.get("company")) != company_key(right.get("company")):
+        return False
+    if " ".join((left.get("location") or "").casefold().split()) != " ".join((right.get("location") or "").casefold().split()):
+        return False
+    first, second = (str(j.get("requisition_id") or "").strip().casefold() for j in (left, right))
+    if first and second:
+        return first == second
+    if not (left.get("title") and " ".join(re.findall(r"[a-z0-9]+", left["title"].casefold()))
+            == " ".join(re.findall(r"[a-z0-9]+", right.get("title", "").casefold()))):
+        return False
+    texts = ["\n".join(line.strip().casefold() for line in (j.get("description") or "").splitlines() if line.strip()) for j in (left, right)]
+    shorter, longer = sorted(texts, key=len)
+    if not shorter or not longer.endswith(shorter):
+        return False
+    prefix = longer[:-len(shorter)]
+    return not prefix or bool(re.fullmatch(r"(?:(?:job title|experience|employment type|jd)\s*:[^\n]*\n)+", prefix))
 
 
 def prefer_employer_postings(jobs):
@@ -1745,13 +1829,10 @@ def prefer_employer_postings(jobs):
     times. The employer's own board is the better link and this run already
     holds it, so the relisted copy is redundant, not new.
     """
-    employer_keys = {posting_key(job) for job in jobs
-                     if job.get("source") in EMPLOYER_SOURCES}
-    employer_keys.discard("")
+    employer_jobs = [job for job in jobs if job.get("source") in EMPLOYER_SOURCES]
     kept, dropped = [], []
     for job in jobs:
-        key = posting_key(job)
-        if key and key in employer_keys and job.get("source") not in EMPLOYER_SOURCES:
+        if job.get("source") not in EMPLOYER_SOURCES and any(same_posting(job, employer) for employer in employer_jobs):
             dropped.append(job)
         else:
             kept.append(job)
@@ -1782,7 +1863,31 @@ def drop_repeat_descriptions(jobs, seen):
     kept, repeats = [], []
     for job in jobs:
         key = description_key(job)
-        (repeats if key and key in seen else kept).append(job)
+        if key and key in seen:
+            repeats.append(job)
+            continue
+        text = "\n".join(line.strip().casefold() for line in (job.get("description") or "").splitlines() if line.strip())
+        # ponytail: quadratic over unseen candidates; bucket by role if this grows large.
+        for index, other in enumerate(kept):
+            if (not text or not same_posting(job, other)
+                    or " ".join((job.get("location") or "").casefold().split())
+                    != " ".join((other.get("location") or "").casefold().split())):
+                continue
+            other_text = "\n".join(line.strip().casefold() for line in (other.get("description") or "").splitlines() if line.strip())
+            shorter, longer = sorted((text, other_text), key=len)
+            if not shorter or not longer.endswith(shorter):
+                continue
+            prefix = longer[:-len(shorter)]
+            if prefix and not re.fullmatch(r"(?:(?:job title|experience|employment type|jd)\s*:[^\n]*\n)+", prefix):
+                continue
+            if len(text) > len(other_text):
+                kept[index] = job
+                repeats.append(other)
+            else:
+                repeats.append(job)
+            break
+        else:
+            kept.append(job)
     return kept, repeats
 
 
@@ -1944,7 +2049,12 @@ def rank_jobs(jobs, api_key, evidence=None):
     handed a third of one, on 48 of the 49 postings whose requirements the
     window cut. See plans/019.
     """
-    profile = PROFILE["blurb"] + describe_tracks(PROFILE.get("tracks"))
+    try:
+        preferences = load_preferences()
+    except OSError as error:
+        log(f"WARN canonical search preferences unavailable: {error}")
+        return None
+    profile = PROFILE["blurb"] + describe_tracks(PROFILE.get("tracks")) + "\n" + preferences
     # The blurb is a paragraph the candidate wrote about himself, so every
     # keyword in it read as demonstrated capability. The resume goes in as
     # separately labelled evidence now, and the blurb keeps the job it is
@@ -1991,7 +2101,8 @@ def rank_jobs(jobs, api_key, evidence=None):
         "Use the exact target track name in track; use an empty track for unrelated work. "
         "Junior and associate AI/application/software roles are valid targets when their "
         "requirements fit the candidate. Analytics and commercial targets are mid-level "
-        "and senior IC. Sales and customer-advisory roles are also valid targets. "
+        "and senior IC. Adjacent sales, solutions, product and program roles need material "
+        "alignment with demonstrated work, not just a familiar title. "
         "Judge each role against the relevant track's evidence, not the resume headline.\n"
         f"Use this strict evidence-based rubric: {weights}. "
         "80+ means strong evidence-backed fit, 60-79 means competitive with gaps, below 60 "
@@ -1999,9 +2110,10 @@ def rank_jobs(jobs, api_key, evidence=None):
         "the posting states is met with evidence from the candidate_evidence "
         "block. Reserve 95+ for a posting whose every stated requirement is met.\n"
         "Score 0-39 regardless of the rubric when the role is a "
-        "leadership/staff/principal/management track, is based outside Saudi "
+        "people-leadership/staff/principal track, is based outside Saudi "
         "Arabia (including a title that says based elsewhere or offers "
-        "relocation), or is the wrong function.\n"
+        "relocation), or is the wrong function. Product/program manager titles alone "
+        "do not prove people management; judge the actual responsibilities.\n"
         "Report each rubric category as an object with score, max and a note of "
         "at most 12 words. Set max to that category's weight above and score to "
         "an integer from 0 up to that same max. The four categories do NOT have "
@@ -2066,6 +2178,10 @@ def get_description(job):
         # JSearch job takes, so leaving it here is what kept the apply-link
         # rescue from ever running on the postings it exists for.
         rescue_apply_link(job)
+        if job.get("source") == "target" and job.get("employer_verified") is False:
+            recovered = fetch_posting_page(job)
+            if recovered:
+                job["description"] = recovered
         # A provider snippet is not a completed fetch. Recover the full posting
         # before the completeness gate holds an otherwise relevant job forever.
         if jd_grade(job["description"]) != GRADE_FULL and job.get("url"):
@@ -2078,7 +2194,10 @@ def get_description(job):
         if src == "greenhouse":
             r = _get(f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs/{job['id']}?questions=false")
             if r.status_code == 200:
-                job["description"] = strip_html(r.json().get("content") or "")
+                detail = r.json()
+                job["description"] = strip_html(detail.get("content") or "")
+                job["employment_type"] = next((item.get("value") for item in detail.get("metadata") or []
+                                               if isinstance(item, dict) and str(item.get("name", "")).lower() == "employment type"), job.get("employment_type", ""))
             else:
                 log(f"WARN JD fetch: greenhouse HTTP {r.status_code} for {job['title']}")
         elif src == "workable":
@@ -2089,6 +2208,23 @@ def get_description(job):
                     w.get("shortcode"): strip_html(w.get("description") or "") for w in jobs
                 }
             job["description"] = _workable_details_cache.get(token, {}).get(job.get("shortcode"), "")
+        elif src == "hala":
+            slug = quote(job.get("slug") or job["id"].removeprefix("hala:"), safe="")
+            r = _get(f"https://gateway.hala.com/mawhiba/v1/public/careers/jobs/{slug}",
+                     headers={"X-Mawhiba-Client": "careers"})
+            if r.status_code == 200 and getattr(r, "truncated", False) is not True:
+                payload = r.json()
+                if not isinstance(payload, dict) or not isinstance(payload.get("job"), dict):
+                    raise ValueError("invalid HALA job detail")
+                detail = payload["job"]
+                if detail.get("slug", job.get("slug")) != job.get("slug"):
+                    return ""
+                if isinstance(detail.get("apply"), dict) and detail["apply"].get("accepting_applications") is False:
+                    job["link_status"] = LINK_CLOSED
+                text = detail.get("description_en_md") or ""
+                if not isinstance(text, str):
+                    raise ValueError("invalid HALA description")
+                job["description"] = strip_html(text)
         else:
             job["description"] = fetch_posting_page(job)
     except (requests.RequestException, ValueError) as e:
@@ -2118,7 +2254,10 @@ def fetch_posting_page(job):
     jobs come through here and `rescue_apply_link` exists separately for the
     ones that pay for it.
     """
-    posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log)
+    expected = dict(job)
+    expected["_official_hosts"] = next((c["canonical_hosts"] for c in TARGET_COMPANIES
+                                         if job.get("source") == "target" and c["token"] == job.get("token")), [])
+    posting = extract_posting(job.get("url", ""), get=_get, limit=JD_MAX_CHARS, log=log, expected_job=expected)
     job["posting_countries"] = posting.get("posting_countries") or job.get("posting_countries", [])
     record_apply_link(job, posting["employer_url"], posting["employer_token"])
     # A related-jobs link can point at a different employer. Refusing that
@@ -2127,6 +2266,7 @@ def fetch_posting_page(job):
             and canonical_url(posting["employer_url"]) != canonical_url(job.get("url"))
             and not employer_matches_token(job.get("company"), posting["employer_token"])):
         return ""
+    apply_posting_metadata(job, posting.get("metadata") or {})
     return posting["text"]
 
 
@@ -2156,6 +2296,34 @@ def record_apply_link(job, employer_url, employer_token):
     job["apply_url"] = employer_url
     log(f"Apply link rescued from {link_host(job.get('url'))} to "
         f"{link_host(employer_url)}: {job['company']} — {job['title']}")
+
+
+def apply_posting_metadata(job, metadata):
+    if not metadata.get("identity_verified"):
+        return
+    known = str(job.get("requisition_id") or "").casefold()
+    incoming = str(metadata.get("requisition_id") or "").casefold()
+    if known and incoming and known != incoming:
+        return
+    title = " ".join(str(metadata.get("title") or "").casefold().split())
+    if title and title != " ".join(job.get("title", "").casefold().split()):
+        return
+    employer = metadata.get("employer")
+    if (job.get("source") == "target" and title and employer
+            and any(c["token"] == job.get("token") and link_host(job.get("url")) in c["canonical_hosts"]
+                    for c in TARGET_COMPANIES)):
+        # A verified studio careers page may name its portfolio company as the actual employer.
+        job["company"] = employer
+    if employer and not employer_matches_token(job.get("company"), employer):
+        return
+    if employer:
+        job["employer_verified"] = True
+    expires = publication_day(metadata.get("valid_through"))
+    if expires is not None and expires < riyadh_today():
+        job["link_status"] = LINK_CLOSED
+    for field in ("employment_type", "requisition_id"):
+        if metadata.get(field):
+            job[field] = metadata[field]
 
 
 def rescue_apply_link(job):
@@ -2192,7 +2360,13 @@ def rescue_apply_link(job):
     page_html = ""
     if response.status_code == 200:
         page_html = response.text
-        job["posting_countries"] = jsonld_posting_countries(page_html)
+        selected = select_job_posting(page_html, job, getattr(response, "url", ""))
+        if selected:
+            job["posting_countries"] = jsonld_posting_countries(page_html, selected)
+            apply_posting_metadata(job, dict(jsonld_posting_metadata(page_html, selected), identity_verified=True))
+        elif jsonld_posting_metadata(page_html):
+            log(f"WARN apply-link lookup could not verify this vacancy's identity: {url}")
+            return
     else:
         # Probed live on 2026-08-29: Glassdoor, Jooble and learn4good all answer
         # 403 to a datacenter IP, and a runner fares no better than the laptop
@@ -2233,6 +2407,8 @@ def settle_link(job):
         status = verify_link(apply_link(job))
     job["link_status"] = status
     job["link_checked"] = apply_link(job)
+    job["verification_url"] = apply_link(job)
+    job["verified_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     return status
 
 
@@ -2453,7 +2629,7 @@ def delivery_priority(job):
     role_priority = min((priority for title, priority in priorities.items()
                          if keyword_hits(job.get("title", ""), [title.lower()])), default=99)
     state_order = 2 if job.get("application_state") == "needs_checking" else (0 if is_strong(job) else 1)
-    return (state_order, (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
+    return (state_order, track_priority(job), (job.get("age_days") or 0) > MAX_JOB_AGE_DAYS, role_priority,
             -job.get("score", 0), str(job.get("id", "")))
 
 
@@ -2493,7 +2669,7 @@ def is_strong(job):
     belt and braces rather than a second opinion.
     """
     check = job.get("fit_check") or {}
-    return bool(job.get("ranking_verified")
+    return bool(not job.get("preference_issues") and job.get("ranking_verified")
                 and job["score"] >= max(MIN_DELIVER_SCORE, STRONG_MATCH_MIN_SCORE)
                 and 0 <= (job.get("age_days") or 0) <= MAX_JOB_AGE_DAYS
                 and jd_grade(job.get("description") or "") == GRADE_FULL
@@ -2507,7 +2683,7 @@ def is_viable(job):
     """An evidence-backed review candidate; qualification gaps stay visible."""
     check = job.get("fit_check") or {}
     tracks = {track["name"] for track in PROFILE.get("tracks", [])}
-    return bool(job.get("ranking_verified")
+    return bool(not job.get("preference_issues") and job.get("ranking_verified")
                 and job["score"] >= 40
                 and 0 <= (job.get("age_days") or 0) <= FALLBACK_MAX_JOB_AGE_DAYS
                 and job.get("track") in tracks
@@ -2522,7 +2698,7 @@ def is_viable(job):
 
 
 def pending_reasons(job):
-    reasons = []
+    reasons = list(job.get("preference_issues") or [])
     if jd_grade(job.get("description") or "") != GRADE_FULL:
         reasons.append("Full job description needs verification.")
     check = job.get("fit_check") or {}
@@ -2636,6 +2812,8 @@ def verify_link(url):
         log(f"DROP redirected off posting -> {r.url}: {url}")
         return LINK_CLOSED
     body = (r.text or "").lower()
+    if re.search(r"verify you are human|checking your browser|access denied|unusual traffic", body):
+        return LINK_UNKNOWN
     # Ashby doesn't redirect a pulled posting — it serves a 200 board shell with no
     # posting data. A real Ashby posting embeds a JobPosting JSON-LD schema; the
     # empty shell doesn't. Scoped to the host so this positive-proof gate never
@@ -2658,7 +2836,15 @@ def verify_link(url):
         if m in body:
             log(f"DROP closed posting ({m!r}): {url}")
             return LINK_CLOSED
-    return LINK_OPEN
+    posting = select_job_posting(r.text or "", {"url": url}, r.url)
+    if posting:
+        expires = publication_day(posting.get("validThrough"))
+        return LINK_CLOSED if expires is not None and expires < riyadh_today() else LINK_OPEN
+    if link_host(final).endswith("linkedin.com") and "jobs-apply" in body:
+        return LINK_OPEN
+    if jd_grade(strip_html(r.text or "")) == GRADE_FULL and re.search(r"\bapply (?:now|for this|to this)\b", body):
+        return LINK_OPEN
+    return LINK_UNKNOWN
 
 
 def load_seen():
@@ -2891,6 +3077,7 @@ def confirmed_boards(boards, limit=MAX_BOARDS_PER_RUN):
     COMPANIES is never rationed.
     """
     already = {(c["source"], c["token"]) for c in COMPANIES}
+    already.add(("greenhouse", "hala"))  # Retired; the official careers feed replaces it.
     out = []
     for key in sorted(boards, key=lambda k: (boards[k].get("last_attempt") or boards[k].get("last_read") or "", k)):
         record = boards[key]
@@ -3131,6 +3318,11 @@ def main():
     PROFILE = load_profile()
     evidence = load_resume_evidence()
     evidence_ready = PROFILE is not DEFAULT_PROFILE and bool(evidence)
+    try:
+        load_preferences()
+    except OSError as error:
+        log(f"WARN canonical search preferences unavailable: {error}")
+        evidence_ready = False
     webhook = os.environ.get("DISCORD_WEBHOOK_URL")
     worker_url = os.environ.get("INTERACTIVE_WORKER_URL")
     worker_secret = os.environ.get("WORKER_CALLBACK_SECRET")
@@ -3239,7 +3431,7 @@ def main():
         uniq[canonical_url(j.get("url")) or job_identity(j)] = j
     all_jobs = list(uniq.values())
 
-    matched = [j for j in all_jobs if matches_filters(j)]
+    matched = [j for j in all_jobs if matches_filters(j, discovery=True)]
 
     # Two link-quality passes. Both run here, before the freshness check, so a
     # posting dropped for its link never reaches verification, the ranker or
@@ -3286,6 +3478,7 @@ def main():
     # delivered tomorrow.
     fresh = [j for j in matched
              if job_identity(j) not in seen
+             and "url:" + canonical_url(apply_link(j)) not in seen
              and not still_cooling(seen, j, today_iso)]
 
     # Age before liveness, because this costs no network and settle_link spends
@@ -3384,10 +3577,14 @@ def main():
         log(f"Run budget spent: {len(fresh)} job(s) scored on the description "
             "their source supplied, without enrichment")
 
+    late_closed = [job for job in fresh if job["link_status"] == LINK_CLOSED]
+    closed.extend(late_closed)
+    for job in late_closed:
+        log(f"DROP applications closed during JD recovery: {job['company']} — {job['title']}")
     for job in fresh:
         if posting_location_conflict(job):
             log(f"DROP conflicting posting country {job['posting_countries']!r}: {job['company']} — {job['title']}")
-    fresh = [job for job in fresh if not posting_location_conflict(job)
+    fresh = [job for job in fresh if job["link_status"] != LINK_CLOSED and not posting_location_conflict(job)
              and "url:" + canonical_url(apply_link(job)) not in seen]
 
     # A rescued apply link is BUILT from a token and a posting id, not copied
@@ -3423,6 +3620,9 @@ def main():
     # Second pass, now that the text exists: a posting relisted under a new URL
     # is still the same posting. Runs before ranking so a repeat never costs a
     # model call.
+    fresh = [job for job in fresh if matches_filters(job)]
+    for job in fresh:
+        job["preference_issues"] = readiness_issues(job)
     fresh, relisted = drop_repeat_descriptions(fresh, seen)
     for job in relisted:
         log(f"Skipping {job['company']} — {job['title']}: description already delivered")
@@ -3590,14 +3790,20 @@ def main():
     lines.append("Apply first: verified strong matches. Worth reviewing: verified options with gaps. Needs checking: fit pending.")
     lines.append(f"Available: {len(strong)} Apply first; {len(competitive) + len(review)} Worth reviewing; "
                  f"{sum(j['application_state'] == 'needs_checking' for j in fresh)} Needs checking.")
+    best = [job for job in fresh if job["application_state"] != "needs_checking"][:3]
+    lines.append("Best opportunities: " + ("; ".join(f"{j['title']} at {j['company']} ({j['score']})" for j in best)
+                 if best else "No verified opportunities today."))
+    if not strong:
+        lines.append("No strong-fit roles found today.")
+    lines.append("Needs checking entries are unverified leads, not confirmed active opportunities.")
     lines.append(coverage_summary(boards_read, boards_total, SOURCE_FAILURES, paused_feeds))
     shortlist_summary = {"key": f"shortlist:{today}:{len(fresh)}", "content": "\n".join(lines)}
     lines.extend(f"⚠️ {warning}" for warning in warnings if warning)
     last_tier = None
-    for (tier, comp), jobs in groupby(fresh, key=lambda j: (j["tier"], j["company"])):
-        if tier != last_tier:
-            lines.append(f"\n**{tier}**")
-            last_tier = tier
+    for (tier, track, comp), jobs in groupby(fresh, key=lambda j: (j["tier"], j.get("track", ""), j["company"])):
+        if (tier, track) != last_tier:
+            lines.append(f"\n**{tier} · {track or 'Track pending'}**")
+            last_tier = (tier, track)
         lines.append(f"\n__**{comp}**__")
         for j in jobs:
             # Only Pinpoint publishes structured pay today; everything else omits it.
@@ -3607,6 +3813,9 @@ def main():
             # week, so how old a posting is belongs on the card next to the
             # claim. Only confirmed fresh publication dates reach delivery.
             flags = [age_label(j.get("age_days"))]
+            flags.append("Full-time" if employment_status(j) == "full_time" else "Employment type unknown")
+            flags.append(f"Live check: {j.get('link_status', 'unknown')} at {j.get('verified_at') or 'not checked'}")
+            flags.append(f"discovery source: {discovery_source(j)}")
             if j.get("link_status") == LINK_UNKNOWN:
                 flags.append("link check inconclusive")
             if not j.get("description"):
@@ -3790,9 +3999,9 @@ def main():
 # `python digest.py --discover salla tabby mozn` probes a company name as a token
 # against every token-based ATS and prints what's confirmed live.
 #
-# Each probe hits the SAME endpoint its fetcher uses. That matters: Workable's v1
-# widget undercounts against the v3 endpoint fetch_workable reads, so probing the
-# convenient endpoint gives an answer about an API the engine never calls.
+# Workable discovery retains the v3 account probe: its widget can return an
+# empty response even for an invented token. Fetching confirmed boards uses the
+# widget to avoid pagination; the control probe below still guards discovery.
 CONTROL_TOKEN = "zzznotarealcompany999"
 
 
@@ -3848,6 +4057,7 @@ def discover(names):
     companies with total confidence. Any ATS whose control probe "succeeds" is
     reported UNRELIABLE and its per-name results are suppressed, not shown.
     """
+    load_preferences()
     log(f"Control probe with bogus token '{CONTROL_TOKEN}'...")
     reliable = {}
     for source in PROBES:

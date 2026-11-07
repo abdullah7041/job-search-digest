@@ -1,8 +1,15 @@
 # Job-fit profile refresh
 
+Read `JOB_SEARCH_PREFERENCES.md` first on every refresh; it is the canonical guide
+for geography, full-time work, role priorities, employer targets and evidence rules.
+Keep the resume as the source of qualification facts. If this guide and the resume
+conflict, flag the conflict before changing facts; never promote orientation text
+into a qualification. Riyadh is the CV location preference; Saudi jobs elsewhere
+remain eligible and keep their actual locations. Do not update personal memories
+unless the user explicitly asks.
+
 Used monthly (via a scheduled nudge) and any time you want to update `profile.json`
-by hand. Answer these, then have Claude update `profile.json`, commit it, and
-update your background memory.
+by hand. Answer these, then update `profile.json` from confirmed evidence.
 
 1. What's your current role/title, and has it changed since last time?
 2. What skills or technologies have you picked up or leaned into recently that
@@ -17,8 +24,8 @@ update your background memory.
 ## Applying the answers
 
 - `blurb` — a short paragraph combining role, strengths, and what you want,
-  written for a scoring model. This is the only place the model learns what you
-  have actually built, so name the products, the stacks and the numbers. Keep
+  written for a scoring model as preferences and constraints. Demonstrated work
+  comes only from the current resume, not this paragraph. Keep
   the seniority and location constraints: they are what stops Lead/Staff and
   relocation roles scoring 90+.
   Keep the **EDUCATION sentence** too. 42% of the postings this digest has
