@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+from search_preferences import discovery_source, employment_status
 
 
 JD_MIN_CHARS = 400
@@ -226,6 +227,13 @@ def jd_grade(jd_text: str) -> str:
     return GRADE_FULL
 
 
+def mandatory_requirements(jd_text: str) -> list[str]:
+    """Only explicitly mandatory wording earns that label; uncertainty is omitted."""
+    return [line for line in jd_requirements(jd_text)
+            if re.search(r"(?i)\b(?:required|requirement|minimum|must|mandatory|essential)\b", line)
+            and not re.search(r"(?i)\b(?:preferred|optional|desirable|nice to have|not required|equivalent experience)\b", line)]
+
+
 def snapshot_grade(snapshot: dict) -> str:
     """Read a snapshot's grade, deriving one for archives written before it.
 
@@ -259,6 +267,14 @@ def make_snapshot(job: dict, captured_at: str) -> dict:
         "title": job.get("title", ""),
         "company": job.get("company", ""),
         "location": job.get("location", ""),
+        "employment_type": job.get("employment_type") or "",
+        "employment_status": employment_status(job),
+        "verified_at": job.get("verified_at") or "",
+        "verification_url": job.get("verification_url") or "",
+        "discovery_source": discovery_source(job),
+        "discovery_url": job.get("discovery_url") or job.get("url") or "",
+        "requisition_id": job.get("requisition_id") or "",
+        "mandatory_requirements": mandatory_requirements(jd_text)[:3],
         # The employer's own posting when the run found it, else the link the
         # aggregator gave. This is the link the card offers and the one a later
         # "Tailor CV" click re-reads the JD from, so it wants to be the source.
@@ -363,6 +379,18 @@ def job_card_payload(snapshot: dict) -> dict:
         {"name": "Company", "value": snapshot["company"] or "Unknown", "inline": True},
         {"name": "Location", "value": snapshot["location"] or "Unknown", "inline": True},
     ]
+    fields.extend([
+        {"name": "Employment", "value": "Full-time" if snapshot.get("employment_status") == "full_time" else "Unknown", "inline": True},
+        {"name": "Role track", "value": snapshot.get("track") or "Track pending", "inline": False},
+        {"name": "Discovery source", "value": ((snapshot.get("discovery_source") or snapshot.get("source") or "Unknown")
+            + ("\n" + snapshot["discovery_url"] if snapshot.get("discovery_url") and snapshot["discovery_url"] != snapshot.get("url") else ""))[:1024], "inline": False},
+        {"name": "Verification", "value": ((snapshot.get("link_status") or "unknown") + " · "
+             + (snapshot.get("verified_at") or "not checked") + "\n" + (snapshot.get("verification_url") or snapshot.get("url") or ""))[:1024], "inline": False},
+    ])
+    if snapshot.get("mandatory_requirements"):
+        fields.append({"name": "Mandatory requirements", "value": "\n".join(snapshot["mandatory_requirements"])[:1024], "inline": False})
+    if pending:
+        footer += " · Unverified lead; active vacancy not confirmed"
     if snapshot.get("application_action"):
         fields.append({"name": "Next step", "value": snapshot["application_action"], "inline": False})
     if snapshot.get("pending_reasons"):

@@ -39,7 +39,7 @@ jobs:
           node-version: "24"
 
       - name: Run Python tests
-        run: python -m unittest test_digest.py test_interactive.py test_workflow_guard.py test_fit_check.py test_eval.py test_strict_alerts.py
+        run: python -m unittest test_search_preferences.py test_target_sources.py test_digest.py test_interactive.py test_workflow_guard.py test_fit_check.py test_eval.py test_strict_alerts.py
 
       - name: Run Worker tests
         working-directory: worker

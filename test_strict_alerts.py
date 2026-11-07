@@ -126,7 +126,7 @@ class TestStrictAlerts(unittest.TestCase):
         self.assertEqual(row["delivered"], 3)
         with open(os.path.join(work, "jobs", digest.riyadh_today().isoformat() + ".json"), encoding="utf-8") as handle:
             cards = json.load(handle)["jobs"]
-        self.assertEqual([card["source_id"] for card in cards], ["operations", "commercial", "data"])
+        self.assertEqual([card["source_id"] for card in cards], ["data", "commercial", "operations"])
 
     def test_ten_strong_jobs_fill_the_shortlist_before_review_candidates(self):
         jobs = [self.job(str(n), company=f"Employer {n}") for n in range(12)]
@@ -146,8 +146,8 @@ class TestStrictAlerts(unittest.TestCase):
                 self.job("data", title="Data Analyst", company="Shared Employer")]
         body, _, _, _ = self.run_jobs(jobs, {"operations": 60, "commercial": 65, "data": 79},
                                        {j["title"]: VIABLE for j in jobs})
-        self.assertLess(body.index("**Sales Operations Analyst**"), body.index("**Commercial Analyst**"))
-        self.assertLess(body.index("**Commercial Analyst**"), body.index("**Data Analyst**"))
+        self.assertLess(body.index("**Data Analyst**"), body.index("**Commercial Analyst**"))
+        self.assertLess(body.index("**Commercial Analyst**"), body.index("**Sales Operations Analyst**"))
 
     def test_mixed_shortlist_counts_only_review_cards_accepted_by_delivery(self):
         jobs = [self.job(name, company=f"Employer {name}") for name in ("strong", "review", "retry")]
@@ -562,10 +562,10 @@ class TestStrictAlerts(unittest.TestCase):
                 with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
                     self.assertEqual(json.load(handle)[-1]["delivered"], 0)
 
-    def test_junior_software_allowed_but_junior_analytics_and_internships_excluded(self):
-        for title in ("Junior Software Engineer", "Associate AI Engineer", "Entry Level Backend Developer"):
+    def test_role_level_is_evaluated_against_evidence_while_internships_are_excluded(self):
+        for title in ("Junior Software Engineer", "Associate AI Engineer", "Entry Level Backend Developer", "Junior Data Analyst"):
             self.assertTrue(digest.matches_filters(self.job(title=title)), title)
-        for title in ("Junior Data Analyst", "Software Engineering Intern", "AI Graduate Trainee"):
+        for title in ("Software Engineering Intern", "AI Graduate Trainee"):
             self.assertFalse(digest.matches_filters(self.job(title=title)), title)
 
     def test_qualification_cap_is_applied_before_delivery(self):
@@ -607,7 +607,8 @@ class TestStrictAlerts(unittest.TestCase):
         for title in ("Data Analyst", "Senior Data Analyst", "Business Intelligence Analyst", "Power BI Developer"):
             with self.subTest(title=title):
                 self.assertTrue(digest.matches_filters(self.job(title=title)))
-        for title in ("Data Analytics Manager", "Product Manager", "Software Development Manager"):
+        self.assertTrue(digest.matches_filters(self.job(title="Product Manager")))
+        for title in ("Data Analytics Manager", "Software Development Manager"):
             with self.subTest(title=title):
                 self.assertFalse(digest.matches_filters(self.job(title=title)))
 

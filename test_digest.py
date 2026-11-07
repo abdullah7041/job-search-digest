@@ -87,6 +87,11 @@ REAL_JOBS = [
 EXPECT_PASS = {"jsearch_b", "jsearch_e"}          # Next senior, Datamatics senior
 EXPECT_DROP = {"jsearch_a", "jsearch_c", "jsearch_d", "jsearch_f"}
 
+# Synthetic delivery scenarios below explicitly assume full-time employment.
+# Tests for unknown/contract types override this field and exercise the policy gate.
+for _job in REAL_JOBS:
+    _job["employment_type"] = "FULL_TIME"
+
 
 class TestFilters(unittest.TestCase):
     def test_six_real_jobs(self):
@@ -170,7 +175,10 @@ class TestLinkEvidence(unittest.TestCase):
             )
 
     def test_live_page_is_open_and_missing_url_is_closed(self):
-        with mock.patch.object(digest, "_get", return_value=self._response(200, text="Apply now")):
+        page = '<script type="application/ld+json">' + json.dumps({
+            "@type": "JobPosting", "title": "Engineer", "description": "Live role",
+            "hiringOrganization": {"name": "Example"}}) + '</script>'
+        with mock.patch.object(digest, "_get", return_value=self._response(200, text=page)):
             self.assertEqual(
                 digest.verify_link("https://example.com/job/123"), digest.LINK_OPEN
             )
@@ -211,7 +219,7 @@ class TestLinkEvidence(unittest.TestCase):
             digest, "_get",
             return_value=self._response(200, url=url, text=self.LINKEDIN_CLOSED_FIXTURE),
         ):
-            self.assertEqual(digest.verify_link(url), digest.LINK_OPEN)
+            self.assertEqual(digest.verify_link(url), digest.LINK_UNKNOWN)
 
 
 class TestGetDescription(unittest.TestCase):
@@ -284,7 +292,8 @@ class TestGetDescription(unittest.TestCase):
                "url": "https://example.test/jobs/1"}
         response = self._resp({})
         response.text = '<script type="application/ld+json">' + json.dumps({
-            "@type": "JobPosting", "description": FULL_JD}) + '</script>'
+            "@type": "JobPosting", "title": "Data Analyst", "hiringOrganization": {"name": "Example"},
+            "description": FULL_JD}) + '</script>'
         with mock.patch.object(digest, "_get", return_value=response):
             description = digest.get_description(job)
         self.assertEqual(description, FULL_JD[:digest.JD_MAX_CHARS])
@@ -542,9 +551,11 @@ class TestEmployerLinkPreference(unittest.TestCase):
         them and the paid copy went out three more times."""
         employer = {"source": "workable", "company": "Foodics",
                     "title": "Senior Data Scientist / Senior ML Engineer",
+                    "description": "Same archived vacancy description.",
                     "url": "https://apply.workable.com/foodics/j/E2707EDFCE/"}
         relisted = {"source": "jsearch", "company": "Foodics",
                     "title": "Senior Data Scientist / Senior ML Engineer",
+                    "description": "Same archived vacancy description.",
                     "url": "https://www.jobleads.com/sa/job/senior-data-scientist-x"}
 
         kept, dropped = digest.prefer_employer_postings([relisted, employer])
@@ -1503,7 +1514,8 @@ class TestJdFetch(unittest.TestCase):
         job = {"id": "1", "title": "t", "company": "c", "description": "",
                "source": "jsearch", "token": "", "url": "https://x.test/4"}
         page = ('<script type="application/ld+json">'
-                + json.dumps({"@type": "JobPosting", "description": FULL_JD}) + "</script>")
+                + json.dumps({"@type": "JobPosting", "title": "t", "hiringOrganization": {"name": "c"},
+                              "description": FULL_JD}) + "</script>")
 
         with mock.patch.object(digest, "_get", return_value=self._page(page)):
             self.assertIn("Your Impact", digest.get_description(job))
@@ -1832,7 +1844,8 @@ class TestApplyLinkRescue(unittest.TestCase):
         page = (self._linkedin_page("https://jobs.lever.co/examplelabs/"
                                     "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
                 + '<script type="application/ld+json">'
-                + json.dumps({"@type": "JobPosting", "description": FULL_JD})
+                + json.dumps({"@type": "JobPosting", "title": "t", "hiringOrganization": {"name": "Example Labs"},
+                              "description": FULL_JD})
                 + "</script>")
 
         with mock.patch.object(digest, "_get", return_value=self._page(page)):
@@ -1893,7 +1906,8 @@ class TestApplyLinkRescue(unittest.TestCase):
                "url": "https://sa.linkedin.com/jobs/view/x-4"}
         page = ('<html><body>'
                 '<script type="application/ld+json">'
-                + json.dumps({"@type": "JobPosting", "description": FULL_JD})
+                + json.dumps({"@type": "JobPosting", "title": "Senior ML Engineer",
+                              "hiringOrganization": {"name": "Example Labs"}, "description": FULL_JD})
                 + '</script><aside>People also viewed'
                 '<a href="https://jobs.lever.co/othercorp/'
                 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee">Other role</a>'
@@ -2315,7 +2329,7 @@ class TestFocusedCoverage(unittest.TestCase):
         with open(os.path.join(REPO, "profile.json"), encoding="utf-8") as handle:
             profile = json.load(handle)
         with mock.patch.object(digest, "PROFILE", profile):
-            self.assertIn("sales operations analyst", digest.primary_title_filter(0))
+            self.assertIn("ai product engineer", digest.primary_title_filter(0))
             self.assertNotIn("software", digest.primary_title_filter(0))
 
     def test_workable_rate_limit_pauses_other_accounts_for_this_run(self):
@@ -2655,6 +2669,7 @@ class TestEndToEnd(unittest.TestCase):
         "title": "Senior AI Engineer", "location": "الرياض, Saudi Arabia",
         "url": "https://sa.linkedin.com/jobs/view/senior-ai-engineer-4442",
         "first_published": RECENT, "source": "jsearch", "token": "",
+        "employment_type": "FULL_TIME",
         "description": "",  # forces enrichment, which is where the rescue happens
     }
 
@@ -2675,7 +2690,8 @@ class TestEndToEnd(unittest.TestCase):
                 response.text = page
             return response
 
-        ranking = {"jsearch_ln": {"score": 88, "why": "Senior IC LLM role, requirements covered"}}
+        ranking = {"jsearch_ln": {"score": 88, "why": "Senior IC LLM role, requirements covered",
+                                 "track": "AI and LLM product engineering"}}
         with mock.patch.object(digest, "_get", side_effect=fake_get):
             return run_main(self.ENV, ranking, link_statuses=verify_statuses,
                             jobs=[dict(self.LINKEDIN_JOB)])
@@ -3147,7 +3163,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("Senior Data Architect", body)
         for gone in ("Lead AI Engineer", "Staff level", "Team Leader", "Bangkok"):
             self.assertNotIn(gone, body)
-        self.assertIn(f"**{digest.TIER_STRONG}**", body)
+        self.assertIn(f"**{digest.TIER_STRONG} ·", body)
         # 74 is the rubric's "competitive with gaps" band. It used to read as
         # "Worth reviewing", which undersold a real match with a real gap.
         self.assertNotIn(f"**{digest.TIER_COMPETITIVE}**", body)
@@ -3173,7 +3189,7 @@ class TestEndToEnd(unittest.TestCase):
 
     def test_unknown_link_is_reviewable_and_only_strong_is_tailored(self):
         ranking = {
-            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered"},
+            "jsearch_b": {"score": 93, "why": "Senior IC LLM role, requirements covered", "track": "AI and LLM product engineering"},
             "jsearch_e": {"score": 84, "why": "Senior IC data role, some gaps"},
         }
         posts, work = run_main(
@@ -3187,7 +3203,8 @@ class TestEndToEnd(unittest.TestCase):
         with open(os.path.join(work, "stats.json"), encoding="utf-8") as handle:
             stats = json.load(handle)
         self.assertEqual(stats[-1]["link_unknown"], 1)
-        self.assertEqual(stats[-1]["strong"], 2)
+        self.assertEqual(stats[-1]["strong"], 1)
+        self.assertEqual(stats[-1]["needs_checking_delivered"], 1)
         self.assertEqual(stats[-1]["competitive"], 0)
         self.assertEqual(stats[-1]["review"], 0)
 
@@ -4457,7 +4474,8 @@ class TestTheRunBudgetLosesWorkNotTheDigest(unittest.TestCase):
 
     def _run_with_no_budget(self, **kwargs):
         with mock.patch.object(digest, "RUN_BUDGET_SECONDS", -1):
-            return run_main(self.ENV, {"jsearch_b": {"score": 90, "why": "Supported role"}}, **kwargs)
+            return run_main(self.ENV, {"jsearch_b": {"score": 90, "why": "Supported role",
+                            "track": "Software engineering, front and back"}}, **kwargs)
 
     def test_a_spent_budget_still_delivers_and_still_records_what_it_sent(self):
         """The one thing the budget must never cost. A run that delivers and
