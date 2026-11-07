@@ -202,9 +202,9 @@ pypdf==6.21.4 \
     --hash=sha256:33e4fb41ca352810eb4e9838aa0d82d6888a5f8bf682f43e99cce5faa666255c \
     --hash=sha256:c8817e3f888d47a087872ded69812c1ef30cacb871d6e053e0c00bbaf0bc2163
     # via -r requirements.in
-reportlab==5.0.0 \
-    --hash=sha256:9d5a3affa84919e1111ede580031266a570e93b1ce388219621347965ff1d93c \
-    --hash=sha256:e4494a0c6623ae213bb856fba523171b2b54a7bf629fda02d5e525a7b899a784
+reportlab==5.1.0 \
+    --hash=sha256:59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df \
+    --hash=sha256:6878200464527e87672d19e9f7cfc6bb890e3a6931e74ac6a1a8d1754aa55671
     # via -r requirements.in
 requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
