@@ -1,0 +1,420 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "ashby:ab45a550-14a2-4a74-abfb-83688d4508c1",
+      "captured_at": "2026-11-08T00:00:00Z",
+      "source": "ashby",
+      "source_id": "ab45a550-14a2-4a74-abfb-83688d4508c1",
+      "title": "Technical Program Manager, AI Delivery (Dammam)",
+      "company": "Cohere",
+      "location": "Saudi Arabia",
+      "employment_type": "FullTime",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-08T11:00:19.395732+00:00",
+      "verification_url": "https://jobs.ashbyhq.com/cohere/ab45a550-14a2-4a74-abfb-83688d4508c1",
+      "discovery_source": "ashby",
+      "discovery_url": "https://jobs.ashbyhq.com/cohere/ab45a550-14a2-4a74-abfb-83688d4508c1",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://jobs.ashbyhq.com/cohere/ab45a550-14a2-4a74-abfb-83688d4508c1",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 45,
+      "why": "Matches AI delivery context, but lacks required 5 years enterprise TPM experience.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 22,
+          "max": 40,
+          "note": "Deep LLM product knowledge, but lacks enterprise program management mechanisms."
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Missing required 5 years TPM with 3 years customer-facing AI delivery."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No hard degree barrier stated in excerpt."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Located in Dammam, Saudi Arabia."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Evaluation harnesses and model-comparison workflows",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows"
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Lack of 5+ Years Technical Program Management Experience",
+        "Missing 3+ Years Customer-Facing Enterprise AI Delivery"
+      ],
+      "unclear": [],
+      "link_status": "open",
+      "first_published": "2026-11-02T03:43:52.907+00:00",
+      "age_days": 6,
+      "jd": {
+        "status": "captured",
+        "text": "WHO ARE WE?\n\nCohere is the leading security-first enterprise AI company.  We build cutting-edge foundation AI models and end-to-end products that are designed to solve real-world business problems.\n\nWe’re training and deploying frontier models for enterprises who are building AI systems. We believe that our work is instrumental to the widespread adoption of AI and we are looking for folks that want to be part of that.\n\nWe obsess over what we build. Each one of us is responsible for contributing to increasing the capabilities of our models and the value they drive for our customers. Cohere is a team of researchers, engineers, designers, and more, who are all passionate about their craft.\n\nWe are a global technology company headquartered in Toronto with key offices in London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul. Join us!\n\nWhy this role?\n\nWe’re seeking an experienced Engineering Program Manager to join Cohere’s customer-facing Engineering Program Management team. We need someone with curiosity, drive, independence, and leadership, who has hands-on experience working directly with customers and managing projects for enterprise-grade software or enterprise-focused machine learning solutions. In return, you’ll have the unique opportunity to shape Cohere’s operations, collaborate with leading minds in the LLM space, work directly with our Strategic Customers as well as Applied ML (AML) Engineering, Forward Deployed Engineering (FDE), Platform , Product and Go-to-Market teams, and be the “technical” voice of Cohere for the customer. You will get a chance to create extremely high-impact contributions to our fast-growing company, product and culture.\n\nPlease Note: This role is open to candidates based in [Dammam]\n\nAs an Engineering Program Manager/ Technical Program Manager, you will:\n\n - Communicate: Provide clear, timely, and objective communication across the tech organization, Cohere teams, leadership, and most importantly - our strategic customers and external partners.\n\n - Optimize: Break down complex issues into strategies, driving engineering alignment with product, business, and marketing while fostering collaboration.\n\n - Plan: Create and manage program/project schedules, identify dependencies, manage risks, and drive organizational alignment.\n\n - Execute: Ensure on-time delivery, identify development needs, and establish checkpoints for status updates.\n\n - Problem solve: Proactively identify and resolve issues, coordinate cross-functional dependencies, and prioritize impacts to schedule and product quality.\n\nYou may be a good fit if:\n\n - You have at least 5 years of experience as an Engineering or Technical Program Manager, with at least 3 years in customer-facing technical delivery and operations focused on enterprise-grade AI software/solutions\n\n - Knowledge or experience with LLM training or optimization would be a key differentiator\n\n - You are problem-focused and making customers successful really excites you\n\n - You are detail-oriented and extremely self-organized. You love enabling people and teams around you, and are excellent at capturing detailed notes/action items during highly technical meetings and tracking progress.\n\n - You have a Bias for Action - you are very execution focused and you like getting things done.\n\n - You have experience working with cross-functional teams to get technical products, services or solutions shipped to an internal or an external customer and can independently own tracking and reporting across multiple work-streams, with owners in different time-zones.\n\n - You are comfortable holding leaders and individual contributors accountable. You can be assertive while remaining diplomatic. You are not afraid to follow up with people to ensure shipping within committed deadlines.\n\n\n\n\nFULL-TIME EMPLOYEES AT COHERE ENJOY THESE PERKS:\n\n - A weekly lunch stipend of $75/£75 or equivalent in your local currency for lunch.\n\n - Full health and dental benefits, including a separate budget for mental health.\n\n - RRSP matching, 401K, Pension Scheme.\n\n - 100% Parental Leave top-up for up to 6 months, for either parent.\n\n - Annual enrichment benefits:\n   \n   Arts & culture, fitness/wellness, quality time, and a workspace improvement credit.\n   \n   Education & learning stipend for conferences, courses, and coaching.\n\n - 6 weeks of paid vacation (30 working days!)\n\n - Budget for traveling to other offices if you are remote, plus an annual company offsite.\n\n\n\n\nHOW AND WHERE WE WORK:\n\n - Cohere is remote-friendly, but we also have offices in Toronto, London, New York City, San Francisco, Montreal, Paris, Berlin and Seoul with more opening soon.\n\n - For those in the office: a daily lunch program, plenty of snacks, and regular community and social events.\n\n - For those not near an office: a co-working benefit so you can work alongside others in your city.\n\n - Everyone receives a $500 home office stipend to set up your workspace properly.\n   \n   \n\nIf any of the above doesn’t line up exactly with your experience, we still encourage you to apply. \n\n\nWe strive to create an inclusive work environment for all; we welcome applicants from all backgrounds and are committed to providing equal opportunities. Should you require any accommodations during the recruitment process, please submit an Accommodations Request Form https://docs.google.com/forms/d/12a6IrLdF3kI2nonKSr4tiFuz18rLQbaeYV-JM9L4o9Q/edit, and we will work together to meet your needs.\n\n\n\nWe may use AI-enabled tools to screen and assess applicants against the criteria for this position. This helps our recruiters identify potentially qualified candidates, but it doesn't limit the applications our recruiters may review or consider.\n\n\n\nBeware of Scams: Cohere will never ask for payment or third-party services (e.g., CV writing) as part of our hiring process. All legitimate roles are listed on the Cohere careers page and LinkedIn only, with all communications from Cohere employees coming from an @cohe",
+        "sha256": "88e5b83ba2cb7b6eed2d0340ec40b9a895d15ed2d08c0f66c875ab48d9aeec9a",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "lever:833e0d2e-741b-4717-bca4-fb7ba7f5152d",
+      "captured_at": "2026-11-08T00:00:00Z",
+      "source": "lever",
+      "source_id": "833e0d2e-741b-4717-bca4-fb7ba7f5152d",
+      "title": "Consumer Product Manager",
+      "company": "Soum",
+      "location": "Riyadh",
+      "employment_type": "Full-Time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-08T11:00:20.283656+00:00",
+      "verification_url": "https://jobs.lever.co/soum/833e0d2e-741b-4717-bca4-fb7ba7f5152d",
+      "discovery_source": "lever",
+      "discovery_url": "https://jobs.lever.co/soum/833e0d2e-741b-4717-bca4-fb7ba7f5152d",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://jobs.lever.co/soum/833e0d2e-741b-4717-bca4-fb7ba7f5152d",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 62,
+      "why": "Good consumer product alignment via Watheq, but lacks native mobile PM evidence.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 26,
+          "max": 40,
+          "note": "Shipped bilingual Arabic-first product, funnel optimization, payments, and conve"
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Built consumer web app solo; lacks dedicated iOS/Android native app experience."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No mandatory bachelor's degree specified in excerpt."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Matches 2-4 years experience level; based in Riyadh."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Bilingual experience with high-quality localization",
+          "resume_quote": "Arabic-first bilingual AI resume optimization and job-matching platform deployed in production for the Saudi market."
+        },
+        {
+          "title": "Moyasar payment gateway integration with 3DS flows",
+          "resume_quote": "Implemented credit-based monetization, guest rate limiting, and Moyasar payment gateway integration with 3DS flows."
+        },
+        {
+          "title": "Competitor and pricing intelligence on product launches",
+          "resume_quote": "Produce competitor and pricing intelligence on product launches, category trends, and price movements to inform assortment and pricing decisions."
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Missing 2–4 Years of Consumer Product Management Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Mobile app (iOS and Android) product experience",
+          "reason": "The posting requires hands-on experience building for mobile and web, but the resume only demonstrates building web applications.",
+          "evidence_needed": "Evidence of designing, releasing, or managing features within native iOS or Android mobile applications."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-10-14",
+      "age_days": 25,
+      "jd": {
+        "status": "captured",
+        "text": "About Soum\nSoum is a fast-growing B2C marketplace based in Riyadh, connecting buyers and sellers of used electronics and used cars across Saudi Arabia through our website and mobile app. Everything we do is built on trust: buyers need confidence in what they are getting, and sellers need confidence they will be paid fairly and quickly. With the recent launch of our subscription model for electronics and cars, Soum is building the go-to recommerce platform in the Kingdom.\nAbout the Role\nThe Consumer Product Manager owns the experience our customers touch every day: how buyers discover, evaluate, pay for and receive a used phone or car, and how sellers list, price and get paid for what they sell. You will be the voice of the Soum customer inside the product team, turning deep consumer insight into features that grow conversion, repeat purchase and trust in the platform.\nYou will work across the app and web, partnering with design, engineering, operations and commercial teams to ship quickly and learn from what we ship.\n\\n\nKey Responsibilities\nOwn the roadmap for a core consumer area (such as the buyer journey, the seller journey or subscriptions), prioritising ruthlessly by impact on conversion, retention, GMV and customer trust.\nBuild a deep, continuous understanding of Soum's customers through user interviews, usability testing, app reviews, customer support tickets and behavioural data.\nOptimise the end-to-end marketplace funnel: listing creation, search and discovery, product pages, checkout and payments (Mada, Apple Pay, BNPL), delivery tracking, returns and post-purchase experience.\nDesign and improve trust features that make buying used feel safe, including device condition grading, car inspection reports, verified sellers, buyer protection, ratings and transparent pricing.\nShape the subscription products for electronics and cars: the value proposition, packaging, onboarding, engagement and retention, working closely with Commercial and Finance on unit economics.\nTranslate problems into clear PRDs, user stories and acceptance criteria, and run agile delivery with design and engineering, from discovery through release and iteration.\nChampion an Arabic-first, bilingual experience with high-quality RTL design and localisation for Saudi customers.\nRun a disciplined experimentation practice: form hypotheses, design A/B tests, define success metrics and make fast, evidence-based decisions on what to scale or kill.\nMonitor and report on core consumer KPIs, including conversion rate, listing-to-sale rate, activation, repeat purchase, subscription retention, NPS and customer complaints.\nPartner cross-functionally with Operations (inspection, logistics, customer service), Marketing and Growth (acquisition, CRM), and Finance to make sure product changes work end to end, not just on screen.\nKeep a close eye on regional and global marketplaces and recommerce players, and bring the best ideas back to Soum, adapted for our customers.\nRequirements\n2–4 years of product management experience on consumer-facing digital products such as marketplaces, e-commerce, fintech or consumer apps.\nA proven track record of shipping consumer features that moved measurable business metrics, and the ability to explain exactly how.\nStrong consumer intuition backed by data: comfortable with product analytics tools (e.g. Amplitude, Mixpanel, GA4), funnel analysis and A/B testing; working SQL is a strong plus.\nHands-on experience building for mobile (iOS and Android) and web.\nSolid understanding of two-sided marketplace dynamics, including supply and demand balance, liquidity, trust and pricing.\nExperience working closely with designers and engineers in an agile environment, with clear written specs and sharp prioritisation.\nExcellent communication and stakeholder management, able to align operations, commercial and tech teams around a decision.\nA true owner who moves fast, takes decisions with incomplete information and cares more about outcomes than output.\nFluent English; Arabic is a strong plus.\nNice to Have\nExperience with KSA or GCC consumers, Arabic/RTL products and local payment methods.\nBackground in used goods, recommerce, automotive or subscription businesses.\n\\n",
+        "sha256": "2648241dc0c2c1ae8b7c6d6245e90d6b8277c65e51c9bb7b1d16a500d2da2d5d",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:hala:hala:ai-system-engineer-2",
+      "captured_at": "2026-11-08T00:00:00Z",
+      "source": "hala",
+      "source_id": "hala:ai-system-engineer-2",
+      "title": "AI & System Engineer",
+      "company": "HALA",
+      "location": "KSA - Riyadh",
+      "employment_type": "full_time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-08T11:00:09.735921+00:00",
+      "verification_url": "https://careers.hala.com/jobs/ai-system-engineer-2",
+      "discovery_source": "hala",
+      "discovery_url": "https://careers.hala.com/jobs/ai-system-engineer-2",
+      "requisition_id": "",
+      "mandatory_requirements": [
+        "Leverage AI and automation to support regulatory change management, including identifying regulatory updates, assessing their impact, and supporting implementation and tracking of required actions"
+      ],
+      "url": "https://careers.hala.com/jobs/ai-system-engineer-2",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 36,
+          "max": 40,
+          "note": "Proven AI workflows, guardrails, API integrations, deterministic evaluation, and"
+        },
+        "experience": {
+          "score": 24,
+          "max": 30,
+          "note": "Demonstrated AI product engineering at Watheq and commercial analytics backgroun"
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No mandatory bachelor's barrier specified."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Individual contributor role based in Riyadh, Saudi Arabia."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Designed LLM workflows with Zod validation and anti-hallucination rules",
+          "resume_quote": "Designed LLM workflows for bilingual resume parsing with Arabic/Hijri dates, job matching, gap analysis, interview questions, and evidence-constrained improvement, with Zod validat"
+        },
+        {
+          "title": "Built separate gold-set evaluation harnesses to catch regressions",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows to catch regressions a"
+        },
+        {
+          "title": "Build and maintain Power BI dashboards",
+          "resume_quote": "Build and maintain Power BI dashboards for inventory and sales performance, giving the team a consistent operational view."
+        }
+      ],
+      "ceiling": "high",
+      "blockers": [],
+      "unclear": [
+        {
+          "topic": "Regulatory change management tracking",
+          "reason": "The posting states a requirement around AI for regulatory change management, but the resume shows general AI governance and evaluation rather than regulatory tracking specifically.",
+          "evidence_needed": "Evidence of designing or deploying AI systems specifically used to track regulatory changes and assess regulatory impact."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-10-26T13:18:00.851148+03:00",
+      "age_days": 13,
+      "jd": {
+        "status": "captured",
+        "text": "**Job Summary**\nThe Software/AI Engineer , Compliance Technology is responsible for designing, developing, and maintaining technology, automation, and AI-enabled solutions that enhance the effectiveness, efficiency, and governance of Compliance operations. The role translates regulatory and business requirements into scalable technical solutions and supports areas including AML, KYC, fraud prevention, regulatory reporting, risk, and governance. The position also contributes to the responsible adoption of AI through appropriate governance, risk assessment, monitoring, and human oversight.\n**Responsibilities**\n* Design and develop technology solutions that automate and enhance Compliance processes.\n* Build AI-powered tools to improve compliance monitoring, investigations, and regulatory reporting.\n* Develop and maintain integrations, APIs, and internal applications supporting Compliance systems.\n* Identify automation opportunities and translate compliance requirements into technical solutions.\n* Implement AI, workflow automation, and RegTech solutions to improve operational efficiency.\n* Develop dashboards and analytics that support compliance decision-making and regulatory reporting.\n* Ensure solutions comply with cybersecurity, data privacy, and regulatory requirements.\n* Collaborate with Compliance, Technology, Risk, and Information Security teams on system enhancements.\n* Maintain and optimize compliance applications, ensuring reliability, performance, and scalability.\n* Support audits and regulatory examinations by providing technical documentation and system evidence.\n* Research and recommend emerging AI and compliance technologies to drive continuous improvement.\n* Establish and maintain AI governance controls for Compliance use cases, ensuring responsible, transparent, and compliant use of AI technologies.\n* Conduct AI risk assessments to identify and mitigate risks related to model accuracy, bias, data privacy, security, and regulatory compliance.\n* Monitor and validate AI models and automated solutions on an ongoing basis to ensure accuracy, effectiveness, reliability, and appropriate human oversight.\n* Ensure data quality and governance across Compliance systems and AI solutions, including data accuracy, integrity, access controls, and auditability.\n* Leverage AI and automation to support regulatory change management, including identifying regulatory updates, assessing their impact, and supporting implementation and tracking of required actions",
+        "sha256": "cacc3735cc12af8f79974d4d779ec7af3159810ddfeebac588a0ffa44a0ccda0",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:hala:hala:payment-product-manager-2",
+      "captured_at": "2026-11-08T00:00:00Z",
+      "source": "hala",
+      "source_id": "hala:payment-product-manager-2",
+      "title": "Payment Product Manager",
+      "company": "HALA",
+      "location": "KSA - Riyadh",
+      "employment_type": "full_time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-08T11:00:09.282842+00:00",
+      "verification_url": "https://careers.hala.com/jobs/payment-product-manager-2",
+      "discovery_source": "hala",
+      "discovery_url": "https://careers.hala.com/jobs/payment-product-manager-2",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://careers.hala.com/jobs/payment-product-manager-2",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Shipped end-to-end payment integrations, credit monetization, and API delivery."
+        },
+        "experience": {
+          "score": 20,
+          "max": 30,
+          "note": "Solo product owner and developer at Watheq since Aug 2025."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "Explicitly accepts equivalent relevant professional experience."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Matches 2-4 years experience level; located in Riyadh."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Implemented credit-based monetization and Moyasar payment gateway integration",
+          "resume_quote": "Implemented credit-based monetization, guest rate limiting, and Moyasar payment gateway integration with 3DS flows."
+        },
+        {
+          "title": "Build and maintain Power BI dashboards for operational performance",
+          "resume_quote": "Build and maintain Power BI dashboards for inventory and sales performance, giving the team a consistent operational view."
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Insufficient Dedicated Product Management Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Equivalence of technical diploma and professional experience",
+          "reason": "The candidate holds a Diploma in Pipefitting Technology rather than a relevant Bachelor's degree, making the evaluation of equivalent professional experience subject to review.",
+          "evidence_needed": "Confirmation on whether the candidate's technical projects and self-taught engineering experience satisfy the degree equivalency requirement."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-10-29T12:11:22.502781+03:00",
+      "age_days": 10,
+      "jd": {
+        "status": "captured",
+        "text": "**JOB SUMMARY**\nAt Hala, the main responsibility of Payment product manager is to Lead the end-to-end delivery of payment service products, overseeing development through implementation. The role focuses on coordinating multiple initiatives, partnering with internal and external stakeholders, and ensuring high-quality, on-time product releases that meet business and customer expectations.\n**JOB DUTIES**\n* Manage and coordinate the delivery of payment products across the full lifecycle, ensuring plans, milestones, and outcomes align with business objectives.\n* Own release planning activities, including resource coordination and readiness, to ensure smooth and predictable product releases.\n* Build and maintain strong relationships with business stakeholders, technology teams, and customers to support clear communication and effective collaboration.\n* Track delivery progress and provide regular reporting on timelines, quality, resources, and RAID (Risks, Assumptions, Issues, Dependencies).\n* Ensure delivery commitments are met within agreed schedules, proactively addressing delays or risks.\n* Create and maintain detailed delivery plans covering each stage of the product lifecycle, from initiation through rollout.\n* Define and monitor end-to-end delivery KPIs to assess performance, efficiency, and product quality.\n* Identify delivery risks early, manage cross-team dependencies, and implement mitigation strategies to minimise impact.\n* Analyse customer feedback and operational insights to drive continuous improvements in delivery processes and outcomes.\n## **REQUIREMENTS**\n* 2–4 years of relevant hands-on experience in product management.\n* Bachelor’s degree in Computer Science, Information Systems, Engineering, or a related field, or equivalent relevant professional experience.\n* Strong ownership, analytical, and stakeholder engagement skills.\n* Experience in fintech and payments is preferred.",
+        "sha256": "831aa83e952c4653a4791888e61adffdc25356f7d2748df47a72d11a4c4a43d0",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:hala:hala:marketing-operations-specialist-2",
+      "captured_at": "2026-11-08T00:00:00Z",
+      "source": "hala",
+      "source_id": "hala:marketing-operations-specialist-2",
+      "title": "Marketing Operations Specialist",
+      "company": "HALA",
+      "location": "KSA - Riyadh",
+      "employment_type": "full_time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-08T11:00:09.500293+00:00",
+      "verification_url": "https://careers.hala.com/jobs/marketing-operations-specialist-2",
+      "discovery_source": "hala",
+      "discovery_url": "https://careers.hala.com/jobs/marketing-operations-specialist-2",
+      "requisition_id": "",
+      "mandatory_requirements": [
+        "Coordinate with external agencies and vendors as required."
+      ],
+      "url": "https://careers.hala.com/jobs/marketing-operations-specialist-2",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Commercial and sales operations",
+      "categories": {
+        "hard_skills": {
+          "score": 18,
+          "max": 40,
+          "note": "Has Power BI, customer segmentation, and performance tracking skills."
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Analytics background fits, but lacks formal marketing campaign operations."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No strict degree barrier stated."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Located in Riyadh, Saudi Arabia."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Segmented 100+ customer accounts by revenue",
+          "resume_quote": "Segmented 100+ customer accounts by revenue, identified the top 10, and mapped complementary products into a cross-sell list adopted by the sales team."
+        },
+        {
+          "title": "Build and maintain Power BI dashboards",
+          "resume_quote": "Build and maintain Power BI dashboards for inventory and sales performance, giving the team a consistent operational view."
+        },
+        {
+          "title": "Deliver weekly performance reporting across overall sales",
+          "resume_quote": "Deliver weekly performance reporting across overall sales, walk-in transactions, and delivery-app orders."
+        }
+      ],
+      "ceiling": "high",
+      "blockers": [],
+      "unclear": [
+        {
+          "topic": "External Agency and Vendor Coordination",
+          "reason": "The posting specifies coordinating with external agencies and vendors, but the resume does not clearly detail managing external marketing vendors or creative agencies.",
+          "evidence_needed": "Direct evidence of coordinating marketing deliverables and timelines with external creative or advertising agencies."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-10-26T13:18:25.238744+03:00",
+      "age_days": 13,
+      "jd": {
+        "status": "captured",
+        "text": "At HALA, main responsibility of Marketing Operations Specialist is to support the efficient execution of marketing campaigns and initiatives across HALA’s payment products and services, ensuring effective coordination, performance tracking, and compliance with internal and regulatory requirements.\nJob Responsibilities:\n* Coordinate the execution of marketing campaigns, promotions, and product launches across customer and merchant segments.\n* Manage campaign timelines, deliverables, approvals, and cross-functional dependencies.\n* Work closely with Product, Sales, Growth, Data, and Compliance to ensure effective campaign execution.\n* Support CRM, marketing automation, customer segmentation, and campaign targeting activities.\n* Track and report campaign performance, including acquisition, conversion, engagement, and product adoption.\n* Maintain marketing dashboards, campaign calendars, trackers, and related documentation.\n* Identify opportunities to improve and automate marketing processes and workflows.\n* Coordinate with external agencies and vendors as required.\nEnsure marketing activities comply with brand standards, internal policies, and applicable KSA regulatory requirements",
+        "sha256": "1b73b61b934dc1ea73d7a61b7317550712b78ae3d4adc60fa6d36a994a54d361",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
