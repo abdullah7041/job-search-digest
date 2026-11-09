@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:A889C44652",
+      "captured_at": "2026-11-09T00:00:00Z",
+      "source": "workable",
+      "source_id": "A889C44652",
+      "title": "Senior AI Solution Architect",
+      "company": "TAWANTECH",
+      "location": "Riyadh, Saudi Arabia",
+      "employment_type": "Full-time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-09T12:27:11.588972+00:00",
+      "verification_url": "https://apply.workable.com/tawantech/j/A889C44652/",
+      "discovery_source": "workable",
+      "discovery_url": "https://apply.workable.com/tawantech/j/A889C44652/",
+      "requisition_id": "000",
+      "mandatory_requirements": [
+        "Required Skills and Qualifications 8–10 years of experience in AI, Machine Learning, data science, software engineering, or AI-focused solution architecture."
+      ],
+      "url": "https://apply.workable.com/tawantech/j/A889C44652/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Excellent LLM and prompt/validation skills, but lacks deep PyTorch/MLOps experti"
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Demands 8-10 years enterprise architecture; candidate has AI product experience "
+        },
+        "education": {
+          "score": 6,
+          "max": 15,
+          "note": "Self-taught and polytechnic diploma for an enterprise architect position."
+        },
+        "seniority_location": {
+          "score": 8,
+          "max": 15,
+          "note": "Riyadh location matches, but architect seniority level is excessive."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Designed LLM workflows",
+          "resume_quote": "Designed LLM workflows for bilingual resume parsing with Arabic/Hijri dates, job matching, gap analysis, interview questions, and evidence-constrained improvement"
+        },
+        {
+          "title": "Built separate gold-set evaluation harnesses",
+          "resume_quote": "Built separate gold-set evaluation harnesses for parsing, match scoring, and optimization quality, using deterministic scoring and model-comparison workflows"
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Insufficient Total Years of AI and Software Engineering Experience",
+        "Lack of Enterprise Scale AI Solution Architecture Experience",
+        "Missing Required Cloud Architecture or AI/ML Certifications"
+      ],
+      "unclear": [
+        {
+          "topic": "Major Cloud Platform Experience",
+          "reason": "The role requires experience with AWS, Azure, or GCP, but the resume only demonstrates serverless platforms like Netlify, Supabase, and Upstash.",
+          "evidence_needed": "Direct experience designing or deploying AI solutions on AWS, Azure, or Google Cloud."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-10-13",
+      "age_days": 27,
+      "jd": {
+        "status": "captured",
+        "text": "Job Summary\nWe are seeking an experienced AI Solution Architect with 8–10 years of experience in Artificial Intelligence (AI), Machine Learning (ML), and enterprise solution architecture. The ideal candidate will be responsible for designing, developing, and implementing scalable, secure, and high-performance AI solutions aligned with business objectives.\nThe candidate should have strong expertise in AI/ML architecture, Generative AI, Large Language Models (LLMs), cloud-based AI platforms, and enterprise system integration. The role requires close collaboration with business stakeholders, data scientists, software engineers, and technology teams to translate business requirements into effective AI-driven solutions.\nKey Responsibilities\nDesign end-to-end AI/ML solution architectures aligned with business requirements and enterprise technology standards.\nDefine AI strategy, architecture patterns, technology stacks, and implementation roadmaps.\nArchitect and implement AI, ML, Generative AI, and LLM-based solutions for enterprise use cases.\nDesign Retrieval-Augmented Generation (RAG) architectures, vector database integrations, and knowledge retrieval pipelines.\nEvaluate and select appropriate AI models, frameworks, platforms, and cloud services based on business and technical requirements.\nDevelop architecture for scalable AI applications, APIs, microservices, and enterprise integrations.\nDesign and implement AI solutions using cloud platforms such as AWS, Microsoft Azure, or Google Cloud.\nEstablish best practices for model deployment, monitoring, versioning, performance optimization, and lifecycle management using MLOps principles.\nDefine responsible AI practices, including data privacy, security, explainability, bias mitigation, and governance.\nAssess the feasibility, scalability, cost, and business value of proposed AI solutions.\nCollaborate with data scientists, ML engineers, data engineers, developers, and business stakeholders throughout the solution lifecycle.\nDevelop architecture diagrams, technical specifications, proof of concepts (POCs), and implementation plans.\nGuide development teams on AI architecture, coding standards, integration patterns, and deployment practices.\nMonitor emerging AI technologies and recommend innovations that improve business outcomes.\nEnsure AI solutions meet enterprise security, compliance, performance, availability, and reliability requirements.\nRequired Skills and Qualifications\n8–10 years of experience in AI, Machine Learning, data science, software engineering, or AI-focused solution architecture.\nProven experience designing and delivering enterprise-scale AI/ML solutions.\nStrong understanding of Machine Learning, Deep Learning, Natural Language Processing (NLP), and predictive analytics.\nHands-on experience with Generative AI, LLMs, prompt engineering, and LLM application development.\nExperience designing RAG pipelines, embeddings, vector databases, and semantic search solutions.\nProficiency in Python and familiarity with AI/ML libraries such as PyTorch, TensorFlow, Scikit-learn, or Hugging Face.\nExperience with AI frameworks and orchestration tools such as LangChain, LlamaIndex, or equivalent technologies.\nStrong knowledge of REST APIs, microservices, distributed systems, and enterprise integration patterns.\nExperience with at least one major cloud platform: AWS, Microsoft Azure, or Google Cloud.\nUnderstanding of data engineering concepts, data pipelines, data lakes, data warehouses, and data governance.\nKnowledge of MLOps practices, CI/CD pipelines, model monitoring, and production deployment.\nStrong understanding of AI security, data protection, responsible AI, and governance frameworks.\nExcellent architectural design, analytical, problem-solving, communication, and stakeholder management skills.\nPreferred Qualifications\nExperience with enterprise AI platforms such as Azure AI Foundry, Amazon Bedrock, Google Vertex AI, or equivalent services.\nExperience implementing AI agents, tool calling, multi-agent workflows, and enterprise copilots.\nFamiliarity with vector databases such as Pinecone, Weaviate, Milvus, or pgvector.\nExperience with containerization and orchestration technologies such as Docker and Kubernetes.\nKnowledge of model evaluation, hallucination mitigation, guardrails, and AI observability.\nExperience designing hybrid or multi-cloud AI architectures.\nRelevant certifications in cloud architecture, AI/ML, or Generative AI.\nExperience leading technical teams and presenting architecture solutions to senior stakeholders.\nKey Competencies\nAI/ML solution architecture and technology strategy.\nGenerative AI, LLMs, and RAG implementation.\nEnterprise architecture and system integration.\nCloud-native AI solution design.\nMLOps and production AI lifecycle management.\nAI security, governance, and responsible AI.\nTechnical leadership and stakeholder collaboration.\nPerformance, scalability, and cost optimization.",
+        "sha256": "ec888ddddf4f2f5c559c7c87c2e17a10c3e588d20c847f4354d6a18fdfeaec8e",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:D29678F002",
+      "captured_at": "2026-11-09T00:00:00Z",
+      "source": "workable",
+      "source_id": "D29678F002",
+      "title": "Senior ML Backend Engineer - Search & Recommendations",
+      "company": "Salla",
+      "location": "Makkah, Saudi Arabia",
+      "employment_type": "",
+      "employment_status": "unknown",
+      "verified_at": "2026-11-09T12:27:11.038501+00:00",
+      "verification_url": "https://apply.workable.com/salla/j/D29678F002/",
+      "discovery_source": "workable",
+      "discovery_url": "https://apply.workable.com/salla/j/D29678F002/",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://apply.workable.com/salla/j/D29678F002/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Full-time employment has not been confirmed.",
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 24,
+          "max": 40,
+          "note": "Strong Python/TypeScript and AI tooling, but lacks Elasticsearch, Kafka CDC, Ves"
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Demands 5+ years backend/platform and 2+ years search engine ops."
+        },
+        "education": {
+          "score": 12,
+          "max": 15,
+          "note": "No strict degree blocker stated in requirements."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Location Makkah (KSA) fits Saudi-only preference; seniority is a stretch."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Python and TypeScript Stack Delivery",
+          "resume_quote": "CI contract tests across the Python producer and TypeScript dashboard."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Missing 5+ Years Backend Systems Experience",
+        "Missing Production Search Engine Operation Experience",
+        "Missing Streaming Ingestion and CDC Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Low-Latency High-Throughput Serving Experience",
+          "reason": "The candidate has built serverless apps with Netlify Functions and Redis, but real-world double-digit millisecond p95 latency under high-traffic load is not explicitly evidenced.",
+          "evidence_needed": "Details or metrics demonstrating low-latency p95 optimization and management under large-scale production traffic."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-10-14",
+      "age_days": 26,
+      "jd": {
+        "status": "captured",
+        "text": "You'll own the online systems that take a catalogue change to a ranked result in front of a shopper: search, retrieval and recommendation serving, the streaming data that keeps them fresh, and the experiments that ship them.\nSalla is the leading e-commerce platform in MENA, serving about 68,000+ merchants. Our AI team is building a self-owned discovery stack across our marketplace and merchant stores: hybrid lexical and vector search, Arabic-first query understanding, and learned ranking shared between search and recommendations. Data scientists own the relevance and ranking models. You own the platform that makes them fast, fresh, reliable and shippable.\nThe work is roughly half online serving, a third streaming data, and the rest integration into product surfaces. You sit on the ML Platform team spending time between search and serving for our recommendation systems and work day to day with search data scientists and the ranking lead\nWhat you'll do\nOnline serving\nBuild and run query and recommendation serving: retrieval, score fusion, filtering, caching.\nHold tight latency budgets, including double-digit-millisecond p95 for search-as-you-type.\nDesign graceful degradation, so serving holds up when a model or vector path is slow or down.\nBuild experiment plumbing: shadow traffic, A/B assignment, guardrail metrics, rollback.\nStreaming data\nBuild change-data-capture from source systems into search indexes and feature stores, with measured freshness.\nKeep embeddings fresh for new and updated items.\nRun zero-downtime reindexing of multi-million-document collections.\nBuild feature logging that turns production traffic into training data for ranking models.\nIntegration\nShip changes into product teams' backends and clients: new endpoints, cutovers, experiment flags.\nWork with product engineering teams on reviews, release windows and production ownership.\nOperability, throughout\nMonitoring, alerting, runbooks, and your share of on-call for what you ship.\nRequirements\n5+ years building backend or platform systems in production.\n2+ years operating a production search engine (Elasticsearch, OpenSearch, Solr, Typesense, Vespa or similar): index lifecycle, analyzers, reindexing at scale, debugging relevance issues with data scientists.\nLow-latency services under real traffic, and the ability to explain where the p95 goes.\nStreaming ingestion: Kafka, Debezium or similar change-data-capture, plus idempotent backfills.\nStrong Python. Comfortable shipping in TypeScript.\nShipped changes through A/B tests and staged rollouts.\nDaily use of agentic coding tools such as Claude Code. We expect one engineer plus agents to cover what used to take a team.",
+        "sha256": "d3bce27301fbee38610688338f1935604b46336cee32d2b32028e5fc8f6ed451",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:BB94E48868",
+      "captured_at": "2026-11-09T00:00:00Z",
+      "source": "workable",
+      "source_id": "BB94E48868",
+      "title": "Marketing Specialist-Banking",
+      "company": "TAWANTECH",
+      "location": "Riyadh, Saudi Arabia",
+      "employment_type": "Full-time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-09T12:27:11.323663+00:00",
+      "verification_url": "https://apply.workable.com/tawantech/j/BB94E48868/",
+      "discovery_source": "workable",
+      "discovery_url": "https://apply.workable.com/tawantech/j/BB94E48868/",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://apply.workable.com/tawantech/j/BB94E48868/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Commercial and sales operations",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Has customer segmentation, analytics, and bilingual skills; lacks banking market"
+        },
+        "experience": {
+          "score": 14,
+          "max": 30,
+          "note": "Commercial and sales analytics since 2020 matches tenure, but not banking."
+        },
+        "education": {
+          "score": 4,
+          "max": 15,
+          "note": "Requires Bachelor's in Marketing/Business; candidate holds technical diploma."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh location and 3-5 year range match well."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Segmented 100+ customer accounts by revenue",
+          "resume_quote": "Segmented 100+ customer accounts by revenue, identified the top 10, and mapped complementary products into a cross-sell list adopted by the sales team."
+        },
+        {
+          "title": "Produce competitor and pricing intelligence on product launches",
+          "resume_quote": "Produce competitor and pricing intelligence on product launches, category trends, and price movements to inform assortment and pricing decisions."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Bachelor's Degree in Marketing or Related Field",
+        "Lack of Required 3–5 Years Marketing Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Banking Products Knowledge",
+          "reason": "The candidate has built automated financial analysis tools for Tadawul, but actual domain knowledge of banking products is unconfirmed.",
+          "evidence_needed": "Evidence of experience with retail or corporate banking products such as loans, deposits, or credit cards."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-11-08",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Job Purpose\nTo develop and execute marketing initiatives for the bank's products and services, ensuring effective product positioning, customer engagement, and market penetration. The role focuses on promoting banking products, increasing product awareness and adoption, and supporting business growth through targeted marketing strategies and campaigns.\nKey Responsibilities\nDevelop and execute marketing strategies and campaigns for banking products, including retail and corporate banking products and services.\nPromote banking products such as personal finance, credit cards, mortgages, savings accounts, deposits, and other financial solutions.\nWork closely with Product Management, Sales, Digital Banking, and Business teams to understand product features, value propositions, and business objectives.\nDevelop product positioning, key messages, and marketing materials to communicate product benefits and competitive advantages.\nPlan and execute product launch campaigns, promotional offers, and customer acquisition initiatives.\nConduct market research and competitor analysis to identify market trends, customer needs, and opportunities for product growth.\nDevelop targeted marketing campaigns based on customer segments, behaviors, and preferences.\nMonitor campaign performance and evaluate effectiveness against KPIs, including customer acquisition, product penetration, conversion rates, and engagement.\nAnalyze customer insights and market feedback to recommend improvements to product marketing strategies.\nCoordinate with creative agencies, media partners, and internal stakeholders to deliver marketing campaigns.\nEnsure all product marketing communications comply with the bank's brand guidelines, internal policies, and applicable regulatory requirements.\nPrepare marketing reports, campaign performance analysis, and recommendations for continuous improvement.\nRequirements\nQualifications & Requirements\nBachelor's degree in Marketing, Business Administration, Communications, or a related field.\n3–5 years of experience in marketing, preferably within the banking or financial services sector.\nExperience in planning, executing, and monitoring marketing campaigns.\nGood understanding of banking products and financial services.\nKnowledge of digital marketing channels, social media platforms, and marketing tools.\nExperience in market research, competitor analysis, and customer segmentation.\nStrong analytical skills with the ability to monitor campaign KPIs and prepare performance reports.\nExcellent communication, presentation, and coordination skills.\nAbility to manage multiple projects and meet deadlines.\nProficiency in Microsoft Office applications.\nPreferred Certifications\nProfessional Marketing or Digital Marketing Certification.\nGoogle Analytics or Digital Marketing certifications.\nCIM or equivalent marketing qualification.",
+        "sha256": "caf4abb15c88a5b08123c13372c28e5b3eab92295d4ffee6048c13d9270abdae",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:10F3FA18A3",
+      "captured_at": "2026-11-09T00:00:00Z",
+      "source": "workable",
+      "source_id": "10F3FA18A3",
+      "title": "Executive Secretary",
+      "company": "Gathern",
+      "location": "Riyadh, Saudi Arabia",
+      "employment_type": "Full-time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-09T12:27:11.179835+00:00",
+      "verification_url": "https://apply.workable.com/gathern/j/10F3FA18A3/",
+      "discovery_source": "workable",
+      "discovery_url": "https://apply.workable.com/gathern/j/10F3FA18A3/",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://apply.workable.com/gathern/j/10F3FA18A3/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead.",
+        "Full job description needs verification.",
+        "Requirements and qualification gaps have not been checked.",
+        "No positive match to demonstrated resume work has been verified."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Commercial and sales operations",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Has Excel and Power BI skills but lacks executive secretariat background."
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Commercial and technical experience does not align with CEO office management."
+        },
+        "education": {
+          "score": 5,
+          "max": 15,
+          "note": "Requires Bachelor's in Business/Management; candidate holds a technical diploma."
+        },
+        "seniority_location": {
+          "score": 15,
+          "max": 15,
+          "note": "Location Riyadh aligns with candidate."
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "unknown",
+      "blockers": [],
+      "unclear": [],
+      "link_status": "unknown",
+      "first_published": "2026-10-28",
+      "age_days": 12,
+      "jd": {
+        "status": "incomplete",
+        "text": "JOB PURPOSE:\nSupport CEO Office.\nKEY ACCOUNTABILITIES:\nManage CEO’s Calendar.\nTrack action items from CEO meetings.\nMaintain organized documentation for governance and reporting.\nCoordinate with departments to ensure timely reporting submissions.\nEnsure data accuracy and validation before reporting\nRequirements\nCORE BEHAVIORAL COMPETENCIES:\nStrategic Vision & Agility – Basic\nGrowth Mindset – Basic\nScalable Execution – Basic\nPeople Leadership & Talent Development – Basic\nGovernance & Ethical Conduct – Basic\nCustomer Centricity – Basic\nInnovative Thinking & Digital Fluency – Basic\nStakeholder Management – Basic\nTECHNICAL COMPETENCE:\nMicrosoft Excel (Formulas, Pivot Tables, Basic Dashboards) – Proficient\nPowerPoint (Executive Presentation Structuring) – Proficient\nMicrosoft Office / Google Workspace – Proficient\nBasic Data Analysis & Reporting – Basic\nKPI Tracking & Documentation – Basic\nBasic Knowledge of Power BI or Dashboard Tools – Basic\nOrganizational & Documentation Skills – Proficient\nQUALIFICATIONS:\nEducation :\nBachelor’s degree in Business Administration, Management, Finance or related field\nExperience and Skills:\n1-2 years experience\nFluent in Arabic and English (speaking and writing)\nVery well organized with strong attention to detail\nHigh sense of ownership and accountability\nStrong work ethics and professionalism",
+        "sha256": "a476fdf62bd12365494d097003822dbd5df753046da399776d03ccf18accd275",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    }
+  ]
+}
