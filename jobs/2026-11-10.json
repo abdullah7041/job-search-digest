@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-10",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "pending:active_ats:2457717551",
+      "captured_at": "2026-11-10T00:00:00Z",
+      "source": "active_ats",
+      "source_id": "2457717551",
+      "title": "SPECIALIST, DATA ANALYST",
+      "company": "alfanar",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": "",
+      "employment_status": "unknown",
+      "verified_at": "2026-11-10T12:01:36.560174+00:00",
+      "verification_url": "https://jobs.alfanar.com/alfanar/job/Riyadh-SPECIALIST%2C-DATA-ANALYST/1455569933/",
+      "discovery_source": "active_ats",
+      "discovery_url": "https://jobs.alfanar.com/alfanar/job/Riyadh-SPECIALIST%2C-DATA-ANALYST/1455569933/",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://jobs.alfanar.com/alfanar/job/Riyadh-SPECIALIST%2C-DATA-ANALYST/1455569933/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Full-time employment has not been confirmed.",
+        "Full job description needs verification.",
+        "Requirements and qualification gaps have not been checked.",
+        "No positive match to demonstrated resume work has been verified."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Data and analytics",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Strong match on reporting, data analysis, troubleshooting, and automation."
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Demonstrated 4+ years analytics experience, but lacks subordinate management."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandatory Bachelor Degree in Computer Science not held."
+        },
+        "seniority_location": {
+          "score": 7,
+          "max": 15,
+          "note": "Riyadh location matches; includes people leadership which is not preferred."
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "unknown",
+      "blockers": [],
+      "unclear": [],
+      "link_status": "open",
+      "first_published": "2026-11-09",
+      "age_days": 1,
+      "jd": {
+        "status": "incomplete",
+        "text": ".Job Purpose\nKey Accountability Areas\nRole Accountability\nTraining of sub-ordinates and forming a team to get the work effectively.\nProvide leadership, coaching, and direction to subordinates in all aspects of their work.\n Delegate sub-ordinates in each respective assignment.\n Ensures fair distribution of tasks to maintain morale, motivation of subordinates.\n Perform the planned activities to meet the operational and development targets as per delivery schedules.\n Utilize resources effectively to achieve objectives within efficient cost and time.\n Provide a periodic report formatted by detailing the deviation and execution of planned tasks.\n Resolve any related problems arise and escalate any complex operational issues.\n Ensure quality requirements to develop effective quality control and processes including specifications for products or processes or related activities.   \n Coordinate well-defined written systems, policies, procedures, and seeking automations opportunities as much as possible.\n Comply to related policy and procedures and work instructions.\n Ensure compliance of relevant safety, quality, and environmental management procedures and controls within defined area of work activity to guarantee safety, legislative compliance, and delivery of high-quality products/services.Academic Qualification\nBachelor Degree in Computer ScienceWork Experience\n2 to 4 YearsTechnical / Functional Competencies\nWork under pressurRisk AssessmentMS OfficeTime ManagementWell OrganizedTroubleshootingCommunicationTeamworkInitiativeCreativityAnalytical thinkingDetails OrientedReport writing",
+        "sha256": "6518784b175351f5d33d2fdb1a873a97263d27e7b7bdde6be94b2ab0be969383",
+        "completeness_failures": [
+          "responsibilities_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    }
+  ]
+}
