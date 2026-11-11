@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-11",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2459402784",
+      "captured_at": "2026-11-11T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2459402784",
+      "title": "Payment Product Manager",
+      "company": "HALA",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": "FULL_TIME",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-11T11:39:51.631497+00:00",
+      "verification_url": "https://sa.linkedin.com/jobs/view/payment-product-manager-at-hala-4488344963",
+      "discovery_source": "LinkedIn",
+      "discovery_url": "https://sa.linkedin.com/jobs/view/payment-product-manager-at-hala-4488344963",
+      "requisition_id": "01a16291-2bf5-769f-9ae3-65e7cd4590a7",
+      "mandatory_requirements": [],
+      "url": "https://sa.linkedin.com/jobs/view/payment-product-manager-at-hala-4488344963",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 68,
+      "why": "Strong payment and product delivery match via Watheq, though degree is accepted by experience.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 30,
+          "max": 40,
+          "note": "Demonstrated payment gateway integration, release planning, and product metrics."
+        },
+        "experience": {
+          "score": 18,
+          "max": 30,
+          "note": "Built and shipped Watheq end-to-end; fits 2-4 years requirement."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "Degree allows equivalent relevant professional experience."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Riyadh location and mid-level IC scope fit well."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Moyasar payment gateway integration with 3DS flows",
+          "resume_quote": "Implemented credit-based monetization, guest rate limiting, and Moyasar payment gateway integration with 3DS flows."
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Insufficient Dedicated Product Management Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Cross-functional stakeholder and project coordination",
+          "reason": "Most product engineering and development work appears to be conducted solo rather than coordinating cross-functional teams and external stakeholders.",
+          "evidence_needed": "Evidence of managing cross-team dependencies, enterprise release planning, and coordinating business and engineering stakeholders."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-10",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Job Summary\n\nAt Hala, the main responsibility of Payment product manager is to Lead the end-to-end delivery of payment service products, overseeing development through implementation. The role focuses on coordinating multiple initiatives, partnering with internal and external stakeholders, and ensuring high-quality, on-time product releases that meet business and customer expectations.\n\nJob Duties\n\nManage and coordinate the delivery of payment products across the full lifecycle, ensuring plans, milestones, and outcomes align with business objectives.\nOwn release planning activities, including resource coordination and readiness, to ensure smooth and predictable product releases.\nBuild and maintain strong relationships with business stakeholders, technology teams, and customers to support clear communication and effective collaboration.\nTrack delivery progress and provide regular reporting on timelines, quality, resources, and RAID (Risks, Assumptions, Issues, Dependencies).\nEnsure delivery commitments are met within agreed schedules, proactively addressing delays or risks.\nCreate and maintain detailed delivery plans covering each stage of the product lifecycle, from initiation through rollout.\nDefine and monitor end-to-end delivery KPIs to assess performance, efficiency, and product quality.\nIdentify delivery risks early, manage cross-team dependencies, and implement mitigation strategies to minimise impact.\nAnalyse customer feedback and operational insights to drive continuous improvements in delivery processes and outcomes.\n\nRequirements\n\n2–4 years of relevant hands-on experience in product management.\nBachelor’s degree in Computer Science, Information Systems, Engineering, or a related field, or equivalent relevant professional experience.\nStrong ownership, analytical, and stakeholder engagement skills.\nExperience in fintech and payments is preferred.",
+        "sha256": "ec707dcf806347fad3d6c36d2873a612ee008072bf00c8dec1086568d4356680",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2456984362",
+      "captured_at": "2026-11-11T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2456984362",
+      "title": "Product Manager(AI ,Smart Cities)",
+      "company": "AIQU",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": "FULL_TIME",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-11T11:39:53.947929+00:00",
+      "verification_url": "https://sa.linkedin.com/jobs/view/product-manager-ai-smart-cities-at-aiqu-4487649354",
+      "discovery_source": "LinkedIn",
+      "discovery_url": "https://sa.linkedin.com/jobs/view/product-manager-ai-smart-cities-at-aiqu-4487649354",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://sa.linkedin.com/jobs/view/product-manager-ai-smart-cities-at-aiqu-4487649354",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 48,
+      "why": "Requires 5+ years of dedicated enterprise product management experience.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 24,
+          "max": 40,
+          "note": "Has solo AI product ownership but lacks enterprise B2B PM tooling."
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "Lacks mandatory 5+ years of enterprise PM experience."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No strict degree demanded."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh location matches; seniority requirement is steep."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Built and Deployed the Product Solo",
+          "resume_quote": "Built and deployed the product solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security"
+        },
+        {
+          "title": "Designed LLM Workflows and Evidence-Constrained Improvement",
+          "resume_quote": "Designed LLM workflows for bilingual resume parsing with Arabic/Hijri dates, job matching, gap analysis, interview questions, and evidence-constrained improvement"
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Lacks 5+ Years of Proven Product Ownership"
+      ],
+      "unclear": [
+        {
+          "topic": "B2B Enterprise Application Experience",
+          "reason": "The candidate has built consumer/B2C SaaS products and internal analytics, but it is ambiguous whether they have managed complex enterprise B2B workflows.",
+          "evidence_needed": "Evidence of designing, launching, and managing multi-role, integrated B2B enterprise software applications."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-08",
+      "age_days": 3,
+      "jd": {
+        "status": "captured",
+        "text": "Our client, a leading AI technology company in Riyadh, is hiring a Product Manager / Senior Product Manager to own complex B2B enterprise products end to end.\n\nWhat you'll do:\n• Own the full product lifecycle: discovery, roadmap, requirements, prioritisation, delivery, launch and adoption\n• Translate business needs into practical, user-focused products\n• Work closely with engineering and design to deliver measurable outcomes\n\nWhat we're looking for:\n• Sustained experience with complex B2B enterprise applications: operational workflows, multiple user roles, system integrations\n• +5 Years of Proven end-to-end product ownership and strong product judgement\n• Clear career progression with shipped products and measurable results\n• Strong Product Design Leads with broader product ownership are welcome",
+        "sha256": "a411695be01b0daa51b262a026cfb5223d1519419d36bed15cf0d5c641c26a3b",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2459402776",
+      "captured_at": "2026-11-11T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2459402776",
+      "title": "Senior Product Manager",
+      "company": "Skyro",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": [
+        "FULL_TIME"
+      ],
+      "employment_status": "full_time",
+      "verified_at": "2026-11-11T11:39:52.171171+00:00",
+      "verification_url": "https://sa.linkedin.com/jobs/view/senior-product-manager-at-skyro-4488313685",
+      "discovery_source": "LinkedIn",
+      "discovery_url": "https://sa.linkedin.com/jobs/view/senior-product-manager-at-skyro-4488313685",
+      "requisition_id": "",
+      "mandatory_requirements": [
+        "Required Qualifications 5+ years of product management experience, including ownership of financial services or fintech products."
+      ],
+      "url": "https://sa.linkedin.com/jobs/view/senior-product-manager-at-skyro-4488313685",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 42,
+      "why": "Demands 5+ years of dedicated product management in financial services/lending.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 22,
+          "max": 40,
+          "note": "Has Moyasar integration and metrics but lacks credit/lending risk modeling."
+        },
+        "experience": {
+          "score": 8,
+          "max": 30,
+          "note": "Lacks 5+ years PM and SME fintech lending background."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No hard degree explicitly stated."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh location matches; Senior PM level exceeds candidate's PM tenure."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Moyasar payment gateway integration with 3DS flows",
+          "resume_quote": "Implemented credit-based monetization, guest rate limiting, and Moyasar payment gateway integration with 3DS flows."
+        },
+        {
+          "title": "Quantitative analysis of product expiration cycles",
+          "resume_quote": "Cut expired-unit waste 60% year-over-year through quantitative analysis of product expiration cycles."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Lack of 5+ Years Fintech Product Management Experience",
+        "Missing Lending or SME Banking Product Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Product analytics tools experience",
+          "reason": "The candidate has data analytics and Power BI experience, but specific product analytics tooling (e.g., Mixpanel, Amplitude, PostHog) is not clearly detailed.",
+          "evidence_needed": "Evidence of hands-on usage of dedicated product analytics platforms for funnel analysis and retention tracking."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-10",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Overview\nWe are looking for a Senior Product Manager to lead the development and growth of our SME financing products in Saudi Arabia. You will take ownership from customer discovery and product strategy through launch and ongoing improvement, working closely with local business teams and international technology teams.\n\nThe ideal candidate combines strong product judgment, analytical skills, and hands-on delivery experience with an understanding of lending and the needs of small businesses.\n\nAbout Us\nSkyro is an international fintech group building its presence in Saudi Arabia. We are developing Sharia-compliant financing solutions that help individuals and businesses access the funding they need. Our B2B business focuses on making credit simpler and more accessible for SMEs through technology and partnerships.\n\nPurpose of the Role\nThe Senior Product Manager will shape and deliver SME financing products that address real customer needs and support sustainable business growth. You will own the product roadmap and customer experience, balancing commercial objectives, credit performance, regulatory requirements, and operational efficiency.\n\nKey Responsibilities\nProduct Development & Delivery\nLead products and features from initial concept through, development, testing, and launch.\nTranslate customer and business needs into clear product requirements and user stories.\nCoordinate across local and international teams, resolve blockers, and make practical decisions.\nProduct Performance & Economics\nEstablish product metrics and monitor conversion, usage, repeat borrowing, and customer retention.\nWork with Finance and Risk to understand profitability, acquisition, servicing costs, and credit losses.\nUse customer feedback, funnel analysis, and experiments to evaluate results after launch.\nInvestigate performance issues with relevant teams and turn findings into concrete product actions.\nCustomer Journey & Partnerships\nOwn and improve the journey: application, onboarding, disbursement, repayment, and repeat borrowing.\nIdentify friction, reduce unnecessary steps, improve communication through the lifecycle.\nRisk, Compliance & Operations\nCollaborate with Risk, Compliance, Legal, and Sharia specialists to incorporate applicable requirements into product design.\nAlign customer journeys with credit policies, fraud controls, and operational processes.\nProduct Strategy & Customer Discovery\nResearch with SME owners, suppliers, and partners to understand financing needs, business workflows, and barriers to accessing credit.\nDefine the product roadmap, prioritizing initiatives based on customer value, business impact, and delivery effort.\n\nRequired Qualifications\n5+ years of product management experience, including ownership of financial services or fintech products.\nExperience launching and improving lending, SME banking, payments, or other complex financial products.\nAbility to use data to assess product performance and make decisions.\nStrong stakeholder management skills and the ability to deliver in an evolving business environment.\nProfessional proficiency in English and the ability to work with international teams.\n\nNice to Have\nExperience building products for Saudi Arabia or other GCC markets.\nKnowledge of SME lending, trade finance, or embedded financing.\nArabic language proficiency.\nHands-on experience with product analytics tools.",
+        "sha256": "3ecbde04d1dac785692a302361b7af50c83ff8be6b5018e3f61f8b19a106a36c",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    }
+  ]
+}
