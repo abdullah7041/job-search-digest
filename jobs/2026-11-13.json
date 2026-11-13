@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-13",
+  "jobs": [
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2460550252",
+      "captured_at": "2026-11-13T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2460550252",
+      "title": "Senior Software Engineer - Python/MongoDB",
+      "company": "Canonical",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": "FULL_TIME",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-13T11:48:45.861554+00:00",
+      "verification_url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-python-mongodb-at-canonical-4489636376",
+      "discovery_source": "LinkedIn",
+      "discovery_url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-python-mongodb-at-canonical-4489636376",
+      "requisition_id": "8372224",
+      "mandatory_requirements": [],
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-python-mongodb-at-canonical-4489636376",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 52,
+      "why": "Matches Python development, but lacks senior MongoDB cluster operations and infrastructure management.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 24,
+          "max": 40,
+          "note": "Strong Python knowledge; lacks MongoDB cluster operations and Juju/package manag"
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Software building since Aug 2025; lacks senior database operations history."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No hard degree requirement stated."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh location matches; senior title requires deeper engineering tenure."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Python producer and TypeScript dashboard",
+          "resume_quote": "added provider failover, retry policies, usage budgets, outcome tracking, and CI contract tests across the Python producer and TypeScript dashboard."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Missing MongoDB Cluster Operations Experience",
+        "Missing Linux Systems Administration and Infrastructure Automation Experience",
+        "Lack of Senior Python Engineering Track Record"
+      ],
+      "unclear": [
+        {
+          "topic": "Kubernetes and Multi-Cloud Experience",
+          "reason": "The JD aims to deploy solutions on VMs, public clouds, and Kubernetes, but the resume only shows serverless and web platform tools.",
+          "evidence_needed": "Evidence of deploying or managing infrastructure on Kubernetes or multi-cloud VM environments."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-10",
+      "age_days": 3,
+      "jd": {
+        "status": "captured",
+        "text": "We're enabling high-performing, rock-solid MongoDB deployments on any cloud or platform our customers choose. We want to create the world's best open source analog to MongoDB Altas or Amazon DocumentDB, which can be owned, controlled and operated by end-users on their own multi-cloud or on-premise environments.\n\nCanonical is looking for an experienced Python developer with a background in MongoDB who will help us to build a fully managed MongoDB solution based on Juju. We're aiming to build the most reliable and secure way to deploy and operate MongoDB on machines, VMs, public cloud and Kubernetes. The MongoDB team is small, meaning you will be a key contributor and your work will have a significant impact on the product and the broader ecosystem.\n\nWho you are\n\nYou love technology and working with brilliant people.\nYou are an accomplished senior Python programmer that enjoys challenging projects in mission-critical environments.\nYou have experience operating and managing MongoDB clusters.\nYou are experienced with modern infrastructure deployment automations or with traditional Linux systems administration, operations, and package management.\nYou are passionate about quality and automatic testing.\n\nWork with one of the industry's pioneers in open source with intelligent engineers at every level from engineer to CTO and CEO level. At Canonical we've honed our remote-first culture since 2004, established in the company from the very beginning. Enjoy a competitive salary, the flexibility to work and live where you wish, and the chance to work exclusively on impactful open source projects.\n\nCanonical is proud to foster a workplace free from discrimination. We truly believe that diversity of experience, perspectives, and background will lead to a better environment for our employees and a better platform for our users and customers. This is something we value deeply and we encourage everyone to come be a part of the world of Ubuntu.",
+        "sha256": "246fdcd535e045cc7caaabcfd0bb90aa22d7450d015519fc0ec5a3f0bdaa4b32",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2460550321",
+      "captured_at": "2026-11-13T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2460550321",
+      "title": "Senior Software Engineer (Backend)",
+      "company": "Canonical",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": "FULL_TIME",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-13T11:48:46.378598+00:00",
+      "verification_url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-backend-at-canonical-4489642265",
+      "discovery_source": "LinkedIn",
+      "discovery_url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-backend-at-canonical-4489642265",
+      "requisition_id": "8371160",
+      "mandatory_requirements": [
+        "As part of Canonical’s globally distributed team, you’ll collaborate with some of the brightest minds in open-source technology, building essential infrastructure that enables the next generation of software development."
+      ],
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-backend-at-canonical-4489642265",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 50,
+      "why": "Strong Python/PostgreSQL overlap, but requires senior engineering experience and CS bachelor's degree.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 25,
+          "max": 40,
+          "note": "Demonstrated Python, PostgreSQL, and REST APIs; lacks Linux packaging depth."
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "AI/SWE experience since Aug 2025; misses multi-year senior track record."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Requires CS/STEM Bachelor's degree; candidate has diploma."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh based; senior expectations exceed recent software track."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Python producer and TypeScript dashboard",
+          "resume_quote": "added provider failover, retry policies, usage budgets, outcome tracking, and CI contract tests across the Python producer and TypeScript dashboard."
+        },
+        {
+          "title": "Supabase/PostgreSQL with row-level security",
+          "resume_quote": "Built and deployed the product solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL with row-level security"
+        }
+      ],
+      "ceiling": "mid",
+      "blockers": [
+        "Lack of Senior Backend Engineering Leadership Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Debian/Ubuntu Packaging and Infrastructure Experience",
+          "reason": "The role specifies solid knowledge of Debian/Ubuntu packages and distributed infrastructure, which is not detailed in the candidate's project descriptions.",
+          "evidence_needed": "Evidence demonstrating hands-on experience building or managing Debian/Ubuntu packages and distributed operating system infrastructure."
+        },
+        {
+          "topic": "STEM Degree Equivalency",
+          "reason": "The role requires a Bachelor's or equivalent in Computer Science or STEM, while the candidate holds a Pipefitting Technology diploma.",
+          "evidence_needed": "Demonstration of whether candidate's practical engineering background satisfies the employer's equivalent experience criteria."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-10",
+      "age_days": 3,
+      "jd": {
+        "status": "captured",
+        "text": "Canonical is a leading provider of open source software and operating systems to the global enterprise and technology markets. Our platform, Ubuntu, is very widely used in breakthrough enterprise initiatives such as public cloud, data science, AI, engineering innovation, and IoT. Our customers include the world's leading public cloud and silicon providers, and industry leaders in many sectors. The company is a pioneer of global distributed collaboration, with 1200+ colleagues in 75+ countries and very few office-based roles. Teams meet two to four times yearly in person, in interesting locations around the world, to align on strategy and execution.\n\nThe company is founder-led, profitable, and growing.\n\nWe are hiring a Senior/Staff/Lead Engineer to join the Launchpad team and take the lead in shaping the future of open-source collaboration.\n\nLaunchpad is a platform for managing open-source development projects. It includes code hosting and review, bug tracking, package building, translations, and other facilities used by free and open-source software developers.\n\nAs a senior or staff-level engineer passionate about Linux, web services, and scalable development platforms, you’ll have the opportunity to architect and refine a mature, Python-driven system that supports major projects like Ubuntu. Your work will be instrumental in maintaining business-critical services while driving innovation, whether by expanding package-building capabilities, enhancing developer workflows, or modernizing the web UI.\n\nIn this role, you’ll empower developers across the world by ensuring that Launchpad remains a well-structured, high-velocity environment for open-source contribution. As part of Canonical’s globally distributed team, you’ll collaborate with some of the brightest minds in open-source technology, building essential infrastructure that enables the next generation of software development. If optimizing large-scale projects, driving continuous improvement, and supporting developers excites you, this is the perfect opportunity to make a lasting impact.\n\nLocation: This is a remote role based in the EMEA region. Candidates will be expected to be located within this region.\n\nThe role entails\n\nInfluencing and driving design, architecture, and feature decisions across distributed teams, to ensure high-impact solutions.\nCrafting exceptional, API-first Python code with unit tests, that delivering robust, well-structured systems that scale.\nDiagnosing and resolving complex technical challenges, implementing high-quality fixes that enhance performance and reliability.\nMentoring and uplifting fellow engineers, leading code reviews that reinforce best practices and elevate team excellence.\nEnjoying the freedom of remote work while staying globally engaged. Travelling internationally 2 to 4 times a year to collaborate in key internal discussions and industry-leading external events—expanding your network, sharing expertise, and shaping innovation on a global stage.\n\nWhat We Are Looking For In You\n\nYou love technology, working with brilliant people, and solving interesting problems\nYou are a strategic thinker who thrives on solving complex challenges and driving innovation\nYou are curious, adaptable, and articulate with strong leadership and collaboration skills\nYou have proven technical excellence in Python development and delivering high-quality, production-ready code\nYou have expertise in maintaining and improving large-scale web applications and database management (PostgreSQL a plus)\nYou have a deep understanding of integration, infrastructure, and operations in distributed environments\nYou have a security-focused mindset, ensuring robust implementation at every stage of development\nYou have a familiarity with Ubuntu as a development and deployment platform\nYou have a solid grasp of software packaging systems, including Debian/Ubuntu packages\nYou have a Bachelor’s or equivalent in Computer Science, STEM or similar degree\n\nWhat We Offer Colleagues\n\nWe consider geographical location, experience, and performance in shaping compensation worldwide. We revisit compensation annually (and more often for graduates and associates) to ensure we recognize outstanding performance. In addition to base pay, we offer a performance-driven annual bonus or commission. We provide all team members with additional benefits which reflect our values and ideals. We balance our programs to meet local needs and ensure fairness globally.\n\nDistributed work environment with twice-yearly team sprints in person\nPersonal learning and development budget of USD 2,000 per year\nAnnual compensation review\nRecognition rewards\nAnnual holiday leave\nMaternity and paternity leave\nTeam Member Assistance Program & Wellness Platform\nOpportunity to travel to new locations to meet colleagues\nPriority Pass and travel upgrades for long-haul company events\n\nAbout Canonical\n\nCanonical is a pioneering tech firm at the forefront of the global move to open source. As the company that publishes Ubuntu, one of the most important open-source projects and the platform for AI, IoT, and the cloud, we are changing the world of software. We recruit on a global basis and set a very high standard for people joining the company. We expect excellence; in order to succeed, we need to be the best at what we do. Most colleagues at Canonical have worked from home since our inception in 2004. Working here is a step into the future and will challenge you to think differently, work smarter, learn new skills, and raise your game.\n\nCanonical is an equal opportunity employer\n\nWe are proud to foster a workplace free from discrimination. Diversity of experience, perspectives, and background create a better work environment and better products. Whatever your identity, we will give your application fair consideration.",
+        "sha256": "b269398a54b1c18fd2b51b0529b516fc68594bc9d3cbab11fff042042f3d3482",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "linkedin_api:2461733563",
+      "captured_at": "2026-11-13T00:00:00Z",
+      "source": "linkedin_api",
+      "source_id": "2461733563",
+      "title": "Senior Software Engineer - Python/Golang - Kubernetes",
+      "company": "Canonical",
+      "location": "Riyadh, Riyadh Region, Saudi Arabia",
+      "employment_type": "FULL_TIME",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-13T11:48:43.130448+00:00",
+      "verification_url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-python-golang-kubernetes-at-canonical-4489951458",
+      "discovery_source": "LinkedIn",
+      "discovery_url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-python-golang-kubernetes-at-canonical-4489951458",
+      "requisition_id": "8372845",
+      "mandatory_requirements": [],
+      "url": "https://sa.linkedin.com/jobs/view/senior-software-engineer-python-golang-kubernetes-at-canonical-4489951458",
+      "salary": "",
+      "tier": "Closest matches to review",
+      "application_action": "Worth reviewing",
+      "application_state": "worth_reviewing",
+      "pending_reasons": [],
+      "score": 46,
+      "why": "Requires Golang and Kubernetes proficiency alongside a required STEM degree.",
+      "ranking_verified": true,
+      "track": "Software engineering, front and back",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Fluent in Python; lacks required Golang and Kubernetes operational skills."
+        },
+        "experience": {
+          "score": 12,
+          "max": 30,
+          "note": "Short SWE tenure since Aug 2025; misses senior engineering track."
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Requires Bachelor's or equivalent in CS/STEM."
+        },
+        "seniority_location": {
+          "score": 10,
+          "max": 15,
+          "note": "Riyadh location matches."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Python producer and TypeScript dashboard",
+          "resume_quote": "CI contract tests across the Python producer and TypeScript dashboard."
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Missing Required Golang Development Experience",
+        "Missing Required Kubernetes Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Bachelor's Degree Equivalency",
+          "reason": "The role requires a Bachelor's or equivalent in STEM, whereas the candidate holds a Diploma in Pipefitting Technology.",
+          "evidence_needed": "Confirmation on whether technical work history and self-taught engineering experience satisfy the 'or equivalent' STEM degree requirement."
+        }
+      ],
+      "link_status": "open",
+      "first_published": "2026-11-11",
+      "age_days": 2,
+      "jd": {
+        "status": "captured",
+        "text": "Canonical is a leading provider of open source software and operating systems to the global enterprise and technology markets. Our platform, Ubuntu, is very widely used in breakthrough enterprise initiatives such as public cloud, data science, AI, engineering innovation and IoT. Our customers include the world's leading public cloud and silicon providers, and industry leaders in many sectors. The company is a pioneer of global distributed collaboration, with 1000+ colleagues in 70+ countries and very few office based roles. Teams meet two to four times yearly in person, in interesting locations around the world, to align on strategy and execution.\n\nThe company is founder led, profitable and growing.\n\nWe are hiring a senior software engineer to join our Kubernetes product team. As a member of that team, you will build the operators and addons; the former, offering complete lifecycle management of mission-critical components, and the latter, a zero-ops experience for seamlessly integrating projects into your Kubernetes.\n\nYou will gain familiarity with the latest features in Kubernetes and look to incorporate the best of open-source to bring functionality to our end-users. You will collaborate with industry peers and partners to bring the right solutions to our customers.\n\nThis is an exciting opportunity for a senior software engineer passionate about open source software, Linux, Golang, Python and Kubernetes.\n\nLocation: This is a remote position available in EMEA and the Americas.\n\nWhat You Will Focus On\n\nWork closely with other leads, assuming joint responsibility for outcomes at the team, department, and company level.\nMentor, develop, and advise colleagues on their career progression. \nWrite high-quality code to create new features\nDebug issues and interact with a vibrant community\nCollaborate proactively with a distributed team\nWork from home with global travel 2 to 4 weeks for internal and external events\n\nWhat We Are Looking For In You\n\nYou are a Golang developer also fluent in Python\nYou have experience with Kubernetes\nYou have strong written and verbal communication skills\nYou have a Bachelor’s or equivalent in Computer Science, STEM or similar degree\nYou love technology and working with brilliant people\n\nWhat We Offer You\n\nWe consider geographical location, experience, and performance in shaping compensation worldwide. We revisit compensation annually (and more often for graduates and associates) to ensure we recognise outstanding performance. In addition to base pay, we offer a performance-driven annual bonus. We provide all team members with additional benefits, which reflect our values and ideals. We balance our programs to meet local needs and ensure fairness globally.\n\nDistributed work environment with twice-yearly team sprints in person\nPersonal learning and development budget of USD 2,000 per year\nAnnual compensation review\nRecognition rewards\nAnnual holiday leave\nMaternity and paternity leave\nEmployee Assistance Programme\nOpportunity to travel to new locations to meet colleagues\nPriority Pass, and travel upgrades for long haul company events\n\nAbout Canonical\n\nCanonical is a pioneering tech firm at the forefront of the global move to open source. As the company that publishes Ubuntu, one of the most important open source projects and the platform for AI, IoT and the cloud, we are changing the world on a daily basis. We recruit on a global basis and set a very high standard for people joining the company. We expect excellence - in order to succeed, we need to be the best at what we do. Canonical has been a remote-first company since its inception in 2004. Working here is a step into the future, and will challenge you to think differently, work smarter, learn new skills, and raise your game.\n\nCanonical is an equal opportunity employer\n\nWe are proud to foster a workplace free from discrimination. Diversity of experience, perspectives, and background create a better work environment and better products. Whatever your identity, we will give your application fair consideration.",
+        "sha256": "c7ec2d05a952d9c3471ac96f133db0221023bf9a5884490d10017e79f3fbf4e5",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:A165F5C263",
+      "captured_at": "2026-11-13T00:00:00Z",
+      "source": "workable",
+      "source_id": "A165F5C263",
+      "title": "Senior Forward Deployed Engineer (FDE)",
+      "company": "Foodics",
+      "location": "Riyadh, Saudi Arabia",
+      "employment_type": "Full-time",
+      "employment_status": "full_time",
+      "verified_at": "2026-11-13T11:48:48.748391+00:00",
+      "verification_url": "https://apply.workable.com/foodics/j/A165F5C263/",
+      "discovery_source": "workable",
+      "discovery_url": "https://apply.workable.com/foodics/j/A165F5C263/",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://apply.workable.com/foodics/j/A165F5C263/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Live vacancy status has not been confirmed; this is an unverified lead."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "AI and LLM product engineering",
+      "categories": {
+        "hard_skills": {
+          "score": 20,
+          "max": 40,
+          "note": "Strong customer-facing and full-stack API skills; lacks C#/.NET and Kafka."
+        },
+        "experience": {
+          "score": 10,
+          "max": 30,
+          "note": "SWE since Aug 2025; misses the hard 6+ years requirement."
+        },
+        "education": {
+          "score": 10,
+          "max": 15,
+          "note": "No explicit degree requirement listed in excerpt."
+        },
+        "seniority_location": {
+          "score": 12,
+          "max": 15,
+          "note": "Riyadh location matches."
+        }
+      },
+      "match_evidence": [
+        {
+          "title": "Upstash Redis rate limiting",
+          "resume_quote": "Upstash Redis rate limiting, OpenRouter/Gemini, and server-side PDF generation."
+        },
+        {
+          "title": "React 19, TypeScript, Netlify Functions",
+          "resume_quote": "Built and deployed the product solo with React 19, TypeScript, Netlify Functions, Supabase/PostgreSQL"
+        },
+        {
+          "title": "GitHub Actions, and quality gates",
+          "resume_quote": "Telegram alerts, OpenRouter metadata, GitHub Actions, and quality gates spanning linting, type checks, tests, builds"
+        }
+      ],
+      "ceiling": "low",
+      "blockers": [
+        "Insufficient Production Software and Backend Engineering Experience",
+        "Missing Required .NET Backend Development Experience",
+        "Missing Required Kafka Event-Driven Architecture Experience"
+      ],
+      "unclear": [
+        {
+          "topic": "Datadog Observability and On-Call Operations",
+          "reason": "The candidate has experience with Sentry and Telegram alerts, but it is unclear if they have production Datadog and formal on-call operational experience.",
+          "evidence_needed": "Verification of experience configuring Datadog monitors, runbooks, and participating in on-call incident response rotations."
+        }
+      ],
+      "link_status": "unknown",
+      "first_published": "2026-11-12",
+      "age_days": 1,
+      "jd": {
+        "status": "captured",
+        "text": "Who Are We❓\nWe Are Foodics! a leading restaurant management ecosystem and payment tech provider. Founded in 2014 with headquarters in Riyadh and offices across 5 countries, including UAE, Egypt, Jordan and Kuwait. We are currently serving customers and partners in over 35 different countries worldwide. Our innovative products have successfully processed over 6 billion (yes, billion with a B) orders so far! making Foodics one of the most rapidly evolving SaaS companies to ever emerge from the MENA region. Also Foodics has achieved three rounds of funding, with the latest raising $170 million in the largest SaaS funding round in MENA, boosting its innovation capabilities to better serve business owners.\nThe Job in a Nutshell💡\nWe are hiring a Forward Deployed Engineer to sit between our customers and our product. You will embed with strategic merchants and partners, ship production code that solves their problems, and turn what you learn into reusable platform capabilities.\nLarge chains and integration partners often need more than configuration: custom integrations, data flows and workflows that stretch the product. You own that work end to end, from the first discovery call to production rollout. This is a full-stack, customer facing engineering role. You write real code in our .NET microservices, Kafka-based event backbone and front-end apps, and you are measured on customer outcomes, not tickets closed.\nWhat Will You Do❓\nEmbed with customers\nWork directly with enterprise merchants, franchise groups and integration partners to understand their operations, systems and pain points.\nRun technical discovery: map their workflows, data and existing systems (ERP, delivery aggregators, loyalty, payment providers) against Foodics capabilities.\nScope solutions, set clear expectations, and own delivery dates with the customer. Build and ship production software\nDesign and build backend services and integrations in .NET (C#) following Clean Architecture and CQRS.\nBuild event-driven flows on Kafka: producers, consumers, retries, dead-letter handling, idempotency and schema evolution.\nUse Redis for caching, rate limiting and short-lived state, with sound invalidation and TTL strategies.\nBuild or extend front-end experiences (web apps, admin tools, mini-apps) when the solution needs a UI.\nShip through CI/CD and own what you ship: observability in Datadog, alerts, runbooks and on-call for your deployments.\nTurn field work into product\nSpot patterns across customers and propose platform features instead of one-off forks.\nWrite clear specs and handover docs so core teams can adopt and maintain what you built.\nBe the voice of the customer in roadmap discussions, backed by data on usage, impact and effort.\nBuild the FDE motion\nTurn one-off deployments into repeatable playbooks, tooling, SDKs and reference integrations.\nHelp define how FDE engagements are scoped and measured, and share learnings across Product, Engineering, Solutions and Customer Success.\nWhat Are We Looking For❓\n6+ years building and running production software, including 3+ years on backend systems at scale.\nA track record of owning work end to end, from an ambiguous problem to a solution running in production.\nExperience working directly with customers, partners or business stakeholders and turning their needs into technical plans.\nStrong C# and .NET (.NET 8+), ASP.NET Core APIs and microservices design; Clean Architecture, CQRS/MediatR and DDD fundamentals.\nHands-on Kafka in production: partitioning, consumer groups, delivery semantics, idempotency, retries and DLQs, and the outbox pattern.\nRedis in production: cache-aside, TTL and invalidation, distributed locks and rate limiting, with awareness of consistency trade-offs.\nSolid relational modelling and SQL (PostgreSQL or SQL Server), with Dapper or EF Core and query performance tuning.\nProduction front-end experience with a modern framework (Vue/Nuxt, React or Angular) and TypeScript.\nIntegration experience: REST and webhook design, OAuth2/OIDC, API versioning, and third-party systems such as ERP, payments or delivery platforms.\nComfort with Docker, Kubernetes basics, CI/CD and observability tools such as Datadog.\nA product mindset: you start from the customer's outcome, push back when a request is not the real problem, and measure whether what you shipped is used. Clear written and spoken English, and the confidence to present to an engineering team and a restaurant group's executives on the same day.\nNice to Have\nExperience in restaurant tech, retail, POS, payments, loyalty or delivery aggregator integrations.\nA previous role as a Forward Deployed, Solutions, Integration or Customer Engineer at a product company.\nBuilding with LLMs and AI agents in production (prompting, tool use, evaluations), applied to customer workflows.\nMobile exposure (Swift/SwiftUI, Kotlin, Flutter or React Native), or experience with super-app and mini-app models.\nProduct analytics and instrumentation (Mixpanel, Snowflake, SQL-based analysis). Arabic, and experience working with customers in Saudi Arabia and the GCC.\nWhat We Offer You❗\nWe believe you will love working at Foodics!\nWe offer highly competitive compensation packages, including bonuses and the potential for shares.\nWe prioritize personal development and offer regular training and an annual learning stipend to tackle new challenges and grow your career in a hyper-growth environment.\nJoin a talented team of over 30 nationalities working in 14 countries, and gain valuable experience in an exciting industry.\nWe offer autonomy, mentoring, and challenging goals that create incredible opportunities for both you and the company.",
+        "sha256": "e661f2351f39d2e7eee7cdbb107442de164a3b8fb4261dc9e1b194790c1bceac",
+        "completeness_failures": [],
+        "grade": "full"
+      }
+    },
+    {
+      "schema_version": 1,
+      "job_key": "pending:workable:6CF472CE81",
+      "captured_at": "2026-11-13T00:00:00Z",
+      "source": "workable",
+      "source_id": "6CF472CE81",
+      "title": "Industrial Skills Trainer - Computer (SMP)",
+      "company": "ABIS",
+      "location": "Dhahran, Saudi Arabia",
+      "employment_type": "",
+      "employment_status": "unknown",
+      "verified_at": "2026-11-13T11:48:48.031683+00:00",
+      "verification_url": "https://apply.workable.com/abis/j/6CF472CE81/",
+      "discovery_source": "workable",
+      "discovery_url": "https://apply.workable.com/abis/j/6CF472CE81/",
+      "requisition_id": "",
+      "mandatory_requirements": [],
+      "url": "https://apply.workable.com/abis/j/6CF472CE81/",
+      "salary": "",
+      "tier": "Needs checking",
+      "application_action": "Needs checking",
+      "application_state": "needs_checking",
+      "pending_reasons": [
+        "Full-time employment has not been confirmed.",
+        "Live vacancy status has not been confirmed; this is an unverified lead.",
+        "Full job description needs verification.",
+        "Requirements and qualification gaps have not been checked.",
+        "No positive match to demonstrated resume work has been verified."
+      ],
+      "score": null,
+      "why": "Potentially relevant role; application fit has not been verified.",
+      "ranking_verified": true,
+      "track": "Adjacent product and technical operations",
+      "categories": {
+        "hard_skills": {
+          "score": 28,
+          "max": 40,
+          "note": "Deep AI, prompt engineering, data analytics, and programming capabilities."
+        },
+        "experience": {
+          "score": 15,
+          "max": 30,
+          "note": "Hands-on AI building and data analysis, but lacks 3-5 years dedicated IT trainer"
+        },
+        "education": {
+          "score": 0,
+          "max": 15,
+          "note": "Mandatory Bachelor's degree in CS/IT/AI/Data Science."
+        },
+        "seniority_location": {
+          "score": 14,
+          "max": 15,
+          "note": "Located in Dhahran, Saudi Arabia."
+        }
+      },
+      "match_evidence": [],
+      "ceiling": "unknown",
+      "blockers": [],
+      "unclear": [],
+      "link_status": "unknown",
+      "first_published": "2026-11-11",
+      "age_days": 2,
+      "jd": {
+        "status": "incomplete",
+        "text": "Develop, prepare, and deliver technical training programs, courses, workshops, and seminars based on organizational needs and training objectives.\nDeliver engaging and effective learning experiences through practical demonstrations, hands-on activities, case studies, and digital learning methods.\nDevelop technical training materials, presentations, practical exercises, and assessments using appropriate learning technologies and digital tools.\nEnsure participant engagement, effective knowledge transfer, and achievement of training objectives.\nExplain complex technical concepts clearly to participants with different levels of technical knowledge.\nManage classroom activities, address technical challenges, and adapt training delivery to meet participant needs.\nRequirements\nEducation: Bachelor's degree or higher in Computer Science, Information Technology, Artificial Intelligence, Data Science, Engineering, or a related technology field.\nExperience: 3–5 years of practical experience in Computer Science, Information Technology, Artificial Intelligence, Data Science, Cloud Computing, Cybersecurity, Programming, or related technology areas.\nStrong technical knowledge and hands-on experience in relevant technology domains.\nExcellent presentation, facilitation, communication, and interpersonal skills.\nStrong organizational, time management, problem-solving, and classroom management skills.\nAbility to develop and deliver technical training content using virtual learning platforms and digital tools.\nAbility to adapt training methods to different learning levels and participant needs.\nPreferred Certifications: Industry-recognized technical certifications in Artificial Intelligence, Cloud Computing, Data Analytics, Cybersecurity, Programming, or related technology fields.",
+        "sha256": "5f89737cbd82433030b7f0dba6bc624b177aac3bf7f69d2cb92ec899f4a151e5",
+        "completeness_failures": [
+          "requirements_not_evidenced"
+        ],
+        "grade": "incomplete"
+      }
+    }
+  ]
+}
